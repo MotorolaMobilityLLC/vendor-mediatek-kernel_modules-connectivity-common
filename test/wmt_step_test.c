@@ -228,6 +228,21 @@ int wmt_step_test_check_create_cancel_wakeup(struct step_cancel_wakeup_action *p
 	return result;
 }
 
+int wmt_step_test_check_create_periodic_dump(struct step_periodic_dump_action *p_pd_act,
+	int check_params[], char *err_result)
+{
+	int result = TEST_FAIL;
+
+	if (p_pd_act->base.action_id != STEP_ACTION_INDEX_PERIODIC_DUMP) {
+		WMT_ERR_FUNC("%s, id wrong: %d\n", err_result, p_pd_act->base.action_id);
+		result = TEST_FAIL;
+	} else {
+		result = TEST_PASS;
+	}
+
+	return result;
+}
+
 void wmt_step_test_check_emi_act(unsigned int len, ...)
 {
 	unsigned int offset;
@@ -239,6 +254,8 @@ void wmt_step_test_check_emi_act(unsigned int len, ...)
 	if (g_step_test_check.step_check_result == TEST_FAIL)
 		return;
 
+	va_start(args, len);
+	value = va_arg(args, unsigned int);
 	offset = g_step_test_check.step_check_emi_offset[g_step_test_check.step_check_index];
 	p_virtual_addr = wmt_plat_get_emi_virt_add(offset);
 	if (!p_virtual_addr) {
@@ -248,8 +265,6 @@ void wmt_step_test_check_emi_act(unsigned int len, ...)
 	}
 	check_result = CONSYS_REG_READ(p_virtual_addr);
 
-	va_start(args, len);
-	value = va_arg(args, unsigned int);
 	if (check_result == value) {
 		g_step_test_check.step_check_result = TEST_PASS;
 	} else {
@@ -453,6 +468,16 @@ void __wmt_step_test_create_action(enum step_action_id act_id, char *params[], i
 					check_params, err_result);
 			}
 			break;
+		case STEP_ACTION_INDEX_PERIODIC_DUMP:
+			{
+				struct step_periodic_dump_action *p_pd_act = NULL;
+
+				p_pd_act =
+					(struct step_periodic_dump_action *) list_entry_pd_action(p_act);
+				result = wmt_step_test_check_create_periodic_dump(p_pd_act,
+					check_params, err_result);
+			}
+			break;
 		default:
 			result = TEST_FAIL;
 			break;
@@ -567,6 +592,7 @@ void wmt_step_test_all(void)
 	wmt_step_test_do_register_action(&report);
 	wmt_step_test_do_gpio_action(&report);
 	wmt_step_test_do_wakeup_action(&report);
+	wmt_step_test_create_periodic_dump(&report);
 
 	wmt_step_test_do_chip_reset_action(&report);
 	g_step_env.is_enable = is_enable_step;
@@ -688,15 +714,21 @@ void wmt_step_test_parse_data(struct step_test_report *p_report)
 		"[AT]    _REG 0   0x08 5   2\r\n"
 		"[AT]  DRST\r\n"
 		"[AT]    _RST\r\n"
+		"  [PD+] 2\r\n"
+		"    [AT] _EMI 0 0x50 0x9c\r\n"
+		"     [PD-] \r\n"
 		" [TP 2] When Firmware trigger assert\r\n"
 		"[AT]    _REG   1   0x08  30\r\n"
 		"[AT]    GPIO  0  8\r\n"
 		" [AT]  GPIO   1  6   3\r\n"
 		"  [AT]      WAK+\r\n"
 		"  [AT]   WAK-\r\n"
+		"  [PD+]     5\r\n"
+		"       [AT]    _EMI 0     0x50 0x9c\r\n"
+		"  [PD-]   \r\n"
 		"\r\n";
 
-	g_step_test_check.step_check_total = 9;
+	g_step_test_check.step_check_total = 13;
 	g_step_test_check.step_check_test_tp_id[0] = STEP_TRIGGER_POINT_COMMAND_TIMEOUT;
 	g_step_test_check.step_check_test_act_id[0] = STEP_ACTION_INDEX_EMI;
 	g_step_test_check.step_check_test_tp_id[1] = STEP_TRIGGER_POINT_COMMAND_TIMEOUT;
@@ -705,16 +737,24 @@ void wmt_step_test_parse_data(struct step_test_report *p_report)
 	g_step_test_check.step_check_test_act_id[2] = STEP_ACTION_INDEX_DISABLE_RESET;
 	g_step_test_check.step_check_test_tp_id[3] = STEP_TRIGGER_POINT_COMMAND_TIMEOUT;
 	g_step_test_check.step_check_test_act_id[3] = STEP_ACTION_INDEX_CHIP_RESET;
-	g_step_test_check.step_check_test_tp_id[4] = STEP_TRIGGER_POINT_FIRMWARE_TRIGGER_ASSERT;
-	g_step_test_check.step_check_test_act_id[4] = STEP_ACTION_INDEX_REGISTER;
-	g_step_test_check.step_check_test_tp_id[5] = STEP_TRIGGER_POINT_FIRMWARE_TRIGGER_ASSERT;
-	g_step_test_check.step_check_test_act_id[5] = STEP_ACTION_INDEX_GPIO;
+	g_step_test_check.step_check_test_tp_id[4] = -1;
+	g_step_test_check.step_check_test_act_id[4] = STEP_ACTION_INDEX_EMI;
+	g_step_test_check.step_check_test_tp_id[5] = STEP_TRIGGER_POINT_COMMAND_TIMEOUT;
+	g_step_test_check.step_check_test_act_id[5] = STEP_ACTION_INDEX_PERIODIC_DUMP;
 	g_step_test_check.step_check_test_tp_id[6] = STEP_TRIGGER_POINT_FIRMWARE_TRIGGER_ASSERT;
-	g_step_test_check.step_check_test_act_id[6] = STEP_ACTION_INDEX_GPIO;
+	g_step_test_check.step_check_test_act_id[6] = STEP_ACTION_INDEX_REGISTER;
 	g_step_test_check.step_check_test_tp_id[7] = STEP_TRIGGER_POINT_FIRMWARE_TRIGGER_ASSERT;
-	g_step_test_check.step_check_test_act_id[7] = STEP_ACTION_INDEX_KEEP_WAKEUP;
+	g_step_test_check.step_check_test_act_id[7] = STEP_ACTION_INDEX_GPIO;
 	g_step_test_check.step_check_test_tp_id[8] = STEP_TRIGGER_POINT_FIRMWARE_TRIGGER_ASSERT;
-	g_step_test_check.step_check_test_act_id[8] = STEP_ACTION_INDEX_CANCEL_WAKEUP;
+	g_step_test_check.step_check_test_act_id[8] = STEP_ACTION_INDEX_GPIO;
+	g_step_test_check.step_check_test_tp_id[9] = STEP_TRIGGER_POINT_FIRMWARE_TRIGGER_ASSERT;
+	g_step_test_check.step_check_test_act_id[9] = STEP_ACTION_INDEX_KEEP_WAKEUP;
+	g_step_test_check.step_check_test_tp_id[10] = STEP_TRIGGER_POINT_FIRMWARE_TRIGGER_ASSERT;
+	g_step_test_check.step_check_test_act_id[10] = STEP_ACTION_INDEX_CANCEL_WAKEUP;
+	g_step_test_check.step_check_test_tp_id[11] = -1;
+	g_step_test_check.step_check_test_act_id[11] = STEP_ACTION_INDEX_EMI;
+	g_step_test_check.step_check_test_tp_id[12] = STEP_TRIGGER_POINT_FIRMWARE_TRIGGER_ASSERT;
+	g_step_test_check.step_check_test_act_id[12] = STEP_ACTION_INDEX_PERIODIC_DUMP;
 	g_step_test_check.step_check_params[0][0] = "0";
 	g_step_test_check.step_check_params[0][1] = "0x50";
 	g_step_test_check.step_check_params[0][2] = "0x9c";
@@ -722,14 +762,20 @@ void wmt_step_test_parse_data(struct step_test_report *p_report)
 	g_step_test_check.step_check_params[1][1] = "0x08";
 	g_step_test_check.step_check_params[1][2] = "5";
 	g_step_test_check.step_check_params[1][3] = "2";
-	g_step_test_check.step_check_params[4][0] = "1";
-	g_step_test_check.step_check_params[4][1] = "0x08";
-	g_step_test_check.step_check_params[4][2] = "30";
-	g_step_test_check.step_check_params[5][0] = "0";
-	g_step_test_check.step_check_params[5][1] = "8";
+	g_step_test_check.step_check_params[4][0] = "0";
+	g_step_test_check.step_check_params[4][1] = "0x50";
+	g_step_test_check.step_check_params[4][2] = "0x9c";
 	g_step_test_check.step_check_params[6][0] = "1";
-	g_step_test_check.step_check_params[6][1] = "6";
-	g_step_test_check.step_check_params[6][2] = "3";
+	g_step_test_check.step_check_params[6][1] = "0x08";
+	g_step_test_check.step_check_params[6][2] = "30";
+	g_step_test_check.step_check_params[7][0] = "0";
+	g_step_test_check.step_check_params[7][1] = "8";
+	g_step_test_check.step_check_params[8][0] = "1";
+	g_step_test_check.step_check_params[8][1] = "6";
+	g_step_test_check.step_check_params[8][2] = "3";
+	g_step_test_check.step_check_params[11][0] = "0";
+	g_step_test_check.step_check_params[11][1] = "0x50";
+	g_step_test_check.step_check_params[11][2] = "0x9c";
 	__wmt_step_test_parse_data(buf, &temp_report,
 		"STEP failed: (Parse data TC-2) Normal case with some space\n");
 
@@ -803,9 +849,12 @@ void wmt_step_test_parse_data(struct step_test_report *p_report)
 		"[at] GPIO 0\r\n"
 		"[at] wak+ 0\r\n"
 		"[at] wak- 0\r\n"
+		"[pd+] 5\r\n"
+		"[At] GPIO 0 8\r\n"
+		"[pd-]\r\n"
 		"\r\n";
 
-	g_step_test_check.step_check_total = 8;
+	g_step_test_check.step_check_total = 10;
 	g_step_test_check.step_check_test_tp_id[0] = STEP_TRIGGER_POINT_COMMAND_TIMEOUT;
 	g_step_test_check.step_check_test_act_id[0] = STEP_ACTION_INDEX_EMI;
 	g_step_test_check.step_check_test_tp_id[1] = STEP_TRIGGER_POINT_COMMAND_TIMEOUT;
@@ -822,6 +871,10 @@ void wmt_step_test_parse_data(struct step_test_report *p_report)
 	g_step_test_check.step_check_test_act_id[6] = STEP_ACTION_INDEX_KEEP_WAKEUP;
 	g_step_test_check.step_check_test_tp_id[7] = STEP_TRIGGER_POINT_BEFORE_CHIP_RESET;
 	g_step_test_check.step_check_test_act_id[7] = STEP_ACTION_INDEX_CANCEL_WAKEUP;
+	g_step_test_check.step_check_test_tp_id[8] = -1;
+	g_step_test_check.step_check_test_act_id[8] = STEP_ACTION_INDEX_GPIO;
+	g_step_test_check.step_check_test_tp_id[9] = STEP_TRIGGER_POINT_BEFORE_CHIP_RESET;
+	g_step_test_check.step_check_test_act_id[9] = STEP_ACTION_INDEX_PERIODIC_DUMP;
 
 	g_step_test_check.step_check_params[0][0] = "0x50";
 	g_step_test_check.step_check_params[0][1] = "0x9c";
@@ -832,7 +885,11 @@ void wmt_step_test_parse_data(struct step_test_report *p_report)
 	g_step_test_check.step_check_params[3][0] = "1";
 	g_step_test_check.step_check_params[3][1] = "0x08";
 	g_step_test_check.step_check_params[4][0] = "0";
+	g_step_test_check.step_check_params[4][1] = "8";
 	g_step_test_check.step_check_params[5][0] = "0";
+	g_step_test_check.step_check_params[5][1] = "8";
+	g_step_test_check.step_check_params[8][0] = "0";
+	g_step_test_check.step_check_params[8][1] = "8";
 
 	__wmt_step_test_parse_data(buf, &temp_report,
 		"STEP failed: (Parse data TC-4) Upcase and lowercase\n");
@@ -912,9 +969,13 @@ void wmt_step_test_parse_data(struct step_test_report *p_report)
 		"[AT] _REG 1 0x08 30\r\n"
 		"[AT] GPIO 0 8\r\n"
 		"[AT] GPIO 1 6 3\r\n"
+		"[PD+] 5 // pd start\r\n"
+		"[AT] GPIO 0 8 // just do it\r\n"
+		"// Do some action\r\n"
+		"[PD-] // pd ned\r\n"
 		"\r\n";
 
-	g_step_test_check.step_check_total = 7;
+	g_step_test_check.step_check_total = 9;
 	g_step_test_check.step_check_test_tp_id[0] = STEP_TRIGGER_POINT_COMMAND_TIMEOUT;
 	g_step_test_check.step_check_test_act_id[0] = STEP_ACTION_INDEX_EMI;
 	g_step_test_check.step_check_test_tp_id[1] = STEP_TRIGGER_POINT_COMMAND_TIMEOUT;
@@ -929,6 +990,10 @@ void wmt_step_test_parse_data(struct step_test_report *p_report)
 	g_step_test_check.step_check_test_act_id[5] = STEP_ACTION_INDEX_GPIO;
 	g_step_test_check.step_check_test_tp_id[6] = STEP_TRIGGER_POINT_FIRMWARE_TRIGGER_ASSERT;
 	g_step_test_check.step_check_test_act_id[6] = STEP_ACTION_INDEX_GPIO;
+	g_step_test_check.step_check_test_tp_id[7] = -1;
+	g_step_test_check.step_check_test_act_id[7] = STEP_ACTION_INDEX_GPIO;
+	g_step_test_check.step_check_test_tp_id[8] = STEP_TRIGGER_POINT_FIRMWARE_TRIGGER_ASSERT;
+	g_step_test_check.step_check_test_act_id[8] = STEP_ACTION_INDEX_PERIODIC_DUMP;
 	g_step_test_check.step_check_params[0][0] = "0";
 	g_step_test_check.step_check_params[0][1] = "0x50";
 	g_step_test_check.step_check_params[0][2] = "0x9c";
@@ -944,6 +1009,8 @@ void wmt_step_test_parse_data(struct step_test_report *p_report)
 	g_step_test_check.step_check_params[6][0] = "1";
 	g_step_test_check.step_check_params[6][1] = "6";
 	g_step_test_check.step_check_params[6][2] = "3";
+	g_step_test_check.step_check_params[7][0] = "0";
+	g_step_test_check.step_check_params[7][1] = "8";
 	__wmt_step_test_parse_data(buf, &temp_report,
 		"STEP failed: (Parse data TC-6) More comment\n");
 
@@ -965,16 +1032,89 @@ void wmt_step_test_parse_data(struct step_test_report *p_report)
 		"[AT] _RST\r\n"
 		"[T P 2] When Firmware trigger assert\r\n"
 		"[AT] WAK+\r\n"
+		"[TP 2 When Firmware trigger assert\r\n"
+		"[AT] WAK+\r\n"
+		"[PD+]\r\n"
+		"[PD-]\r\n"
 		"[TP 2] When Firmware trigger assert\r\n"
 		"[AT]_REG 1 0x08 30\r\n"
 		"[A  T] GPIO 0 8\r\n"
 		"[ AT ] GPIO 1 6 3\r\n"
 		"AT GPIO 0 8\r\n"
+		"[AT WAK+\r\n"
 		"\r\n";
 
 	g_step_test_check.step_check_total = 0;
 	__wmt_step_test_parse_data(buf, &temp_report,
 		"STEP failed: (Parse data TC-7) Wrong format\n");
+
+	/********************************
+	 ******** Test case 8 ***********
+	 ******* Periodic dump **********
+	 ********************************/
+	WMT_INFO_FUNC("STEP test: TC 8\n");
+	wmt_step_test_clear_check_data();
+
+	buf =
+		"// TEST NOW\r\n"
+		"\r\n"
+		"[TP 1] When Command timeout\r\n"
+		"[PD+] 5\r\n"
+		"[AT] _EMI 0 0x50 0x9c\r\n"
+		"[AT] _REG 0 0x08 5 2\r\n"
+		"[PD-]\r\n"
+		"[AT] DRST\r\n"
+		"[AT] _RST\r\n"
+		"[TP 2] When Firmware trigger assert\r\n"
+		"[AT] _REG 1 0x08 30\r\n"
+		"[PD+] 3\r\n"
+		"[AT] GPIO 0 8\r\n"
+		"[PD-]\r\n"
+		"[AT] GPIO 1 6 3\r\n"
+		"[AT] WAK+\r\n"
+		"[AT] WAK-\r\n"
+		"\r\n";
+
+	g_step_test_check.step_check_total = 11;
+	g_step_test_check.step_check_test_tp_id[0] = -1;
+	g_step_test_check.step_check_test_act_id[0] = STEP_ACTION_INDEX_EMI;
+	g_step_test_check.step_check_test_tp_id[1] = -1;
+	g_step_test_check.step_check_test_act_id[1] = STEP_ACTION_INDEX_REGISTER;
+	g_step_test_check.step_check_test_tp_id[2] = STEP_TRIGGER_POINT_COMMAND_TIMEOUT;
+	g_step_test_check.step_check_test_act_id[2] = STEP_ACTION_INDEX_PERIODIC_DUMP;
+	g_step_test_check.step_check_test_tp_id[3] = STEP_TRIGGER_POINT_COMMAND_TIMEOUT;
+	g_step_test_check.step_check_test_act_id[3] = STEP_ACTION_INDEX_DISABLE_RESET;
+	g_step_test_check.step_check_test_tp_id[4] = STEP_TRIGGER_POINT_COMMAND_TIMEOUT;
+	g_step_test_check.step_check_test_act_id[4] = STEP_ACTION_INDEX_CHIP_RESET;
+	g_step_test_check.step_check_test_tp_id[5] = STEP_TRIGGER_POINT_FIRMWARE_TRIGGER_ASSERT;
+	g_step_test_check.step_check_test_act_id[5] = STEP_ACTION_INDEX_REGISTER;
+	g_step_test_check.step_check_test_tp_id[6] = -1;
+	g_step_test_check.step_check_test_act_id[6] = STEP_ACTION_INDEX_GPIO;
+	g_step_test_check.step_check_test_tp_id[7] = STEP_TRIGGER_POINT_FIRMWARE_TRIGGER_ASSERT;
+	g_step_test_check.step_check_test_act_id[7] = STEP_ACTION_INDEX_PERIODIC_DUMP;
+	g_step_test_check.step_check_test_tp_id[8] = STEP_TRIGGER_POINT_FIRMWARE_TRIGGER_ASSERT;
+	g_step_test_check.step_check_test_act_id[8] = STEP_ACTION_INDEX_GPIO;
+	g_step_test_check.step_check_test_tp_id[9] = STEP_TRIGGER_POINT_FIRMWARE_TRIGGER_ASSERT;
+	g_step_test_check.step_check_test_act_id[9] = STEP_ACTION_INDEX_KEEP_WAKEUP;
+	g_step_test_check.step_check_test_tp_id[10] = STEP_TRIGGER_POINT_FIRMWARE_TRIGGER_ASSERT;
+	g_step_test_check.step_check_test_act_id[10] = STEP_ACTION_INDEX_CANCEL_WAKEUP;
+	g_step_test_check.step_check_params[0][0] = "0";
+	g_step_test_check.step_check_params[0][1] = "0x50";
+	g_step_test_check.step_check_params[0][2] = "0x9c";
+	g_step_test_check.step_check_params[1][0] = "0";
+	g_step_test_check.step_check_params[1][1] = "0x08";
+	g_step_test_check.step_check_params[1][2] = "5";
+	g_step_test_check.step_check_params[1][3] = "2";
+	g_step_test_check.step_check_params[5][0] = "1";
+	g_step_test_check.step_check_params[5][1] = "0x08";
+	g_step_test_check.step_check_params[5][2] = "30";
+	g_step_test_check.step_check_params[6][0] = "0";
+	g_step_test_check.step_check_params[6][1] = "8";
+	g_step_test_check.step_check_params[8][0] = "1";
+	g_step_test_check.step_check_params[8][1] = "6";
+	g_step_test_check.step_check_params[8][2] = "3";
+	__wmt_step_test_parse_data(buf, &temp_report,
+		"STEP failed: (Parse data TC-8) Periodic dump\n");
 
 	osal_gettimeofday(&sec_end, &usec_end);
 	wmt_step_test_show_result_report("STEP test: Parse data result",
@@ -992,6 +1132,7 @@ void wmt_step_test_create_action(struct step_test_report *p_report)
 	int usec_begin = 0;
 	int sec_end = 0;
 	int usec_end = 0;
+	struct step_pd_entry fack_pd_entry;
 
 	WMT_INFO_FUNC("STEP test: Create action start\n");
 	osal_gettimeofday(&sec_begin, &usec_begin);
@@ -1171,6 +1312,28 @@ void wmt_step_test_create_action(struct step_test_report *p_report)
 	params[0] = "0";
 	__wmt_step_test_create_action(act_id, params, -1, check_params, &temp_report,
 		"STEP failed: (Create action TC-13) GPIO create fail");
+
+	/*************************************************
+	 **************** Test case 14 *******************
+	 ************** Periodic dump create *************
+	 *************************************************/
+	WMT_INFO_FUNC("STEP test: TC 14\n");
+	wmt_step_test_clear_parameter(params);
+	act_id = STEP_ACTION_INDEX_PERIODIC_DUMP;
+	params[0] = (PINT8)&fack_pd_entry;
+	__wmt_step_test_create_action(act_id, params, 0, check_params, &temp_report,
+		"STEP failed: (Create action TC-14) Periodic dump create fail");
+
+	/*************************************************
+	 **************** Test case 15 *******************
+	 ****** Periodic dump create fail no param *******
+	 *************************************************/
+	WMT_INFO_FUNC("STEP test: TC 15\n");
+	wmt_step_test_clear_parameter(params);
+	act_id = STEP_ACTION_INDEX_PERIODIC_DUMP;
+	params[0] = NULL;
+	__wmt_step_test_create_action(act_id, params, -1, check_params, &temp_report,
+		"STEP failed: (Create action TC-15) Periodic dump create fail");
 
 	osal_gettimeofday(&sec_end, &usec_end);
 	wmt_step_test_show_result_report("STEP test: Create action result",
@@ -1653,6 +1816,59 @@ void wmt_step_test_do_wakeup_action(struct step_test_report *p_report)
 
 	osal_gettimeofday(&sec_end, &usec_end);
 	wmt_step_test_show_result_report("STEP test: Do wakeup action result",
+		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
+	wmt_step_test_update_result_report(p_report, &temp_report);
+}
+
+void wmt_step_test_create_periodic_dump(struct step_test_report *p_report)
+{
+	int expires_ms;
+	struct step_test_report temp_report = {0, 0, 0};
+	int sec_begin = 0;
+	int usec_begin = 0;
+	int sec_end = 0;
+	int usec_end = 0;
+	struct step_pd_entry *p_current;
+	bool is_thread_run_for_test = 0;
+
+	WMT_INFO_FUNC("STEP test: Create periodic dump start\n");
+	osal_gettimeofday(&sec_begin, &usec_begin);
+
+	if (g_step_env.pd_struct.step_pd_wq == NULL) {
+		if (wmt_step_init_pd_env() != 0) {
+			WMT_ERR_FUNC("STEP failed: Start thread failed\n");
+			return;
+		}
+		is_thread_run_for_test = 1;
+	}
+
+	/****************************************
+	 ************* Test case 1 **************
+	 *************** Normal *****************
+	 ****************************************/
+	WMT_INFO_FUNC("STEP test: TC 1\n");
+	expires_ms = 5;
+	p_current = wmt_step_get_periodic_dump_entry(expires_ms);
+	if (p_current == NULL) {
+		WMT_ERR_FUNC("STEP failed: (Create periodic dump TC-1) No entry\n");
+		temp_report.fail++;
+	} else {
+		if (p_current->expires_ms == expires_ms) {
+			temp_report.pass++;
+		} else {
+			WMT_ERR_FUNC("STEP failed: (Create periodic dump TC-1) Currect %d not %d\n",
+				p_current->expires_ms, expires_ms);
+			temp_report.fail++;
+		}
+		list_del_init(&p_current->list);
+		kfree(p_current);
+	}
+
+	if (is_thread_run_for_test == 1)
+		wmt_step_deinit_pd_env();
+
+	osal_gettimeofday(&sec_end, &usec_end);
+	wmt_step_test_show_result_report("STEP test: Create periodic dump result",
 		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
 	wmt_step_test_update_result_report(p_report, &temp_report);
 }
