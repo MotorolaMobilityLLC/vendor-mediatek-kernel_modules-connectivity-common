@@ -132,7 +132,6 @@ UINT32 always_pwr_on_flag = 1;
 UINT32 always_pwr_on_flag;
 #endif
 P_WMT_PATCH_INFO pPatchInfo;
-struct wmt_rom_patch_info *pRomPatchInfo[WMTDRV_TYPE_ANT];
 UINT32 pAtchNum;
 UINT32 currentLpbkStatus;
 
@@ -492,16 +491,6 @@ VOID wmt_dev_patch_info_free(VOID)
 {
 	kfree(pPatchInfo);
 	pPatchInfo = NULL;
-}
-
-VOID wmt_dev_rom_patch_info_free(VOID)
-{
-	UINT32 i;
-
-	for (i = 0; i < WMTDRV_TYPE_ANT; i++) {
-		kfree(pRomPatchInfo[i]);
-		pRomPatchInfo[i] = NULL;
-	}
 }
 
 MTK_WCN_BOOL wmt_dev_is_file_exist(PUINT8 pFileName)
@@ -1067,29 +1056,26 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		break;
 	case 10:
 		if (mtk_wcn_stp_coredump_start_get()) {
-			wmt_lib_host_awake_get();
-			if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC)
-				WMT_INFO_FUNC("stp dump start.\n");
-			else {
-				WMT_INFO_FUNC("Trigger kernel api dump.\n");
-				if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_COMBO ||
-					mtk_wcn_stp_coredump_flag_get() == 2) {
-					pBuffer = kmalloc(NAME_MAX + 1, GFP_KERNEL);
-					if (!pBuffer) {
-						WMT_ERR_FUNC("pBuffer kmalloc memory fail\n");
-						return 0;
-					}
+			WMT_INFO_FUNC("Trigger kernel api dump.\n");
 
-					osal_strcpy(pBuffer, "MT662x f/w coredump start-");
-					if (copy_from_user(pBuffer + osal_strlen(pBuffer), (PVOID)arg,
-								NAME_MAX - osal_strlen(pBuffer))) {
-						/* osal_strcpy(pBuffer, "MT662x f/w assert core dump start"); */
-						WMT_ERR_FUNC("copy assert string failed\n");
-					}
-					pBuffer[NAME_MAX] = '\0';
-					osal_dbg_assert_aee(pBuffer, "%s", pBuffer);
-					kfree(pBuffer);
+			wmt_lib_host_awake_get();
+			if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_COMBO ||
+				mtk_wcn_stp_coredump_flag_get() == 2) {
+				pBuffer = kmalloc(NAME_MAX + 1, GFP_KERNEL);
+				if (!pBuffer) {
+					WMT_ERR_FUNC("pBuffer kmalloc memory fail\n");
+					return 0;
 				}
+
+				osal_strcpy(pBuffer, "MT662x f/w coredump start-");
+				if (copy_from_user(pBuffer + osal_strlen(pBuffer), (PVOID)arg,
+							NAME_MAX - osal_strlen(pBuffer))) {
+					/* osal_strcpy(pBuffer, "MT662x f/w assert core dump start"); */
+					WMT_ERR_FUNC("copy assert string failed\n");
+				}
+				pBuffer[NAME_MAX] = '\0';
+				osal_dbg_assert_aee(pBuffer, "%s", pBuffer);
+				kfree(pBuffer);
 			}
 		}
 		break;
@@ -1316,40 +1302,28 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		break;
 	case WMT_IOCTL_SET_ROM_PATCH_INFO:
 		do {
-			struct wmt_rom_patch_info wMtRomPatchInfo;
-			UINT32 type;
+			struct wmt_rom_patch_info wmtRomPatchInfo;
 
-			if (copy_from_user(&wMtRomPatchInfo, (PVOID)arg, sizeof(struct wmt_rom_patch_info))) {
+			if (copy_from_user(&wmtRomPatchInfo, (PVOID)arg, sizeof(struct wmt_rom_patch_info))) {
 				WMT_ERR_FUNC("copy_from_user failed at %d\n", __LINE__);
 				iRet = -EFAULT;
 				break;
 			}
 
-			if (wMtRomPatchInfo.type >= WMTDRV_TYPE_ANT) {
+			if (wmtRomPatchInfo.type >= WMTDRV_TYPE_ANT) {
 				WMT_ERR_FUNC("rom patch type(%d) >= %d!\n",
-						wMtRomPatchInfo.type, WMTDRV_TYPE_WMT);
+						wmtRomPatchInfo.type, WMTDRV_TYPE_WMT);
 				iRet = -EFAULT;
 				break;
 			}
-			type = wMtRomPatchInfo.type;
 
-			if (!pRomPatchInfo[type]) {
-				pRomPatchInfo[type] = kcalloc(1, sizeof(struct wmt_rom_patch_info), GFP_ATOMIC);
-				if (!pRomPatchInfo[type]) {
-					WMT_ERR_FUNC("allocate memory fail!\n");
-					iRet = -EFAULT;
-					break;
-				}
-			}
-
-			osal_memcpy(pRomPatchInfo[type], &wMtRomPatchInfo, sizeof(struct wmt_rom_patch_info));
 			WMT_DBG_FUNC("rom patch type %d,name %s,address info 0x%02x,0x%02x,0x%02x,0x%02x\n",
-					pRomPatchInfo[type]->type, pRomPatchInfo[type]->patchName,
-					pRomPatchInfo[type]->addRess[0],
-					pRomPatchInfo[type]->addRess[1],
-					pRomPatchInfo[type]->addRess[2],
-					pRomPatchInfo[type]->addRess[3]);
-			wmt_lib_set_rom_patch_info(pRomPatchInfo[type]);
+					wmtRomPatchInfo.type, wmtRomPatchInfo.patchName,
+					wmtRomPatchInfo.addRess[0],
+					wmtRomPatchInfo.addRess[1],
+					wmtRomPatchInfo.addRess[2],
+					wmtRomPatchInfo.addRess[3]);
+			wmt_lib_set_rom_patch_info(&wmtRomPatchInfo, wmtRomPatchInfo.type);
 		} while (0);
 		break;
 	case WMT_IOCTL_FDB_CTRL:
@@ -1383,7 +1357,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		break;
 	case WMT_IOCTL_GET_EMI_PHY_SIZE:
 		do {
-			WMT_INFO_FUNC("gConEmiSize %p\n", gConEmiSize);
+			WMT_ERR_FUNC("gConEmiSize %p\n", gConEmiSize);
 			return (UINT32)gConEmiSize;
 		} while (0);
 		break;
@@ -1648,8 +1622,6 @@ static VOID WMT_exit(VOID)
 	wmt_dev_patch_info_free();
 	mtk_wcn_stp_uart_drv_exit();
 	mtk_wcn_stp_sdio_drv_exit();
-
-	wmt_dev_rom_patch_info_free();
 
 	wmt_dev_bgw_desense_deinit();
 
