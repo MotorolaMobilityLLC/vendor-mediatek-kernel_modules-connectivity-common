@@ -155,6 +155,7 @@ static INT32 opfunc_utc_time_sync(P_WMT_OP pWmtOp);
 static INT32 opfunc_fw_log_ctrl(P_WMT_OP pWmtOp);
 static INT32 opfunc_wlan_probe(P_WMT_OP pWmtOp);
 static INT32 opfunc_wlan_remove(P_WMT_OP pWmtOp);
+static INT32 opfunc_gps_mcu_ctrl(P_WMT_OP pWmtOp);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -315,6 +316,7 @@ static const WMT_OPID_FUNC wmt_core_opfunc[] = {
 	[WMT_OPID_FW_LOG_CTRL] = opfunc_fw_log_ctrl,
 	[WMT_OPID_WLAN_PROBE] = opfunc_wlan_probe,
 	[WMT_OPID_WLAN_REMOVE] = opfunc_wlan_remove,
+	[WMT_OPID_GPS_MCU_CTRL] = opfunc_gps_mcu_ctrl,
 
 };
 
@@ -1195,6 +1197,7 @@ static INT32 opfunc_func_on(P_WMT_OP pWmtOp)
 	INT32 iRet = -1;
 	INT32 iPwrOffRet = -1;
 	UINT32 drvType = pWmtOp->au4OpData[0];
+	P_DEV_WMT pWmtDev = &gDevWmt;
 
 	/* Check abnormal type */
 	if (drvType > WMTDRV_TYPE_COREDUMP) {
@@ -1244,6 +1247,7 @@ static INT32 opfunc_func_on(P_WMT_OP pWmtOp)
 						WMT_WARN_FUNC("put to activeWorker queue fail\n");
 						return -4;
 					}
+					osal_trigger_event(&pWmtDev->rWmtdWorkerWq);
 					return 0;
 				}
 				return opfunc_wlan_probe(pWmtOp);
@@ -1308,6 +1312,7 @@ static INT32 opfunc_func_off(P_WMT_OP pWmtOp)
 {
 	INT32 iRet = -1;
 	UINT32 drvType = pWmtOp->au4OpData[0];
+	P_DEV_WMT pWmtDev = &gDevWmt;
 
 	/* Check abnormal type */
 	if (drvType > WMTDRV_TYPE_COREDUMP) {
@@ -1342,6 +1347,7 @@ static INT32 opfunc_func_off(P_WMT_OP pWmtOp)
 						WMT_WARN_FUNC("put to activeWorker queue fail\n");
 						return -4;
 					}
+					osal_trigger_event(&pWmtDev->rWmtdWorkerWq);
 					return 0;
 				}
 				return opfunc_wlan_remove(pWmtOp);
@@ -3394,6 +3400,81 @@ done:
 	wmt_core_dump_func_state("AF FUNC OFF");
 	wmt_lib_wlan_lock_release();
 	return iRet;
+}
+
+static INT32 opfunc_gps_mcu_ctrl(P_WMT_OP pWmtOp)
+{
+	INT32 iRet = -1;
+	UINT32 u4WrittenSize = 0;
+	UINT32 u4ReadSize = 0;
+	INT32 fgFail = -1;
+	PUINT8 p_tx_data_buf;
+	UINT32 tx_data_len;
+	PUINT8 p_rx_data_buf;
+	UINT32 rx_data_buf_len;
+	PUINT32 p_rx_data_len;
+	UINT8 WMT_GPS_MCU_CTRL_CMD[] = {0x01, 0x32, 0x00, 0x00};
+	PUINT8 p_tx_buf = NULL;
+	PUINT8 p_rx_buf = NULL;
+
+	p_tx_data_buf = (PUINT8)pWmtOp->au4OpData[0];
+	tx_data_len = pWmtOp->au4OpData[1];
+	p_rx_data_buf = (PUINT8)pWmtOp->au4OpData[2];
+	rx_data_buf_len = pWmtOp->au4OpData[3];
+	p_rx_data_len = (PINT32)(pWmtOp->au4OpData[4]);
+
+	if ((!p_tx_data_buf) || (tx_data_len == 0) || (!p_rx_data_buf) || (rx_data_buf_len == 0)) {
+		pWmtOp->au4OpData[5] = -1;
+		WMT_ERR_FUNC("Parameter error!\n");
+		return fgFail;
+	}
+
+	p_tx_buf = osal_malloc(tx_data_len + osal_sizeof(WMT_GPS_MCU_CTRL_CMD));
+	if (!p_tx_buf) {
+		pWmtOp->au4OpData[5] = -2;
+		WMT_ERR_FUNC("p_tx_buf alloc fail!\n");
+		return fgFail;
+	}
+
+	p_rx_buf = osal_malloc(rx_data_buf_len + osal_sizeof(WMT_GPS_MCU_CTRL_CMD));
+	if (!p_rx_buf) {
+		osal_free(p_tx_buf);
+		pWmtOp->au4OpData[5] = -3;
+		WMT_ERR_FUNC("p_rx_buf alloc fail!\n");
+		return fgFail;
+	}
+
+	WMT_GPS_MCU_CTRL_CMD[2] = (tx_data_len & 0x000000ff);
+	WMT_GPS_MCU_CTRL_CMD[3] = ((tx_data_len & 0x0000ff00) >> 8);
+	osal_memcpy(p_tx_buf, WMT_GPS_MCU_CTRL_CMD, osal_sizeof(WMT_GPS_MCU_CTRL_CMD));
+	osal_memcpy(p_tx_buf + osal_sizeof(WMT_GPS_MCU_CTRL_CMD), p_tx_data_buf, tx_data_len);
+
+	do {
+
+		iRet = wmt_core_tx(p_tx_buf, tx_data_len + osal_sizeof(WMT_GPS_MCU_CTRL_CMD), &u4WrittenSize,
+				   MTK_WCN_BOOL_FALSE);
+		if (iRet || (u4WrittenSize != (tx_data_len + osal_sizeof(WMT_GPS_MCU_CTRL_CMD)))) {
+			WMT_ERR_FUNC("gps mcu ctrl tx CMD fail(%d),size(%d)\n", iRet, u4WrittenSize);
+			break;
+		}
+
+		iRet = wmt_core_rx(p_rx_buf, rx_data_buf_len + osal_sizeof(WMT_GPS_MCU_CTRL_CMD),
+				   &u4ReadSize);
+		if (iRet || (p_rx_buf[1] != WMT_GPS_MCU_CTRL_CMD[1])) {
+			WMT_ERR_FUNC("gps mcu ctrl rx EVT fail(%d),size(%d)\n", iRet, u4ReadSize);
+			break;
+		}
+		*p_rx_data_len = (p_rx_buf[2] | (p_rx_buf[3] << 8));
+		osal_memcpy(p_rx_data_buf, p_rx_buf + osal_sizeof(WMT_GPS_MCU_CTRL_CMD),
+			    *p_rx_data_len > rx_data_buf_len ? rx_data_buf_len : *p_rx_data_len);
+
+		fgFail = 0;
+	} while (0);
+
+	osal_free(p_tx_buf);
+	osal_free(p_rx_buf);
+
+	return fgFail;
 }
 
 P_WMT_GEN_CONF wmt_get_gen_conf_pointer(VOID)
