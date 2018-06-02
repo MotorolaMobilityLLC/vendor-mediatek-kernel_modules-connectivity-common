@@ -266,15 +266,16 @@ static INT32 _stp_btm_put_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP_Q pOpQ, P_OSAL_OP 
 			ret = -1;
 
 	}
-	osal_unlock_unsleepable_lock(&(stp_btm->wq_spinlock));
 
 	if (ret) {
 		STP_BTM_DBG_FUNC("RB_FULL(0x%p) %d ,rFreeOpQ = %p, rActiveOpQ = %p\n",
 			pOpQ, RB_COUNT(pOpQ), &stp_btm->rFreeOpQ, &stp_btm->rActiveOpQ);
-		return 0;
+		osal_opq_dump_locked("FreeOpQ", &stp_btm->rFreeOpQ);
+		osal_opq_dump_locked("ActiveOpQ", &stp_btm->rActiveOpQ);
 	}
-	/* STP_BTM_WARN_FUNC("RB_COUNT = %d\n",RB_COUNT(pOpQ)); */
-	return 1;
+
+	osal_unlock_unsleepable_lock(&(stp_btm->wq_spinlock));
+	return ret ? 0 : 1;
 }
 
 P_OSAL_OP _stp_btm_get_free_op(MTKSTP_BTM_T *stp_btm)
@@ -318,6 +319,7 @@ INT32 _stp_btm_put_act_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP pOp)
 		bRet = _stp_btm_put_op(stp_btm, &stp_btm->rActiveOpQ, pOp);
 		if (bRet == 0) {
 			STP_BTM_DBG_FUNC("put active queue fail\n");
+			atomic_dec(&pOp->ref_count);
 			break;
 		}
 		/* wake up wmtd */
