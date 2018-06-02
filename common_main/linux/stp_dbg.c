@@ -100,6 +100,7 @@ static P_STP_DBG_CPUPCR_T g_stp_dbg_cpupcr;
 static P_STP_DBG_DMAREGS_T g_stp_dbg_dmaregs;
 
 static VOID stp_dbg_core_dump_timeout_handler(ULONG data);
+static VOID stp_dbg_dump_emi_timeout_handler(ULONG data);
 static _osal_inline_ P_WCN_CORE_DUMP_T stp_dbg_core_dump_init(UINT32 timeout);
 static _osal_inline_ INT32 stp_dbg_core_dump_deinit(P_WCN_CORE_DUMP_T dmp);
 static _osal_inline_ INT32 stp_dbg_core_dump_check_end(PUINT8 buf, INT32 len);
@@ -117,7 +118,6 @@ static _osal_inline_ INT32 stp_dbg_compressor_in(P_WCN_COMPRESSOR_T cprs,
 				PUINT8 buf, INT32 len, INT32 is_iobuf, INT32 finish);
 static _osal_inline_ INT32 stp_dbg_compressor_out(P_WCN_COMPRESSOR_T cprs, PPUINT8 pbuf, PINT32 plen);
 static _osal_inline_ INT32 stp_dbg_compressor_reset(P_WCN_COMPRESSOR_T cprs, UINT8 enable, WCN_COMPRESS_ALG_T type);
-static _osal_inline_ INT32 stp_dbg_compressor_enabled(P_WCN_COMPRESSOR_T cprs);
 static _osal_inline_ VOID stp_dbg_dump_data(PUINT8 pBuf, PINT8 title, INT32 len);
 static _osal_inline_ INT32 stp_dbg_dmp_in(MTKSTP_DBG_T *stp_dbg, PINT8 buf, INT32 len);
 static _osal_inline_ INT32 stp_dbg_notify_btm_dmp_wq(MTKSTP_DBG_T *stp_dbg);
@@ -132,7 +132,6 @@ static _osal_inline_ P_STP_DBG_CPUPCR_T stp_dbg_cpupcr_init(VOID);
 static _osal_inline_ VOID stp_dbg_cpupcr_deinit(P_STP_DBG_CPUPCR_T pCpupcr);
 static _osal_inline_ P_STP_DBG_DMAREGS_T stp_dbg_dmaregs_init(VOID);
 static _osal_inline_ VOID stp_dbg_dmaregs_deinit(P_STP_DBG_DMAREGS_T pDmaRegs);
-static INT32 stp_dbg_dump_emi_data(INT32 dump_sink, P_WCN_CORE_DUMP_T dmp);
 
 INT32 __weak mtk_btif_rxd_be_blocked_flag_get(VOID)
 {
@@ -176,6 +175,17 @@ static VOID stp_dbg_core_dump_timeout_handler(ULONG data)
 	STP_DBG_INFO_FUNC(" end\n");
 }
 
+/* stp_dbg_dump_emi_timeout_handler - handler of emi dump timeout
+ * @ data - core dump object's pointer
+ *
+ * No return value
+ */
+static VOID stp_dbg_dump_emi_timeout_handler(ULONG data)
+{
+	STP_DBG_ERR_FUNC("dump emi timeout!\n");
+	mtk_stp_notify_emi_dump_end();
+}
+
 /* stp_dbg_core_dump_init - create core dump sys
  * @ packet_num - core dump packet number unit 32k
  * @ timeout - core dump time out value
@@ -198,6 +208,9 @@ static _osal_inline_ P_WCN_CORE_DUMP_T stp_dbg_core_dump_init(UINT32 timeout)
 	core_dmp->dmp_timer.timeroutHandlerData = (ULONG)core_dmp;
 	osal_timer_create(&core_dmp->dmp_timer);
 	core_dmp->timeout = timeout;
+	core_dmp->dmp_emi_timer.timeoutHandler = stp_dbg_dump_emi_timeout_handler;
+	core_dmp->dmp_emi_timer.timeroutHandlerData = (ULONG)core_dmp;
+	osal_timer_create(&core_dmp->dmp_emi_timer);
 
 	osal_sleepable_lock_init(&core_dmp->dmp_lock);
 
@@ -222,6 +235,7 @@ static _osal_inline_ INT32 stp_dbg_core_dump_deinit(P_WCN_CORE_DUMP_T dmp)
 		}
 		osal_sleepable_lock_deinit(&dmp->dmp_lock);
 		osal_timer_stop(&dmp->dmp_timer);
+		osal_timer_stop(&dmp->dmp_emi_timer);
 		osal_free(dmp);
 		dmp = NULL;
 	}
@@ -472,6 +486,7 @@ static _osal_inline_ INT32 stp_dbg_core_dump_reset(P_WCN_CORE_DUMP_T dmp, UINT32
 	dmp->sm = CORE_DUMP_INIT;
 	dmp->timeout = timeout;
 	osal_timer_stop(&dmp->dmp_timer);
+	osal_timer_stop(&dmp->dmp_emi_timer);
 	osal_memset(dmp->info, 0, STP_CORE_DUMP_INFO_SZ + 1);
 
 	stp_dbg_core_dump_deinit(dmp);
@@ -498,9 +513,6 @@ INT32 stp_dbg_core_dump_flush(INT32 rst, MTK_WCN_BOOL coredump_is_timeout)
 	osal_lock_sleepable_lock(&g_core_dump->dmp_lock);
 	stp_dbg_core_dump_post_handle(g_core_dump);
 	osal_unlock_sleepable_lock(&g_core_dump->dmp_lock);
-	if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC &&
-	    mtk_wcn_stp_coredump_flag_get() == 1)
-		stp_dbg_dump_emi_data(mtk_wcn_stp_coredump_flag_get(), g_core_dump);
 	stp_dbg_core_dump_out(g_core_dump, &pbuf, &len);
 	STP_DBG_INFO_FUNC("buf 0x%zx, len %d\n", (SIZE_T) pbuf, len);
 
@@ -1052,16 +1064,6 @@ static _osal_inline_ INT32 stp_dbg_compressor_reset(P_WCN_COMPRESSOR_T cprs, UIN
 	STP_DBG_INFO_FUNC("OK! compress algorithm %d\n", type);
 
 	return 0;
-}
-
-/* stp_dbg_compressor_enabled - check if compressor is enabled
- * @ cprs - compressor's pointer
- *
- * Retunr 0 if disabled, 1 if enabled.
- */
-static _osal_inline_ INT32 stp_dbg_compressor_enabled(P_WCN_COMPRESSOR_T cprs)
-{
-	return cprs && cprs->f_compress_en;
 }
 
 #if 0
@@ -1647,24 +1649,12 @@ INT32 stp_dbg_aee_send(PUINT8 aucMsg, INT32 len, INT32 cmd)
 #define PKT_MULTIPLIER 1
 #endif
 	INT32 ret = 0;
-	INT32 i;
-	INT32 compressor_l2_size[] = {
-		PKT_MULTIPLIER * (g_core_dump->dmp_num * KBYTES + (gConEmiSize >> 5)), /* EMI dump + coredump */
-		PKT_MULTIPLIER * (gConEmiSize >> 5), /* EMI dump only */
-		PKT_MULTIPLIER * (g_core_dump->dmp_num * KBYTES) /* coredump only */
-	};
 
 	if (g_core_dump->count == 0) {
+		g_core_dump->compressor = stp_dbg_compressor_init("core_dump_compressor",
+								   L1_BUF_SIZE,
+								   PKT_MULTIPLIER*g_core_dump->dmp_num*KBYTES);
 		g_core_dump->count++;
-
-		for (i = 0; i < sizeof(compressor_l2_size)/sizeof(INT32); i++) {
-			g_core_dump->compressor = stp_dbg_compressor_init("core_dump_compressor",
-									  L1_BUF_SIZE,
-									  compressor_l2_size[i]);
-			if (g_core_dump->compressor)
-				break;
-		}
-
 		if (!g_core_dump->compressor) {
 			STP_DBG_ERR_FUNC("create compressor failed!\n");
 			stp_dbg_compressor_deinit(g_core_dump->compressor);
@@ -1673,7 +1663,7 @@ INT32 stp_dbg_aee_send(PUINT8 aucMsg, INT32 len, INT32 cmd)
 	}
 	/* buffered to compressor */
 	ret = stp_dbg_core_dump_in(g_core_dump, aucMsg, len);
-	if (ret == 1)
+	if (ret == 1 && wmt_detect_get_chip_type() == WMT_CHIP_TYPE_COMBO)
 		stp_dbg_core_dump_flush(0, MTK_WCN_BOOL_FALSE);
 
 	return ret;
@@ -2687,73 +2677,64 @@ INT32 stp_dbg_start_coredump_timer(VOID)
 		return -1;
 	}
 
-	return osal_timer_start(&g_core_dump->dmp_timer, STP_CORE_DUMP_TIMEOUT);
+	return osal_timer_modify(&g_core_dump->dmp_timer, STP_CORE_DUMP_TIMEOUT);
 }
 
-static INT32 stp_dbg_dump_emi_data(INT32 dump_sink, P_WCN_CORE_DUMP_T dmp)
+INT32 stp_dbg_start_emi_dump(VOID)
 {
-#define EMI_DUMP_START_TOKEN  "<emicoredump start>"
-#define EMI_DUMP_END_TOKEN    "<emicoredump end>"
-#ifndef LOG_STP_DEBUG_DISABLE
-#define EMI_DUMP_RATIO_TO_32 18
-#else
-#define EMI_DUMP_RATIO_TO_32 1
-#endif
-	UINT8 __iomem *emi_base_addr = NULL;
-	UINT32 emi_offset = 0;
-	INT32 len;
+	INT32 ret = 0;
 
-	if (!mtk_wcn_wlan_emi_mpu_set_protection) {
-		STP_DBG_ERR_FUNC("Skip EMI dump due to missing mtk_wcn_wlan_emi_mpu_set_protection\n");
+	STP_DBG_INFO_FUNC("start emi dump\n");
+	if (!g_core_dump) {
+		STP_DBG_ERR_FUNC("invalid pointer!\n");
 		return -1;
 	}
 
-	emi_base_addr = ioremap_nocache(gConEmiPhyBase, gConEmiSize);
-	if (!emi_base_addr) {
-		STP_DBG_ERR_FUNC("Phys EMI mapping fail\n");
+	if (mtk_wcn_wlan_emi_mpu_set_protection)
+		(*mtk_wcn_wlan_emi_mpu_set_protection)(false);
+	stp_dbg_set_coredump_timer_state(CORE_DUMP_DOING);
+	osal_timer_modify(&g_core_dump->dmp_emi_timer, STP_EMI_DUMP_TIMEOUT);
+	ret = stp_dbg_nl_send_data(EMICOREDUMP_CMD, sizeof(EMICOREDUMP_CMD));
+	if (ret)
+		stp_dbg_stop_emi_dump();
+
+	return ret ? -1 : 0;
+}
+
+INT32 stp_dbg_stop_emi_dump(VOID)
+{
+	STP_DBG_INFO_FUNC("stop emi dump\n");
+	if (!g_core_dump) {
+		STP_DBG_ERR_FUNC("invalid pointer!\n");
+		return -1;
+	}
+
+	if (mtk_wcn_stp_emi_dump_flag_get() == 1) {
+		STP_DBG_ERR_FUNC("stopping emi dump!\n");
 		return -2;
 	}
 
-	/* Check & init compressor in case when coredump flow timed-out without any data */
-	if (!dmp->compressor) {
-		/* Compression ratio for EMI dump is same as coredump packets, ie. about 18:32 (ie. 0.57) */
-		dmp->compressor = stp_dbg_compressor_init("emi_dump_compressor", 32 * 1024,
-							  EMI_DUMP_RATIO_TO_32 * (gConEmiSize >> 5));
-		if (!dmp->compressor) {
-			STP_DBG_ERR_FUNC("create compressor failed!\n");
-			stp_dbg_compressor_deinit(dmp->compressor);
-			iounmap(emi_base_addr);
-			return -3;
-		}
-	}
-
-	/* Check & enable compressor in case when the first coredump packet was aborted due to coredump flow timeout */
-	if (!stp_dbg_compressor_enabled(dmp->compressor))
-		stp_dbg_compressor_reset(dmp->compressor, 1, GZIP);
-
-	STP_DBG_INFO_FUNC("stp_dbg_dump_emi_data start\n");
-	stp_dbg_compressor_in(dmp->compressor, EMI_DUMP_START_TOKEN, sizeof(EMI_DUMP_START_TOKEN) - 1, 0, 0);
-
-	/* Disable wlan EMI MPU */
-	(*mtk_wcn_wlan_emi_mpu_set_protection)(false);
-
-	len = STP_DBG_PAGED_DUMP_BUFFER_SIZE;
-	while (emi_offset < gConEmiSize) {
-		/* No need to reset len to STP_DBG_PAGED_DUMP_BUFFER_SIZE for each iteration,
-		 * because the loop will guarantee to exit when following evaluates to true.
-		 */
-		if (emi_offset + len > gConEmiSize)
-			len = gConEmiSize - emi_offset;
-		stp_dbg_compressor_in(dmp->compressor, emi_base_addr + emi_offset, len, 1, 0);
-		emi_offset += len;
-	}
-
-	/* Enable wlan EMI MPU */
-	(*mtk_wcn_wlan_emi_mpu_set_protection)(true);
-
-	stp_dbg_compressor_in(dmp->compressor, EMI_DUMP_END_TOKEN, sizeof(EMI_DUMP_END_TOKEN) - 1, 0, 0);
-	iounmap(emi_base_addr);
-	STP_DBG_INFO_FUNC("stp_dbg_dump_emi_data end\n");
-
+	mtk_wcn_stp_emi_dump_flag_ctrl(1);
+	if (mtk_wcn_wlan_emi_mpu_set_protection)
+		(*mtk_wcn_wlan_emi_mpu_set_protection)(true);
+	osal_timer_stop(&g_core_dump->dmp_emi_timer);
 	return 0;
+}
+
+INT32 stp_dbg_nl_send_data(const PINT8 buf, INT32 len)
+{
+	PINT8 pdata = NULL;
+	INT32 ret = 0;
+
+	pdata = kmalloc(len+5, GFP_KERNEL);
+	if (!pdata)
+		return -1;
+	pdata[0] = '[';
+	pdata[1] = 'M';
+	pdata[2] = ']';
+	osal_memcpy(&pdata[3], &len, 2);
+	osal_memcpy(&pdata[5], buf, len);
+	ret = stp_dbg_dump_send_retry_handler(pdata, len);
+	kfree(pdata);
+	return ret;
 }
