@@ -257,38 +257,6 @@ static _osal_inline_ INT32 stp_dbg_core_dump_check_end(PUINT8 buf, INT32 len)
 		return 0;
 }
 
-static UINT32 stp_dbg_core_dump_header_init(P_WCN_CORE_DUMP_T dmp)
-{
-	dmp->head_len = 0;
-	if (dmp->p_head == NULL) {
-		dmp->p_head = osal_malloc(MAX_DUMP_HEAD_LEN);
-		if (dmp->p_head == NULL) {
-			STP_DBG_ERR_FUNC("alloc memory for head information failed\n");
-			STP_DBG_ERR_FUNC("this may cause owner dispatch abnormal\n");
-			return -1;
-		}
-	}
-	if (dmp->p_head != NULL)
-		osal_memset(dmp->p_head, 0, MAX_DUMP_HEAD_LEN);
-
-	return 0;
-}
-
-static UINT32 stp_dbg_core_dump_header_append(P_WCN_CORE_DUMP_T dmp, PUINT8 buf, INT32 len)
-{
-	INT32 tmp = 0;
-
-	if ((dmp->p_head != NULL) && (dmp->head_len < (MAX_DUMP_HEAD_LEN - 1))) {
-		tmp =
-		    (dmp->head_len + len) >
-		    (MAX_DUMP_HEAD_LEN - 1) ? (MAX_DUMP_HEAD_LEN - 1 - dmp->head_len) : len;
-		osal_memcpy(dmp->p_head + dmp->head_len, buf, tmp);
-		dmp->head_len += tmp;
-		return tmp;
-	}
-	return 0;
-}
-
 /* stp_dbg_core_dump_in - add a packet to compressor buffer
  * @ dmp - pointer of object
  * @ buf - input buffer
@@ -299,6 +267,8 @@ static UINT32 stp_dbg_core_dump_header_append(P_WCN_CORE_DUMP_T dmp, PUINT8 buf,
 static _osal_inline_ INT32 stp_dbg_core_dump_in(P_WCN_CORE_DUMP_T dmp, PUINT8 buf, INT32 len)
 {
 	INT32 ret = 0;
+	INT32 tmp;
+#define MAX_HEAD_LEN 512
 
 	if ((!dmp) || (!buf)) {
 		STP_DBG_ERR_FUNC("invalid pointer!\n");
@@ -314,7 +284,19 @@ static _osal_inline_ INT32 stp_dbg_core_dump_in(P_WCN_CORE_DUMP_T dmp, PUINT8 bu
 	switch (dmp->sm) {
 	case CORE_DUMP_INIT:
 		stp_dbg_compressor_reset(dmp->compressor, 1, GZIP);
-		stp_dbg_core_dump_header_init(dmp);
+
+		dmp->head_len = 0;
+		if (dmp->p_head == NULL) {
+			dmp->p_head = osal_malloc(MAX_HEAD_LEN);
+			if (dmp->p_head == NULL) {
+				STP_DBG_ERR_FUNC("alloc memory for head information failed\n");
+				STP_DBG_ERR_FUNC("this may cause owner dispatch abnormal\n");
+			}
+		}
+		if (dmp->p_head != NULL) {
+			osal_memset(dmp->p_head, 0, MAX_HEAD_LEN);
+			(dmp->p_head)[MAX_HEAD_LEN - 1] = '\0';
+		}
 		/* show coredump start info on UI */
 		/* osal_dbg_assert_aee("MT662x f/w coredump start", "MT662x firmware coredump start"); */
 #if STP_DBG_AEE_EXP_API
@@ -359,7 +341,13 @@ static _osal_inline_ INT32 stp_dbg_core_dump_in(P_WCN_CORE_DUMP_T dmp, PUINT8 bu
 		break;
 	}
 
-	stp_dbg_core_dump_header_append(dmp, buf, len);
+	if ((dmp->p_head != NULL) && (dmp->head_len < (MAX_HEAD_LEN - 1))) {
+		tmp =
+		    (dmp->head_len + len) >
+		    (MAX_HEAD_LEN - 1) ? (MAX_HEAD_LEN - 1 - dmp->head_len) : len;
+		osal_memcpy(dmp->p_head + dmp->head_len, buf, tmp);
+		dmp->head_len += tmp;
+	}
 	osal_unlock_sleepable_lock(&dmp->dmp_lock);
 
 	return ret;
@@ -572,7 +560,6 @@ static _osal_inline_ INT32 stp_dbg_core_dump_nl(P_WCN_CORE_DUMP_T dmp, PUINT8 bu
 	case CORE_DUMP_INIT:
 		STP_DBG_WARN_FUNC("CONSYS coredump start, please wait up to %d minutes.\n",
 				STP_CORE_DUMP_TIMEOUT/60000);
-		stp_dbg_core_dump_header_init(dmp);
 		/* check end srting */
 		ret = stp_dbg_core_dump_check_end(buf, len);
 		if (ret == 1) {
@@ -608,8 +595,6 @@ static _osal_inline_ INT32 stp_dbg_core_dump_nl(P_WCN_CORE_DUMP_T dmp, PUINT8 bu
 		break;
 	}
 
-	/* Skip nl packet header */
-	stp_dbg_core_dump_header_append(dmp, buf + NL_PKT_HEADER_LEN, len - NL_PKT_HEADER_LEN);
 	osal_unlock_sleepable_lock(&dmp->dmp_lock);
 
 	return ret;
@@ -1694,12 +1679,11 @@ INT32 stp_dbg_dump_num(LONG dmp_num)
 
 static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO_PARSER_TYPE type)
 {
-#define TEMPBUF_LEN		64
 	PINT8 pStr = NULL;
 	PINT8 pDtr = NULL;
 	PINT8 pTemp = NULL;
 	PINT8 pTemp2 = NULL;
-	INT8 tempBuf[TEMPBUF_LEN] = { 0 };
+	INT8 tempBuf[STP_ASSERT_TYPE_SIZE] = { 0 };
 	UINT32 len = 0;
 	LONG res;
 	INT32 ret;
@@ -1790,7 +1774,7 @@ static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO
 		}
 
 		len = pTemp - pDtr;
-		len = (len >= TEMPBUF_LEN) ? TEMPBUF_LEN - 1 : len;
+		len = (len >= STP_ASSERT_TYPE_SIZE) ? STP_ASSERT_TYPE_SIZE - 1 : len;
 		osal_memcpy(&tempBuf[0], pDtr, len);
 		tempBuf[len] = '\0';
 		ret = osal_strtol(tempBuf, 16, &res);
@@ -1821,7 +1805,7 @@ static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO
 		}
 
 		len = pTemp - pDtr;
-		len = (len >= TEMPBUF_LEN) ? TEMPBUF_LEN - 1 : len;
+		len = (len >= STP_ASSERT_TYPE_SIZE) ? STP_ASSERT_TYPE_SIZE - 1 : len;
 		osal_memcpy(&tempBuf[0], pDtr, len);
 		tempBuf[len] = '\0';
 		ret = osal_strtol(tempBuf, 16, &res);
@@ -1850,7 +1834,7 @@ static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO
 		}
 
 		len = pTemp - pDtr;
-		len = (len >= TEMPBUF_LEN) ? TEMPBUF_LEN - 1 : len;
+		len = (len >= STP_ASSERT_TYPE_SIZE) ? STP_ASSERT_TYPE_SIZE - 1 : len;
 		osal_memcpy(&tempBuf[0], pDtr, len);
 		tempBuf[len] = '\0';
 		ret = osal_strtol(tempBuf, 16, &res);
@@ -1879,7 +1863,7 @@ static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO
 		}
 
 		len = pTemp - pDtr;
-		len = (len >= TEMPBUF_LEN) ? TEMPBUF_LEN - 1 : len;
+		len = (len >= STP_ASSERT_TYPE_SIZE) ? STP_ASSERT_TYPE_SIZE - 1 : len;
 		osal_memcpy(&tempBuf[0], pDtr, len);
 		tempBuf[len] = '\0';
 
@@ -1900,7 +1884,7 @@ static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO
 				return -5;
 			}
 			len = pTemp - pDtr;
-			len = (len >= TEMPBUF_LEN) ? TEMPBUF_LEN - 1 : len;
+			len = (len >= STP_ASSERT_TYPE_SIZE) ? STP_ASSERT_TYPE_SIZE - 1 : len;
 			osal_memcpy(&tempBuf[0], pDtr, len);
 			tempBuf[len] = '\0';
 			ret = osal_strtol(tempBuf, 16, &res);

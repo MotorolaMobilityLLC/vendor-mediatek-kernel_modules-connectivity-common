@@ -42,10 +42,6 @@
 #define EMICOREDUMP_CMD "emicoredump"
 #define FAKECOREDUMPEND "coredump end - fake"
 
-#define MAX_DUMP_HEAD_LEN 512
-/* netlink header packet length is 5 "[M](3 bytes) + length(2 bypes)" */
-#define NL_PKT_HEADER_LEN 5
-
 #define PFX_STP_DBG                      "[STPDbg]"
 #define STP_DBG_LOG_LOUD                 4
 #define STP_DBG_LOG_DBG                  3
@@ -202,16 +198,9 @@ typedef struct mtkstp_dbg_t {
 } MTKSTP_DBG_T;
 
 /* extern void aed_combo_exception(const int *, int, const int *, int, const char *); */
-#if WMT_DBG_SUPPORT
+
 #define STP_CORE_DUMP_TIMEOUT (1*60*1000)	/* default 1 minutes */
-#else
-#define STP_CORE_DUMP_TIMEOUT (10*1000)		/* user load default 10 seconds */
-#endif
-#if WMT_DBG_SUPPORT
 #define STP_EMI_DUMP_TIMEOUT  (30*1000)
-#else
-#define STP_EMI_DUMP_TIMEOUT  (5*1000)
-#endif
 #define STP_OJB_NAME_SZ 20
 #define STP_CORE_DUMP_INFO_SZ 500
 #define STP_CORE_DUMP_INIT_SIZE 512
@@ -313,7 +302,7 @@ typedef enum _ENUM_DMA_ISSUE_TYPE_ {
 #define STP_PATCH_BRANCH_SZIE 8
 #define STP_ASSERT_INFO_SIZE 164
 #define STP_DBG_ROM_VER_SIZE 4
-#define STP_ASSERT_TYPE_SIZE 32
+#define STP_ASSERT_TYPE_SIZE 64
 
 typedef struct stp_dbg_host_assert_t {
 	UINT32 drv_type;
