@@ -45,7 +45,7 @@
 #include "mtk_wcn_consys_hw.h"
 #include "wmt_ic.h"
 
-#if CONSYS_EMI_MPU_SETTING
+#ifdef CONFIG_MTK_EMI
 #include <mt_emi_api.h>
 #endif
 
@@ -60,9 +60,7 @@
 
 #include <linux/of_reserved_mem.h>
 
-#if CONSYS_CLOCK_BUF_CTRL
 #include <mtk_clkbuf_ctl.h>
-#endif
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -146,6 +144,7 @@ EMI_CTRL_STATE_OFFSET mtk_wcn_emi_state_off = {
 };
 
 CONSYS_EMI_ADDR_INFO mtk_wcn_emi_addr_info = {
+	.emi_phy_addr = CONSYS_EMI_FW_PHY_BASE,
 	.paged_trace_off = CONSYS_EMI_PAGED_TRACE_OFFSET,
 	.paged_dump_off = CONSYS_EMI_PAGED_DUMP_OFFSET,
 	.full_dump_off = CONSYS_EMI_FULL_DUMP_OFFSET,
@@ -400,6 +399,11 @@ static INT32 consys_co_clock_type(VOID)
 
 static INT32 consys_clock_buffer_ctrl(MTK_WCN_BOOL enable)
 {
+	if (enable)
+		KERNEL_clk_buf_ctrl(CLK_BUF_CONN, true);	/*open XO_WCN*/
+	else
+		KERNEL_clk_buf_ctrl(CLK_BUF_CONN, false);	/*close XO_WCN*/
+
 	return 0;
 }
 
@@ -882,15 +886,15 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 
 static INT32 consys_emi_mpu_set_region_protection(VOID)
 {
-#if CONSYS_EMI_MPU_SETTING
+#ifdef CONFIG_MTK_EMI
 	struct emi_region_info_t region_info;
 
 	/*set MPU for EMI share Memory */
 	WMT_PLAT_INFO_FUNC("setting MPU for EMI share memory\n");
 
-	region_info.start = gConEmiPhyBase + SZ_1M / 2;
+	region_info.start = gConEmiPhyBase;
 	region_info.end = gConEmiPhyBase + gConEmiSize - 1;
-	region_info.region = 24;
+	region_info.region = 25;
 	SET_ACCESS_PERMISSION(region_info.apc, LOCK,
 			FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
 			FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
@@ -904,7 +908,7 @@ static UINT32 consys_emi_set_remapping_reg(VOID)
 {
 	UINT32 addrPhy = 0;
 
-	mtk_wcn_emi_addr_info.emi_phy_addr = gConEmiPhyBase;
+	mtk_wcn_emi_addr_info.emi_ap_phy_addr = gConEmiPhyBase;
 	mtk_wcn_emi_addr_info.emi_size = gConEmiSize;
 
 	/*consys to ap emi remapping register:10001380, cal remapping address */

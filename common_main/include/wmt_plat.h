@@ -258,6 +258,7 @@ typedef struct _BGF_IRQ_BALANCE_ {
 
 typedef struct _CONSYS_EMI_ADDR_INFO_ {
 	UINT32 emi_phy_addr;
+	UINT32 emi_ap_phy_addr;
 	UINT32 paged_trace_off;
 	UINT32 paged_dump_off;
 	UINT32 full_dump_off;
