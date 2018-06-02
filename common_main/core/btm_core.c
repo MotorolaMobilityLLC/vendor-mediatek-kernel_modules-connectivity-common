@@ -20,7 +20,6 @@
 #include "btm_core.h"
 #include "wmt_plat.h"
 #include "wmt_step.h"
-#include "wmt_detect.h"
 #include <linux/kthread.h>
 
 #define PFX_BTM                         "[STP-BTM] "
@@ -73,16 +72,9 @@ const PINT8 g_btm_op_name[] = {
 	"STP_OPID_BTM_RST",
 	"STP_OPID_BTM_DBG_DUMP",
 	"STP_OPID_BTM_DUMP_TIMEOUT",
-	"STP_OPID_BTM_POLL_CPUPCR",
-	"STP_OPID_BTM_PAGED_DUMP",
-	"STP_OPID_BTM_FULL_DUMP",
-	"STP_OPID_BTM_PAGED_TRACE",
-	"STP_OPID_BTM_FORCE_FW_ASSERT",
 #if CFG_WMT_LTE_COEX_HANDLING
 	"STP_OPID_BTM_WMT_LTE_COEX",
 #endif
-	"STP_OPID_BTM_ASSERT_TIMEOUT",
-	"STP_OPID_BTM_EMI_DUMP_END",
 	"STP_OPID_BTM_EXIT"
 };
 
@@ -95,8 +87,7 @@ static VOID stp_btm_trigger_assert_timeout_handler(ULONG data)
 static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 {
 	INT32 ret = -1;
-	/* core dump target, 0: aee; 1: netlink */
-	INT32 dump_sink = mtk_wcn_stp_coredump_flag_get();
+	INT32 dump_sink = 1;	/* core dump target, 0: aee; 1: netlink */
 
 	if (pStpOp == NULL)
 		return -1;
@@ -109,16 +100,13 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 
 		/*tx timeout retry */
 	case STP_OPID_BTM_RETRY:
-		if (mtk_wcn_stp_coredump_start_get() == 0)
-			stp_do_tx_timeout();
+		stp_do_tx_timeout();
 		ret = 0;
 		break;
 
 		/*whole chip reset */
 	case STP_OPID_BTM_RST:
 		STP_BTM_INFO_FUNC("whole chip reset start!\n");
-		if (mtk_wcn_stp_coredump_flag_get() == 1 && wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC)
-			stp_dbg_core_dump_flush(0, MTK_WCN_BOOL_FALSE);
 		STP_BTM_INFO_FUNC("....+\n");
 		WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_BEFORE_CHIP_RESET);
 		if (stp_btm->wmt_notify) {
@@ -137,23 +125,35 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 		/*Notify the wmt to get dump data */
 		STP_BTM_DBG_FUNC("wmt dmp notification\n");
 		set_user_nice(stp_btm->BTMd.pThread, -20);
-		ret = stp_dbg_core_dump(dump_sink);
+		dump_sink = mtk_wcn_stp_coredump_flag_get();
+		stp_dbg_core_dump(dump_sink);
 		set_user_nice(stp_btm->BTMd.pThread, 0);
 		break;
 
 	case STP_OPID_BTM_DUMP_TIMEOUT:
-		/* append fake coredump end message */
-		if (dump_sink == 2 && wmt_detect_get_chip_type() == WMT_CHIP_TYPE_COMBO) {
+#define FAKECOREDUMPEND "coredump end - fake"
+		dump_sink = mtk_wcn_stp_coredump_flag_get();
+		if (dump_sink == 1)
+			stp_dbg_aee_send(FAKECOREDUMPEND, osal_sizeof(FAKECOREDUMPEND), 0);
+		else if (dump_sink == 2) {
+			UINT8 tmp[32];
+
+			tmp[0] = '[';
+			tmp[1] = 'M';
+			tmp[2] = ']';
+			tmp[3] = (UINT8)osal_sizeof(FAKECOREDUMPEND);
+			tmp[4] = 0;
+			osal_memcpy(&tmp[5], FAKECOREDUMPEND, osal_sizeof(FAKECOREDUMPEND));
+			/* stp_dump case, append fake coredump end message */
 			stp_dbg_set_coredump_timer_state(CORE_DUMP_DOING);
 			STP_BTM_WARN_FUNC("generate fake coredump message\n");
-			stp_dbg_nl_send_data(FAKECOREDUMPEND, osal_sizeof(FAKECOREDUMPEND));
+			stp_dbg_dump_send_retry_handler((PINT8)&tmp, (INT32)osal_sizeof(FAKECOREDUMPEND)+5);
 		}
+
 		stp_dbg_poll_cpupcr(5, 1, 1);
-		if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_COMBO) {
-			/* Flush dump data, and reset compressor */
-			STP_BTM_INFO_FUNC("Flush dump data\n");
-			stp_dbg_core_dump_flush(0, MTK_WCN_BOOL_TRUE);
-		}
+		/* Flush dump data, and reset compressor */
+		STP_BTM_INFO_FUNC("Flush dump data\n");
+		stp_dbg_core_dump_flush(0, MTK_WCN_BOOL_TRUE);
 		ret = mtk_wcn_stp_coredump_timeout_handle();
 		break;
 #if CFG_WMT_LTE_COEX_HANDLING
@@ -163,12 +163,6 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 #endif
 	case STP_OPID_BTM_ASSERT_TIMEOUT:
 		mtk_wcn_stp_assert_timeout_handle();
-		ret = 0;
-		break;
-	case STP_OPID_BTM_EMI_DUMP_END:
-		STP_BTM_INFO_FUNC("emi dump end notification.\n");
-		stp_dbg_stop_emi_dump();
-		mtk_wcn_stp_ctx_restore();
 		ret = 0;
 		break;
 	default:
@@ -222,8 +216,7 @@ static INT32 _stp_btm_put_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP_Q pOpQ, P_OSAL_OP 
 			ret = -1;
 	} else if (pOp->op.opId == STP_OPID_BTM_RST ||
 		   pOp->op.opId == STP_OPID_BTM_ASSERT_TIMEOUT ||
-		   pOp->op.opId == STP_OPID_BTM_DUMP_TIMEOUT ||
-		   pOp->op.opId == STP_OPID_BTM_EMI_DUMP_END) {
+		   pOp->op.opId == STP_OPID_BTM_DUMP_TIMEOUT) {
 		if (!RB_FULL(pOpQ)) {
 			RB_PUT(pOpQ, pOp);
 			STP_BTM_DBG_FUNC("RB_PUT: 0x%x\n", pOp->op.opId);
@@ -265,15 +258,16 @@ static INT32 _stp_btm_put_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP_Q pOpQ, P_OSAL_OP 
 			ret = -1;
 
 	}
-	osal_unlock_unsleepable_lock(&(stp_btm->wq_spinlock));
 
 	if (ret) {
 		STP_BTM_DBG_FUNC("RB_FULL(0x%p) %d ,rFreeOpQ = %p, rActiveOpQ = %p\n",
 			pOpQ, RB_COUNT(pOpQ), &stp_btm->rFreeOpQ, &stp_btm->rActiveOpQ);
-		return 0;
+		osal_opq_dump_locked("FreeOpQ", &stp_btm->rFreeOpQ);
+		osal_opq_dump_locked("ActiveOpQ", &stp_btm->rActiveOpQ);
 	}
-	/* STP_BTM_WARN_FUNC("RB_COUNT = %d\n",RB_COUNT(pOpQ)); */
-	return 1;
+
+	osal_unlock_unsleepable_lock(&(stp_btm->wq_spinlock));
+	return ret ? 0 : 1;
 }
 
 P_OSAL_OP _stp_btm_get_free_op(MTKSTP_BTM_T *stp_btm)
@@ -317,6 +311,7 @@ INT32 _stp_btm_put_act_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP pOp)
 		bRet = _stp_btm_put_op(stp_btm, &stp_btm->rActiveOpQ, pOp);
 		if (bRet == 0) {
 			STP_BTM_DBG_FUNC("put active queue fail\n");
+			atomic_dec(&pOp->ref_count);
 			break;
 		}
 		/* wake up wmtd */
@@ -521,17 +516,6 @@ static inline INT32 _stp_btm_notify_wmt_dmp_wq(MTKSTP_BTM_T *stp_btm)
 	return retval;
 }
 
-static inline INT32 _stp_btm_notify_emi_dump_end_wq(MTKSTP_BTM_T *stp_btm)
-{
-	INT32 retval;
-
-	if (!stp_btm)
-		return STP_BTM_OPERATION_FAIL;
-
-	retval = _stp_btm_dump_type(stp_btm, STP_OPID_BTM_EMI_DUMP_END);
-	return retval;
-}
-
 INT32 stp_btm_notify_wmt_rst_wq(MTKSTP_BTM_T *stp_btm)
 {
 	return _stp_btm_notify_wmt_rst_wq(stp_btm);
@@ -555,11 +539,6 @@ INT32 stp_btm_notify_assert_timeout_wq(MTKSTP_BTM_T *stp_btm)
 INT32 stp_btm_notify_wmt_dmp_wq(MTKSTP_BTM_T *stp_btm)
 {
 	return _stp_btm_notify_wmt_dmp_wq(stp_btm);
-}
-
-INT32 stp_btm_notify_emi_dump_end(MTKSTP_BTM_T *stp_btm)
-{
-	return _stp_btm_notify_emi_dump_end_wq(stp_btm);
 }
 
 INT32 stp_notify_btm_poll_cpupcr_ctrl(UINT32 en)

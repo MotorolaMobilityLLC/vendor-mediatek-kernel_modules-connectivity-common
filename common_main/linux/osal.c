@@ -1462,7 +1462,7 @@ VOID osal_set_op_result(P_OSAL_OP pOp, INT32 result)
 
 }
 
-VOID osal_opq_dump(const char *qName, P_OSAL_OP_Q pOpQ)
+static VOID _osal_opq_dump(const char *qName, P_OSAL_OP_Q pOpQ)
 {
 	/* Line format:
 	 * [LogicalIdx(PhysicalIdx)]Address:OpId(Ref)(Result)-Info-OpData0,OpData1,OpData2,OpData3,OpData5_
@@ -1485,15 +1485,8 @@ VOID osal_opq_dump(const char *qName, P_OSAL_OP_Q pOpQ)
 	UINT32 opDataIdx;
 	UINT32 idxInBuf;
 	int printed;
-	int err;
 	P_OSAL_OP op;
 	char buf[OPQ_DUMP_LINE_BUF_SIZE];
-
-	err = osal_lock_sleepable_lock(&pOpQ->sLock);
-	if (err) {
-		pr_err("Failed to lock queue (%d)\n", err);
-		return;
-	}
 
 	rd = pOpQ->read;
 	wt = pOpQ->write;
@@ -1531,7 +1524,26 @@ VOID osal_opq_dump(const char *qName, P_OSAL_OP_Q pOpQ)
 		rd++;
 		idx++;
 	}
+}
+
+VOID osal_opq_dump(const char *qName, P_OSAL_OP_Q pOpQ)
+{
+	int err;
+
+	err = osal_lock_sleepable_lock(&pOpQ->sLock);
+	if (err) {
+		pr_info("Failed to lock queue (%d)\n", err);
+		return;
+	}
+
+	_osal_opq_dump(qName, pOpQ);
+
 	osal_unlock_sleepable_lock(&pOpQ->sLock);
+}
+
+VOID osal_opq_dump_locked(const char *qName, P_OSAL_OP_Q pOpQ)
+{
+	_osal_opq_dump(qName, pOpQ);
 }
 
 MTK_WCN_BOOL osal_opq_has_op(P_OSAL_OP_Q pOpQ, P_OSAL_OP pOp)
@@ -1555,8 +1567,6 @@ MTK_WCN_BOOL osal_opq_has_op(P_OSAL_OP_Q pOpQ, P_OSAL_OP pOp)
 VOID osal_op_history_init(struct osal_op_history *log_history, INT32 queue_size)
 {
 	int size = queue_size * sizeof(struct osal_op_history_entry);
-
-	spin_lock_init(&(log_history->lock));
 
 	log_history->queue = kzalloc(size, GFP_ATOMIC);
 	if (log_history->queue == NULL)
