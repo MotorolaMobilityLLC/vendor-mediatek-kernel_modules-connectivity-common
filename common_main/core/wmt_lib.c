@@ -127,8 +127,7 @@ static INT32 wmt_lib_pin_ctrl(WMT_IC_PIN_ID id, WMT_IC_PIN_STATE stat, UINT32 fl
 static MTK_WCN_BOOL wmt_lib_hw_state_show(VOID);
 static VOID wmt_lib_utc_sync_timeout_handler(ULONG data);
 static VOID wmt_lib_utc_sync_worker_handler(struct work_struct *work);
-static VOID wmt_lib_wmtd_worker_thread_timeout_handler(ULONG data);
-static VOID wmt_lib_wmtd_worker_thread_work_handler(struct work_struct *work);
+static VOID wmt_lib_worker_timeout_handler(ULONG data);
 
 /*******************************************************************************
 *                              F U N C T I O N S
@@ -241,11 +240,10 @@ INT32 wmt_lib_init(VOID)
 	}
 
 	/* create worker timer */
-	gDevWmt.worker_timer.timeoutHandler = wmt_lib_wmtd_worker_thread_timeout_handler;
+	gDevWmt.worker_timer.timeoutHandler = wmt_lib_worker_timeout_handler;
 	gDevWmt.worker_timer.timeroutHandlerData = 0;
 	osal_timer_create(&gDevWmt.worker_timer);
 	pWorkerThread = &gDevWmt.worker_thread;
-	INIT_WORK(&pDevWmt->wmtd_worker_thread_work, wmt_lib_wmtd_worker_thread_work_handler);
 
 	/* Create wmtd_worker thread */
 	osal_strncpy(pWorkerThread->threadName, "mtk_wmtd_worker", sizeof(pWorkerThread->threadName));
@@ -1181,12 +1179,7 @@ static INT32 met_thread(void *pvData)
 	return 0;
 };
 
-static VOID wmt_lib_wmtd_worker_thread_timeout_handler(ULONG data)
-{
-	schedule_work(&gDevWmt.wmtd_worker_thread_work);
-}
-
-static VOID wmt_lib_wmtd_worker_thread_work_handler(struct work_struct *work)
+static VOID wmt_lib_worker_timeout_handler(ULONG data)
 {
 	PUINT8 pbuf = NULL;
 	INT32 len = 0;
@@ -2578,6 +2571,16 @@ INT32 wmt_lib_fdb_ctrl(struct wmt_fdb_ctrl *fdb_ctrl)
 {
 	return mtk_wcn_consys_reg_ctrl(fdb_ctrl->is_write, fdb_ctrl->base_index, fdb_ctrl->offset,
 			&(fdb_ctrl->value));
+}
+
+VOID wmt_lib_set_ext_ldo(UINT32 flag)
+{
+	gDevWmt.ext_ldo_flag = flag;
+}
+
+UINT32 wmt_lib_get_ext_ldo(VOID)
+{
+	return gDevWmt.ext_ldo_flag;
 }
 
 static VOID wmt_lib_utc_sync_timeout_handler(ULONG data)
