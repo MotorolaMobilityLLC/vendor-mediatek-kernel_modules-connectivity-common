@@ -33,7 +33,9 @@ static phys_addr_t gPhyAddrEmiBase;
 static void __iomem *gVirAddrEmiLogBase;
 static int gConn2ApIrqId;
 static void *gIrqRegBaseVirAddr;
+#ifdef PRINT_FW_LOG
 static void *gLog_data;
+#endif
 static struct work_struct gLogDataWorker;
 
 static CONNLOG_EVENT_CB event_callback_table[CONNLOG_TYPE_END] = { 0x0 };
@@ -76,7 +78,7 @@ static struct connlog_offset emi_offset_table[CONNLOG_TYPE_END] = {
 
 
 static char *type_to_title[CONNLOG_TYPE_END] = {
-	"wifi", "bt", "gps", "mcu"
+	"wifi_fw", "bt_fw", "gps_fw", "mcu_fw"
 };
 
 #ifdef EMI_TO_CACHE_SUPPORT
@@ -106,8 +108,9 @@ static void connlog_set_ring_ready(void);
 static void connlog_buffer_init(int conn_type);
 #ifdef EMI_TO_CACHE_SUPPORT
 static void connlog_ring_emi_to_cache(int conn_type);
-#else
+#endif
 static void connlog_dump_buf(const char *title, const char *buf, ssize_t sz);
+#ifdef PRINT_FW_LOG
 static void connlog_ring_print(int conn_type);
 #endif
 static void connlog_event_set(int conn_type);
@@ -251,7 +254,7 @@ static void connlog_ring_emi_to_cache(int conn_type)
 		count++;
 	}
 }
-#else
+#endif
 /* output format
  * xx xx xx xx xx xx xx xx xx xx xx xx xx xx xx xx ................
  * 3 digits hex * 16 + 16 single char + 1 NULL terminate = 64+1 bytes
@@ -288,6 +291,48 @@ static void connlog_dump_buf(const char *title, const char *buf, ssize_t sz)
 		}
 	}
 }
+
+#ifdef PRINT_FW_LOG
+#define LOG_MAX_LEN 1024
+#define LOG_HEAD_LENG 16
+#define TIMESYNC_LENG 40
+const char log_head[] = {0x62, 0x00, 0x00, 0x00};
+const char timesync_head[] = {0x55, 0x00, 0x25, 0x62};
+static char log_line[LOG_MAX_LEN];
+static void connlog_fw_log_parser(int conn_type, const char *buf, ssize_t sz)
+{
+	int len = 0;
+	int buf_len = 0;
+	unsigned int utc_s = 0;
+	unsigned int utc_us = 0;
+
+	while (sz) {
+		if (*buf == log_head[0]) {
+			if (!memcmp(buf, log_head, sizeof(log_head))) {
+				buf_len = buf[14] + (buf[15] << 8);
+				if (len > LOG_MAX_LEN)
+					buf_len = LOG_MAX_LEN;
+				memset(log_line, 0, LOG_MAX_LEN);
+				memcpy(log_line, buf + LOG_HEAD_LENG, buf_len > LOG_MAX_LEN ? LOG_MAX_LEN : buf_len);
+				pr_info("%s: %s\n", type_to_title[conn_type], log_line);
+				sz -= (LOG_HEAD_LENG + len);
+				buf += (LOG_HEAD_LENG + len);
+				continue;
+			}
+		} else if (*buf == timesync_head[0]) {
+			if (!memcmp(buf, timesync_head, sizeof(timesync_head))) {
+				memcpy(&utc_s, buf + 32, sizeof(utc_s));
+				memcpy(&utc_us, buf + 36, sizeof(utc_us));
+				pr_info("%s: timesync :  %u.%u\n", type_to_title[conn_type], utc_s, utc_us);
+				sz -= TIMESYNC_LENG;
+				buf += TIMESYNC_LENG;
+				continue;
+			}
+		}
+		sz--;
+		buf++;
+	}
+}
 /*****************************************************************************
 * FUNCTION
 *  connlog_ring_print
@@ -315,10 +360,12 @@ static void connlog_ring_print(int conn_type)
 
 	RING_READ_ALL_FOR_EACH(ring_seg, ring) {
 		memcpy_fromio(gLog_data + written, ring_seg.ring_pt, ring_seg.sz);
-		connlog_dump_buf("fw_log", gLog_data + written, ring_seg.sz);
+		/* connlog_dump_buf("fw_log", gLog_data + written, ring_seg.sz); */
 		buf_size -= ring_seg.sz;
 		written += ring_seg.sz;
 	}
+	if (conn_type != CONNLOG_TYPE_BT)
+		connlog_fw_log_parser(conn_type, gLog_data, written);
 }
 #endif
 /*****************************************************************************
@@ -581,7 +628,9 @@ static int connlog_ring_buffer_init(void)
 	connlog_buffer_init(CONNLOG_TYPE_BT);
 	connlog_buffer_init(CONNLOG_TYPE_GPS);
 	connlog_buffer_init(CONNLOG_TYPE_MCU);
+#ifdef PRINT_FW_LOG
 	gLog_data = connlog_cache_allocate(CONNLOG_EMI_BT_SIZE);
+#endif
 	connlog_set_ring_ready();
 
 	return 0;
@@ -607,8 +656,10 @@ static void connlog_ring_buffer_deinit(void)
 		connlog_buffer_table[i].cache_base = NULL;
 	}
 #endif
+#ifdef PRINT_FW_LOG
 	kfree(gLog_data);
 	gLog_data = NULL;
+#endif
 }
 
 /*****************************************************************************
