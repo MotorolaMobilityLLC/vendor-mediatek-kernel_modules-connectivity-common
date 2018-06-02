@@ -428,6 +428,16 @@ MTK_WCN_BOOL mtk_wcn_wmt_assert(ENUM_WMTDRV_TYPE_T type, UINT32 reason)
 }
 EXPORT_SYMBOL(mtk_wcn_wmt_assert);
 
+MTK_WCN_BOOL mtk_wcn_wmt_assert_keyword(ENUM_WMTDRV_TYPE_T type, PUINT8 keyword)
+{
+	MTK_WCN_BOOL bRet;
+
+	bRet = wmt_lib_trigger_assert_keyword(type, 0, keyword);
+
+	return bRet == 0 ? MTK_WCN_BOOL_TRUE : MTK_WCN_BOOL_FALSE;
+}
+EXPORT_SYMBOL(mtk_wcn_wmt_assert_keyword);
+
 /*
 *	ctrlId: get flash patch version opId or flash patch download opId
 *	pBuf: pointer to flash patch
