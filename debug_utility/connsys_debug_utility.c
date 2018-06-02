@@ -16,7 +16,6 @@
 ********************************************************************************
 */
 #include <linux/interrupt.h>
-#include <linux/spinlock.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/workqueue.h>
@@ -30,22 +29,14 @@
 *                             D A T A   T Y P E S
 ********************************************************************************
 */
-struct connlog_dev {
-	phys_addr_t phyAddrEmiBase;
-	void __iomem *virAddrEmiLogBase;
-	int conn2ApIrqId;
-	void *irqRegBaseVirAddr;
-	bool eirqOn;
-	spinlock_t irq_lock;
-	unsigned long flags;
-	struct timer_list workTimer;
-	struct work_struct logDataWorker;
+static phys_addr_t gPhyAddrEmiBase;
+static void __iomem *gVirAddrEmiLogBase;
+static int gConn2ApIrqId;
+static void *gIrqRegBaseVirAddr;
 #ifdef PRINT_FW_LOG
-	void *log_data;
+static void *gLog_data;
 #endif
-
-};
-static struct connlog_dev gDev;
+static struct work_struct gLogDataWorker;
 
 static CONNLOG_EVENT_CB event_callback_table[CONNLOG_TYPE_END] = { 0x0 };
 
@@ -120,7 +111,6 @@ static void connlog_ring_print(int conn_type);
 #endif
 static void connlog_event_set(int conn_type);
 static void connlog_log_data_handler(struct work_struct *work);
-static void work_timer_handler(unsigned long data);
 
 /*******************************************************************************
 *                              F U N C T I O N S
@@ -153,7 +143,7 @@ void *connlog_cache_allocate(size_t size)
 * FUNCTION
 *  connlog_set_ring_ready
 * DESCRIPTION
-*  set reserved bit [63:56] be MTK36500 to indicate that init is ready.
+*  set reserved bit be EMIFWLOG to indicate that init is ready.
 * PARAMETERS
 *  void
 * RETURNS
@@ -161,9 +151,9 @@ void *connlog_cache_allocate(size_t size)
 *****************************************************************************/
 static void connlog_set_ring_ready(void)
 {
-	const char ready_str[] = "MTK36500";
+	const char ready_str[] = "EMIFWLOG";
 
-	memcpy_toio(gDev.virAddrEmiLogBase + CONNLOG_READY_PATTERN_BASE,
+	memcpy_toio(gVirAddrEmiLogBase + CONNLOG_READY_PATTERN_BASE,
 		ready_str, CONNLOG_READY_PATTERN_BASE_SIZE);
 }
 
@@ -181,10 +171,10 @@ static void connlog_buffer_init(int conn_type)
 {
 	/* init ring emi */
 	ring_init(
-		gDev.virAddrEmiLogBase + emi_offset_table[conn_type].emi_buf,
+		gVirAddrEmiLogBase + emi_offset_table[conn_type].emi_buf,
 		emi_offset_table[conn_type].emi_size,
-		gDev.virAddrEmiLogBase + emi_offset_table[conn_type].emi_read,
-		gDev.virAddrEmiLogBase + emi_offset_table[conn_type].emi_write,
+		gVirAddrEmiLogBase + emi_offset_table[conn_type].emi_read,
+		gVirAddrEmiLogBase + emi_offset_table[conn_type].emi_write,
 		&connlog_buffer_table[conn_type].ring_emi
 	);
 
@@ -377,7 +367,7 @@ static void connlog_ring_print(int conn_type)
 		return;
 	}
 	buf_size = ring_seg.remain;
-	memset(gDev.log_data, 0, CONNLOG_EMI_BT_SIZE);
+	memset(gLog_data, 0, CONNLOG_EMI_BT_SIZE);
 
 	/* Check ring buffer memory. Dump EMI data if it's corruption. */
 	if (EMI_READ32(ring->read) > emi_offset_table[conn_type].emi_size ||
@@ -394,13 +384,13 @@ static void connlog_ring_print(int conn_type)
 	}
 
 	RING_READ_ALL_FOR_EACH(ring_seg, ring) {
-		memcpy_fromio(gDev.log_data + written, ring_seg.ring_pt, ring_seg.sz);
-		/* connlog_dump_buf("fw_log", gDev.log_data + written, ring_seg.sz); */
+		memcpy_fromio(gLog_data + written, ring_seg.ring_pt, ring_seg.sz);
+		/* connlog_dump_buf("fw_log", gLog_data + written, ring_seg.sz); */
 		buf_size -= ring_seg.sz;
 		written += ring_seg.sz;
 	}
 	if (conn_type != CONNLOG_TYPE_BT)
-		connlog_fw_log_parser(conn_type, gDev.log_data, written);
+		connlog_fw_log_parser(conn_type, gLog_data, written);
 }
 #endif
 /*****************************************************************************
@@ -417,23 +407,6 @@ static void connlog_event_set(int conn_type)
 {
 	if ((conn_type < CONNLOG_TYPE_END) && (event_callback_table[conn_type] != 0x0))
 		(*event_callback_table[conn_type])();
-}
-
-/*****************************************************************************
-* FUNCTION
-*  work_timer_handler
-* DESCRIPTION
-*  IRQ is still on, do schedule_work again
-* PARAMETERS
-*  data      [IN]        input data
-* RETURNS
-*  void
-*****************************************************************************/
-static void work_timer_handler(unsigned long data)
-{
-	spin_lock_irqsave(&gDev.irq_lock, gDev.flags);
-	gDev.eirqOn = !schedule_work(&gDev.logDataWorker);
-	spin_unlock_irqrestore(&gDev.irq_lock, gDev.flags);
 }
 
 /*****************************************************************************
@@ -468,12 +441,8 @@ static void connlog_log_data_handler(struct work_struct *work)
 		}
 	} while (ret);
 
-	spin_lock_irqsave(&gDev.irq_lock, gDev.flags);
-	if (gDev.eirqOn) {
-		gDev.workTimer.expires = jiffies + 1;
-		add_timer(&gDev.workTimer);
-	}
-	spin_unlock_irqrestore(&gDev.irq_lock, gDev.flags);
+	connlog_clear_irq_reg();
+	enable_irq(gConn2ApIrqId);
 }
 
 /*****************************************************************************
@@ -488,13 +457,12 @@ static void connlog_log_data_handler(struct work_struct *work)
 *****************************************************************************/
 static void connlog_clear_irq_reg(void)
 {
-	if (gDev.irqRegBaseVirAddr) {
-		pr_info("BF: CONSYS IRQ CR VALUE(0x%x)\n", EMI_READ32(gDev.irqRegBaseVirAddr));
-		/* 18002150[27:24] */
-		EMI_WRITE32(gDev.irqRegBaseVirAddr, EMI_READ32(gDev.irqRegBaseVirAddr) & (!0xF000000));
-		pr_info("AF: CONSYS IRQ CR VALUE(0x%x)\n", EMI_READ32(gDev.irqRegBaseVirAddr));
+	if (gIrqRegBaseVirAddr) {
+		pr_info("BF: CONSYS IRQ CR VALUE(0x%x)\n", EMI_READ32(gIrqRegBaseVirAddr));
+		EMI_WRITE32(gIrqRegBaseVirAddr, EMI_READ32(gIrqRegBaseVirAddr) & (!0xF000000)); /* 18002150[27:24] */
+		pr_info("AF: CONSYS IRQ CR VALUE(0x%x)\n", EMI_READ32(gIrqRegBaseVirAddr));
 	} else
-		pr_err("irqRegBaseVirAddr is NULL!\n");
+		pr_err("MCU register ioremap fail!\n");
 }
 
 /*****************************************************************************
@@ -511,10 +479,8 @@ static void connlog_clear_irq_reg(void)
 *****************************************************************************/
 static irqreturn_t connlog_eirq_isr(int irq, void *arg)
 {
-	connlog_clear_irq_reg();
-	spin_lock_irqsave(&gDev.irq_lock, gDev.flags);
-	gDev.eirqOn = !schedule_work(&gDev.logDataWorker);
-	spin_unlock_irqrestore(&gDev.irq_lock, gDev.flags);
+	schedule_work(&gLogDataWorker);
+	disable_irq_nosync(gConn2ApIrqId);
 	return IRQ_HANDLED;
 }
 
@@ -533,17 +499,17 @@ static int connlog_eirq_init(void *irq_reg_base, unsigned int irq_id, unsigned i
 {
 	int iret = 0;
 
-	if (gDev.conn2ApIrqId == 0) {
-		gDev.conn2ApIrqId = irq_id;
-		gDev.irqRegBaseVirAddr = irq_reg_base;
+	if (gConn2ApIrqId == 0) {
+		gConn2ApIrqId = irq_id;
+		gIrqRegBaseVirAddr = irq_reg_base;
 	} else {
 		pr_warn("IRQ has been initialized\n");
 		return -1;
 	}
 
-	iret = request_irq(gDev.conn2ApIrqId, connlog_eirq_isr, irq_flag, "CONN_LOG_IRQ", NULL);
+	iret = request_irq(gConn2ApIrqId, connlog_eirq_isr, irq_flag, "CONN_LOG_IRQ", NULL);
 	if (iret)
-		pr_err("EINT IRQ(%d) NOT AVAILABLE!!\n", gDev.conn2ApIrqId);
+		pr_err("EINT IRQ(%d) NOT AVAILABLE!!\n", gConn2ApIrqId);
 	return iret;
 }
 
@@ -559,7 +525,7 @@ static int connlog_eirq_init(void *irq_reg_base, unsigned int irq_id, unsigned i
 *****************************************************************************/
 static void connlog_eirq_deinit(void)
 {
-	free_irq(gDev.conn2ApIrqId, NULL);
+	free_irq(gConn2ApIrqId, NULL);
 }
 
 /*****************************************************************************
@@ -574,18 +540,18 @@ static void connlog_eirq_deinit(void)
 *****************************************************************************/
 static int connlog_set_ring_buffer_base_addr(void)
 {
-	if (!gDev.virAddrEmiLogBase)
+	if (!gVirAddrEmiLogBase)
 		return -1;
 
 	/* set up subsys base address */
-	EMI_WRITE32(gDev.virAddrEmiLogBase + 0,  CONNLOG_EMI_MCU_BASE_OFFESET);
-	EMI_WRITE32(gDev.virAddrEmiLogBase + 4,  CONNLOG_EMI_MCU_SIZE);
-	EMI_WRITE32(gDev.virAddrEmiLogBase + 8,  CONNLOG_EMI_WIFI_BASE_OFFESET);
-	EMI_WRITE32(gDev.virAddrEmiLogBase + 12, CONNLOG_EMI_WIFI_SIZE);
-	EMI_WRITE32(gDev.virAddrEmiLogBase + 16, CONNLOG_EMI_BT_BASE_OFFESET);
-	EMI_WRITE32(gDev.virAddrEmiLogBase + 20, CONNLOG_EMI_BT_SIZE);
-	EMI_WRITE32(gDev.virAddrEmiLogBase + 24, CONNLOG_EMI_GPS_BASE_OFFESET);
-	EMI_WRITE32(gDev.virAddrEmiLogBase + 28, CONNLOG_EMI_GPS_SIZE);
+	EMI_WRITE32(gVirAddrEmiLogBase + 0,  CONNLOG_EMI_MCU_BASE_OFFESET);
+	EMI_WRITE32(gVirAddrEmiLogBase + 4,  CONNLOG_EMI_MCU_SIZE);
+	EMI_WRITE32(gVirAddrEmiLogBase + 8,  CONNLOG_EMI_WIFI_BASE_OFFESET);
+	EMI_WRITE32(gVirAddrEmiLogBase + 12, CONNLOG_EMI_WIFI_SIZE);
+	EMI_WRITE32(gVirAddrEmiLogBase + 16, CONNLOG_EMI_BT_BASE_OFFESET);
+	EMI_WRITE32(gVirAddrEmiLogBase + 20, CONNLOG_EMI_BT_SIZE);
+	EMI_WRITE32(gVirAddrEmiLogBase + 24, CONNLOG_EMI_GPS_BASE_OFFESET);
+	EMI_WRITE32(gVirAddrEmiLogBase + 28, CONNLOG_EMI_GPS_SIZE);
 	return 0;
 }
 
@@ -606,19 +572,19 @@ static int connlog_emi_init(phys_addr_t emiaddr)
 		return -1;
 	}
 
-	if (gDev.phyAddrEmiBase) {
+	if (gPhyAddrEmiBase) {
 		pr_warn("emi base address has been initialized\n");
 		return -2;
 	}
 
-	gDev.phyAddrEmiBase = emiaddr;
-	gDev.virAddrEmiLogBase = ioremap_nocache(gDev.phyAddrEmiBase +
+	gPhyAddrEmiBase = emiaddr;
+	gVirAddrEmiLogBase = ioremap_nocache(gPhyAddrEmiBase +
 		CONNLOG_EMI_LOG_BASE_OFFSET, CONNLOG_EMI_SIZE);
-	if (gDev.virAddrEmiLogBase) {
+	if (gVirAddrEmiLogBase) {
 		pr_info("EMI mapping OK virtual(0x%p) physical(0x%x)\n",
-				gDev.virAddrEmiLogBase, (unsigned int) gDev.phyAddrEmiBase +
+				gVirAddrEmiLogBase, (unsigned int) gPhyAddrEmiBase +
 				CONNLOG_EMI_LOG_BASE_OFFSET);
-		memset_io(gDev.virAddrEmiLogBase, 0, CONNLOG_EMI_SIZE);
+		memset_io(gVirAddrEmiLogBase, 0, CONNLOG_EMI_SIZE);
 	} else
 		pr_err("EMI mapping fail\n");
 
@@ -637,7 +603,7 @@ static int connlog_emi_init(phys_addr_t emiaddr)
 *****************************************************************************/
 static void connlog_emi_deinit(void)
 {
-	iounmap(gDev.virAddrEmiLogBase);
+	iounmap(gVirAddrEmiLogBase);
 }
 
 /*****************************************************************************
@@ -652,8 +618,8 @@ static void connlog_emi_deinit(void)
 *****************************************************************************/
 static int connlog_ring_buffer_init(void)
 {
-	if (!gDev.virAddrEmiLogBase) {
-		pr_err("consys emi memory address phyAddrEmiBase invalid\n");
+	if (!gVirAddrEmiLogBase) {
+		pr_err("consys emi memory address gPhyAddrEmiBase invalid\n");
 		return -1;
 	}
 
@@ -663,7 +629,7 @@ static int connlog_ring_buffer_init(void)
 	connlog_buffer_init(CONNLOG_TYPE_GPS);
 	connlog_buffer_init(CONNLOG_TYPE_MCU);
 #ifdef PRINT_FW_LOG
-	gDev.log_data = connlog_cache_allocate(CONNLOG_EMI_BT_SIZE);
+	gLog_data = connlog_cache_allocate(CONNLOG_EMI_BT_SIZE);
 #endif
 	connlog_set_ring_ready();
 
@@ -691,8 +657,8 @@ static void connlog_ring_buffer_deinit(void)
 	}
 #endif
 #ifdef PRINT_FW_LOG
-	kfree(gDev.log_data);
-	gDev.log_data = NULL;
+	kfree(gLog_data);
+	gLog_data = NULL;
 #endif
 }
 
@@ -713,12 +679,6 @@ static void connlog_ring_buffer_deinit(void)
 int connsys_dedicated_log_path_apsoc_init(phys_addr_t emiaddr, void *irq_reg_base,
 	unsigned int irq_num, unsigned int irq_flag)
 {
-	gDev.phyAddrEmiBase = 0;
-	gDev.virAddrEmiLogBase = 0;
-	gDev.irqRegBaseVirAddr = 0;
-	gDev.conn2ApIrqId = 0;
-	gDev.eirqOn = false;
-
 	if (connlog_emi_init(emiaddr)) {
 		pr_err("EMI init failed\n");
 		return -1;
@@ -729,15 +689,12 @@ int connsys_dedicated_log_path_apsoc_init(phys_addr_t emiaddr, void *irq_reg_bas
 		return -2;
 	}
 
-	init_timer(&gDev.workTimer);
-	gDev.workTimer.function = work_timer_handler;
-	spin_lock_init(&gDev.irq_lock);
-	INIT_WORK(&gDev.logDataWorker, connlog_log_data_handler);
 	if (connlog_eirq_init(irq_reg_base, irq_num, irq_flag)) {
 		pr_err("EIRQ init failed\n");
 		return -3;
 	}
 
+	INIT_WORK(&gLogDataWorker, connlog_log_data_handler);
 	return 0;
 }
 EXPORT_SYMBOL(connsys_dedicated_log_path_apsoc_init);
@@ -969,7 +926,7 @@ EXPORT_SYMBOL(connsys_log_read_to_user);
 *****************************************************************************/
 void __iomem *connsys_log_get_emi_log_base_vir_addr(void)
 {
-	return gDev.virAddrEmiLogBase;
+	return gVirAddrEmiLogBase;
 }
 EXPORT_SYMBOL(connsys_log_get_emi_log_base_vir_addr);
 
@@ -1008,5 +965,5 @@ EXPORT_SYMBOL(connsys_dedicated_log_get_utc_time);
 *****************************************************************************/
 void connlog_dump_emi(int offset, int size)
 {
-	connlog_dump_buf("emi", gDev.virAddrEmiLogBase + offset, size);
+	connlog_dump_buf("emi", gVirAddrEmiLogBase + offset, size);
 }
