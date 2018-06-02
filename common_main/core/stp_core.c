@@ -2524,7 +2524,7 @@ INT32 mtk_wcn_stp_send_data(const PUINT8 buffer, const UINT32 length, const UINT
 	}
 	/* if(g_block_tx) */
 	if (mtk_wcn_stp_coredump_start_get() != 0) {
-		STP_ERR_FUNC("STP fw coredump start flag set...\n");
+		STP_WARN_RATELIMITED_FUNC("STP fw coredump start flag set...\n");
 		return length;
 	}
 #ifdef CONFIG_POWER_SAVING_SUPPORT
@@ -2576,11 +2576,9 @@ DONT_MONITOR:
 		/* no-op */
 	} else if (STP_NOT_ENABLE(stp_core_ctx) && WMT_TASK_INDX == type) {
 		/* ret = mtk_wcn_stp_send_data_raw(buffer, length, type); */
-		/* STP over SDIO */
 	} else if ((mtk_wcn_stp_is_sdio_mode() || mtk_wcn_stp_is_uart_mand_mode() || mtk_wcn_stp_is_btif_mand_mode())
 		 && STP_IS_ENABLE(stp_core_ctx)) {
 
-		/* osal_printtimeofday("[ STP][SDIO][ B][W]"); */
 		/*mtkstp_header[0] = 0x80;*/
 		mtkstp_header[0] = 0x80 + (stp_core_ctx.sequence.txseq << 3);	/* for debug purpose */
 		mtkstp_header[1] = (type << 4) + (((length) >> 8) & 0x0f);
@@ -2609,22 +2607,14 @@ DONT_MONITOR:
 			ret = 0;
 		} else
 			ret = (INT32) length;
-
-		/* osal_printtimeofday("[ STP][SDIO][ E][W]"); */
 	}
-	/* STP over UART */
 	else if ((mtk_wcn_stp_is_uart_fullset_mode() || mtk_wcn_stp_is_btif_fullset_mode())
 		&& STP_IS_ENABLE(stp_core_ctx)) {
 
-		/* osal_printtimeofday("[ STP][UART][ B][W]"); */
-		/* STP_INFO_FUNC("Write byte %d\n", length); */
 		if ((stp_core_ctx.sequence.winspace > 0) &&
 		    (stp_core_ctx.inband_rst_set == 0) &&
 		    (stp_is_tx_res_available(MTKSTP_HEADER_SIZE + length + MTKSTP_CRC_SIZE))) {
 			/*Make Header */
-			/* (*sys_dbg_print)("mtk_wcn_stp_send_data 1, txseq = %d, winspace = %d",
-			 * stp_core_ctx.sequence.txseq, stp_core_ctx.sequence.winspace);
-			 */
 			mtkstp_header[0] =
 			    0x80 + (stp_core_ctx.sequence.txseq << 3) + stp_core_ctx.sequence.txack;
 			mtkstp_header[1] = (type << 4) + ((length & 0xf00) >> 8);
@@ -2655,7 +2645,7 @@ DONT_MONITOR:
 					stp_core_ctx.sequence.txseq,
 					crc, PKT_DIR_TX, buffer, length);
 
-			/*Kick to UART */
+			/*Kick to BUS */
 			stp_send_tx_queue(stp_core_ctx.sequence.txseq);
 
 			INDEX_INC(stp_core_ctx.sequence.txseq);
@@ -2673,15 +2663,13 @@ DONT_MONITOR:
 			 *  No winspace to send. Let caller retry
 			 */
 			if (stp_core_ctx.inband_rst_set == 1)
-				STP_WARN_FUNC
+				STP_WARN_RATELIMITED_FUNC
 				    ("Now it's inband reset process and drop sent packet.\n");
 			else
-				STP_ERR_FUNC("%s: There is no winspace/txqueue to send !!!\n",
+				STP_WARN_RATELIMITED_FUNC("%s: There is no winspace/txqueue to send !!!\n",
 					     __func__);
 			ret = 0;
 		}
-
-		/* osal_printtimeofday("[ STP][UART][ E][W]"); */
 	}
 	stp_ctx_unlock(&stp_core_ctx);
 STP_LOCK_FAIL:
@@ -3420,24 +3408,36 @@ INT32 mtk_wcn_stp_wmt_trg_assert(VOID)
 INT32 mtk_wcn_stp_assert_timeout_handle(VOID)
 {
 	INT32 ret = -1;
+	PUINT8 pbuf;
+	INT32 len;
 	UINT32 dump_num = 0;
 	P_CONSYS_EMI_ADDR_INFO p_ecsi;
 
 	p_ecsi = wmt_plat_get_emi_phy_add();
-	dump_num = wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_chip_page_dump_num);
-	if (dump_num == 0)
-		dump_num = CORE_DUMP_NUM;
-	STP_INFO_FUNC("dump num(%d)\n", dump_num);
-	stp_dbg_dump_num(dump_num);
 	if (wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_assert_flag)) {
 		STP_INFO_FUNC("EMI assert flag was set. To do coredump.\n");
+		dump_num = wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_chip_page_dump_num);
+		if (dump_num == 0)
+			dump_num = CORE_DUMP_NUM;
+		STP_INFO_FUNC("dump num(%d)\n", dump_num);
+		stp_dbg_dump_num(dump_num);
 		ret = stp_btm_notify_wmt_dmp_wq(STP_BTM_CORE(stp_core_ctx));
-	} else {
-		/*host trigger assert timeout and no coredump packet. To dump EMI data*/
-		STP_INFO_FUNC("host trigger fw assert timeout!\n");
-		WMT_STEP_COMMAND_TIMEOUT_DO_ACTIONS_FUNC("Trigger assert timeout");
-		ret = stp_btm_notify_coredump_timeout_wq(STP_BTM_CORE(stp_core_ctx));
+		return ret;
 	}
+	/*host trigger assert but no coredump data will polling fw cpupcr*/
+	STP_INFO_FUNC("host trigger fw assert timeout!\n");
+	WMT_STEP_COMMAND_TIMEOUT_DO_ACTIONS_FUNC("Trigger assert timeout");
+	stp_dbg_poll_cpupcr(5, 1, 1);
+	pbuf = "Trigger assert timeout ,just collect SYS_FTRACE to DB";
+	len = osal_strlen(pbuf);
+	stp_dbg_trigger_collect_ftrace(pbuf, len);
+
+
+	if (STP_IS_ENABLE_RST(stp_core_ctx))
+		ret = stp_btm_notify_wmt_rst_wq(STP_BTM_CORE(stp_core_ctx));
+	else
+		STP_INFO_FUNC("No to launch whole chip reset! for debugging purpose\n");
+
 	return ret;
 }
 
