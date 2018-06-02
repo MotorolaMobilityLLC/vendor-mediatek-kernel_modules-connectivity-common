@@ -29,6 +29,7 @@
 #include "wmt_plat.h"
 #include "wmt_idc.h"
 #include "osal.h"
+#include "mtk_wcn_consys_hw.h"
 
 
 
@@ -153,6 +154,18 @@ typedef struct {
 	UINT8 patchName[256];
 } WMT_PATCH_INFO, *P_WMT_PATCH_INFO;
 
+struct wmt_rom_patch_info {
+	UINT32 type;
+	UINT8 addRess[4];
+	UINT8 patchName[256];
+};
+
+struct wmt_fdb_ctrl {
+	UINT32 is_write;
+	enum CONSYS_BASE_ADDRESS_INDEX base_index;
+	UINT32 offset;
+	UINT32 value;
+};
 
 /* OS independent wrapper for WMT_OP */
 typedef struct _DEV_WMT_ {
@@ -212,11 +225,16 @@ typedef struct _DEV_WMT_ {
 	UINT32 chip_id;
 	UINT32 hw_ver;
 	UINT32 fw_ver;
+	UINT32 ip_ver;
 	/* TODO:  [FixMe][GeorgeKuo] remove this translated version code in the */
 	/* future. Just return the above 3 info to querist */
 	ENUM_WMTHWVER_TYPE_T eWmtHwVer;
 
 	P_WMT_PATCH_INFO pWmtPatchInfo;
+	struct wmt_rom_patch_info *pWmtRomPatchInfo[WMTDRV_TYPE_ANT];
+	/* MET thread information */
+	OSAL_THREAD met_thread;
+	INT32 met_log_ctrl;
 } DEV_WMT, *P_DEV_WMT;
 
 
@@ -306,6 +324,8 @@ MTK_WCN_BOOL wmt_lib_hw_rst(VOID);
 INT32 wmt_lib_reg_rw(UINT32 isWrite, UINT32 offset, PUINT32 pvalue, UINT32 mask);
 INT32 wmt_lib_efuse_rw(UINT32 isWrite, UINT32 offset, PUINT32 pvalue, UINT32 mask);
 INT32 wmt_lib_sdio_ctrl(UINT32 on);
+INT32 wmt_lib_met_ctrl(INT32 met_ctrl, INT32 log_ctrl);
+INT32 wmt_lib_fdb_ctrl(struct wmt_fdb_ctrl *fdb_ctrl);
 
 extern INT32 DISABLE_PSM_MONITOR(VOID);
 extern VOID ENABLE_PSM_MONITOR(VOID);
@@ -318,6 +338,7 @@ extern INT32 wmt_lib_set_stp_wmt_last_close(UINT32 value);
 
 extern VOID wmt_lib_set_patch_num(UINT32 num);
 extern VOID wmt_lib_set_patch_info(P_WMT_PATCH_INFO pPatchinfo);
+extern VOID wmt_lib_set_rom_patch_info(struct wmt_rom_patch_info *pPatchinfo);
 extern MTK_WCN_BOOL wmt_lib_stp_is_btif_fullset_mode(VOID);
 
 extern INT32 wmt_lib_set_current_op(P_DEV_WMT pWmtDev, P_OSAL_OP pOp);

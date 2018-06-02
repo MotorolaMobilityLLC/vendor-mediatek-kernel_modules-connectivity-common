@@ -1766,6 +1766,20 @@ INT32 wmt_plat_get_dump_info(UINT32 offset)
 	return CONSYS_REG_READ(p_virtual_addr);
 }
 
+INT32 wmt_plat_write_emi_l(UINT32 offset, UINT32 value)
+{
+	PUINT8 p_virtual_addr = NULL;
+
+	p_virtual_addr = wmt_plat_get_emi_virt_add(offset);
+	if (!p_virtual_addr) {
+		WMT_PLAT_ERR_FUNC("get virtual address fail\n");
+		return -1;
+	}
+
+	CONSYS_REG_WRITE(p_virtual_addr, value);
+	return 0;
+}
+
 UINT32 wmt_plat_get_soc_chipid(VOID)
 {
 	UINT32 chipId = mtk_wcn_consys_soc_chipid();

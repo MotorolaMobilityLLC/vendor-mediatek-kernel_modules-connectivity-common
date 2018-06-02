@@ -44,6 +44,7 @@
 #include "psm_core.h"
 #include "wmt_exp.h"
 #include "wmt_detect.h"
+#include "wmt_plat.h"
 
 P_WMT_FUNC_OPS gpWmtFuncOps[WMTDRV_TYPE_MAX] = {
 #if CFG_FUNC_BT_SUPPORT
@@ -928,6 +929,7 @@ static INT32 wmt_core_hw_check(VOID)
 	UINT32 chipid;
 	P_WMT_IC_OPS p_ops;
 	INT32 iret;
+	UINT32 soc_chipid;
 
 	/* 1. get chip id */
 	chipid = 0;
@@ -936,6 +938,11 @@ static INT32 wmt_core_hw_check(VOID)
 	if (iret) {
 		WMT_ERR_FUNC("get hwcode (chip id) fail (%d)\n", iret);
 		return -2;
+	}
+	if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC) {
+		soc_chipid = wmt_plat_get_soc_chipid();
+		if (soc_chipid == 0x6765)
+			chipid = soc_chipid;
 	}
 	WMT_INFO_FUNC("get hwcode (chip id) (0x%x)\n", chipid);
 
@@ -986,6 +993,7 @@ static INT32 wmt_core_hw_check(VOID)
 	case 0x0633:
 	case 0x0713:
 	case 0x0788:
+	case 0x6765:
 		p_ops = &wmt_ic_ops_soc;
 		break;
 #endif
