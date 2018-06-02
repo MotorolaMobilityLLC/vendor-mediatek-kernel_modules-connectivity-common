@@ -23,14 +23,23 @@
 #include <linux/ratelimit.h>
 #include "connsys_debug_utility.h"
 #include "ring_emi.h"
-#ifdef EMI_TO_CACHE_SUPPORT
 #include "ring.h"
-#endif
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
 */
+enum FW_LOG_MODE {
+	PRINT_TO_KERNEL_LOG = 0,
+	LOG_TO_FILE = 1,
+};
+
+#ifdef CONFIG_MTK_CONNSYS_DEDICATED_LOG_PATH
+static atomic_t log_mode  = ATOMIC_INIT(LOG_TO_FILE);
+#else
+static atomic_t log_mode  = ATOMIC_INIT(PRINT_TO_KERNEL_LOG);
+#endif
+
 struct connlog_dev {
 	phys_addr_t phyAddrEmiBase;
 	void __iomem *virAddrEmiLogBase;
@@ -41,10 +50,7 @@ struct connlog_dev {
 	unsigned int irq_counter;
 	struct timer_list workTimer;
 	struct work_struct logDataWorker;
-#ifdef PRINT_FW_LOG
 	void *log_data;
-#endif
-
 };
 static struct connlog_dev gDev;
 
@@ -52,10 +58,8 @@ static CONNLOG_EVENT_CB event_callback_table[CONNLOG_TYPE_END] = { 0x0 };
 
 struct connlog_buffer {
 	struct ring_emi ring_emi;
-#ifdef EMI_TO_CACHE_SUPPORT
 	struct ring ring_cache;
 	void *cache_base;
-#endif
 };
 static struct connlog_buffer connlog_buffer_table[CONNLOG_TYPE_END];
 
@@ -93,12 +97,11 @@ static char *type_to_title[CONNLOG_TYPE_END] = {
 	"wifi_fw", "bt_fw", "gps_fw", "mcu_fw"
 };
 
-#ifdef EMI_TO_CACHE_SUPPORT
 static size_t cache_size_table[CONNLOG_TYPE_END] = {
 	CONNLOG_EMI_WIFI_SIZE * 2, CONNLOG_EMI_BT_SIZE * 2,
 	CONNLOG_EMI_GPS_SIZE, CONNLOG_EMI_MCU_SIZE
 };
-#endif
+
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
@@ -113,13 +116,9 @@ static int connlog_set_ring_buffer_base_addr(void);
 static irqreturn_t connlog_eirq_isr(int irq, void *arg);
 static void connlog_set_ring_ready(void);
 static void connlog_buffer_init(int conn_type);
-#ifdef EMI_TO_CACHE_SUPPORT
 static void connlog_ring_emi_to_cache(int conn_type);
-#endif
 static void connlog_dump_buf(const char *title, const char *buf, ssize_t sz);
-#ifdef PRINT_FW_LOG
 static void connlog_ring_print(int conn_type);
-#endif
 static void connlog_event_set(int conn_type);
 static void connlog_log_data_handler(struct work_struct *work);
 static void work_timer_handler(unsigned long data);
@@ -191,7 +190,6 @@ static void connlog_buffer_init(int conn_type)
 		      &connlog_buffer_table[conn_type].ring_emi
 	);
 
-#ifdef EMI_TO_CACHE_SUPPORT
 	/* init ring cache */
 	connlog_buffer_table[conn_type].cache_base = connlog_cache_allocate(cache_size_table[conn_type]);
 	memset(connlog_buffer_table[conn_type].cache_base, 0, cache_size_table[conn_type]);
@@ -202,10 +200,8 @@ static void connlog_buffer_init(int conn_type)
 		  0,
 		  &connlog_buffer_table[conn_type].ring_cache
 	);
-#endif
 }
 
-#ifdef EMI_TO_CACHE_SUPPORT
 /*****************************************************************************
 * FUNCTION
 *  connlog_ring_emi_to_cache
@@ -246,13 +242,13 @@ static void connlog_ring_emi_to_cache(int conn_type)
 		if (__ratelimit(&_rs))
 			pr_err("%s read/write pointer out-of-bounds.\n", type_to_title[conn_type]);
 		/* 64 byte ring_emi buffer setting & 32 byte mcu read/write pointer */
-		connlog_dump_emi(0x0, 0x60);
+		connsys_dedicated_log_dump_emi(0x0, 0x60);
 		/* 32 byte wifi read/write pointer */
-		connlog_dump_emi(CONNLOG_EMI_WIFI_BASE_OFFESET, 0x20);
+		connsys_dedicated_log_dump_emi(CONNLOG_EMI_WIFI_BASE_OFFESET, 0x20);
 		/* 32 byte bt read/write pointer */
-		connlog_dump_emi(CONNLOG_EMI_BT_BASE_OFFESET, 0x20);
+		connsys_dedicated_log_dump_emi(CONNLOG_EMI_BT_BASE_OFFESET, 0x20);
 		/* 32 byte gps read/write pointer */
-		connlog_dump_emi(CONNLOG_EMI_GPS_BASE_OFFESET, 0x20);
+		connsys_dedicated_log_dump_emi(CONNLOG_EMI_GPS_BASE_OFFESET, 0x20);
 	}
 
 	RING_EMI_READ_ALL_FOR_EACH(ring_emi_seg, ring_emi) {
@@ -283,7 +279,7 @@ static void connlog_ring_emi_to_cache(int conn_type)
 		count++;
 	}
 }
-#endif
+
 /* output format
  * xx xx xx xx xx xx xx xx xx xx xx xx xx xx xx xx ................
  * 3 digits hex * 16 + 16 single char + 1 NULL terminate = 64+1 bytes
@@ -321,7 +317,6 @@ static void connlog_dump_buf(const char *title, const char *buf, ssize_t sz)
 	}
 }
 
-#ifdef PRINT_FW_LOG
 #define LOG_MAX_LEN 1024
 #define LOG_HEAD_LENG 16
 #define TIMESYNC_LENG 40
@@ -393,13 +388,13 @@ static void connlog_ring_print(int conn_type)
 	    EMI_READ32(ring_emi->write) > emi_offset_table[conn_type].emi_size) {
 		pr_err("%s read/write pointer out-of-bounds.\n", type_to_title[conn_type]);
 		/* 64 byte ring_emi buffer setting & 32 byte mcu read/write pointer */
-		connlog_dump_emi(0x0, 0x60);
+		connsys_dedicated_log_dump_emi(0x0, 0x60);
 		/* 32 byte wifi read/write pointer */
-		connlog_dump_emi(CONNLOG_EMI_WIFI_BASE_OFFESET, 0x20);
+		connsys_dedicated_log_dump_emi(CONNLOG_EMI_WIFI_BASE_OFFESET, 0x20);
 		/* 32 byte bt read/write pointer */
-		connlog_dump_emi(CONNLOG_EMI_BT_BASE_OFFESET, 0x20);
+		connsys_dedicated_log_dump_emi(CONNLOG_EMI_BT_BASE_OFFESET, 0x20);
 		/* 32 byte gps read/write pointer */
-		connlog_dump_emi(CONNLOG_EMI_GPS_BASE_OFFESET, 0x20);
+		connsys_dedicated_log_dump_emi(CONNLOG_EMI_GPS_BASE_OFFESET, 0x20);
 	}
 
 	RING_EMI_READ_ALL_FOR_EACH(ring_emi_seg, ring_emi) {
@@ -411,7 +406,7 @@ static void connlog_ring_print(int conn_type)
 	if (conn_type != CONNLOG_TYPE_BT)
 		connlog_fw_log_parser(conn_type, gDev.log_data, written);
 }
-#endif
+
 /*****************************************************************************
 * FUNCTION
 *  connlog_event_set
@@ -484,12 +479,11 @@ static void connlog_log_data_handler(struct work_struct *work)
 		ret = 0;
 		for (i = 0; i < CONNLOG_TYPE_END; i++) {
 			if (!RING_EMI_EMPTY(&connlog_buffer_table[i].ring_emi)) {
-#ifdef EMI_TO_CACHE_SUPPORT
-				connlog_ring_emi_to_cache(i);
-#endif
-#ifdef PRINT_FW_LOG
-				connlog_ring_print(i);
-#endif
+				if (atomic_read(&log_mode) == LOG_TO_FILE)
+					connlog_ring_emi_to_cache(i);
+				else
+					connlog_ring_print(i);
+
 				connlog_event_set(i);
 				/* ret++; */
 			} else {
@@ -667,9 +661,7 @@ static int connlog_ring_buffer_init(void)
 	connlog_buffer_init(CONNLOG_TYPE_BT);
 	connlog_buffer_init(CONNLOG_TYPE_GPS);
 	connlog_buffer_init(CONNLOG_TYPE_MCU);
-#ifdef PRINT_FW_LOG
 	gDev.log_data = connlog_cache_allocate(CONNLOG_EMI_BT_SIZE);
-#endif
 	connlog_set_ring_ready();
 
 	return 0;
@@ -687,18 +679,14 @@ static int connlog_ring_buffer_init(void)
 *****************************************************************************/
 static void connlog_ring_buffer_deinit(void)
 {
-#ifdef EMI_TO_CACHE_SUPPORT
-	int i;
+	int i = 0;
 
 	for (i = 0; i < CONNLOG_TYPE_END; i++) {
 		kfree(connlog_buffer_table[i].cache_base);
 		connlog_buffer_table[i].cache_base = NULL;
 	}
-#endif
-#ifdef PRINT_FW_LOG
 	kfree(gDev.log_data);
 	gDev.log_data = NULL;
-#endif
 }
 
 /*****************************************************************************
@@ -813,11 +801,7 @@ unsigned int connsys_log_get_buf_size(int conn_type)
 {
 	if (conn_type >= CONNLOG_TYPE_END || conn_type < 0)
 		return -1;
-#ifdef EMI_TO_CACHE_SUPPORT
 	return RING_SIZE(&connlog_buffer_table[conn_type].ring_cache);
-#else
-	return RING_EMI_SIZE(&connlog_buffer_table[conn_type].ring_emi);
-#endif
 }
 EXPORT_SYMBOL(connsys_log_get_buf_size);
 
@@ -856,11 +840,13 @@ EXPORT_SYMBOL(connsys_log_register_event_cb);
 ssize_t connsys_log_read(int conn_type, char *buf, size_t count)
 {
 	unsigned int written = 0;
-#ifdef EMI_TO_CACHE_SUPPORT
 	unsigned int cache_buf_size;
 	struct ring_segment ring_seg;
 	struct ring *ring = &connlog_buffer_table[conn_type].ring_cache;
 	unsigned int size = 0;
+
+	if (atomic_read(&log_mode) != LOG_TO_FILE)
+		goto done;
 
 	size = count < RING_SIZE(ring) ? count : RING_SIZE(ring);
 	if (RING_EMPTY(ring) || !ring_read_prepare(size, &ring_seg, ring)) {
@@ -874,23 +860,6 @@ ssize_t connsys_log_read(int conn_type, char *buf, size_t count)
 		cache_buf_size -= ring_seg.sz;
 		written += ring_seg.sz;
 	}
-#else
-	unsigned int buf_size;
-	struct ring_emi_segment ring_emi_seg;
-	struct ring_emi *ring_emi = &connlog_buffer_table[conn_type].ring_emi;
-
-	if (RING_EMI_EMPTY(ring_emi) || !ring_emi_read_all_prepare(&ring_emi_seg, ring_emi)) {
-		pr_err("type(%d) no data, possibly taken by concurrent reader.\n", conn_type);
-		goto done;
-	}
-	buf_size = ring_emi_seg.remain;
-
-	RING_EMI_READ_ALL_FOR_EACH(ring_emi_seg, ring_emi) {
-		memcpy(buf + written, ring_emi_seg.ring_emi_pt, ring_emi_seg.sz);
-		buf_size -= ring_emi_seg.sz;
-		written += ring_emi_seg.sz;
-	}
-#endif
 done:
 	return written;
 }
@@ -913,11 +882,13 @@ ssize_t connsys_log_read_to_user(int conn_type, char __user *buf, size_t count)
 	int retval;
 	unsigned int written = 0;
 	static DEFINE_RATELIMIT_STATE(_rs, 10 * HZ, 1);
-#ifdef EMI_TO_CACHE_SUPPORT
 	unsigned int cache_buf_size;
 	struct ring_segment ring_seg;
 	struct ring *ring = &connlog_buffer_table[conn_type].ring_cache;
 	unsigned int size = 0;
+
+	if (atomic_read(&log_mode) != LOG_TO_FILE)
+		goto done;
 
 	size = count < RING_SIZE(ring) ? count : RING_SIZE(ring);
 	if (RING_EMPTY(ring) || !ring_read_prepare(size, &ring_seg, ring)) {
@@ -936,28 +907,6 @@ ssize_t connsys_log_read_to_user(int conn_type, char __user *buf, size_t count)
 		cache_buf_size -= ring_seg.sz;
 		written += ring_seg.sz;
 	}
-#else
-	unsigned int buf_size;
-	struct ring_emi_segment ring_emi_seg;
-	struct ring_emi *ring_emi = &connlog_buffer_table[conn_type].ring_emi;
-
-	if (RING_EMI_EMPTY(ring_emi) || !ring_emi_read_all_prepare(&ring_emi_seg, ring_emi)) {
-		pr_err("type(%d) no data, possibly taken by concurrent reader.\n", conn_type);
-		goto done;
-	}
-	buf_size = ring_emi_seg.remain;
-
-	RING_EMI_READ_ALL_FOR_EACH(ring_emi_seg, ring_emi) {
-		retval = copy_to_user(buf + written, ring_emi_seg.ring_emi_pt, ring_emi_seg.sz);
-		if (retval) {
-			if (__ratelimit(&_rs))
-				pr_err("copy to user buffer failed, ret:%d\n", retval);
-			goto done;
-		}
-		buf_size -= ring_emi_seg.sz;
-		written += ring_emi_seg.sz;
-	}
-#endif
 done:
 	return written;
 }
@@ -1018,7 +967,7 @@ void connsys_dedicated_log_flush_emi(void)
 
 /*****************************************************************************
 * FUNCTION
-*  connlog_dump_emi
+*  connsys_dedicated_log_dump_emi
 * DESCRIPTION
 *  dump EMI buffer for debug.
 * PARAMETERS
@@ -1027,7 +976,37 @@ void connsys_dedicated_log_flush_emi(void)
 * RETURNS
 *  void
 *****************************************************************************/
-void connlog_dump_emi(int offset, int size)
+void connsys_dedicated_log_dump_emi(int offset, int size)
 {
 	connlog_dump_buf("emi", gDev.virAddrEmiLogBase + offset, size);
+}
+
+/*****************************************************************************
+* FUNCTION
+*  connsys_dedicated_log_set_log_to_file
+* DESCRIPTION
+*  set log mode.
+* PARAMETERS
+*  mode            [IN]        log mode
+* RETURNS
+*  void
+*****************************************************************************/
+void connsys_dedicated_log_set_log_mode(int mode)
+{
+	atomic_set(&log_mode, (mode > 0 ? LOG_TO_FILE : PRINT_TO_KERNEL_LOG));
+}
+
+/*****************************************************************************
+* FUNCTION
+*  connsys_dedicated_log_get_log_mode
+* DESCRIPTION
+*  get log mode.
+* PARAMETERS
+*  void
+* RETURNS
+* int    log mode
+*****************************************************************************/
+int connsys_dedicated_log_get_log_mode(void)
+{
+	return atomic_read(&log_mode);
 }
