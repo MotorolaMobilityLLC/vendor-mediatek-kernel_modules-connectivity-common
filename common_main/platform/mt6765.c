@@ -977,24 +977,16 @@ static INT32 bt_wifi_share_v33_spin_lock_init(VOID)
 static INT32 consys_read_irq_info_from_dts(struct platform_device *pdev, PINT32 irq_num, PUINT32 irq_flag)
 {
 	struct device_node *node;
-	UINT32 irq_info[3] = { 0, 0, 0 };
-
-	INT32 iret = -1;
 
 	node = pdev->dev.of_node;
 	if (node) {
 		*irq_num = irq_of_parse_and_map(node, 0);
-		/* get the interrupt line behaviour */
-		if (of_property_read_u32_array(node, "interrupts", irq_info, ARRAY_SIZE(irq_info))) {
-			WMT_PLAT_ERR_FUNC("get irq flags from DTS fail!!\n");
-			return iret;
-		}
-		*irq_flag = irq_info[2];
+		*irq_flag = irq_get_trigger_type(*irq_num);
 		WMT_PLAT_INFO_FUNC("get irq id(%d) and irq trigger flag(%d) from DT\n", *irq_num,
 				   *irq_flag);
 	} else {
 		WMT_PLAT_ERR_FUNC("[%s] can't find CONSYS compatible node\n", __func__);
-		return iret;
+		return -1;
 	}
 
 	return 0;
@@ -1083,7 +1075,6 @@ static VOID consys_set_dl_rom_patch_flag(INT32 flag)
 static INT32 consys_dedicated_log_path_init(struct platform_device *pdev)
 {
 	struct device_node *node;
-	UINT32 irq_info[3] = { 0, 0, 0 };
 	UINT32 irq_num;
 	UINT32 irq_flag;
 	INT32 iret = -1;
@@ -1091,12 +1082,7 @@ static INT32 consys_dedicated_log_path_init(struct platform_device *pdev)
 	node = pdev->dev.of_node;
 	if (node) {
 		irq_num = irq_of_parse_and_map(node, 2);
-		/* get the interrupt line behaviour */
-		if (of_property_read_u32_array(node, "interrupts", irq_info, ARRAY_SIZE(irq_info))) {
-			WMT_PLAT_ERR_FUNC("get conn2ap_sw_irq flags from DTS fail!!\n");
-			return iret;
-		}
-		irq_flag = irq_info[2];
+		irq_flag = irq_get_trigger_type(irq_num);
 		WMT_PLAT_INFO_FUNC("get conn2ap_sw_irq id(%d) and irq trigger flag(%d) from DT\n", irq_num,
 				   irq_flag);
 	} else {
@@ -1104,8 +1090,7 @@ static INT32 consys_dedicated_log_path_init(struct platform_device *pdev)
 		return iret;
 	}
 
-	connsys_dedicated_log_path_apsoc_init(gConEmiPhyBase, (void *)conn_reg.mcu_base +
-		CONSYS_SW_IRQ_OFFSET, irq_num, irq_flag);
+	connsys_dedicated_log_path_apsoc_init(gConEmiPhyBase, irq_num, irq_flag);
 #ifdef CONFIG_MTK_CONNSYS_DEDICATED_LOG_PATH
 	fw_log_wmt_init();
 #endif
@@ -1124,7 +1109,18 @@ static INT32 consys_check_reg_readable(VOID)
 {
 	INT32 b_flag = 0;
 	INT32 c_flag = 0;
+	INT32 i = 0;
 	UINT32 value = 0;
+
+	/*check connsys bus hang*/
+	do {
+		value = CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base + CONSYS_BUSY_OFFSET);
+		if (value & CONSYS_BUSY_BIT)
+			b_flag = 1;
+		i++;
+	} while (i < 10000 && b_flag == 0);
+	if (!b_flag)
+		WMT_PLAT_ERR_FUNC("connsys busy check fail 0x18007110(0x%x)\n", value);
 
 	/*check connsys clock and sleep status*/
 	CONSYS_REG_WRITE(conn_reg.mcu_conn_hif_on_base, CONSYS_CLOCK_CHECK_VALUE);
