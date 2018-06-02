@@ -681,12 +681,22 @@ static INT32 polling_consys_chipid(VOID)
 	WMT_PLAT_INFO_FUNC("consys HW version id(0x%x)\n", consys_ver_id & 0xFFFF);
 	consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_FW_ID_OFFSET);
 	WMT_PLAT_INFO_FUNC("consys FW version id(0x%x)\n", consys_ver_id & 0xFFFF);
+
+	/* CONNSYS mcu rom delsel setting */
+	consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_MCU_ROM_DELSEL_OFFSET);
+	consys_ver_id &= 0xFFFF0000;
+	consys_ver_id |= CONSYS_MCU_ROM_DELSEL_VALUE;
+	CONSYS_REG_WRITE(conn_reg.mcu_base + CONSYS_MCU_ROM_DELSEL_OFFSET, consys_ver_id);
+
 	if (wmt_plat_soc_co_clock_flag_get()) {
 		consys_reg_base = ioremap_nocache(CONSYS_COCLOCK_STABLE_TIME_BASE, 0x100);
 		if (consys_reg_base) {
+#if 0
+			/* disable XO stable time setting */
 			value = CONSYS_REG_READ(consys_reg_base);
 			value = (value & CONSYS_COCLOCK_STABLE_TIME_MASK) | CONSYS_COCLOCK_STABLE_TIME;
 			CONSYS_REG_WRITE(consys_reg_base, value);
+#endif
 			value = CONSYS_REG_READ(consys_reg_base + CONSYS_COCLOCK_ACK_ENABLE_OFFSET);
 			value = value & (~CONSYS_COCLOCK_ACK_ENABLE_BIT);
 			CONSYS_REG_WRITE(consys_reg_base + CONSYS_COCLOCK_ACK_ENABLE_OFFSET, value);
@@ -695,6 +705,8 @@ static INT32 polling_consys_chipid(VOID)
 			WMT_PLAT_ERR_FUNC("connsys co_clock stable time base(0x%x) ioremap fail!\n",
 					  CONSYS_COCLOCK_STABLE_TIME_BASE);
 	}
+
+	CONSYS_SET_BIT(conn_reg.mcu_base + CONSYS_SW_IRQ_OFFSET, CONSYS_EMI_CTRL_VALUE);
 
 	return 0;
 }
@@ -941,27 +953,23 @@ static INT32 consys_emi_mpu_set_region_protection(VOID)
 static UINT32 consys_emi_set_remapping_reg(VOID)
 {
 	UINT32 addrPhy = 0;
-	UINT32 value = 0;
 
 	mtk_wcn_emi_addr_info.emi_ap_phy_addr = gConEmiPhyBase;
 	mtk_wcn_emi_addr_info.emi_size = gConEmiSize;
 
 	/*consys to ap emi remapping register:10001380, cal remapping address */
 	addrPhy = (gConEmiPhyBase >> 24) & 0xFFF;
-	value = CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_MAPPING_OFFSET);
-	WMT_PLAT_INFO_FUNC("before CONSYS_EMI_MAPPING read:0x%zx, value:0x%x\n",
-			conn_reg.topckgen_base + CONSYS_EMI_MAPPING_OFFSET, value);
 
-	value = value & 0xFFFFF000;
-	CONSYS_REG_WRITE(conn_reg.topckgen_base + CONSYS_EMI_MAPPING_OFFSET, value | addrPhy);
+	CONSYS_REG_WRITE(conn_reg.topckgen_base + CONSYS_EMI_MAPPING_OFFSET,
+			CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_MAPPING_OFFSET) | addrPhy);
+
 	WMT_PLAT_INFO_FUNC("CONSYS_EMI_MAPPING dump in restore cb(0x%08x)\n",
 			CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_MAPPING_OFFSET));
 
 	/*Perisys Configuration Registers remapping*/
 	addrPhy = ((0x10003000 >> 24) & 0xFFF) << 16;
-	value = CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_PERI_MAPPING_OFFSET);
-	value = value & 0xF000FFFF;
-	CONSYS_REG_WRITE(conn_reg.topckgen_base + CONSYS_EMI_PERI_MAPPING_OFFSET, value | addrPhy);
+	CONSYS_REG_WRITE(conn_reg.topckgen_base + CONSYS_EMI_PERI_MAPPING_OFFSET,
+			CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_PERI_MAPPING_OFFSET) | addrPhy);
 
 	WMT_PLAT_INFO_FUNC("CONSYS_EMI_MAPPING dump in restore cb(0x%08x)\n",
 			CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_PERI_MAPPING_OFFSET));
