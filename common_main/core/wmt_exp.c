@@ -32,6 +32,7 @@
 ********************************************************************************
 */
 #include "osal_typedef.h"
+#include "wmt_step.h"
 
 #include <wmt_exp.h>
 #include <wmt_lib.h>
@@ -127,16 +128,11 @@ static MTK_WCN_BOOL mtk_wcn_wmt_func_ctrl(ENUM_WMTDRV_TYPE_T type, ENUM_WMT_OPID
 	P_OSAL_SIGNAL pSignal;
 	PUINT8 pbuf = NULL;
 	INT32 len = 0;
-	MTK_WCN_BOOL bOffload;
-	MTK_WCN_BOOL bExplicitPwrOn;
-
-	bOffload = (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC && type == WMTDRV_TYPE_WIFI);
-	bExplicitPwrOn = (bOffload && opId == WMT_OPID_FUNC_ON &&
-				wmt_lib_get_drv_status(WMTDRV_TYPE_WMT) != DRV_STS_FUNC_ON);
+	MTK_WCN_BOOL bOffload = (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC && type == WMTDRV_TYPE_WIFI);
 
 	/* WIFI on no need to disable psm and prevent WIFI on blocked by psm lock. */
 	/* So we power on connsys separately from function on flow. */
-	if (bExplicitPwrOn)
+	if (bOffload)
 		mtk_wcn_wmt_pwr_on();
 
 	pOp = wmt_lib_get_free_op();
@@ -154,6 +150,7 @@ static MTK_WCN_BOOL mtk_wcn_wmt_func_ctrl(ENUM_WMTDRV_TYPE_T type, ENUM_WMT_OPID
 	else
 		pSignal->timeoutValue = (pOp->op.opId == WMT_OPID_FUNC_ON) ? MAX_FUNC_ON_TIME : MAX_FUNC_OFF_TIME;
 
+	WMT_STEP_FUNC_CTRL_DO_ACTIONS_FUNC(type, opId);
 	WMT_INFO_FUNC("wmt-exp: OPID(%d) type(%zu) start\n", pOp->op.opId, pOp->op.au4OpData[0]);
 
 	/*do not check return value, we will do this either way */
@@ -271,6 +268,7 @@ INT8 mtk_wcn_wmt_therm_ctrl(ENUM_WMTTHERM_TYPE_T eType)
 	pOpData->au4OpData[0] = eType;
 	pSignal->timeoutValue = MAX_EACH_WMT_CMD;
 
+	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_BEFORE_READ_THERMAL);
 	WMT_DBG_FUNC("OPID(%d) type(%zu) start\n", pOp->op.opId, pOp->op.au4OpData[0]);
 
 	if (DISABLE_PSM_MONITOR()) {
