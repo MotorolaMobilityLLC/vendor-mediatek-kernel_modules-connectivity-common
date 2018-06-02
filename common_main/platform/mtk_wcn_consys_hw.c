@@ -155,7 +155,6 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 	INT32 iRet = -1;
 	UINT32 pinmux;
 	struct device_node *pinctl_node, *pins_node;
-	UINT8 __iomem *pConnsysEmiStart;
 
 	if (pdev)
 		g_pdev = pdev;
@@ -185,13 +184,6 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 		return iRet;
 
 	if (gConEmiPhyBase) {
-		pConnsysEmiStart = ioremap_nocache(gConEmiPhyBase, gConEmiSize);
-		WMT_PLAT_INFO_FUNC("Clearing Connsys EMI (virtual(0x%p) physical(0x%pa)) %llu bytes\n",
-				   pConnsysEmiStart, &gConEmiPhyBase, gConEmiSize);
-		memset_io(pConnsysEmiStart, 0, gConEmiSize);
-		iounmap(pConnsysEmiStart);
-		pConnsysEmiStart = NULL;
-
 		if (wmt_consys_ic_ops->consys_ic_emi_mpu_set_region_protection)
 			wmt_consys_ic_ops->consys_ic_emi_mpu_set_region_protection();
 		if (wmt_consys_ic_ops->consys_ic_emi_set_remapping_reg)
@@ -480,8 +472,8 @@ INT32 mtk_wcn_consys_hw_pwr_on(UINT32 co_clock_type)
 {
 	INT32 iRet = 0;
 
-	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_START);
 	WMT_PLAT_INFO_FUNC("CONSYS-HW-PWR-ON, start\n");
+	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_START);
 	if (!gConEmiPhyBase) {
 		WMT_PLAT_ERR_FUNC("EMI base address is invalid, CONNSYS can not be powered on!");
 		WMT_PLAT_ERR_FUNC("To avoid the occurrence of KE!\n");
@@ -499,8 +491,8 @@ INT32 mtk_wcn_consys_hw_pwr_off(UINT32 co_clock_type)
 {
 	INT32 iRet = 0;
 
-	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_BEFORE_POWER_OFF);
 	WMT_PLAT_INFO_FUNC("CONSYS-HW-PWR-OFF, start\n");
+	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_BEFORE_POWER_OFF);
 
 	iRet += mtk_wcn_consys_hw_reg_ctrl(0, co_clock_type);
 	iRet += mtk_wcn_consys_hw_gpio_ctrl(0);

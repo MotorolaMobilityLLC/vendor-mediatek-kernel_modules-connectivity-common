@@ -51,7 +51,6 @@ wmt_wlan_probe_cb mtk_wcn_wlan_probe;
 wmt_wlan_remove_cb mtk_wcn_wlan_remove;
 wmt_wlan_bus_cnt_get_cb mtk_wcn_wlan_bus_tx_cnt;
 wmt_wlan_bus_cnt_clr_cb mtk_wcn_wlan_bus_tx_cnt_clr;
-wmt_wlan_emi_mpu_set_protection_cb mtk_wcn_wlan_emi_mpu_set_protection;
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -156,8 +155,8 @@ static MTK_WCN_BOOL mtk_wcn_wmt_func_ctrl(ENUM_WMTDRV_TYPE_T type, ENUM_WMT_OPID
 	else
 		pSignal->timeoutValue = (pOp->op.opId == WMT_OPID_FUNC_ON) ? MAX_FUNC_ON_TIME : MAX_FUNC_OFF_TIME;
 
-	WMT_STEP_FUNC_CTRL_DO_ACTIONS_FUNC(type, opId);
 	WMT_INFO_FUNC("wmt-exp: OPID(%d) type(%zu) start\n", pOp->op.opId, pOp->op.au4OpData[0]);
+	WMT_STEP_FUNC_CTRL_DO_ACTIONS_FUNC(type, opId);
 
 	/*do not check return value, we will do this either way */
 	wmt_lib_host_awake_get();
@@ -274,8 +273,8 @@ INT8 mtk_wcn_wmt_therm_ctrl(ENUM_WMTTHERM_TYPE_T eType)
 	pOpData->au4OpData[0] = eType;
 	pSignal->timeoutValue = MAX_EACH_WMT_CMD;
 
-	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_BEFORE_READ_THERMAL);
 	WMT_DBG_FUNC("OPID(%d) type(%zu) start\n", pOp->op.opId, pOp->op.au4OpData[0]);
+	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_BEFORE_READ_THERMAL);
 
 	if (DISABLE_PSM_MONITOR()) {
 		WMT_ERR_FUNC("wake up failed,OPID(%d) type(%zu) abort!\n", pOp->op.opId, pOp->op.au4OpData[0]);
@@ -571,7 +570,6 @@ INT32 mtk_wcn_wmt_wlan_reg(P_MTK_WCN_WMT_WLAN_CB_INFO pWmtWlanCbInfo)
 	mtk_wcn_wlan_remove = pWmtWlanCbInfo->wlan_remove_cb;
 	mtk_wcn_wlan_bus_tx_cnt = pWmtWlanCbInfo->wlan_bus_cnt_get_cb;
 	mtk_wcn_wlan_bus_tx_cnt_clr = pWmtWlanCbInfo->wlan_bus_cnt_clr_cb;
-	mtk_wcn_wlan_emi_mpu_set_protection = pWmtWlanCbInfo->wlan_emi_mpu_set_protection_cb;
 
 	if (gWifiProbed) {
 		WMT_INFO_FUNC("wlan has been done power on,call probe directly\n");
@@ -595,7 +593,6 @@ INT32 mtk_wcn_wmt_wlan_unreg(void)
 	mtk_wcn_wlan_remove = NULL;
 	mtk_wcn_wlan_bus_tx_cnt = NULL;
 	mtk_wcn_wlan_bus_tx_cnt_clr = NULL;
-	mtk_wcn_wlan_emi_mpu_set_protection = NULL;
 
 	return 0;
 }

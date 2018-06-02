@@ -106,9 +106,9 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 
 		/*whole chip reset */
 	case STP_OPID_BTM_RST:
-		WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_BEFORE_CHIP_RESET);
 		STP_BTM_INFO_FUNC("whole chip reset start!\n");
 		STP_BTM_INFO_FUNC("....+\n");
+		WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_BEFORE_CHIP_RESET);
 		if (stp_btm->wmt_notify) {
 			stp_btm->wmt_notify(BTM_RST_OP);
 			ret = 0;
@@ -133,9 +133,7 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 	case STP_OPID_BTM_DUMP_TIMEOUT:
 #define FAKECOREDUMPEND "coredump end - fake"
 		dump_sink = mtk_wcn_stp_coredump_flag_get();
-		if (dump_sink == 1)
-			stp_dbg_aee_send(FAKECOREDUMPEND, osal_sizeof(FAKECOREDUMPEND), 0);
-		else if (dump_sink == 2) {
+		if (dump_sink == 2) {
 			UINT8 tmp[32];
 
 			tmp[0] = '[';
@@ -149,7 +147,6 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 			STP_BTM_WARN_FUNC("generate fake coredump message\n");
 			stp_dbg_dump_send_retry_handler((PINT8)&tmp, (INT32)osal_sizeof(FAKECOREDUMPEND)+5);
 		}
-
 		stp_dbg_poll_cpupcr(5, 1, 1);
 		/* Flush dump data, and reset compressor */
 		STP_BTM_INFO_FUNC("Flush dump data\n");
