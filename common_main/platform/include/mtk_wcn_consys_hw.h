@@ -185,6 +185,7 @@ typedef VOID(*CONSYS_IC_DEDICATED_LOG_PATH_DEINIT) (VOID);
 typedef INT32(*CONSYS_IC_CHECK_REG_READABLE) (VOID);
 typedef INT32(*CONSYS_IC_EMI_COREDUMP_REMAPPING) (UINT8 __iomem **addr, UINT32 enable);
 typedef INT32(*CONSYS_IC_RESET_EMI_COREDUMP) (UINT8 __iomem *addr);
+typedef VOID(*CONSYS_IC_CLOCK_FAIL_DUMP) (VOID);
 
 typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_CLOCK_BUFFER_CTRL consys_ic_clock_buffer_ctrl;
@@ -225,6 +226,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_CHECK_REG_READABLE consys_ic_check_reg_readable;
 	CONSYS_IC_EMI_COREDUMP_REMAPPING consys_ic_emi_coredump_remapping;
 	CONSYS_IC_RESET_EMI_COREDUMP consys_ic_reset_emi_coredump;
+	CONSYS_IC_CLOCK_FAIL_DUMP consys_ic_clock_fail_dump;
 } WMT_CONSYS_IC_OPS, *P_WMT_CONSYS_IC_OPS;
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -291,5 +293,6 @@ INT32 mtk_wdt_swsysret_config(INT32 bit, INT32 set_value);
 VOID mtk_wcn_consys_hang_debug(VOID);
 UINT32 mtk_consys_get_gps_lna_pin_num(VOID);
 INT32 mtk_consys_check_reg_readable(VOID);
+VOID mtk_wcn_consys_clock_fail_dump(VOID);
 #endif /* _MTK_WCN_CONSYS_HW_H_ */
 
