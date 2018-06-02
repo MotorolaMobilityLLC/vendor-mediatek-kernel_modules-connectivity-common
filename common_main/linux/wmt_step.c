@@ -496,7 +496,7 @@ static void _wmt_step_do_actions(struct step_action_list *action_list)
 			continue;
 		}
 
-		if (wmt_step_action_map[p_act->action_id].func_do_action != NULL)
+		if (p_act != NULL && wmt_step_action_map[p_act->action_id].func_do_action != NULL)
 			wmt_step_action_map[p_act->action_id].func_do_action(p_act, NULL);
 		else
 			WMT_ERR_FUNC("STEP failed: Action is NULL\n");
@@ -705,7 +705,6 @@ static struct step_action *wmt_step_create_write_register(int write, char *param
 
 static struct step_action *wmt_step_create_register(char *params[])
 {
-	struct step_register_action *p_reg_act = NULL;
 	long write;
 
 	if (params[0] == NULL) {
@@ -723,8 +722,6 @@ static struct step_action *wmt_step_create_register(char *params[])
 		return wmt_step_create_read_register(write, params);
 	else
 		return wmt_step_create_write_register(write, params);
-
-	return &(p_reg_act->base);
 }
 
 static struct step_action *wmt_step_create_gpio(char *params[])
