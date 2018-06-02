@@ -254,16 +254,19 @@ static void connlog_ring_emi_to_cache(int conn_type)
 		unsigned int emi_buf_size = ring_seg.sz;
 		unsigned int written = 0;
 
+#ifdef DEBUG_RING
 		ring_dump(__func__, ring);
 		ring_dump_segment(__func__, &ring_seg);
-		pr_info("%s: count(%d), ring_seg.sz(%d)\n", type_to_title[conn_type], count, ring_seg.sz);
-
+#endif
 		ring_cache_write_prepare(ring_seg.sz, &ring_cache_seg, &connlog_buffer_table[conn_type].ring_cache);
 		RING_CACHE_WRITE_FOR_EACH(emi_buf_size, ring_cache_seg, &connlog_buffer_table[conn_type].ring_cache) {
+#ifdef DEBUG_RING
 			ring_cache_dump(__func__, &connlog_buffer_table[conn_type].ring_cache);
 			ring_cache_dump_segment(__func__, &ring_cache_seg);
-
-			pr_info("ring_pt=%p, ring_seg.sz=%d", ring_cache_seg.ring_cache_pt, ring_cache_seg.sz);
+#endif
+			pr_info("%s: ring_seg.sz=%d, ring_cache_pt=%p, ring_cache_seg.sz=%d\n",
+				type_to_title[conn_type], ring_seg.sz, ring_cache_seg.ring_cache_pt,
+				ring_cache_seg.sz);
 			memcpy_fromio(ring_cache_seg.ring_cache_pt, ring_seg.ring_pt + ring_cache_seg.data_pos,
 				ring_cache_seg.sz);
 			emi_buf_size -= ring_cache_seg.sz;
