@@ -633,8 +633,17 @@ INT32 stp_dbg_trigger_collect_ftrace(PUINT8 pbuf, INT32 len)
 		return -1;
 	}
 
+	if (mtk_wcn_stp_get_wmt_trg_assert() ||
+	    mtk_wcn_stp_coredump_start_get()) {
+		STP_DBG_ERR_FUNC("assert has been triggered\n");
+		return -1;
+	}
+
 	stp_dbg_set_host_assert_info(WMTDRV_TYPE_WMT, 30, 1);
-	stp_dbg_set_fw_info(pbuf, len, STP_HOST_TRIGGER_ASSERT_TIMEOUT);
+
+	if (stp_dbg_set_fw_info(pbuf, len, STP_HOST_TRIGGER_COLLECT_FTRACE))
+		return -1;
+
 	if (g_core_dump) {
 		osal_strncpy(&g_core_dump->info[0], pbuf, len);
 		aed_combo_exception(NULL, 0, (const PINT32)pbuf, len, (const PINT8)g_core_dump->info);
@@ -2172,6 +2181,12 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 		return -1;
 	}
 
+	if (g_stp_dbg_cpupcr->issue_type &&
+	    g_stp_dbg_cpupcr->issue_type != STP_HOST_TRIGGER_COLLECT_FTRACE) {
+		STP_DBG_ERR_FUNC("assert information has been set up\n");
+		return -1;
+	}
+
 	STP_DBG_INFO_FUNC("issue type(%d)\n", issue_type);
 	g_stp_dbg_cpupcr->issue_type = issue_type;
 	osal_memset(&g_stp_dbg_cpupcr->assert_info[0], 0, STP_ASSERT_INFO_SIZE);
@@ -2184,7 +2199,8 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 
 	if ((issue_type == STP_FW_ASSERT_ISSUE) ||
 	    (issue_type == STP_HOST_TRIGGER_FW_ASSERT) ||
-	    (issue_type == STP_HOST_TRIGGER_ASSERT_TIMEOUT)) {
+	    (issue_type == STP_HOST_TRIGGER_ASSERT_TIMEOUT) ||
+	    (issue_type == STP_HOST_TRIGGER_COLLECT_FTRACE)) {
 		if ((issue_type == STP_FW_ASSERT_ISSUE) || (issue_type == STP_HOST_TRIGGER_FW_ASSERT)) {
 			tempbuf = osal_malloc(len + 1);
 			if (!tempbuf)
@@ -2208,8 +2224,10 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 
 		}
 		if ((issue_type == STP_HOST_TRIGGER_FW_ASSERT) ||
-		    (issue_type == STP_HOST_TRIGGER_ASSERT_TIMEOUT)) {
+		    (issue_type == STP_HOST_TRIGGER_ASSERT_TIMEOUT) ||
+		    (issue_type == STP_HOST_TRIGGER_COLLECT_FTRACE)) {
 			g_stp_dbg_cpupcr->fwIsr = 0;
+			g_stp_dbg_cpupcr->fwRrq = 0;
 
 			osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 			switch (g_stp_dbg_cpupcr->host_assert_info.drv_type) {
@@ -2503,6 +2521,7 @@ INT32 stp_dbg_cpupcr_infor_format(PUINT8 buf, UINT32 max_len)
 	g_stp_dbg_cpupcr->count = 0;
 	g_stp_dbg_cpupcr->host_assert_info.reason = 0;
 	g_stp_dbg_cpupcr->host_assert_info.drv_type = 0;
+	g_stp_dbg_cpupcr->issue_type = STP_FW_ISSUE_TYPE_INVALID;
 	osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 
 	return len;
