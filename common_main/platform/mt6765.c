@@ -681,12 +681,22 @@ static INT32 polling_consys_chipid(VOID)
 	WMT_PLAT_INFO_FUNC("consys HW version id(0x%x)\n", consys_ver_id & 0xFFFF);
 	consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_FW_ID_OFFSET);
 	WMT_PLAT_INFO_FUNC("consys FW version id(0x%x)\n", consys_ver_id & 0xFFFF);
+
+	/* CONNSYS mcu rom delsel setting */
+	consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_MCU_ROM_DELSEL_OFFSET);
+	consys_ver_id &= 0xFFFF0000;
+	consys_ver_id |= CONSYS_MCU_ROM_DELSEL_VALUE;
+	CONSYS_REG_WRITE(conn_reg.mcu_base + CONSYS_MCU_ROM_DELSEL_OFFSET, consys_ver_id);
+
 	if (wmt_plat_soc_co_clock_flag_get()) {
 		consys_reg_base = ioremap_nocache(CONSYS_COCLOCK_STABLE_TIME_BASE, 0x100);
 		if (consys_reg_base) {
+#if 0
+			/* disable XO stable time setting */
 			value = CONSYS_REG_READ(consys_reg_base);
 			value = (value & CONSYS_COCLOCK_STABLE_TIME_MASK) | CONSYS_COCLOCK_STABLE_TIME;
 			CONSYS_REG_WRITE(consys_reg_base, value);
+#endif
 			value = CONSYS_REG_READ(consys_reg_base + CONSYS_COCLOCK_ACK_ENABLE_OFFSET);
 			value = value & (~CONSYS_COCLOCK_ACK_ENABLE_BIT);
 			CONSYS_REG_WRITE(consys_reg_base + CONSYS_COCLOCK_ACK_ENABLE_OFFSET, value);
@@ -695,6 +705,8 @@ static INT32 polling_consys_chipid(VOID)
 			WMT_PLAT_ERR_FUNC("connsys co_clock stable time base(0x%x) ioremap fail!\n",
 					  CONSYS_COCLOCK_STABLE_TIME_BASE);
 	}
+
+	CONSYS_SET_BIT(conn_reg.mcu_base + CONSYS_SW_IRQ_OFFSET, CONSYS_EMI_CTRL_VALUE);
 
 	return 0;
 }
