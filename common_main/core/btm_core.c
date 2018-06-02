@@ -248,11 +248,7 @@ static INT32 _stp_btm_put_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP_Q pOpQ, P_OSAL_OP 
 				STP_BTM_PR_DBG("latest: 0x%x\n", pOp_latest->op.opId);
 				flag_latest = 0;
 			}
-			if ((pOp_latest->op.opId == pOp->op.opId)
-#if CFG_WMT_LTE_COEX_HANDLING
-			&& (pOp->op.opId != STP_OPID_BTM_WMT_LTE_COEX)
-#endif
-			) {
+			if ((pOp_latest->op.opId == pOp->op.opId) && (pOp->op.opId != STP_OPID_BTM_WMT_LTE_COEX)) {
 				flag_latest = 0;
 				STP_BTM_PR_DBG("With the latest a command repeat: latest 0x%x,current 0x%x\n",
 						pOp_latest->op.opId, pOp->op.opId);
@@ -693,8 +689,6 @@ static inline INT32 _stp_btm_do_fw_assert(MTKSTP_BTM_T *stp_btm)
 {
 	INT32 status = -1;
 	MTK_WCN_BOOL bRet = MTK_WCN_BOOL_FALSE;
-	PUINT8 pbuf;
-	INT32 len;
 
 	/* send assert command */
 	STP_BTM_PR_INFO("trigger stp assert process\n");
@@ -707,13 +701,9 @@ static inline INT32 _stp_btm_do_fw_assert(MTKSTP_BTM_T *stp_btm)
 		status = 0;
 	} else if (mtk_wcn_stp_is_btif_fullset_mode()) {
 #if BTIF_RXD_BE_BLOCKED_DETECT
-		if (stp_dbg_is_btif_rxd_be_blocked()) {
-			pbuf = "btif_rxd thread be blocked too long,just collect SYS_FTRACE to DB";
-			len = osal_strlen(pbuf);
-			stp_dbg_trigger_collect_ftrace(pbuf, len);
-		} else
+		stp_dbg_is_btif_rxd_be_blocked();
 #endif
-			status = wmt_plat_force_trigger_assert(STP_FORCE_TRG_ASSERT_DEBUG_PIN);
+		status = wmt_plat_force_trigger_assert(STP_FORCE_TRG_ASSERT_DEBUG_PIN);
 	}
 
 	stp_btm_start_trigger_assert_timer(stp_btm);
