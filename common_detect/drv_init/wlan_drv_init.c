@@ -23,7 +23,7 @@
 #ifdef MTK_WCN_WLAN_GEN4
 int __attribute__((weak)) mtk_wcn_wlan_gen4_init()
 {
-	WMT_DETECT_INFO_FUNC("no impl. mtk_wcn_wlan_gen4_init\n");
+	WMT_DETECT_PR_INFO("no impl. mtk_wcn_wlan_gen4_init\n");
 	return 0;
 }
 #endif
@@ -31,7 +31,7 @@ int __attribute__((weak)) mtk_wcn_wlan_gen4_init()
 #ifdef MTK_WCN_WLAN_GEN3
 int __attribute__((weak)) mtk_wcn_wlan_gen3_init()
 {
-	WMT_DETECT_INFO_FUNC("no impl. mtk_wcn_wlan_gen3_init\n");
+	WMT_DETECT_PR_INFO("no impl. mtk_wcn_wlan_gen3_init\n");
 	return 0;
 }
 #endif
@@ -39,14 +39,14 @@ int __attribute__((weak)) mtk_wcn_wlan_gen3_init()
 #ifdef MTK_WCN_WLAN_GEN2
 int __attribute__((weak)) mtk_wcn_wlan_gen2_init()
 {
-	WMT_DETECT_INFO_FUNC("no impl. mtk_wcn_wlan_gen2_init\n");
+	WMT_DETECT_PR_INFO("no impl. mtk_wcn_wlan_gen2_init\n");
 	return 0;
 }
 #endif
 
 int __attribute__((weak)) mtk_wcn_wmt_wifi_init()
 {
-	WMT_DETECT_INFO_FUNC("no impl. mtk_wcn_wmt_wifi_init\n");
+	WMT_DETECT_PR_INFO("no impl. mtk_wcn_wmt_wifi_init\n");
 	return 0;
 }
 
@@ -55,11 +55,11 @@ int do_wlan_drv_init(int chip_id)
 	int i_ret = 0;
 	int ret = 0;
 
-	WMT_DETECT_INFO_FUNC("start to do wlan module init 0x%x\n", chip_id);
+	WMT_DETECT_PR_INFO("start to do wlan module init 0x%x\n", chip_id);
 
 	/* WMT-WIFI char dev init */
 	ret = mtk_wcn_wmt_wifi_init();
-	WMT_DETECT_INFO_FUNC("WMT-WIFI char dev init, ret:%d\n", ret);
+	WMT_DETECT_PR_INFO("WMT-WIFI char dev init, ret:%d\n", ret);
 	i_ret += ret;
 
 	switch (chip_id) {
@@ -67,9 +67,9 @@ int do_wlan_drv_init(int chip_id)
 #ifdef MTK_WCN_WLAN_GEN4
 		/* WLAN driver init */
 		ret = mtk_wcn_wlan_gen4_init();
-		WMT_DETECT_INFO_FUNC("WLAN-GEN4 driver init, ret:%d\n", ret);
+		WMT_DETECT_PR_INFO("WLAN-GEN4 driver init, ret:%d\n", ret);
 #else
-		WMT_DETECT_ERR_FUNC("WLAN-GEN4 driver is not supported, please check CONFIG_MTK_COMBO_CHIP\n");
+		WMT_DETECT_PR_ERR("WLAN-GEN4 driver is not supported, please check CONFIG_MTK_COMBO_CHIP\n");
 		ret = -1;
 #endif
 		break;
@@ -83,9 +83,9 @@ int do_wlan_drv_init(int chip_id)
 #ifdef MTK_WCN_WLAN_GEN3
 		/* WLAN driver init */
 		ret = mtk_wcn_wlan_gen3_init();
-		WMT_DETECT_INFO_FUNC("WLAN-GEN3 driver init, ret:%d\n", ret);
+		WMT_DETECT_PR_INFO("WLAN-GEN3 driver init, ret:%d\n", ret);
 #else
-		WMT_DETECT_ERR_FUNC("WLAN-GEN3 driver is not supported, please check CONFIG_MTK_COMBO_CHIP\n");
+		WMT_DETECT_PR_ERR("WLAN-GEN3 driver is not supported, please check CONFIG_MTK_COMBO_CHIP\n");
 		ret = -1;
 #endif
 		break;
@@ -94,9 +94,9 @@ int do_wlan_drv_init(int chip_id)
 #ifdef MTK_WCN_WLAN_GEN2
 		/* WLAN driver init */
 		ret = mtk_wcn_wlan_gen2_init();
-		WMT_DETECT_INFO_FUNC("WLAN-GEN2 driver init, ret:%d\n", ret);
+		WMT_DETECT_PR_INFO("WLAN-GEN2 driver init, ret:%d\n", ret);
 #else
-		WMT_DETECT_ERR_FUNC("WLAN-GEN2 driver is not supported, please check CONFIG_MTK_COMBO_CHIP\n");
+		WMT_DETECT_PR_ERR("WLAN-GEN2 driver is not supported, please check CONFIG_MTK_COMBO_CHIP\n");
 		ret = -1;
 #endif
 		break;
@@ -104,7 +104,7 @@ int do_wlan_drv_init(int chip_id)
 
 	i_ret += ret;
 
-	WMT_DETECT_INFO_FUNC("finish wlan module init\n");
+	WMT_DETECT_PR_INFO("finish wlan module init\n");
 
 	return i_ret;
 }
