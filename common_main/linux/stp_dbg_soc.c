@@ -17,6 +17,7 @@
 #include "stp_core.h"
 #include "mtk_wcn_consys_hw.h"
 #include "wmt_step.h"
+#include "wmt_lib.h"
 #include <linux/ratelimit.h>
 
 #define STP_DBG_PAGED_TRACE_SIZE (2048*sizeof(char))
@@ -31,18 +32,8 @@ UINT32 g_paged_trace_len;
 UINT8 g_paged_dump_buffer[STP_DBG_PAGED_DUMP_BUFFER_SIZE] = { 0 };
 UINT32 g_paged_dump_len;
 
-static PUINT8 soc_task_str[SOC_TASK_ID_INDX_MAX][SOC_GEN3_TASK_ID_MAX] = {
-	{"Task_WMT",
-	"Task_BT",
-	"Task_Wifi",
-	"Task_Tst",
-	"Task_FM",
-	"Task_Idle",
-	"Task_DrvStp",
-	"Task_DrvBtif",
-	"Task_NatBt",
-	"Task_DrvWifi"},
-	{"Task_WMT",
+static PUINT8 soc_task_str[STP_DBG_TASK_ID_MAX] = {
+	"Task_WMT",
 	"Task_BT",
 	"Task_Wifi",
 	"Task_Tst",
@@ -54,7 +45,39 @@ static PUINT8 soc_task_str[SOC_TASK_ID_INDX_MAX][SOC_GEN3_TASK_ID_MAX] = {
 	"Task_DrvStp",
 	"Task_DrvBtif",
 	"Task_NatBt",
-	"Task_DrvWifi"},
+	"Task_DrvWifi"
+};
+
+INT32 const soc_gen_two_task_id_adapter[STP_DBG_TASK_ID_MAX] = {
+	STP_DBG_TASK_WMT,
+	STP_DBG_TASK_BT,
+	STP_DBG_TASK_WIFI,
+	STP_DBG_TASK_TST,
+	STP_DBG_TASK_FM,
+	STP_DBG_TASK_IDLE,
+	STP_DBG_TASK_WMT,
+	STP_DBG_TASK_WMT,
+	STP_DBG_TASK_WMT,
+	STP_DBG_TASK_DRVSTP,
+	STP_DBG_TASK_BUS,
+	STP_DBG_TASK_NATBT,
+	STP_DBG_TASK_DRVWIFI
+};
+
+INT32 const soc_gen_three_task_id_adapter[STP_DBG_TASK_ID_MAX] = {
+	STP_DBG_TASK_WMT,
+	STP_DBG_TASK_BT,
+	STP_DBG_TASK_WIFI,
+	STP_DBG_TASK_TST,
+	STP_DBG_TASK_FM,
+	STP_DBG_TASK_GPS,
+	STP_DBG_TASK_FLP,
+	STP_DBG_TASK_IDLE,
+	STP_DBG_TASK_WMT,
+	STP_DBG_TASK_DRVSTP,
+	STP_DBG_TASK_BUS,
+	STP_DBG_TASK_NATBT,
+	STP_DBG_TASK_DRVWIFI
 };
 
 static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink);
@@ -458,33 +481,31 @@ INT32 stp_dbg_soc_core_dump(INT32 dump_sink)
 
 PUINT8 stp_dbg_soc_id_to_task(UINT32 id)
 {
-	UINT32 chip_id = wmt_plat_get_soc_chipid();
-	UINT32 task_id_indx = SOC_TASK_ID_GEN2;
-	INT32 task_id_flag = 0;
+	P_WMT_PATCH_INFO p_patch_info;
+	PUINT8 patch_name;
+	UINT32 temp_id;
 
-	switch (chip_id) {
-	case 0x6797:
-	case 0x6759:
-	case 0x6758:
-	case 0x6775:
-	case 0x6771:
-	case 0x6765:
-		task_id_indx = SOC_TASK_ID_GEN3;
-		if (id >= SOC_GEN3_TASK_ID_MAX)
-			task_id_flag = SOC_GEN3_TASK_ID_MAX;
-		break;
-	default:
-		task_id_indx = SOC_TASK_ID_GEN2;
-		if (id >= SOC_GEN2_TASK_ID_MAX)
-			task_id_flag = SOC_GEN2_TASK_ID_MAX;
-		break;
+	if (id >= STP_DBG_TASK_ID_MAX) {
+		STP_DBG_ERR_FUNC("task id(%d) overflow(%d)\n", id, STP_DBG_TASK_ID_MAX);
+		return NULL;
 	}
 
-	if (task_id_flag) {
-		STP_DBG_ERR_FUNC("task id(%d) overflow(%d)\n", id, task_id_flag);
+	p_patch_info = wmt_lib_get_patch_info();
+	patch_name = p_patch_info->patchName;
+
+	if (patch_name == NULL) {
+		STP_DBG_ERR_FUNC("patch_name is null\n");
 		return NULL;
-	} else
-		return soc_task_str[task_id_indx][id];
+	}
+
+	if (osal_strcmp(patch_name, "ROMv2") == 0)
+		temp_id = soc_gen_two_task_id_adapter[id];
+	else if (osal_strcmp(patch_name, "ROMv3") == 0 || osal_strcmp(patch_name, "ROMv4") == 0)
+		temp_id = soc_gen_three_task_id_adapter[id];
+	else
+		temp_id = id;
+
+	return soc_task_str[temp_id];
 }
 
 UINT32 stp_dbg_soc_read_debug_crs(ENUM_CONNSYS_DEBUG_CR cr)

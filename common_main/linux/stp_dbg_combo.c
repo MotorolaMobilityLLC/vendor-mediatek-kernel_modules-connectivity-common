@@ -17,17 +17,8 @@
 static _osal_inline_ INT32 stp_dbg_combo_put_dump_to_aee(VOID);
 static _osal_inline_ INT32 stp_dbg_combo_put_dump_to_nl(VOID);
 
-static PUINT8 combo_task_str[COMBO_TASK_ID_INDX_MAX][COMBO_GEN3_TASK_ID_MAX] = {
-	{"Task_WMT",
-	"Task_BT",
-	"Task_Wifi",
-	"Task_Tst",
-	"Task_FM",
-	"Task_Idle",
-	"Task_DrvStp",
-	"Task_DrvSdio",
-	"Task_NatBt"},
-	{"Task_WMT",
+static PUINT8 combo_task_str[STP_DBG_TASK_ID_MAX] = {
+	"Task_WMT",
 	"Task_BT",
 	"Task_Wifi",
 	"Task_Tst",
@@ -38,7 +29,24 @@ static PUINT8 combo_task_str[COMBO_TASK_ID_INDX_MAX][COMBO_GEN3_TASK_ID_MAX] = {
 	"Task_Idle",
 	"Task_DrvStp",
 	"Task_DrvSdio",
-	"Task_NatBt"},
+	"Task_NatBt",
+	"Task_DrvWifi"
+};
+
+INT32 const combo_legacy_task_id_adapter[STP_DBG_TASK_ID_MAX] = {
+	STP_DBG_TASK_WMT,
+	STP_DBG_TASK_BT,
+	STP_DBG_TASK_WIFI,
+	STP_DBG_TASK_TST,
+	STP_DBG_TASK_FM,
+	STP_DBG_TASK_IDLE,
+	STP_DBG_TASK_WMT,
+	STP_DBG_TASK_WMT,
+	STP_DBG_TASK_WMT,
+	STP_DBG_TASK_DRVSTP,
+	STP_DBG_TASK_BUS,
+	STP_DBG_TASK_NATBT,
+	STP_DBG_TASK_DRVWIFI
 };
 
 static _osal_inline_ INT32 stp_dbg_combo_put_dump_to_aee(VOID)
@@ -172,25 +180,21 @@ INT32 stp_dbg_combo_core_dump(INT32 dump_sink)
 PUINT8 stp_dbg_combo_id_to_task(UINT32 id)
 {
 	UINT32 chip_id = mtk_wcn_wmt_chipid_query();
-	UINT32 task_id_indx = COMBO_TASK_ID_GEN2;
-	INT32 task_id_flag = 0;
+	UINT32 temp_id;
+
+	if (id >= STP_DBG_TASK_ID_MAX) {
+		STP_DBG_ERR_FUNC("task id(%d) overflow(%d)\n", id, STP_DBG_TASK_ID_MAX);
+		return NULL;
+	}
 
 	switch (chip_id) {
 	case 0x6632:
-		task_id_indx = COMBO_TASK_ID_GEN3;
-		if (id >= COMBO_GEN3_TASK_ID_MAX)
-			task_id_flag = COMBO_GEN3_TASK_ID_MAX;
+		temp_id = id;
 		break;
 	default:
-		task_id_indx = COMBO_TASK_ID_GEN2;
-		if (id >= COMBO_GEN2_TASK_ID_MAX)
-			task_id_flag = COMBO_GEN2_TASK_ID_MAX;
+		temp_id = combo_legacy_task_id_adapter[id];
 		break;
 	}
 
-	if (task_id_flag) {
-		STP_DBG_ERR_FUNC("task id(%d) overflow(%d)\n", id, task_id_flag);
-		return NULL;
-	} else
-		return combo_task_str[task_id_indx][id];
+	return combo_task_str[temp_id];
 }
