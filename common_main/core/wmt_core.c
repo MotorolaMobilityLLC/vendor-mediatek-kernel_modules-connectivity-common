@@ -156,6 +156,7 @@ static INT32 opfunc_utc_time_sync(P_WMT_OP pWmtOp);
 static INT32 opfunc_fw_log_ctrl(P_WMT_OP pWmtOp);
 static INT32 opfunc_wlan_probe(P_WMT_OP pWmtOp);
 static INT32 opfunc_wlan_remove(P_WMT_OP pWmtOp);
+static INT32 opfunc_try_pwr_off(P_WMT_OP pWmtOp);
 static INT32 opfunc_gps_mcu_ctrl(P_WMT_OP pWmtOp);
 
 /*******************************************************************************
@@ -318,6 +319,7 @@ static const WMT_OPID_FUNC wmt_core_opfunc[] = {
 	[WMT_OPID_WLAN_PROBE] = opfunc_wlan_probe,
 	[WMT_OPID_WLAN_REMOVE] = opfunc_wlan_remove,
 	[WMT_OPID_GPS_MCU_CTRL] = opfunc_gps_mcu_ctrl,
+	[WMT_OPID_TRY_PWR_OFF] = opfunc_try_pwr_off,
 
 };
 
@@ -1196,7 +1198,6 @@ static INT32 opfunc_pwr_off(P_WMT_OP pWmtOp)
 static INT32 opfunc_func_on(P_WMT_OP pWmtOp)
 {
 	INT32 iRet = -1;
-	INT32 iPwrOffRet = -1;
 	UINT32 drvType = pWmtOp->au4OpData[0];
 
 	/* Check abnormal type */
@@ -1271,32 +1272,7 @@ static INT32 opfunc_func_on(P_WMT_OP pWmtOp)
 
 	if (iRet) {
 		WMT_ERR_FUNC("WMT-CORE:type(0x%x) function on failed, ret(%d)\n", drvType, iRet);
-		osal_assert(0);
-		iRet = wmt_lib_wlan_lock_aquire();
-		if (iRet) {
-			WMT_ERR_FUNC("--->lock wlan_lock failed, iRet=%d\n", iRet);
-			return iRet;
-		}
-		/* FIX-ME:[Chaozhong Liang], Error handling? check subsystem state and do pwr off if necessary? */
-		/* check all sub-func and do power off */
-		if ((gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_BT] == DRV_STS_POWER_OFF) &&
-		    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPS] == DRV_STS_POWER_OFF) &&
-		    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_FM] == DRV_STS_POWER_OFF) &&
-		    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WIFI] == DRV_STS_POWER_OFF) &&
-		    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_LPBK] == DRV_STS_POWER_OFF) &&
-		    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_ANT] == DRV_STS_POWER_OFF) &&
-		    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_COREDUMP] == DRV_STS_POWER_OFF)) {
-			WMT_INFO_FUNC("WMT-CORE:Fun(%d) [POWER_OFF] and power down chip\n", drvType);
-			mtk_wcn_wmt_system_state_reset();
-			iPwrOffRet = opfunc_pwr_off(pWmtOp);
-			if (iPwrOffRet) {
-				WMT_ERR_FUNC
-				    ("WMT-CORE: wmt_pwr_off fail(%d) when turn off func(%d)\n",
-				     iPwrOffRet, drvType);
-				osal_assert(0);
-			}
-		}
-		wmt_lib_wlan_lock_release();
+		opfunc_try_pwr_off(pWmtOp);
 		return iRet;
 	}
 
@@ -1374,31 +1350,8 @@ static INT32 opfunc_func_off(P_WMT_OP pWmtOp)
 		 */
 	}
 
-	iRet = wmt_lib_wlan_lock_aquire();
-	if (iRet) {
-		WMT_ERR_FUNC("--->lock wlan_lock failed, iRet=%d\n", iRet);
-		return iRet;
-	}
-
 	/* check all sub-func and do power off */
-	if ((gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_BT] == DRV_STS_POWER_OFF) &&
-	    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPS] == DRV_STS_POWER_OFF) &&
-	    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_FM] == DRV_STS_POWER_OFF) &&
-	    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WIFI] == DRV_STS_POWER_OFF) &&
-	    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_LPBK] == DRV_STS_POWER_OFF) &&
-	    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_ANT] == DRV_STS_POWER_OFF) &&
-	    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_COREDUMP] == DRV_STS_POWER_OFF)) {
-		WMT_INFO_FUNC("WMT-CORE:Fun(%d) [POWER_OFF] and power down chip\n", drvType);
-
-		iRet = opfunc_pwr_off(pWmtOp);
-		if (iRet) {
-			WMT_ERR_FUNC("WMT-CORE: wmt_pwr_off fail(%d) when turn off func(%d)\n",
-				     iRet, drvType);
-			osal_assert(0);
-		}
-	}
-
-	wmt_lib_wlan_lock_release();
+	opfunc_try_pwr_off(pWmtOp);
 	wmt_core_dump_func_state("AF FUNC OFF");
 	return iRet;
 }
@@ -3300,6 +3253,7 @@ static INT32 opfunc_wlan_probe(P_WMT_OP pWmtOp)
 	if (gMtkWmtCtx.eDrvStatus[drvType] == DRV_STS_FUNC_ON) {
 		WMT_WARN_FUNC("func(%d) already on\n", drvType);
 		iRet = 0;
+		wmt_lib_wlan_lock_release();
 		goto done;
 	}
 
@@ -3327,6 +3281,7 @@ static INT32 opfunc_wlan_probe(P_WMT_OP pWmtOp)
 					gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_SDIO2]);
 			osal_assert(0);
 			iRet = -4;
+			wmt_lib_wlan_lock_release();
 			goto done;
 		}
 	} else {
@@ -3351,35 +3306,17 @@ static INT32 opfunc_wlan_probe(P_WMT_OP pWmtOp)
 	} else
 		gMtkWmtCtx.eDrvStatus[drvType] = DRV_STS_FUNC_ON;
 
+	/* wlan_lock must release before try_pwr_off */
+	wmt_lib_wlan_lock_release();
 	if (iRet) {
 		WMT_ERR_FUNC("WMT-CORE:type(0x%x) function on failed, ret(%d)\n", drvType, iRet);
-		osal_assert(0);
 		/* FIX-ME:[Chaozhong Liang], Error handling? check subsystem state and do pwr off if necessary? */
 		/* check all sub-func and do power off */
-		wmt_lib_psm_lock_aquire();
-		if ((gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_BT] == DRV_STS_POWER_OFF) &&
-		    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPS] == DRV_STS_POWER_OFF) &&
-		    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_FM] == DRV_STS_POWER_OFF) &&
-		    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WIFI] == DRV_STS_POWER_OFF) &&
-		    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_LPBK] == DRV_STS_POWER_OFF) &&
-		    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_ANT] == DRV_STS_POWER_OFF) &&
-		    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_COREDUMP] == DRV_STS_POWER_OFF)) {
-			WMT_INFO_FUNC("WMT-CORE:Fun(%d) [POWER_OFF] and power down chip\n", drvType);
-			mtk_wcn_wmt_system_state_reset();
-			iRet = opfunc_pwr_off(pWmtOp);
-			if (iRet) {
-				WMT_ERR_FUNC
-				    ("WMT-CORE: wmt_pwr_off fail(%d) when turn off func(%d)\n",
-				     iRet, drvType);
-				osal_assert(0);
-			}
-		}
-		wmt_lib_psm_lock_release();
+		wmt_lib_try_pwr_off();
 	}
 
 done:
 	wmt_core_dump_func_state("AF FUNC ON");
-	wmt_lib_wlan_lock_release();
 	return iRet;
 }
 
@@ -3400,6 +3337,7 @@ static INT32 opfunc_wlan_remove(P_WMT_OP pWmtOp)
 		WMT_WARN_FUNC("WMT-CORE: Fun(%d) DRV_STS_[0x%x] already non-FUN_ON in wmt_func_off\n",
 			drvType, gMtkWmtCtx.eDrvStatus[drvType]);
 		iRet = 0;
+		wmt_lib_wlan_lock_release();
 		goto done;
 	}
 
@@ -3431,8 +3369,26 @@ static INT32 opfunc_wlan_remove(P_WMT_OP pWmtOp)
 		 */
 	}
 
+	/* wlan_lock must release before try_pwr_off */
+	wmt_lib_wlan_lock_release();
 	/* check all sub-func and do power off */
-	wmt_lib_psm_lock_aquire();
+	wmt_lib_try_pwr_off();
+
+done:
+	wmt_core_dump_func_state("AF FUNC OFF");
+	return iRet;
+}
+
+static INT32 opfunc_try_pwr_off(P_WMT_OP pWmtOp)
+{
+	INT32 iRet = 0;
+	UINT32 drvType = pWmtOp->au4OpData[0];
+
+	iRet = wmt_lib_wlan_lock_aquire();
+	if (iRet) {
+		WMT_ERR_FUNC("--->lock wlan_lock failed, iRet=%d\n", iRet);
+		return iRet;
+	}
 	if ((gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_BT] == DRV_STS_POWER_OFF) &&
 	    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPS] == DRV_STS_POWER_OFF) &&
 	    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_FM] == DRV_STS_POWER_OFF) &&
@@ -3441,7 +3397,7 @@ static INT32 opfunc_wlan_remove(P_WMT_OP pWmtOp)
 	    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_ANT] == DRV_STS_POWER_OFF) &&
 	    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_COREDUMP] == DRV_STS_POWER_OFF)) {
 		WMT_INFO_FUNC("WMT-CORE:Fun(%d) [POWER_OFF] and power down chip\n", drvType);
-
+		mtk_wcn_wmt_system_state_reset();
 		iRet = opfunc_pwr_off(pWmtOp);
 		if (iRet) {
 			WMT_ERR_FUNC("WMT-CORE: wmt_pwr_off fail(%d) when turn off func(%d)\n",
@@ -3449,10 +3405,6 @@ static INT32 opfunc_wlan_remove(P_WMT_OP pWmtOp)
 			osal_assert(0);
 		}
 	}
-	wmt_lib_psm_lock_release();
-
-done:
-	wmt_core_dump_func_state("AF FUNC OFF");
 	wmt_lib_wlan_lock_release();
 	return iRet;
 }
