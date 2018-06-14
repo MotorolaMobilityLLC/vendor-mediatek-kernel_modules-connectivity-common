@@ -154,6 +154,7 @@ CONSYS_EMI_ADDR_INFO mtk_wcn_emi_addr_info = {
 	.paged_dump_off = CONSYS_EMI_PAGED_DUMP_OFFSET,
 	.full_dump_off = CONSYS_EMI_FULL_DUMP_OFFSET,
 	.p_ecso = &mtk_wcn_emi_state_off,
+	.emi_core_dump_offset = CONSYS_EMI_COREDUMP_OFFSET,
 };
 
 WMT_CONSYS_IC_OPS consys_ic_ops = {

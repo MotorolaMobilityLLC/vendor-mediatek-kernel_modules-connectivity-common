@@ -837,7 +837,7 @@ static int wmt_step_parse_register_address(struct step_reg_addr_info *p_reg_addr
 		res = g_step_env.reg_base[symbol].vir_addr;
 
 		if (res == 0) {
-			WMT_ERR_FUNC("STEP failed: No support the base %s\n", ptr);
+			WMT_ERR_FUNC("STEP failed: No support the base %s is 0\n", ptr);
 			return -1;
 		}
 
