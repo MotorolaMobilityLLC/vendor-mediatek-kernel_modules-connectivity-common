@@ -194,7 +194,6 @@ typedef INT32(*CONSYS_IC_EMI_COREDUMP_REMAPPING) (UINT8 __iomem **addr, UINT32 e
 typedef INT32(*CONSYS_IC_RESET_EMI_COREDUMP) (UINT8 __iomem *addr);
 typedef VOID(*CONSYS_IC_CLOCK_FAIL_DUMP) (VOID);
 typedef INT32(*CONSYS_IC_IS_CONNSYS_REG) (UINT32 addr);
-typedef VOID(*CONSYS_IC_RESUME_DUMP_INFO) (VOID);
 
 typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_CLOCK_BUFFER_CTRL consys_ic_clock_buffer_ctrl;
@@ -237,7 +236,6 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_RESET_EMI_COREDUMP consys_ic_reset_emi_coredump;
 	CONSYS_IC_CLOCK_FAIL_DUMP consys_ic_clock_fail_dump;
 	CONSYS_IC_IS_CONNSYS_REG consys_ic_is_connsys_reg;
-	CONSYS_IC_RESUME_DUMP_INFO consys_ic_resume_dump_info;
 } WMT_CONSYS_IC_OPS, *P_WMT_CONSYS_IC_OPS;
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -275,6 +273,7 @@ INT32 mtk_wcn_consys_hw_pwr_on(UINT32 co_clock_type);
 INT32 mtk_wcn_consys_hw_rst(UINT32 co_clock_type);
 INT32 mtk_wcn_consys_hw_bt_paldo_ctrl(UINT32 enable);
 INT32 mtk_wcn_consys_hw_wifi_paldo_ctrl(UINT32 enable);
+INT32 mtk_wcn_consys_hw_efuse_paldo_ctrl(UINT32 enable, UINT32 co_clock_type);
 INT32 mtk_wcn_consys_hw_vcn28_ctrl(UINT32 enable);
 INT32 mtk_wcn_consys_hw_state_show(VOID);
 PUINT8 mtk_wcn_consys_emi_virt_addr_get(UINT32 ctrl_state_offset);
