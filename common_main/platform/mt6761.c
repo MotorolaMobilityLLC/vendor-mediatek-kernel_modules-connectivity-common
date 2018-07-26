@@ -161,7 +161,7 @@ CONSYS_EMI_ADDR_INFO mtk_wcn_emi_addr_info = {
 	.emi_remap_offset = CONSYS_EMI_MAPPING_OFFSET,
 	.emi_core_dump_offset = CONSYS_EMI_COREDUMP_OFFSET,
 	.p_ecso = &mtk_wcn_emi_state_off,
-	.pda_dl_patch_flag = 0,
+	.pda_dl_patch_flag = 1,
 	.emi_met_size = 0x50000,
 	.emi_met_data_offset = CONSYS_EMI_MET_DATA_OFFSET,
 };
