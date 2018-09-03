@@ -61,4 +61,8 @@ int connsys_log_register_event_cb(int conn_type, CONNLOG_EVENT_CB func);
 ssize_t connsys_log_read_to_user(int conn_type, char __user *buf, size_t count);
 ssize_t connsys_log_read(int conn_type, char *buf, size_t count);
 
+int connsys_log_alarm_enable(unsigned int sec);
+int connsys_log_alarm_disable(void);
+int connsys_log_blank_state_changed(int blank_state);
+
 #endif /*_CONNSYS_DEBUG_UTILITY_H_*/

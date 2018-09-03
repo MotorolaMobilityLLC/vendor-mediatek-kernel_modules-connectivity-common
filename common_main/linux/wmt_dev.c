@@ -68,6 +68,8 @@
 #include "hif_sdio.h"
 #include "wmt_step.h"
 
+#include "connsys_debug_utility.h"
+
 #ifdef CONFIG_COMPAT
 #define COMPAT_WMT_IOCTL_SET_PATCH_NAME		_IOW(WMT_IOC_MAGIC, 4, compat_uptr_t)
 #define COMPAT_WMT_IOCTL_LPBK_TEST		_IOWR(WMT_IOC_MAGIC, 8, compat_uptr_t)
@@ -76,6 +78,9 @@
 #define COMPAT_WMT_IOCTL_WMT_CFG_NAME		_IOWR(WMT_IOC_MAGIC, 21, compat_uptr_t)
 #define COMPAT_WMT_IOCTL_SEND_BGW_DS_CMD	_IOW(WMT_IOC_MAGIC, 25, compat_uptr_t)
 #define COMPAT_WMT_IOCTL_ADIE_LPBK_TEST		_IOWR(WMT_IOC_MAGIC, 26, compat_uptr_t)
+#define COMPAT_WMT_IOCTL_DYNAMIC_DUMP_CTRL	_IOR(WMT_IOC_MAGIC, 30, compat_uptr_t)
+#define COMPAT_WMT_IOCTL_SET_ROM_PATCH_INFO	_IOW(WMT_IOC_MAGIC, 31, compat_uptr_t)
+#define COMPAT_WMT_IOCTL_FDB_CTRL		_IOW(WMT_IOC_MAGIC, 32, compat_uptr_t)
 #endif
 
 #define WMT_IOC_MAGIC        0xa0
@@ -257,8 +262,10 @@ static VOID wmt_pwr_on_off_handler(struct work_struct *work)
 	WMT_DBG_FUNC("wmt_pwr_on_off_handler start to run\n");
 
 	/* Update blank off status before wmt power off */
-	if (wmt_dev_get_blank_state() == 0)
+	if (wmt_dev_get_blank_state() == 0) {
 		wmt_dev_blank_handler();
+		connsys_log_blank_state_changed(0);
+	}
 
 	if (always_pwr_on_flag == 0) {
 		while ((wmt_lib_get_drv_status(WMTDRV_TYPE_LPBK) == DRV_STS_FUNC_ON) !=
@@ -271,8 +278,10 @@ static VOID wmt_pwr_on_off_handler(struct work_struct *work)
 	}
 
 	/* Update blank on status after wmt power on */
-	if (wmt_dev_get_blank_state() == 1)
+	if (wmt_dev_get_blank_state() == 1) {
 		wmt_dev_blank_handler();
+		connsys_log_blank_state_changed(1);
+	}
 }
 
 INT32 wmt_lpbk_handler(UINT32 on_off_flag, UINT32 retry)
@@ -337,7 +346,11 @@ static ssize_t wmt_dev_proc_for_aee_read(struct file *filp, char __user *buf, si
 
 	WMT_INFO_FUNC("%s: count %d pos %lld\n", __func__, count, *f_pos);
 
-	osal_lock_sleepable_lock(&g_aee_read_lock);
+	if (osal_lock_sleepable_lock(&g_aee_read_lock)) {
+		WMT_ERR_FUNC("lock failed\n");
+		return 0;
+	}
+
 	if (*f_pos == 0) {
 		pBuf = wmt_lib_get_cpupcr_xml_format(&len);
 		g_buf_len = len;
@@ -1382,7 +1395,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		break;
 	default:
 		iRet = -EINVAL;
-		WMT_WARN_FUNC("unknown cmd (%d)\n", cmd);
+		WMT_WARN_FUNC("unknown cmd (0x%x)\n", cmd);
 		break;
 	}
 
@@ -1413,6 +1426,15 @@ LONG WMT_compat_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			break;
 		case COMPAT_WMT_IOCTL_SEND_BGW_DS_CMD:
 			ret = WMT_unlocked_ioctl(filp, WMT_IOCTL_SEND_BGW_DS_CMD, (ULONG)compat_ptr(arg));
+			break;
+		case COMPAT_WMT_IOCTL_DYNAMIC_DUMP_CTRL:
+			ret = WMT_unlocked_ioctl(filp, WMT_IOCTL_DYNAMIC_DUMP_CTRL, (ULONG)compat_ptr(arg));
+			break;
+		case COMPAT_WMT_IOCTL_SET_ROM_PATCH_INFO:
+			ret = WMT_unlocked_ioctl(filp, WMT_IOCTL_SET_ROM_PATCH_INFO, (ULONG)compat_ptr(arg));
+			break;
+		case COMPAT_WMT_IOCTL_FDB_CTRL:
+			ret = WMT_unlocked_ioctl(filp, WMT_IOCTL_FDB_CTRL, (ULONG)compat_ptr(arg));
 			break;
 		default: {
 			ret = WMT_unlocked_ioctl(filp, cmd, arg);

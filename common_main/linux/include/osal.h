@@ -22,6 +22,7 @@
 
 #include "osal_typedef.h"
 #include "../../debug_utility/ring.h"
+#include <linux/workqueue.h>
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
 ********************************************************************************
@@ -38,7 +39,9 @@
 
 #define MAX_THREAD_NAME_LEN 16
 #define MAX_WAKE_LOCK_NAME_LEN 16
+#define MAX_HISTORY_NAME_LEN 16
 #define OSAL_OP_BUF_SIZE    64
+
 
 #if (defined(CONFIG_MTK_GMO_RAM_OPTIMIZE) && !defined(CONFIG_MTK_ENG_BUILD))
 #define OSAL_OP_DATA_SIZE   8
@@ -253,6 +256,9 @@ struct osal_op_history {
 	struct ring ring_buffer;
 	struct osal_op_history_entry *queue;
 	spinlock_t lock;
+	struct ring dump_ring_buffer;
+	struct work_struct dump_work;
+	UINT8 name[MAX_HISTORY_NAME_LEN];
 };
 
 /*******************************************************************************

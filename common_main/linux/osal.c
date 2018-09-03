@@ -328,7 +328,8 @@ VOID osal_dump_thread_state(const PUINT8 name)
 
 VOID osal_thread_show_stack(P_OSAL_THREAD pThread)
 {
-	return KERNEL_show_stack(pThread->pThread, NULL);
+	if ((pThread) && (pThread->pThread))
+		KERNEL_show_stack(pThread->pThread, NULL);
 }
 
 /*
@@ -338,6 +339,9 @@ VOID osal_thread_show_stack(P_OSAL_THREAD pThread)
 */
 INT32 osal_thread_create(P_OSAL_THREAD pThread)
 {
+	if (!pThread)
+		return -1;
+
 	pThread->pThread = kthread_create(pThread->pThreadFunc, pThread->pThreadData, pThread->threadName);
 	if (pThread->pThread == NULL)
 		return -1;
@@ -347,7 +351,7 @@ INT32 osal_thread_create(P_OSAL_THREAD pThread)
 
 INT32 osal_thread_run(P_OSAL_THREAD pThread)
 {
-	if (pThread->pThread) {
+	if ((pThread) && (pThread->pThread)) {
 		wake_up_process(pThread->pThread);
 		return 0;
 	} else {
@@ -1596,6 +1600,40 @@ MTK_WCN_BOOL osal_opq_has_op(P_OSAL_OP_Q pOpQ, P_OSAL_OP pOp)
 	return MTK_WCN_BOOL_FALSE;
 }
 
+static VOID osal_op_history_print_work(struct work_struct *work)
+{
+	struct osal_op_history *log_history = container_of(work, struct osal_op_history, dump_work);
+	struct ring *ring_buffer = &log_history->dump_ring_buffer;
+	struct ring_segment seg;
+	struct osal_op_history_entry *queue = ring_buffer->base;
+	struct osal_op_history_entry *entry;
+	INT32 index = 0;
+
+	if (queue == NULL) {
+		pr_info("queue shouldn't be NULL, %s", log_history->name);
+		return;
+	}
+
+	RING_READ_FOR_EACH_ITEM(RING_SIZE(ring_buffer), seg, ring_buffer) {
+		index = seg.ring_pt - ring_buffer->base;
+		entry = &queue[index];
+		pr_info("(%llu.%06lu) %s: pOp(%p):%u(%d)-%x-%zx,%zx,%zx,%zx\n",
+			entry->ts,
+			entry->usec,
+			log_history->name,
+			entry->opbuf_address,
+			entry->op_id,
+			entry->opbuf_ref_count,
+			entry->op_info_bit,
+			entry->param_0,
+			entry->param_1,
+			entry->param_2,
+			entry->param_3);
+	}
+	kfree(queue);
+	ring_buffer->base = NULL;
+}
+
 VOID osal_op_history_init(struct osal_op_history *log_history, INT32 queue_size)
 {
 	int size = queue_size * sizeof(struct osal_op_history_entry);
@@ -1613,41 +1651,50 @@ VOID osal_op_history_init(struct osal_op_history *log_history, INT32 queue_size)
 		0,
 		0,
 		&log_history->ring_buffer);
+
+	INIT_WORK(&log_history->dump_work, osal_op_history_print_work);
 }
 
 VOID osal_op_history_print(struct osal_op_history *log_history, PINT8 name)
 {
-	struct osal_op_history_entry *entry;
-	struct ring_segment seg;
-	struct ring *ring_buffer;
-	INT32 index = 0;
+	struct osal_op_history_entry *queue;
+	struct ring *ring_buffer, *dump_ring_buffer;
+	INT32 queue_size;
 	ULONG flags;
+	struct work_struct *work = &log_history->dump_work;
+	spinlock_t *lock = &(log_history->lock);
 
 	if (log_history->queue == NULL) {
 		pr_info("Queue is NULL, name: %s\n", name);
 		return;
 	}
 
-	spin_lock_irqsave(&(log_history->lock), flags);
 	ring_buffer = &log_history->ring_buffer;
+	queue_size = sizeof(struct osal_op_history_entry)
+			 * RING_SIZE(ring_buffer);
 
-	RING_READ_FOR_EACH_ITEM(RING_SIZE(ring_buffer), seg, ring_buffer) {
-		index = seg.ring_pt - ring_buffer->base;
-		entry = &log_history->queue[index];
-		pr_info("(%llu.%06lu) %s: pOp(%p):%u(%d)-%x-%zx,%zx,%zx,%zx\n",
-			entry->ts,
-			entry->usec,
-			name,
-			entry->opbuf_address,
-			entry->op_id,
-			entry->opbuf_ref_count,
-			entry->op_info_bit,
-			entry->param_0,
-			entry->param_1,
-			entry->param_2,
-			entry->param_3);
+	/* Allocate memory before getting lock to save time of holding lock */
+	queue = kmalloc(queue_size, GFP_KERNEL);
+	if (queue == NULL)
+		return;
+
+	dump_ring_buffer = &log_history->dump_ring_buffer;
+
+	spin_lock_irqsave(lock, flags);
+	if (dump_ring_buffer->base != NULL) {
+		spin_unlock_irqrestore(lock, flags);
+		kfree(queue);
+		pr_info("print is ongoing: %s\n", name);
+		return;
 	}
-	spin_unlock_irqrestore(&(log_history->lock), flags);
+
+	osal_snprintf(log_history->name, sizeof(log_history->name), "%s", name);
+	osal_memcpy(queue, log_history->queue, queue_size);
+	osal_memcpy(dump_ring_buffer, ring_buffer, sizeof(struct ring));
+	/* assign value to base after memory copy */
+	dump_ring_buffer->base = queue;
+	spin_unlock_irqrestore(lock, flags);
+	schedule_work(work);
 }
 
 VOID osal_op_history_save(struct osal_op_history *log_history, P_OSAL_OP pOp)

@@ -29,9 +29,7 @@
 #include "psm_core.h"
 #include "stp_core.h"
 #include "stp_dbg.h"
-#ifdef CONFIG_MTK_CONNSYS_DEDICATED_LOG_PATH
 #include "connsys_debug_utility.h"
-#endif
 #include "wmt_step.h"
 #ifdef CONFIG_MTK_ENG_BUILD
 #include "wmt_step_test.h"
@@ -56,6 +54,7 @@ static struct proc_dir_entry *gWmtDbgEntry;
 COEX_BUF gCoexBuf;
 static UINT8 gEmiBuf[WMT_EMI_DEBUG_BUF_SIZE];
 PUINT8 buf_emi;
+static OSAL_SLEEPABLE_LOCK g_dbg_emi_lock;
 
 static ssize_t wmt_dbg_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos);
 static ssize_t wmt_dbg_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos);
@@ -116,6 +115,7 @@ static INT32 wmt_dbg_met_ctrl(INT32 par1, INT32 met_ctrl, INT32 log_ctrl);
 static INT32 wmt_dbg_set_fw_log_mode(INT32 par1, INT32 par2, INT32 par3);
 static INT32 wmt_dbg_emi_dump(INT32 par1, INT32 offset, INT32 size);
 #endif
+static INT32 wmt_dbg_suspend_debug(INT32 par1, INT32 offset, INT32 size);
 static INT32 wmt_dbg_fw_log_ctrl(INT32 par1, INT32 onoff, INT32 level);
 static INT32 wmt_dbg_pre_pwr_on_ctrl(INT32 par1, INT32 enable, INT32 par3);
 #ifdef CONFIG_MTK_ENG_BUILD
@@ -181,6 +181,7 @@ static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x2c] = wmt_dbg_set_fw_log_mode,
 	[0x2d] = wmt_dbg_emi_dump,
 #endif
+	[0x2e] = wmt_dbg_suspend_debug,
 	[0x30] = wmt_dbg_show_thread_debug_info,
 #ifdef CONFIG_MTK_ENG_BUILD
 	[0xa0] = wmt_dbg_step_test,
@@ -287,7 +288,17 @@ INT32 wmt_dbg_assert_test(INT32 par1, INT32 par2, INT32 par3)
 			WMT_ERR_FUNC("wake up failed\n");
 			return -1;
 		}
+		/* driver type */
 		wmt_lib_trigger_assert(par2, 30);
+		ENABLE_PSM_MONITOR();
+		return 0;
+	}  else if (par3 == 5) {
+		if (DISABLE_PSM_MONITOR()) {
+			WMT_ERR_FUNC("wake up failed\n");
+			return -1;
+		}
+		/* assert reason */
+		wmt_lib_trigger_assert(4, par2);
 		ENABLE_PSM_MONITOR();
 		return 0;
 	}
@@ -579,6 +590,11 @@ INT32 wmt_dbg_fwinfor_from_emi(INT32 par1, INT32 par2, INT32 par3)
 	offset = par2;
 	len = par3;
 
+	if (osal_lock_sleepable_lock(&g_dbg_emi_lock)) {
+		WMT_ERR_FUNC("lock failed\n");
+		return -1;
+	}
+
 	buf_emi = kmalloc(sizeof(UINT8) * BUF_LEN_MAX, GFP_KERNEL);
 	if (!buf_emi) {
 		WMT_ERR_FUNC("buf kmalloc memory fail\n");
@@ -640,6 +656,7 @@ INT32 wmt_dbg_fwinfor_from_emi(INT32 par1, INT32 par2, INT32 par3)
 	WMT_INFO_FUNC("\n\n -- paged trace ascii output --\n\n");
 	wmt_dbg_fwinfor_print_buff(len);
 	kfree(buf_emi);
+	osal_unlock_sleepable_lock(&g_dbg_emi_lock);
 
 	return 0;
 }
@@ -700,6 +717,20 @@ static INT32 wmt_dbg_emi_dump(INT32 par1, INT32 offset, INT32 size)
 	return 0;
 }
 #endif
+
+/********************************************************/
+/* par2:       */
+/*     0: Off  */
+/*     others: alarm time (seconds) */
+/********************************************************/
+static INT32 wmt_dbg_suspend_debug(INT32 par1, INT32 par2, INT32 par3)
+{
+	if (par2 > 0)
+		connsys_log_alarm_enable(par2);
+	else
+		connsys_log_alarm_disable();
+	return 0;
+}
 
 #ifdef CONFIG_TRACING
 static INT32 wmt_dbg_ftrace_dbg_log_ctrl(INT32 par1, INT32 par2, INT32 par3)
@@ -1375,6 +1406,7 @@ ssize_t wmt_dbg_write(struct file *filp, const char __user *buffer, size_t count
 	PINT8 pToken = NULL;
 	PINT8 pDelimiter = " \t";
 	LONG res;
+	static INT8 dbgEnabled;
 
 	WMT_INFO_FUNC("write parameter len = %d\n\r", (INT32) len);
 	if (len >= osal_sizeof(buf)) {
@@ -1421,13 +1453,23 @@ ssize_t wmt_dbg_write(struct file *filp, const char __user *buffer, size_t count
 			z = 0xffffffff;
 	}
 
-#if (!WMT_DBG_SUPPORT)
-	/* only allow command 0x15 for setting coredump mode in userload */
-	if (0x15 != x)
-		return len;
-#endif
-
 	WMT_INFO_FUNC("x(0x%08x), y(0x%08x), z(0x%08x)\n\r", x, y, z);
+
+	/* For eng and userdebug load, have to enable wmt_dbg by writing 0xDB9DB9 to
+	 * "/proc/driver/wmt_dbg" to avoid some malicious use
+	 */
+#if (WMT_DBG_SUPPORT)
+	if (0xDB9DB9 == x) {
+		dbgEnabled = 1;
+		return len;
+	}
+#endif
+	/* For user load, only 0x15 is allowed to execute */
+	/* allow command 0x2e to enable catch connsys log on userload  */
+	if (0 == dbgEnabled && 0x15 != x && 0x2e != x) {
+		WMT_INFO_FUNC("please enable WMT debug first\n\r");
+		return len;
+	}
 
 	if (osal_array_size(wmt_dev_dbg_func) > x && NULL != wmt_dev_dbg_func[x])
 		(*wmt_dev_dbg_func[x]) (x, y, z);
@@ -1451,6 +1493,7 @@ INT32 wmt_dev_dbg_setup(VOID)
 		WMT_ERR_FUNC("Unable to create / wmt_aee proc entry\n\r");
 		i_ret = -1;
 	}
+	osal_sleepable_lock_init(&g_dbg_emi_lock);
 
 	return i_ret;
 }
@@ -1459,6 +1502,8 @@ INT32 wmt_dev_dbg_remove(VOID)
 {
 	if (gWmtDbgEntry != NULL)
 		proc_remove(gWmtDbgEntry);
+
+	osal_sleepable_lock_deinit(&g_dbg_emi_lock);
 
 #if CFG_WMT_PS_SUPPORT
 	wmt_lib_ps_deinit();

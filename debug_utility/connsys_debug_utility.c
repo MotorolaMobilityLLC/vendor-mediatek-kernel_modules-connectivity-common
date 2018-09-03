@@ -25,6 +25,9 @@
 #include "ring_emi.h"
 #include "ring.h"
 
+#include <linux/alarmtimer.h>
+#include <linux/suspend.h>
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -40,6 +43,19 @@ static atomic_t log_mode  = ATOMIC_INIT(LOG_TO_FILE);
 static atomic_t log_mode  = ATOMIC_INIT(PRINT_TO_KERNEL_LOG);
 #endif
 
+#define CONNLOG_ALARM_STATE_DISABLE	0x0
+#define CONNLOG_ALARM_STATE_ENABLE	0x01
+#define CONNLOG_ALARM_STATE_RUNNING	0x03
+
+struct connlog_alarm {
+	struct alarm alarm_timer;
+	unsigned int alarm_state;
+	unsigned int blank_state;
+	unsigned int alarm_sec;
+	spinlock_t alarm_lock;
+	unsigned long flags;
+};
+
 struct connlog_dev {
 	phys_addr_t phyAddrEmiBase;
 	void __iomem *virAddrEmiLogBase;
@@ -50,9 +66,11 @@ struct connlog_dev {
 	unsigned int irq_counter;
 	struct timer_list workTimer;
 	struct work_struct logDataWorker;
+	/* alarm timer for suspend */
+	struct connlog_alarm log_alarm;
 	void *log_data;
 };
-static struct connlog_dev gDev;
+static struct connlog_dev gDev = { 0 };
 
 static CONNLOG_EVENT_CB event_callback_table[CONNLOG_TYPE_END] = { 0x0 };
 
@@ -123,6 +141,13 @@ static void connlog_event_set(int conn_type);
 static void connlog_log_data_handler(struct work_struct *work);
 static void work_timer_handler(unsigned long data);
 static void connlog_do_schedule_work(bool count);
+
+/* connlog when suspend */
+static int connlog_alarm_init(void);
+static enum alarmtimer_restart alarm_timer_handler(struct alarm *alarm, ktime_t);
+static inline bool connlog_is_alarm_enable(void);
+static int connlog_set_alarm_timer(void);
+static int connlog_cancel_alarm_timer(void);
 
 /*******************************************************************************
 *                              F U N C T I O N S
@@ -461,6 +486,201 @@ static void work_timer_handler(unsigned long data)
 
 /*****************************************************************************
 * FUNCTION
+*  connlog_alarm_init
+* DESCRIPTION
+*  init alarm timer
+* PARAMETERS
+*  void
+* RETURNS
+*  void
+*****************************************************************************/
+static int connlog_alarm_init(void)
+{
+	alarm_init(&gDev.log_alarm.alarm_timer, ALARM_REALTIME, alarm_timer_handler);
+	gDev.log_alarm.alarm_state = CONNLOG_ALARM_STATE_DISABLE;
+	spin_lock_init(&gDev.log_alarm.alarm_lock);
+	return 0;
+}
+
+/*****************************************************************************
+* FUNCTION
+*  connlog_is_alarm_enable
+* DESCRIPTION
+*  is alarm timer enable
+* PARAMETERS
+*  void
+* RETURNS
+*  void
+*****************************************************************************/
+static inline bool connlog_is_alarm_enable(void)
+{
+	if ((gDev.log_alarm.alarm_state & CONNLOG_ALARM_STATE_ENABLE) > 0)
+		return true;
+	return false;
+}
+
+/*****************************************************************************
+* FUNCTION
+*  connlog_set_alarm_timer
+* DESCRIPTION
+*  setup alarm timer
+* PARAMETERS
+*  void
+* RETURNS
+*  void
+*****************************************************************************/
+static int connlog_set_alarm_timer(void)
+{
+	ktime_t kt;
+
+	kt = ktime_set(gDev.log_alarm.alarm_sec, 0);
+	alarm_start_relative(&gDev.log_alarm.alarm_timer, kt);
+
+	pr_info("[connsys_log_alarm] alarm timer enabled timeout=[%d]", gDev.log_alarm.alarm_sec);
+	return 0;
+}
+
+/*****************************************************************************
+* FUNCTION
+*  connlog_cancel_alarm_timer
+* DESCRIPTION
+*  cancel alarm timer
+* PARAMETERS
+*  void
+* RETURNS
+*  void
+*****************************************************************************/
+static int connlog_cancel_alarm_timer(void)
+{
+	pr_info("[connsys_log_alarm] alarm timer cancel");
+	return alarm_cancel(&gDev.log_alarm.alarm_timer);
+}
+
+/*****************************************************************************
+* FUNCTION
+*  connsys_log_alarm_enable
+* DESCRIPTION
+*  enable screen off alarm timer mechanism
+* PARAMETERS
+*  sec		[IN] alarm timeout in seconds
+* RETURNS
+*  void
+*****************************************************************************/
+int connsys_log_alarm_enable(unsigned int sec)
+{
+	if (!gDev.virAddrEmiLogBase)
+		return -1;
+
+	spin_lock_irqsave(&gDev.log_alarm.alarm_lock, gDev.log_alarm.flags);
+
+	gDev.log_alarm.alarm_sec = sec;
+	if (!connlog_is_alarm_enable()) {
+		gDev.log_alarm.alarm_state = CONNLOG_ALARM_STATE_ENABLE;
+		pr_info("[connsys_log_alarm] alarm timer enabled timeout=[%d]", sec);
+	}
+	if (gDev.log_alarm.blank_state == 0)
+		connlog_set_alarm_timer();
+
+	spin_unlock_irqrestore(&gDev.log_alarm.alarm_lock, gDev.log_alarm.flags);
+	return 0;
+}
+EXPORT_SYMBOL(connsys_log_alarm_enable);
+
+/*****************************************************************************
+* FUNCTION
+*  connsys_log_alarm_disable
+* DESCRIPTION
+*  disable screen off alarm timer mechanism
+* PARAMETERS
+*  void
+* RETURNS
+*  void
+*****************************************************************************/
+int connsys_log_alarm_disable(void)
+{
+	int ret = 0;
+
+	if (!gDev.virAddrEmiLogBase)
+		return -1;
+
+	spin_lock_irqsave(&gDev.log_alarm.alarm_lock, gDev.log_alarm.flags);
+	if (connlog_is_alarm_enable()) {
+		ret = connlog_cancel_alarm_timer();
+		gDev.log_alarm.alarm_state = CONNLOG_ALARM_STATE_DISABLE;
+		pr_info("[connsys_log_alarm] alarm timer disable");
+	}
+
+	spin_unlock_irqrestore(&gDev.log_alarm.alarm_lock, gDev.log_alarm.flags);
+	return ret;
+}
+EXPORT_SYMBOL(connsys_log_alarm_disable);
+
+/*****************************************************************************
+* FUNCTION
+*  connsys_log_blank_state_changed
+* DESCRIPTION
+*  listen blank on/off to suspend/reusme alarm timer
+* PARAMETERS
+*  int		[IN] blank state
+* RETURNS
+*  void
+*****************************************************************************/
+int connsys_log_blank_state_changed(int blank_state)
+{
+	int ret = 0;
+
+	if (!gDev.virAddrEmiLogBase)
+		return -1;
+
+	spin_lock_irqsave(&gDev.log_alarm.alarm_lock, gDev.log_alarm.flags);
+	gDev.log_alarm.blank_state = blank_state;
+	if (connlog_is_alarm_enable()) {
+		if (blank_state == 0)
+			ret = connlog_set_alarm_timer();
+		else
+			ret = connlog_cancel_alarm_timer();
+	}
+	spin_unlock_irqrestore(&gDev.log_alarm.alarm_lock, gDev.log_alarm.flags);
+
+	return ret;
+}
+EXPORT_SYMBOL(connsys_log_blank_state_changed);
+
+/*****************************************************************************
+* FUNCTION
+*  alarm_timer_handler
+* DESCRIPTION
+*  handler for alarm timer
+* PARAMETERS
+*  int		[IN] blank state
+* RETURNS
+*  void
+*****************************************************************************/
+static enum alarmtimer_restart alarm_timer_handler(struct alarm *alarm,
+	ktime_t now)
+{
+	ktime_t kt;
+	struct rtc_time tm;
+	unsigned int tsec, tusec;
+
+	connsys_dedicated_log_get_utc_time(&tsec, &tusec);
+	rtc_time_to_tm(tsec, &tm);
+	pr_info("[connsys_log_alarm] alarm_timer triggered [%d-%02d-%02d %02d:%02d:%02d.%09u]"
+			, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday
+			, tm.tm_hour, tm.tm_min, tm.tm_sec, tusec);
+
+	connlog_do_schedule_work(false);
+
+	spin_lock_irqsave(&gDev.log_alarm.alarm_lock, gDev.log_alarm.flags);
+	kt = ktime_set(gDev.log_alarm.alarm_sec, 0);
+	alarm_start_relative(&gDev.log_alarm.alarm_timer, kt);
+	spin_unlock_irqrestore(&gDev.log_alarm.alarm_lock, gDev.log_alarm.flags);
+
+	return ALARMTIMER_NORESTART;
+}
+
+/*****************************************************************************
+* FUNCTION
 *  connlog_print_log
 * DESCRIPTION
 *  Print FW log to kernel log
@@ -488,7 +708,7 @@ static void connlog_log_data_handler(struct work_struct *work)
 				/* ret++; */
 			} else {
 				if (__ratelimit(&_rs))
-					pr_debug("%s emi ring is empty!!\n", type_to_title[i]);
+					pr_info("[connlog] %s emi ring is empty!!\n", type_to_title[i]);
 			}
 		}
 	} while (ret);
@@ -729,6 +949,8 @@ int connsys_dedicated_log_path_apsoc_init(phys_addr_t emiaddr, unsigned int irq_
 		return -3;
 	}
 
+	/* alarm_timer */
+	connlog_alarm_init();
 	return 0;
 }
 EXPORT_SYMBOL(connsys_dedicated_log_path_apsoc_init);

@@ -212,13 +212,14 @@ INT32 wmt_ctrl_tx(P_WMT_CTRL_DATA pWmtCtrlData /*UINT8 *pData, UINT32 size, UINT
 
 static VOID wmt_ctrl_show_sched_stats_log(P_OSAL_THREAD pThread, P_OSAL_THREAD_SCHEDSTATS pSchedstats)
 {
-	WMT_ERR_FUNC("WMT rx_timeout, pid[%d/%s] stats duration:%llums, sched(x%llu/r%llu/i%llu)\n",
-		     pThread->pThread->pid,
-		     pThread->threadName,
-		     pSchedstats->time,
-		     pSchedstats->exec,
-		     pSchedstats->runnable,
-		     pSchedstats->iowait);
+	if ((pThread) && (pThread->pThread) && (pSchedstats))
+		WMT_ERR_FUNC("WMT rx_timeout, pid[%d/%s] stats duration:%llums, sched(x%llu/r%llu/i%llu)\n",
+			     pThread->pThread->pid,
+			     pThread->threadName,
+			     pSchedstats->time,
+			     pSchedstats->exec,
+			     pSchedstats->runnable,
+			     pSchedstats->iowait);
 }
 
 INT32 wmt_ctrl_rx(P_WMT_CTRL_DATA pWmtCtrlData /*UINT8 *pBuff, UINT32 buffLen, UINT32 *readSize */)
@@ -1148,8 +1149,8 @@ static INT32 wmt_ctrl_trg_assert(P_WMT_CTRL_DATA pWmtCtrlData)
 	WMT_INFO_FUNC("wmt-ctrl:drv_type(%d),reason(%d),keyword(%s)\n", drv_type, reason, keyword);
 
 	if (mtk_wcn_stp_get_wmt_trg_assert() == 0) {
-		mtk_wcn_stp_set_wmt_trg_assert(1);
 		mtk_wcn_stp_dbg_dump_package();
+		mtk_wcn_stp_set_wmt_trg_assert(1);
 
 		iRet = mtk_wcn_stp_wmt_trg_assert();
 		if (iRet == 0) {
