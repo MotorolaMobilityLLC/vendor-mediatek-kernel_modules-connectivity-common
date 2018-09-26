@@ -51,6 +51,8 @@ UINT32 gStpDbgDbgLevel = STP_DBG_LOG_INFO;
 
 MTKSTP_DBG_T *g_stp_dbg;
 
+static OSAL_SLEEPABLE_LOCK g_dbg_nl_lock;
+
 #define STP_DBG_FAMILY_NAME        "STP_DBG"
 #define MAX_BIND_PROCESS    (4)
 #ifdef WMT_PLAT_ALPS
@@ -1556,6 +1558,7 @@ VOID stp_dbg_nl_init(VOID)
 
 	}
 #endif
+	osal_sleepable_lock_init(&g_dbg_nl_lock);
 	if (genl_register_family_with_ops(&stp_dbg_gnl_family, stp_dbg_gnl_ops_array) != 0)
 		STP_DBG_PR_ERR("%s(): GE_NELINK family registration fail\n", __func__);
 }
@@ -1568,12 +1571,14 @@ VOID stp_dbg_nl_deinit(VOID)
 	for (i = 0; i < MAX_BIND_PROCESS; i++)
 		bind_pid[i] = 0;
 	genl_unregister_family(&stp_dbg_gnl_family);
+	osal_sleepable_lock_deinit(&g_dbg_nl_lock);
 }
 
 static INT32 stp_dbg_nl_bind(struct sk_buff *skb, struct genl_info *info)
 {
 	struct nlattr *na;
 	PINT8 mydata;
+	INT32 i;
 
 	if (info == NULL)
 		goto out;
@@ -1585,13 +1590,24 @@ static INT32 stp_dbg_nl_bind(struct sk_buff *skb, struct genl_info *info)
 	if (na)
 		mydata = (PINT8) nla_data(na);
 
-	if (num_bind_process < MAX_BIND_PROCESS) {
-		bind_pid[num_bind_process] = info->snd_portid;
-		num_bind_process++;
-		STP_DBG_PR_INFO("%s():-> pid  = %d\n", __func__, info->snd_portid);
-	} else {
-		STP_DBG_PR_ERR("%s(): exceeding binding limit %d\n", __func__, MAX_BIND_PROCESS);
+	if (osal_lock_sleepable_lock(&g_dbg_nl_lock))
+		return -1;
+
+	for (i = 0; i < MAX_BIND_PROCESS; i++) {
+		if (bind_pid[i] == 0) {
+			bind_pid[i] = info->snd_portid;
+			num_bind_process++;
+			STP_DBG_PR_INFO("%s():-> pid  = %d\n", __func__, info->snd_portid);
+			break;
+		}
 	}
+
+	if (i == MAX_BIND_PROCESS) {
+		STP_DBG_PR_ERR("%s(): exceeding binding limit %d\n", __func__, MAX_BIND_PROCESS);
+		bind_pid[0] = info->snd_portid;
+	}
+
+	osal_unlock_sleepable_lock(&g_dbg_nl_lock);
 
 out:
 	return 0;
@@ -1609,8 +1625,9 @@ INT32 stp_dbg_nl_send(PINT8 aucMsg, UINT8 cmd, INT32 len)
 	struct sk_buff *skb = NULL;
 	PVOID msg_head = NULL;
 	INT32 rc = -1;
-	INT32 i;
+	INT32 i, j;
 	INT32 ret = 0;
+	INT32 killed_num = 0;
 
 	if (num_bind_process == 0) {
 		/* no listening process */
@@ -1624,9 +1641,14 @@ INT32 stp_dbg_nl_send(PINT8 aucMsg, UINT8 cmd, INT32 len)
 	if (ret == 32)
 		return ret;
 
+	ret = -1;
 	for (i = 0; i < num_bind_process; i++) {
-		skb = genlmsg_new(2048, GFP_KERNEL);
+		if (bind_pid[i] == 0) {
+			killed_num++;
+			continue;
+		}
 
+		skb = genlmsg_new(2048, GFP_KERNEL);
 		if (skb) {
 			msg_head = genlmsg_put(skb, 0, stp_dbg_seqnum++, &stp_dbg_gnl_family, 0, cmd);
 			if (msg_head == NULL) {
@@ -1648,16 +1670,42 @@ INT32 stp_dbg_nl_send(PINT8 aucMsg, UINT8 cmd, INT32 len)
 			/* sending message */
 			rc = genlmsg_unicast(&init_net, skb, bind_pid[i]);
 			if (rc != 0) {
-				STP_DBG_PR_ERR("%s(): genlmsg_unicast fail...: %d\n", __func__, rc);
-				return rc;
+				STP_DBG_PR_INFO("%s(): genlmsg_unicast fail...: %d pid: %d\n",
+					__func__, rc, bind_pid[i]);
+				if (rc == -ECONNREFUSED) {
+					bind_pid[i] = 0;
+					killed_num++;
+				}
+			} else {
+				/* don't retry as long as at least one process receives data */
+				ret = 0;
 			}
 		} else {
 			STP_DBG_PR_ERR("%s(): genlmsg_new fail...\n", __func__);
-			return -1;
 		}
 	}
 
-	return 0;
+	if (killed_num > 0) {
+		if (osal_lock_sleepable_lock(&g_dbg_nl_lock)) {
+			/* if fail to get lock, it is fine to update bind_pid[] later */
+			return ret;
+		}
+
+		for (i = 0; i < num_bind_process - killed_num; i++) {
+			if (bind_pid[i] == 0) {
+				for (j = num_bind_process - 1; j > i; j--) {
+					if (bind_pid[j] > 0) {
+						bind_pid[i] = bind_pid[j];
+						bind_pid[j] = 0;
+					}
+				}
+			}
+		}
+		num_bind_process -= killed_num;
+		osal_unlock_sleepable_lock(&g_dbg_nl_lock);
+	}
+
+	return ret;
 }
 
 INT32 stp_dbg_dump_send_retry_handler(PINT8 tmp, INT32 len)
@@ -2635,7 +2683,6 @@ MTKSTP_DBG_T *stp_dbg_init(PVOID btm_half)
 		STP_DBG_PR_ERR("-ENOMEM stp_dbg_dmaregs_init fail!");
 		goto ERR_EXIT2;
 	}
-
 	return stp_dbg;
 
 ERR_EXIT2:

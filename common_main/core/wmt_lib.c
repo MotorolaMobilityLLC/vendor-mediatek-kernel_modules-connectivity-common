@@ -484,6 +484,13 @@ INT32 wmt_lib_deinit(VOID)
 		WMT_ERR_FUNC("osal_thread_stop(0x%p) fail(%d)\n", pThraed, iRet);
 		iResult += 16;
 	}
+
+	iRet = wmt_conf_deinit();
+	if (iRet) {
+		WMT_ERR_FUNC("wmt_conf_deinit fail(%d)\n", iRet);
+		iResult += 32;
+	}
+
 	osal_memset(&gDevWmt, 0, sizeof(gDevWmt));
 #if 0
 #ifdef MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
@@ -1474,8 +1481,7 @@ MTK_WCN_BOOL wmt_lib_put_act_op(P_OSAL_OP pOp)
 		/* check result */
 		/* wait_ret = wait_for_completion_interruptible_timeout(&pOp->comp, msecs_to_jiffies(u4WaitMs)); */
 		/* wait_ret = wait_for_completion_timeout(&pOp->comp, msecs_to_jiffies(u4WaitMs)); */
-		if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC &&
-			pOp->op.opId == WMT_OPID_FUNC_ON &&
+		if (pOp->op.opId == WMT_OPID_FUNC_ON &&
 			pOp->op.au4OpData[0] == WMTDRV_TYPE_WIFI)
 			waitRet = osal_wait_for_signal_timeout(pSignal, &pWmtDev->worker_thread);
 		else
