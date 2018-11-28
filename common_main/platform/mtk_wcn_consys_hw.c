@@ -155,6 +155,7 @@ P_WMT_CONSYS_IC_OPS __weak mtk_wcn_get_consys_ic_ops(VOID)
 static INT32 mtk_wmt_probe(struct platform_device *pdev)
 {
 	INT32 iRet = -1;
+	INT32 pin_ret = 0;
 	UINT32 pinmux;
 	struct device_node *pinctl_node, *pins_node;
 	UINT8 __iomem *pConnsysEmiStart;
@@ -230,7 +231,9 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 		if (pinctl_node) {
 			pins_node = of_get_child_by_name(pinctl_node, "pins_cmd_dat");
 			if (pins_node) {
-				of_property_read_u32(pins_node, "pins", &pinmux);
+				pin_ret = of_property_read_u32(pins_node, "pinmux", &pinmux);
+				if (pin_ret)
+					pin_ret = of_property_read_u32(pins_node, "pins", &pinmux);
 				gps_lna_pin_num = (pinmux >> 8) & 0xff;
 				WMT_PLAT_PR_INFO("GPS LNA gpio pin number:%d, pinmux:0x%08x.\n",
 						   gps_lna_pin_num, pinmux);
