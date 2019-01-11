@@ -198,6 +198,7 @@ typedef VOID(*CONSYS_IC_CLOCK_FAIL_DUMP) (VOID);
 typedef INT32(*CONSYS_IC_IS_CONNSYS_REG) (UINT32 addr);
 typedef VOID(*CONSYS_IC_RESUME_DUMP_INFO) (VOID);
 typedef VOID(*CONSYS_IC_SET_PDMA_AXI_RREADY_FORCE_HIGH) (UINT32 enable);
+typedef VOID(*CONSYS_IC_GET_ANT_SEL_CR_ADDR) (PUINT32 default_invert_cr, PUINT32 default_invert_bit);
 
 typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_CLOCK_BUFFER_CTRL consys_ic_clock_buffer_ctrl;
@@ -242,6 +243,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_IS_CONNSYS_REG consys_ic_is_connsys_reg;
 	CONSYS_IC_RESUME_DUMP_INFO consys_ic_resume_dump_info;
 	CONSYS_IC_SET_PDMA_AXI_RREADY_FORCE_HIGH consys_ic_set_pdma_axi_rready_force_high;
+	CONSYS_IC_GET_ANT_SEL_CR_ADDR consys_ic_get_ant_sel_cr_addr;
 } WMT_CONSYS_IC_OPS, *P_WMT_CONSYS_IC_OPS;
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -311,5 +313,6 @@ UINT32 mtk_consys_get_gps_lna_pin_num(VOID);
 INT32 mtk_consys_check_reg_readable(VOID);
 VOID mtk_wcn_consys_clock_fail_dump(VOID);
 INT32 mtk_consys_is_connsys_reg(UINT32 addr);
+VOID mtk_wcn_consys_ic_get_ant_sel_cr_addr(PUINT32 default_invert_cr, PUINT32 default_invert_bit);
 #endif /* _MTK_WCN_CONSYS_HW_H_ */
 
