@@ -248,6 +248,7 @@ typedef struct _EMI_CTRL_STATE_OFFSET_ {
 	UINT32 emi_apmem_ctrl_chip_paded_dump_end;
 	UINT32 emi_apmem_ctrl_host_outband_assert_w1;
 	UINT32 emi_apmem_ctrl_chip_page_dump_num;
+	UINT32 emi_apmem_ctrl_assert_flag;
 } EMI_CTRL_STATE_OFFSET, *P_EMI_CTRL_STATE_OFFSET;
 
 typedef struct _BGF_IRQ_BALANCE_ {
@@ -353,6 +354,7 @@ UINT32 wmt_plat_get_soc_chipid(VOID);
 UINT32 wmt_plat_soc_co_clock_flag_get(VOID);
 INT32 wmt_plat_set_dbg_mode(UINT32 flag);
 INT32 wmt_plat_set_dynamic_dumpmem(PUINT32 buf);
+INT32 wmt_plat_reset_emi(VOID);
 #if CFG_WMT_LTE_COEX_HANDLING
 INT32 wmt_plat_get_tdm_antsel_index(VOID);
 #endif

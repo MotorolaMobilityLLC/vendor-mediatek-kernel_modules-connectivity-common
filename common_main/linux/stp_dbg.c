@@ -267,7 +267,6 @@ static _osal_inline_ INT32 stp_dbg_core_dump_in(P_WCN_CORE_DUMP_T dmp, PUINT8 bu
 	switch (dmp->sm) {
 	case CORE_DUMP_INIT:
 		stp_dbg_compressor_reset(dmp->compressor, 1, GZIP);
-		osal_timer_start(&dmp->dmp_timer, STP_CORE_DUMP_TIMEOUT);
 
 		dmp->head_len = 0;
 		if (dmp->p_head == NULL) {
@@ -313,13 +312,13 @@ static _osal_inline_ INT32 stp_dbg_core_dump_in(P_WCN_CORE_DUMP_T dmp, PUINT8 bu
 
 	case CORE_DUMP_DONE:
 		stp_dbg_compressor_reset(dmp->compressor, 1, GZIP);
-		/*osal_timer_start(&dmp->dmp_timer, STP_CORE_DUMP_TIMEOUT); */
 		osal_timer_stop(&dmp->dmp_timer);
 		stp_dbg_compressor_in(dmp->compressor, buf, len, 0);
 		dmp->sm = CORE_DUMP_DOING;
 		break;
 
 	case CORE_DUMP_TIMEOUT:
+		ret = -1;
 		break;
 	default:
 		break;
@@ -541,7 +540,6 @@ static _osal_inline_ INT32 stp_dbg_core_dump_nl(P_WCN_CORE_DUMP_T dmp, PUINT8 bu
 
 	switch (dmp->sm) {
 	case CORE_DUMP_INIT:
-		osal_timer_start(&dmp->dmp_timer, STP_CORE_DUMP_TIMEOUT);
 		STP_DBG_WARN_FUNC("CONSYS coredump start, please wait up to %d minutes.\n",
 				STP_CORE_DUMP_TIMEOUT/60000);
 		/* check end srting */
@@ -2620,4 +2618,14 @@ INT32 stp_dbg_deinit(MTKSTP_DBG_T *stp_dbg)
 	kfree(stp_dbg);
 
 	return 0;
+}
+
+INT32 stp_dbg_start_coredump_timer(VOID)
+{
+	if (!g_core_dump) {
+		STP_DBG_ERR_FUNC("invalid pointer!\n");
+		return -1;
+	}
+
+	return osal_timer_start(&g_core_dump->dmp_timer, STP_CORE_DUMP_TIMEOUT);
 }
