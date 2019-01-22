@@ -100,6 +100,7 @@
 #define WMT_IOCTL_DYNAMIC_DUMP_CTRL	_IOR(WMT_IOC_MAGIC, 30, char*)
 #define WMT_IOCTL_SET_ROM_PATCH_INFO	_IOW(WMT_IOC_MAGIC, 31, char*)
 #define WMT_IOCTL_FDB_CTRL		_IOW(WMT_IOC_MAGIC, 32, char*)
+#define WMT_IOCTL_GET_EMI_PHY_SIZE  _IOR(WMT_IOC_MAGIC, 33, unsigned int)
 
 #define MTK_WMT_VERSION  "Consys WMT Driver - v1.0"
 #define MTK_WMT_DATE     "2013/01/20"
@@ -1037,25 +1038,38 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		} while (0);
 		break;
 	case 10:
-		pBuffer = kmalloc(NAME_MAX + 1, GFP_KERNEL);
-		if (!pBuffer) {
-			WMT_ERR_FUNC("pBuffer kmalloc memory fail\n");
-			return 0;
+		if (mtk_wcn_stp_coredump_start_get()) {
+			WMT_INFO_FUNC("Trigger kernel api dump.\n");
+
+			wmt_lib_host_awake_get();
+			if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_COMBO ||
+				mtk_wcn_stp_coredump_flag_get() == 2) {
+				pBuffer = kmalloc(NAME_MAX + 1, GFP_KERNEL);
+				if (!pBuffer) {
+					WMT_ERR_FUNC("pBuffer kmalloc memory fail\n");
+					return 0;
+				}
+
+				osal_strcpy(pBuffer, "MT662x f/w coredump start-");
+				if (copy_from_user(pBuffer + osal_strlen(pBuffer), (PVOID)arg,
+							NAME_MAX - osal_strlen(pBuffer))) {
+					/* osal_strcpy(pBuffer, "MT662x f/w assert core dump start"); */
+					WMT_ERR_FUNC("copy assert string failed\n");
+				}
+				pBuffer[NAME_MAX] = '\0';
+				osal_dbg_assert_aee(pBuffer, "%s", pBuffer);
+				kfree(pBuffer);
+			}
 		}
-		wmt_lib_host_awake_get();
-		osal_strcpy(pBuffer, "MT662x f/w coredump start-");
-		if (copy_from_user(pBuffer + osal_strlen(pBuffer), (PVOID)arg,
-					NAME_MAX - osal_strlen(pBuffer))) {
-			/* osal_strcpy(pBuffer, "MT662x f/w assert core dump start"); */
-			WMT_ERR_FUNC("copy assert string failed\n");
-		}
-		pBuffer[NAME_MAX] = '\0';
-		osal_dbg_assert_aee(pBuffer, "%s", pBuffer);
-		kfree(pBuffer);
 		break;
 	case 11:
-		/*osal_dbg_assert_aee("MT662x f/w coredump end", "MT662x firmware coredump ends");*/
-		wmt_lib_host_awake_put();
+		if (mtk_wcn_stp_coredump_start_get()) {
+			if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC) {
+				WMT_INFO_FUNC("Dump connsys EMI done.\n");
+				mtk_stp_notify_emi_dump_end();
+			}
+			wmt_lib_host_awake_put();
+		}
 		break;
 	case WMT_IOCTL_GET_CHIP_INFO:
 		if (arg == 0)
@@ -1066,6 +1080,8 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			return wmt_lib_get_icinfo(WMTCHIN_FWVER);
 		else if (arg == 3)
 			return wmt_lib_get_icinfo(WMTCHIN_IPVER);
+		else if (arg == 4)
+			return wmt_detect_get_chip_type();
 		break;
 	case WMT_IOCTL_WMT_CFG_NAME:
 		{
@@ -1334,6 +1350,12 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			}
 		} while (0);
 		break;
+	case WMT_IOCTL_GET_EMI_PHY_SIZE:
+		do {
+			WMT_ERR_FUNC("gConEmiSize %p\n", gConEmiSize);
+			return (UINT32)gConEmiSize;
+		} while (0);
+		break;
 	default:
 		iRet = -EINVAL;
 		WMT_WARN_FUNC("unknown cmd (%d)\n", cmd);
@@ -1405,6 +1427,17 @@ static INT32 WMT_close(struct inode *inode, struct file *file)
 	return 0;
 }
 
+static INT32 WMT_mmap(struct file *pFile, struct vm_area_struct *pVma)
+{
+	if (pVma->vm_end - pVma->vm_start > gConEmiSize)
+		return -1;
+	WMT_INFO_FUNC("WMT_mmap size: %p\n", pVma->vm_end - pVma->vm_start);
+	if (remap_pfn_range(pVma, pVma->vm_start, gConEmiPhyBase >> PAGE_SHIFT,
+		pVma->vm_end - pVma->vm_start, pVma->vm_page_prot))
+		return -EAGAIN;
+	return 0;
+}
+
 const struct file_operations gWmtFops = {
 	.open = WMT_open,
 	.release = WMT_close,
@@ -1416,6 +1449,7 @@ const struct file_operations gWmtFops = {
 	.compat_ioctl = WMT_compat_ioctl,
 #endif
 	.poll = WMT_poll,
+	.mmap = WMT_mmap,
 };
 
 VOID wmt_dev_bgw_desense_init(VOID)
