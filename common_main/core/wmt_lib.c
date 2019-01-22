@@ -484,6 +484,13 @@ INT32 wmt_lib_deinit(VOID)
 		WMT_ERR_FUNC("osal_thread_stop(0x%p) fail(%d)\n", pThraed, iRet);
 		iResult += 16;
 	}
+
+	iRet = wmt_conf_deinit();
+	if (iRet) {
+		WMT_ERR_FUNC("wmt_conf_deinit fail(%d)\n", iRet);
+		iResult += 32;
+	}
+
 	osal_memset(&gDevWmt, 0, sizeof(gDevWmt));
 #if 0
 #ifdef MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT

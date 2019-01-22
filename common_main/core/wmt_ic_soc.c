@@ -210,6 +210,8 @@ static UINT8 WMT_MISC_COEX_SETTING_CONFIG_EVT[] = { 0x02, 0x10, 0x01, 0x00, 0x00
 static UINT8 WMT_EPA_SETTING_CONFIG_CMD[] = { 0x01, 0x02, 0x02, 0x00, 0x0E, 0x00 };
 static UINT8 WMT_EPA_SETTING_CONFIG_EVT[] = { 0x02, 0x02, 0x01, 0x00, 0x00 };
 
+static UINT8 WMT_EPA_ELNA_SETTING_CONFIG_EVT[] = { 0x02, 0x10, 0x01, 0x00, 0x00 };
+
 /*coex cmd/evt--*/
 static UINT8 WMT_SET_STP_CMD[] = { 0x01, 0x04, 0x05, 0x00, 0x03, 0xDB, 0x0E, 0x68, 0x01 };
 static UINT8 WMT_SET_STP_EVT[] = { 0x02, 0x04, 0x02, 0x00, 0x00, 0x03 };
@@ -1016,6 +1018,8 @@ static INT32 wmt_stp_init_coex(VOID);
 
 static INT32 wmt_stp_init_epa(VOID);
 
+static INT32 wmt_stp_init_epa_elna(VOID);
+
 #if CFG_WMT_FILTER_MODE_SETTING
 static INT32 wmt_stp_wifi_lte_coex(VOID);
 #endif
@@ -1397,6 +1401,13 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	if (iRet) {
 		WMT_ERR_FUNC("init_epa fail(%d)\n", iRet);
 		return -20;
+	}
+
+	iRet = wmt_stp_init_epa_elna();
+
+	if (iRet) {
+		WMT_ERR_FUNC("init_epa_elna fail(%d)\n", iRet);
+		return -22;
 	}
 
 	/* 7. start RF calibration data */
@@ -2237,6 +2248,81 @@ static INT32 wmt_stp_init_epa(VOID)
 
 	return iRet;
 }
+
+static INT32 wmt_stp_init_epa_elna(VOID)
+{
+	INT32 iRet;
+	unsigned long addr;
+	WMT_GEN_CONF *pWmtGenConf;
+	struct init_script script[1];
+	struct WMT_BYTE_ARRAY *ba;
+	INT32 cmd_size;
+	INT32 data_size;
+	PUINT8 cmd;
+	UINT16 index = 0;
+
+	/*Get wmt config */
+	iRet = wmt_core_ctrl(WMT_CTRL_GET_WMT_CONF, &addr, 0);
+	if (iRet) {
+		WMT_ERR_FUNC("ctrl GET_WMT_CONF fail(%d)\n", iRet);
+		return -2;
+	}
+	WMT_DBG_FUNC("ctrl GET_WMT_CONF ok(0x%08lx)\n", addr);
+
+	pWmtGenConf = (P_WMT_GEN_CONF) addr;
+
+	/*Check if WMT.cfg exists */
+	if (pWmtGenConf->cfgExist == 0) {
+		WMT_DBG_FUNC("cfgExist == 0, skip config chip\n");
+		/*if WMT.cfg not existed, still return success and adopt the default value */
+		return 0;
+	}
+
+	if (pWmtGenConf->coex_wmt_epa_elna == NULL)
+		return 0;
+
+	ba = pWmtGenConf->coex_wmt_epa_elna;
+
+	/* cmd_size = direction(1) + op(1) + length(2) + coex op(1) + data */
+	cmd_size = ba->size + 5;
+	cmd = (PUINT8)osal_malloc(cmd_size);
+
+	if (cmd == NULL) {
+		WMT_ERR_FUNC("failed to malloc when init epa elna\n");
+		return -1;
+	}
+
+	/* 0x1: direction, 0x10: op code */
+	cmd[index++] = 0x1;
+	cmd[index++] = 0x10;
+
+	/* add 1 for coex op id */
+	data_size = ba->size + 1;
+	/* assign data length */
+	cmd[index++] = (data_size & 0x00FF) >> 0;
+	cmd[index++] = (data_size & 0xFF00) >> 8;
+	/* assign coex op id: 0x1D */
+	cmd[index++] = 0x1D;
+
+	osal_memcpy(&cmd[index], ba->data, ba->size);
+
+	script[0].cmd = cmd;
+	script[0].cmdSz = cmd_size;
+	script[0].evt = WMT_EPA_ELNA_SETTING_CONFIG_EVT;
+	script[0].evtSz = sizeof(WMT_EPA_ELNA_SETTING_CONFIG_EVT);
+	script[0].str = "coex_wmt_epa_elna";
+
+	if (gWmtDbgLvl >= WMT_LOG_DBG)
+		wmt_core_dump_data(&(script[0].cmd[0]), script[0].str,
+			script[0].cmdSz);
+
+	iRet = wmt_core_init_script(script, ARRAY_SIZE(script));
+
+	osal_free(cmd);
+	return iRet;
+}
+
+
 
 #if CFG_WMT_SDIO_DRIVING_SET
 static INT32 mtk_wcn_soc_set_sdio_driving(void)
