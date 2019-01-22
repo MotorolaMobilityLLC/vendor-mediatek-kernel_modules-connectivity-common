@@ -269,6 +269,7 @@ typedef struct _CONSYS_EMI_ADDR_INFO_ {
 	UINT32 pda_dl_patch_flag;
 	UINT32 emi_met_size;
 	UINT32 emi_met_data_offset;
+	UINT32 emi_core_dump_offset;
 } CONSYS_EMI_ADDR_INFO, *P_CONSYS_EMI_ADDR_INFO;
 
 typedef struct _GPIO_TDM_REQ_INFO_ {
