@@ -2184,6 +2184,7 @@ ENUM_WMTRSTRET_TYPE_T wmt_lib_cmb_rst(ENUM_WMTRSTSRC_TYPE_T src)
 	}
 	mtk_wcn_stp_coredump_start_ctrl(0);
 	mtk_wcn_stp_set_wmt_trg_assert(0);
+	mtk_wcn_stp_emi_dump_flag_ctrl(0);
 rstDone:
 	osal_clear_bit(WMT_STAT_RST_ON, &pDevWmt->state);
 	return retval;

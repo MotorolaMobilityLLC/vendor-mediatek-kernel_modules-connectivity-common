@@ -253,6 +253,7 @@ typedef struct {
 	UINT8 f_pending_type;
 	UINT8 f_coredump;	/*block tx flag, for now, only when f/w assert happens, we will set this bit on */
 	UINT8 en_coredump;
+	UINT8 f_emidump;
 	/* Flag to identify Blueztooth is Bluez/or MTK Stack */
 	MTK_WCN_BOOL f_bluez;
 	MTK_WCN_BOOL f_dbg_en;
@@ -631,7 +632,8 @@ extern INT32 mtk_wcn_stp_coredump_flag_ctrl(UINT32 on);
 
 extern INT32 mtk_wcn_stp_coredump_flag_get(VOID);
 extern INT32 mtk_wcn_stp_notify_sleep_for_thermal(VOID);
-
+extern INT32 mtk_wcn_stp_emi_dump_flag_ctrl(UINT32 on);
+extern INT32 mtk_wcn_stp_emi_dump_flag_get(VOID);
 
 extern INT32 mtk_wcn_stp_set_wmt_last_close(UINT32 value);
 /*stp btif API declared*/
@@ -659,6 +661,7 @@ VOID mtk_stp_sdio_retry_flag_ctrl(INT32 flag);
 VOID mtk_stp_dbg_sdio_retry_flag_ctrl(INT32 flag);
 INT32 mtk_stp_sdio_retry_flag_get(VOID);
 VOID mtk_stp_dump_sdio_register(VOID);
+VOID mtk_stp_notify_emi_dump_end(VOID);
 
 INT32 mtk_stp_dbg_dmp_append(PUINT8 buf, INT32 max_len);
 
