@@ -134,7 +134,8 @@ UINT32 always_pwr_on_flag;
 P_WMT_PATCH_INFO pPatchInfo;
 UINT32 pAtchNum;
 UINT32 currentLpbkStatus;
-
+#define TEMP_THRESHOLD   60
+static INT32 gTemperatureThreshold = TEMP_THRESHOLD;
 
 
 #if CFG_WMT_PROC_FOR_AEE
@@ -609,10 +610,15 @@ static UINT32 wmt_dev_tra_poll(VOID)
 	return 0;
 }
 
+VOID wmt_dev_set_temp_threshold(INT32 val)
+{
+	gTemperatureThreshold = val;
+	WMT_INFO_FUNC("Set temperature threashold to %d\n", val);
+}
+
 LONG wmt_dev_tm_temp_query(VOID)
 {
 #define HISTORY_NUM       3
-#define TEMP_THRESHOLD   60
 #define REFRESH_TIME    300	/* sec */
 
 	static INT32 s_temp_table[HISTORY_NUM] = { 99 };	/* not query yet. */
@@ -640,7 +646,7 @@ LONG wmt_dev_tm_temp_query(VOID)
 	/* If we have the high temperature records on the past, we continue to query/monitor */
 	/* the real temperature until cooling */
 	for (index = 0; index < HISTORY_NUM; index++) {
-		if (temp_table[index] >= TEMP_THRESHOLD) {
+		if (temp_table[index] >= gTemperatureThreshold) {
 			query_cond = 1;
 			WMT_DBG_FUNC
 				("temperature table is still initial value, we should query temp temperature..\n");
@@ -655,8 +661,8 @@ LONG wmt_dev_tm_temp_query(VOID)
 		if (wmt_dev_tra_poll() == 0) {
 			query_cond = 1;
 			WMT_DBG_FUNC("traffic , we must query temperature..\n");
-		} else if (temp_table[idx_temp_table] >= TEMP_THRESHOLD) {
-			WMT_INFO_FUNC("temperature maybe greater than 60, query temperature\n");
+		} else if (temp_table[idx_temp_table] >= gTemperatureThreshold) {
+			WMT_INFO_FUNC("temperature maybe greater than %d, query temperature\n", gTemperatureThreshold);
 			query_cond = 1;
 		} else
 			WMT_DBG_FUNC("idle traffic ....\n");
