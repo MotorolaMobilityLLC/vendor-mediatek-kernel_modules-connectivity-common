@@ -21,6 +21,7 @@
 #include "wmt_plat.h"
 #include "wmt_step.h"
 #include "wmt_detect.h"
+#include "connsys_debug_utility.h"
 #include <linux/kthread.h>
 
 #define PFX_BTM                         "[STP-BTM] "
@@ -113,8 +114,10 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 	case STP_OPID_BTM_RST:
 		STP_BTM_PR_INFO("whole chip reset start!\n");
 		if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC &&
-		    mtk_wcn_stp_coredump_flag_get() != 0)
+		    mtk_wcn_stp_coredump_flag_get() != 0) {
+			connsys_dedicated_log_flush_emi();
 			stp_dbg_core_dump_flush(0, MTK_WCN_BOOL_FALSE);
+		}
 		STP_BTM_PR_INFO("....+\n");
 		WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_BEFORE_CHIP_RESET);
 		if (stp_btm->wmt_notify) {
