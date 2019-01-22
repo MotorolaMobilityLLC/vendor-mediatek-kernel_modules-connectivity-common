@@ -98,6 +98,7 @@ enum step_register_base_id {
 	STEP_REGISTER_MISC_OFF_BASE,
 	STEP_REGISTER_CFG_ON_BASE,
 	STEP_CIRQ_BASE,
+	STEP_MCU_TOP_MISC_ON_BASE,
 	STEP_DA_XOBUF_BASE,
 	STEP_REGISTER_MAX,
 };
@@ -117,6 +118,7 @@ enum step_condition_operator_id {
 struct step_register_base_struct {
 	unsigned long vir_addr;
 	unsigned long long size;
+	unsigned long long phy_addr;
 };
 
 struct step_action_list {
