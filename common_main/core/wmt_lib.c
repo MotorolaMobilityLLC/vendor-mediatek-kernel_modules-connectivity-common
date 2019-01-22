@@ -196,11 +196,13 @@ INT32 DISABLE_PSM_MONITOR(VOID)
 	if (ret) {
 		WMT_ERR_FUNC("wmt_lib_ps_disable fail, ret=%d\n", ret);
 		wmt_lib_psm_lock_release();
-		pbuf = "wmt_lib_ps_disable fail, just collect SYS_FTRACE to DB";
-		len = osal_strlen(pbuf);
-		stp_dbg_trigger_collect_ftrace(pbuf, len);
-		wmt_lib_trigger_reset();
-
+		if (mtk_wcn_stp_coredump_start_get() == 0 &&
+			mtk_wcn_stp_get_wmt_trg_assert() == 0) {
+			pbuf = "wmt_lib_ps_disable fail, just collect SYS_FTRACE to DB";
+			len = osal_strlen(pbuf);
+			stp_dbg_trigger_collect_ftrace(pbuf, len);
+			wmt_lib_trigger_reset();
+		}
 	}
 #endif
 	return ret;

@@ -30,6 +30,7 @@
 #define STP_LOG_ERR                  0
 
 #define STP_DEL_SIZE   2	/* STP delimiter length */
+#define STP_MAX_TX_TIMEOUT_LOOP 3
 
 UINT32 gStpDbgLvl = STP_LOG_INFO;
 unsigned int chip_reset_only;
@@ -37,18 +38,17 @@ INT32 wmt_dbg_sdio_retry_ctrl = 1;
 
 #define STP_POLL_CPUPCR_NUM 5
 #define STP_POLL_CPUPCR_DELAY 1
-#define STP_RETRY_OPTIMIZE 0
 
 /* global variables */
 static const UINT8 stp_delimiter[STP_DEL_SIZE] = { 0x55, 0x55 };
 
 static INT32 fgEnableNak;	/* 0=enable NAK; 1=disable NAK */
 static INT32 fgEnableDelimiter;	/* 0=disable Delimiter; 1=enable Delimiter */
-#if STP_RETRY_OPTIMIZE
-static UINT32 g_retry_times;
-#endif
 /* common interface */
 static IF_TX sys_if_tx;
+static RX_HAS_PENDING_DATA sys_rx_has_pending_data;
+static TX_HAS_PENDING_DATA sys_tx_has_pending_data;
+static RX_THREAD_GET sys_rx_thread_get;
 /* event/signal */
 static EVENT_SET sys_event_set;
 static EVENT_TX_RESUME sys_event_tx_resume;
@@ -140,25 +140,6 @@ static VOID stp_sdio_trace32_dump(VOID);
 static LONG stp_parser_dmp_num(PUINT8 str);
 static INT32 wmt_parser_data(PUINT8 buffer, UINT32 length, UINT8 type);
 
-static INT32 stp_ctx_lock_init(mtkstp_context_struct *pctx)
-{
-#if CFG_STP_CORE_CTX_SPIN_LOCK
-#if defined(CONFIG_PROVE_LOCKING)
-	osal_unsleepable_lock_init(&((pctx)->stp_mutex));
-	return 0;
-#else
-	return osal_unsleepable_lock_init(&((pctx)->stp_mutex));
-#endif
-#else
-#if defined(CONFIG_PROVE_LOCKING)
-	osal_sleepable_lock_init(&((pctx)->stp_mutex));
-	return 0;
-#else
-	return osal_sleepable_lock_init(&((pctx)->stp_mutex));
-#endif
-#endif
-}
-
 INT32 __weak mtk_wcn_consys_stp_btif_logger_ctrl(enum _ENUM_BTIF_DBG_ID_ flag)
 {
 	STP_INFO_FUNC("in combo flow, mtk_wcn_consys_stp_btif_logger_ctrl is not define!!\n");
@@ -203,6 +184,25 @@ INT32 __weak mtk_wcn_consys_stp_btif_lpbk_ctrl(enum _ENUM_BTIF_LPBK_MODE_ mode)
 	STP_INFO_FUNC("in combo flow, mtk_wcn_consys_stp_btif_lpbk_ctrl is not define!!\n");
 
 	return 0;
+}
+
+static INT32 stp_ctx_lock_init(mtkstp_context_struct *pctx)
+{
+#if CFG_STP_CORE_CTX_SPIN_LOCK
+#if defined(CONFIG_PROVE_LOCKING)
+	osal_unsleepable_lock_init(&((pctx)->stp_mutex));
+	return 0;
+#else
+	return osal_unsleepable_lock_init(&((pctx)->stp_mutex));
+#endif
+#else
+#if defined(CONFIG_PROVE_LOCKING)
+	osal_sleepable_lock_init(&((pctx)->stp_mutex));
+	return 0;
+#else
+	return osal_sleepable_lock_init(&((pctx)->stp_mutex));
+#endif
+#endif
 }
 
 static INT32 stp_ctx_lock_deinit(mtkstp_context_struct *pctx)
@@ -608,6 +608,7 @@ static VOID stp_rest_ctx_state(VOID)
 	stp_core_ctx.sequence.winspace = MTKSTP_WINSIZE;
 	stp_core_ctx.sequence.expected_rxseq = 0;
 	stp_core_ctx.sequence.retry_times = 0;
+	stp_core_ctx.sequence.tx_timeout_loop = 0;
 	stp_core_ctx.sequence.rx_resync = 0;
 	stp_core_ctx.sequence.rx_resync_seq = 0xFF;
 	stp_core_ctx.inband_rst_set = 0;
@@ -648,6 +649,8 @@ VOID stp_do_tx_timeout(VOID)
 	UINT32 seq;
 	UINT32 ret;
 	UINT8 resync[4];
+	INT32 tx_pending_state;
+	INT32 rx_pending_state;
 
 	STP_WARN_FUNC
 	    ("==============================================================================\n");
@@ -655,31 +658,28 @@ VOID stp_do_tx_timeout(VOID)
 	if (!mtk_wcn_stp_is_sdio_mode())
 		mtk_wcn_consys_stp_btif_logger_ctrl(BTIF_DUMP_BTIF_IRQ);
 
+	tx_pending_state = sys_tx_has_pending_data();
+	/* Sys_rx_has_pending_data cannot be called after stp_ctx_lock(&stp_core_ctx),
+	 * there will be a deadlock problem, because sys_rx_has_pending_data will take
+	 * the mutex of btif_rxd, and btif_rxd may need to return TX ack during parsing
+	 * data process. This will take stp_ctx_lock(&stp_core_ctx), causing deadlock
+	 */
+	rx_pending_state = sys_rx_has_pending_data();
+	STP_INFO_FUNC("check tx/rx has pending data(%d/%d).\n", tx_pending_state, rx_pending_state);
 	stp_ctx_lock(&stp_core_ctx);
-#if STP_RETRY_OPTIMIZE
-	if ((g_retry_times != 0) && (stp_core_ctx.sequence.retry_times == 0)) {
-		STP_INFO_FUNC("STP TX timeout has been recoveryed by resend,record_retry_time(%d)\n", g_retry_times);
-		g_retry_times = 0;
-		stp_ctx_unlock(&stp_core_ctx);
-		return;
-	}
-#endif
+
 	if (stp_core_ctx.sequence.retry_times > (MTKSTP_RETRY_LIMIT)) {
 		STP_INFO_FUNC("STP retry times(%d) have reached retry limit,stop it\n",
 			      stp_core_ctx.sequence.retry_times);
 		stp_ctx_unlock(&stp_core_ctx);
 		return;
 	}
-#if STP_RETRY_OPTIMIZE
-	else
-		STP_DBG_FUNC("current TX timeout package has not received ACK yet,retry_times(%d)\n",
-		g_retry_times);
-#endif
+
 	seq = stp_core_ctx.sequence.rxack;
 	INDEX_INC(seq);
 
 	if (seq != stp_core_ctx.sequence.txseq) {
-		osal_memset(&resync[0], 127, 4);
+		osal_memset(&resync[0], 0x7f, 4);
 		(*sys_if_tx) (&resync[0], 4, &ret);
 		if (ret != 4) {
 			STP_ERR_FUNC("mtkstp_tx_timeout_handler: send resync fail\n");
@@ -715,31 +715,44 @@ VOID stp_do_tx_timeout(VOID)
 		stp_core_ctx.sequence.retry_times++;
 		STP_ERR_FUNC("mtkstp_tx_timeout_handler, retry = %d\n",
 			     stp_core_ctx.sequence.retry_times);
-#if STP_RETRY_OPTIMIZE
-			g_retry_times = stp_core_ctx.sequence.retry_times;
-#endif
 
 		/*If retry too much, try to recover STP by return back to initializatin state */
 		/*And not to retry again */
 		if (stp_core_ctx.sequence.retry_times > MTKSTP_RETRY_LIMIT) {
-#if STP_RETRY_OPTIMIZE
-			g_retry_times = 0;
-#endif
-			WMT_STEP_COMMAND_TIMEOUT_DO_ACTIONS_FUNC("STP TX no ack timeout");
-			osal_timer_stop(&stp_core_ctx.tx_timer);
-			stp_ctx_unlock(&stp_core_ctx);
+			do {
+				int reason = 42;
 
-			STP_ERR_FUNC("mtkstp_tx_timeout_handler: wmt_stop_timer\n");
+				if (tx_pending_state > 0 || (tx_pending_state == 0 && rx_pending_state > 0)) {
+					if (stp_core_ctx.sequence.tx_timeout_loop < STP_MAX_TX_TIMEOUT_LOOP) {
+						stp_core_ctx.sequence.retry_times = 0;
+						stp_core_ctx.sequence.tx_timeout_loop++;
+						STP_INFO_FUNC("extend tx retry only.\n");
+						break;
+					}
 
-			STP_ERR_FUNC("TX retry limit = %d\n", MTKSTP_RETRY_LIMIT);
-			osal_assert(0);
-			stp_notify_btm_dump(STP_BTM_CORE(stp_core_ctx));
+					STP_ERR_FUNC("there are still some data in tx/rx buffer.\n");
+					/* Reason number 45 means that stp data path still has data,
+					 * possibly a driver problem
+					 */
+					reason = 45;
+				}
 
-			/*Whole Chip Reset Procedure Invoke */
-			stp_psm_disable(STP_PSM_CORE(stp_core_ctx));
-			STP_INFO_FUNC("**STP NoAck trigger firmware assert**\n");
-			wmt_lib_trigger_assert(WMTDRV_TYPE_WMT, 36);
-			return;
+				WMT_STEP_COMMAND_TIMEOUT_DO_ACTIONS_FUNC("STP TX no ack timeout");
+				osal_timer_stop(&stp_core_ctx.tx_timer);
+				stp_ctx_unlock(&stp_core_ctx);
+
+				STP_ERR_FUNC("mtkstp_tx_timeout_handler: wmt_stop_timer\n");
+
+				STP_ERR_FUNC("TX retry limit = %d\n", MTKSTP_RETRY_LIMIT);
+				osal_assert(0);
+				stp_notify_btm_dump(STP_BTM_CORE(stp_core_ctx));
+
+				/*Whole Chip Reset Procedure Invoke */
+				stp_psm_disable(STP_PSM_CORE(stp_core_ctx));
+				STP_INFO_FUNC("**STP NoAck trigger firmware assert**\n");
+				wmt_lib_trigger_assert(WMTDRV_TYPE_WMT, 42);
+				return;
+			} while (0);
 		}
 	}
 
@@ -1243,6 +1256,7 @@ static INT32 stp_process_rxack(VOID)
 				stp_core_ctx.tx_read -= MTKSTP_BUFFER_SIZE;
 			stp_core_ctx.sequence.winspace += j;
 			stp_core_ctx.sequence.retry_times = 0;
+			stp_core_ctx.sequence.tx_timeout_loop = 0;
 
 			osal_timer_stop(&stp_core_ctx.tx_timer);
 			if (stp_core_ctx.sequence.winspace != MTKSTP_WINSIZE)
@@ -1438,7 +1452,7 @@ static VOID stp_process_packet(VOID)
 		stp_process_packet_fail_count = 0;
 		STP_ERR_FUNC("The process packet fail count > 10 lastly, host trigger assert\n");
 		/*Whole Chip Reset Procedure Invoke */
-		wmt_lib_trigger_assert(WMTDRV_TYPE_WMT, 37);
+		wmt_lib_trigger_assert(WMTDRV_TYPE_WMT, 43);
 	}
 }
 
@@ -1460,6 +1474,13 @@ INT32 mtk_wcn_stp_init(const mtkstp_callback * const cb_func)
 	/* Function pointer to point to the currently used transmission interface
 	 */
 	sys_if_tx = cb_func->cb_if_tx;
+
+	/* Used to check tx/rx has pending data*/
+	sys_rx_has_pending_data = cb_func->cb_rx_has_pending_data;
+	sys_tx_has_pending_data = cb_func->cb_tx_has_pending_data;
+
+	/* Used to get rx thread */
+	sys_rx_thread_get = cb_func->cb_rx_thread_get;
 
 	/* Used to inform the function driver has received the corresponding type of information */
 	sys_event_set = cb_func->cb_event_set;
@@ -3391,9 +3412,6 @@ VOID mtk_wcn_stp_ctx_restore(void)
 		stp_btm_notify_wmt_rst_wq(STP_BTM_CORE(stp_core_ctx));
 	else
 		STP_INFO_FUNC("No to launch whole chip reset! for debugging purpose\n");
-#if STP_RETRY_OPTIMIZE
-	g_retry_times = 0;
-#endif
 }
 
 INT32 mtk_wcn_stp_wmt_trg_assert(VOID)
@@ -3497,4 +3515,14 @@ INT32 mtk_stp_dbg_dmp_append(PUINT8 buf, INT32 max_len)
 VOID mtk_stp_notify_emi_dump_end(VOID)
 {
 	stp_btm_notify_emi_dump_end(STP_BTM_CORE(stp_core_ctx));
+}
+
+INT32 mtk_stp_check_rx_has_pending_data(VOID)
+{
+	return sys_rx_has_pending_data();
+}
+
+P_OSAL_THREAD mtk_stp_rx_thread_get(VOID)
+{
+	return sys_rx_thread_get();
 }
