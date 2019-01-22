@@ -159,6 +159,8 @@ typedef VOID(*CONSYS_IC_SET_DL_ROM_PATCH_FLAG) (INT32 flag);
 typedef INT32(*CONSYS_IC_DEDICATED_LOG_PATH_INIT) (struct platform_device *pdev);
 typedef VOID(*CONSYS_IC_DEDICATED_LOG_PATH_DEINIT) (VOID);
 typedef INT32(*CONSYS_ID_CHECK_REG_READABLE) (VOID);
+typedef INT32(*CONSYS_IC_EMI_COREDUMP_REMAPPING) (UINT8 __iomem **addr, UINT32 enable);
+typedef INT32(*CONSYS_IC_RESET_EMI_COREDUMP) (UINT8 __iomem *addr);
 
 typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_CLOCK_BUFFER_CTRL consys_ic_clock_buffer_ctrl;
@@ -197,6 +199,8 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_DEDICATED_LOG_PATH_INIT consys_ic_dedicated_log_path_init;
 	CONSYS_IC_DEDICATED_LOG_PATH_DEINIT consys_ic_dedicated_log_path_deinit;
 	CONSYS_ID_CHECK_REG_READABLE consys_ic_check_reg_readable;
+	CONSYS_IC_EMI_COREDUMP_REMAPPING consys_ic_emi_coredump_remapping;
+	CONSYS_IC_RESET_EMI_COREDUMP consys_ic_reset_emi_coredump;
 } WMT_CONSYS_IC_OPS, *P_WMT_CONSYS_IC_OPS;
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -210,7 +214,6 @@ extern UINT32 gCoClockFlag;
 extern EMI_CTRL_STATE_OFFSET mtk_wcn_emi_state_off;
 extern CONSYS_EMI_ADDR_INFO mtk_wcn_emi_addr_info;
 
-extern UINT8 __iomem *pEmibaseaddr;
 extern UINT64 gConEmiSize;
 extern phys_addr_t gConEmiPhyBase;
 
