@@ -572,6 +572,7 @@ INT32 osal_wait_for_signal_timeout(P_OSAL_SIGNAL pSignal, P_OSAL_THREAD pThread)
 		 * osal_dump_thread_state will just return if target thread does not exist
 		 */
 		osal_dump_thread_state("mtk_wmtd");
+		osal_dump_thread_state("mtk_wmtd_worker");
 		osal_dump_thread_state("btif_rxd");
 		osal_dump_thread_state("mtk_stp_psm");
 		osal_dump_thread_state("mtk_stp_btm");
