@@ -2388,6 +2388,11 @@ INT32 mtk_wcn_stp_dbg_dump_package(VOID)
 		STP_INFO_FUNC("STP dbg mode is off\n");
 	else {
 		STP_INFO_FUNC("STP dbg mode is on\n");
+		wmt_lib_print_wmtd_op_history();
+		wmt_lib_print_worker_op_history();
+		stp_psm_print_op_history();
+		stp_btm_print_op_history();
+
 		if (mtk_wcn_stp_coredump_start_get() == 0 ||
 		    (mtk_wcn_stp_coredump_start_get() == 1 &&
 		     mtk_wcn_stp_get_wmt_trg_assert() == 0)) {
