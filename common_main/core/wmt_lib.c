@@ -2618,3 +2618,41 @@ INT32 wmt_lib_fw_log_ctrl(enum wmt_fw_log_type type, UINT8 onoff, UINT8 level)
 
 	return 0;
 }
+
+INT32 wmt_lib_gps_mcu_ctrl(PUINT8 p_tx_data_buf, UINT32 tx_data_len, PUINT8 p_rx_data_buf,
+			   UINT32 rx_data_buf_len, PUINT32 p_rx_data_len)
+{
+	P_OSAL_OP pOp;
+	MTK_WCN_BOOL bRet;
+	P_OSAL_SIGNAL pSignal;
+
+	pOp = wmt_lib_get_free_op();
+	if (!pOp) {
+		WMT_DBG_FUNC("get_free_lxop fail\n");
+		return -1;
+	}
+
+	pSignal = &pOp->signal;
+	pSignal->timeoutValue = MAX_EACH_WMT_CMD;
+	pOp->op.opId = WMT_OPID_GPS_MCU_CTRL;
+	pOp->op.au4OpData[0] = (SIZE_T)p_tx_data_buf;
+	pOp->op.au4OpData[1] = tx_data_len;
+	pOp->op.au4OpData[2] = (SIZE_T)p_rx_data_buf;
+	pOp->op.au4OpData[3] = rx_data_buf_len;
+	pOp->op.au4OpData[4] = (SIZE_T)p_rx_data_len;
+	if (DISABLE_PSM_MONITOR()) {
+		WMT_ERR_FUNC("wake up failed\n");
+		wmt_lib_put_op_to_free_queue(pOp);
+		return -1;
+	}
+
+	bRet = wmt_lib_put_act_op(pOp);
+	ENABLE_PSM_MONITOR();
+
+	if (bRet == MTK_WCN_BOOL_FALSE) {
+		WMT_WARN_FUNC("WMT_OPID_GPS_MCU_CTRL fail(%d)\n", pOp->op.au4OpData[5]);
+		return -1;
+	}
+
+	return 0;
+}
