@@ -27,7 +27,7 @@
 #define STP_PKT_NO 2048
 
 #define STP_DBG_LOG_ENTRY_NUM	1024
-#define STP_DBG_LOG_ENTRY_SZ	2048
+#define STP_DBG_LOG_ENTRY_SZ	96
 
 #else
 
@@ -36,7 +36,7 @@
 #define STP_PKT_NO 16
 
 #define STP_DBG_LOG_ENTRY_NUM 28
-#define STP_DBG_LOG_ENTRY_SZ 64
+#define STP_DBG_LOG_ENTRY_SZ 96
 
 #endif
 #define EMICOREDUMP_CMD "emicoredump"
@@ -176,6 +176,9 @@ typedef struct log_sys {
 	UINT32 in;
 	UINT32 out;
 	spinlock_t lock;
+	MTKSTP_LOG_ENTRY_T *dump_queue;
+	UINT32 dump_size;
+	struct work_struct dump_work;
 } MTKSTP_LOG_SYS_T;
 /*--*/
 
