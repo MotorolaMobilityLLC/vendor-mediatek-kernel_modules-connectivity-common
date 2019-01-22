@@ -67,6 +67,10 @@ static OSAL_SLEEPABLE_LOCK g_dbg_nl_lock;
 
 #define STP_MAGIC_NUM (0xDEADFEED)
 
+#ifndef GENL_ID_GENERATE
+#define GENL_ID_GENERATE	0
+#endif
+
 enum {
 	__STP_DBG_ATTR_INVALID,
 	STP_DBG_ATTR_MSG,
@@ -81,14 +85,6 @@ enum {
 	__STP_DBG_COMMAND_MAX,
 };
 #define MTK_WIFI_COMMAND_MAX    (__STP_DBG_COMMAND_MAX - 1)
-
-static struct genl_family stp_dbg_gnl_family = {
-	.id = GENL_ID_GENERATE,
-	.hdrsize = 0,
-	.name = STP_DBG_FAMILY_NAME,
-	.version = 1,
-	.maxattr = STP_DBG_ATTR_MAX,
-};
 
 /* attribute policy */
 static struct nla_policy stp_dbg_genl_policy[STP_DBG_ATTR_MAX + 1] = {
@@ -161,6 +157,15 @@ static struct genl_ops stp_dbg_gnl_ops_array[] = {
 	},
 };
 
+static struct genl_family stp_dbg_gnl_family = {
+	.id = GENL_ID_GENERATE,
+	.hdrsize = 0,
+	.name = STP_DBG_FAMILY_NAME,
+	.version = 1,
+	.maxattr = STP_DBG_ATTR_MAX,
+	.ops = stp_dbg_gnl_ops_array,
+	.n_ops = ARRAY_SIZE(stp_dbg_gnl_ops_array),
+};
 /* stp_dbg_core_dump_timeout_handler - handler of coredump timeout
  * @ data - core dump object's pointer
  *
@@ -1559,7 +1564,7 @@ VOID stp_dbg_nl_init(VOID)
 	}
 #endif
 	osal_sleepable_lock_init(&g_dbg_nl_lock);
-	if (genl_register_family_with_ops(&stp_dbg_gnl_family, stp_dbg_gnl_ops_array) != 0)
+	if (genl_register_family(&stp_dbg_gnl_family) != 0)
 		STP_DBG_PR_ERR("%s(): GE_NELINK family registration fail\n", __func__);
 }
 
