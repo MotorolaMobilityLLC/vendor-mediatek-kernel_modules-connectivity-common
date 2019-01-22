@@ -270,7 +270,12 @@ INT32 wmt_dbg_assert_test(INT32 par1, INT32 par2, INT32 par3)
 		/* firmware trace test - for soc usage, not used in combo chip */
 		return wmt_dbg_cmd_test_api(WMTDRV_CMD_FWTRACE_TEST);
 	} else if (par3 == 4) {
+		if (DISABLE_PSM_MONITOR()) {
+			WMT_ERR_FUNC("wake up failed\n");
+			return -1;
+		}
 		wmt_lib_trigger_assert(par2, 30);
+		ENABLE_PSM_MONITOR();
 		return 0;
 	}
 
