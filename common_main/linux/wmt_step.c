@@ -496,7 +496,7 @@ static void _wmt_step_do_actions(struct step_action_list *action_list)
 			continue;
 		}
 
-		if (p_act != NULL && wmt_step_action_map[p_act->action_id].func_do_action != NULL)
+		if (wmt_step_action_map[p_act->action_id].func_do_action != NULL)
 			wmt_step_action_map[p_act->action_id].func_do_action(p_act, NULL);
 		else
 			WMT_ERR_FUNC("STEP failed: Action is NULL\n");
