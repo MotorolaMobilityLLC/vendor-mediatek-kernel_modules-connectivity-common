@@ -2190,6 +2190,22 @@ INT32 stp_dbg_set_host_assert_info(UINT32 drv_type, UINT32 reason, UINT32 en)
 	return 0;
 }
 
+VOID stp_dbg_set_keyword(PINT8 keyword)
+{
+	osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
+	if (keyword != NULL) {
+		if (osal_strlen(keyword) >= STP_DBG_KEYWORD_SIZE)
+			STP_DBG_PR_INFO("Keyword over max size(%d)\n", STP_DBG_KEYWORD_SIZE);
+		else if (osal_strchr(keyword, '<') != NULL || osal_strchr(keyword, '>') != NULL)
+			STP_DBG_PR_INFO("Keyword has < or >, keywrod: %s\n", keyword);
+		else
+			osal_strncat(&g_stp_dbg_cpupcr->keyword[0], keyword, STP_DBG_KEYWORD_SIZE);
+	} else {
+		g_stp_dbg_cpupcr->keyword[0] = '\0';
+	}
+	osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
+}
+
 UINT32 stp_dbg_get_host_trigger_assert(VOID)
 {
 	return g_stp_dbg_cpupcr->host_assert_info.assert_from_host;
@@ -2394,6 +2410,8 @@ INT32 stp_dbg_cpupcr_infor_format(PUINT8 buf, UINT32 max_len)
 		len += osal_sprintf(buf + len, "<isr>0x%x</isr>\n\t\t\t", g_stp_dbg_cpupcr->fwIsr);
 		len += osal_sprintf(buf + len, "<drv_type>NULL</drv_type>\n\t\t\t");
 		len += osal_sprintf(buf + len, "<reason>NULL</reason>\n\t\t\t");
+		len += osal_sprintf(buf + len, "<keyword>%s</keyword>\n\t\t\t",
+			g_stp_dbg_cpupcr->keyword);
 	} else if ((g_stp_dbg_cpupcr->issue_type == STP_FW_ASSERT_ISSUE) ||
 		   (g_stp_dbg_cpupcr->issue_type == STP_HOST_TRIGGER_FW_ASSERT) ||
 		   (g_stp_dbg_cpupcr->issue_type == STP_HOST_TRIGGER_ASSERT_TIMEOUT)) {
@@ -2434,6 +2452,9 @@ INT32 stp_dbg_cpupcr_infor_format(PUINT8 buf, UINT32 max_len)
 			len += osal_sprintf(buf + len, "<reason>%d</reason>\n\t\t\t",
 					g_stp_dbg_cpupcr->host_assert_info.reason);
 		}
+
+		len += osal_sprintf(buf + len, "<keyword>%s</keyword>\n\t\t\t",
+			g_stp_dbg_cpupcr->keyword);
 	} else {
 		len += osal_sprintf(buf + len, "NULL\n\t\t</classification>\n\t\t<rc>\n\t\t\t");
 		len += osal_sprintf(buf + len, "NULL\n\t\t</rc>\n\t</issue>\n\t");
@@ -2445,6 +2466,8 @@ INT32 stp_dbg_cpupcr_infor_format(PUINT8 buf, UINT32 max_len)
 		len += osal_sprintf(buf + len, "<isr>NULL</isr>\n\t\t\t");
 		len += osal_sprintf(buf + len, "<drv_type>NULL</drv_type>\n\t\t\t");
 		len += osal_sprintf(buf + len, "<reason>NULL</reason>\n\t\t\t");
+		len += osal_sprintf(buf + len, "<keyword>%s</keyword>\n\t\t\t",
+			g_stp_dbg_cpupcr->keyword);
 	}
 
 	len += osal_sprintf(buf + len, "<pctrace>");
@@ -2470,6 +2493,7 @@ INT32 stp_dbg_cpupcr_infor_format(PUINT8 buf, UINT32 max_len)
 	g_stp_dbg_cpupcr->host_assert_info.reason = 0;
 	g_stp_dbg_cpupcr->host_assert_info.drv_type = 0;
 	g_stp_dbg_cpupcr->issue_type = STP_FW_ISSUE_TYPE_INVALID;
+	g_stp_dbg_cpupcr->keyword[0] = '\0';
 	osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 
 	return len;
