@@ -3272,7 +3272,6 @@ static INT32 opfunc_wlan_probe(P_WMT_OP pWmtOp)
 			WMT_ERR_FUNC("turn on Wi-Fi SDIO2 but SDIO in FUNC_OFF state(0x%x)\n",
 					gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_SDIO2]);
 			osal_assert(0);
-			wmt_lib_wlan_lock_release();
 			iRet = -4;
 			goto done;
 		}
@@ -3303,6 +3302,7 @@ static INT32 opfunc_wlan_probe(P_WMT_OP pWmtOp)
 		osal_assert(0);
 		/* FIX-ME:[Chaozhong Liang], Error handling? check subsystem state and do pwr off if necessary? */
 		/* check all sub-func and do power off */
+		wmt_lib_psm_lock_aquire();
 		if ((gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_BT] == DRV_STS_POWER_OFF) &&
 		    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPS] == DRV_STS_POWER_OFF) &&
 		    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_FM] == DRV_STS_POWER_OFF) &&
@@ -3320,6 +3320,7 @@ static INT32 opfunc_wlan_probe(P_WMT_OP pWmtOp)
 				osal_assert(0);
 			}
 		}
+		wmt_lib_psm_lock_release();
 	}
 
 done:
@@ -3377,6 +3378,7 @@ static INT32 opfunc_wlan_remove(P_WMT_OP pWmtOp)
 	}
 
 	/* check all sub-func and do power off */
+	wmt_lib_psm_lock_aquire();
 	if ((gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_BT] == DRV_STS_POWER_OFF) &&
 	    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPS] == DRV_STS_POWER_OFF) &&
 	    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_FM] == DRV_STS_POWER_OFF) &&
@@ -3393,6 +3395,7 @@ static INT32 opfunc_wlan_remove(P_WMT_OP pWmtOp)
 			osal_assert(0);
 		}
 	}
+	wmt_lib_psm_lock_release();
 
 done:
 	wmt_core_dump_func_state("AF FUNC OFF");
