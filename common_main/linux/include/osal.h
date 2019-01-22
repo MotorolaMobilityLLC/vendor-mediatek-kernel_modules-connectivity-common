@@ -390,6 +390,7 @@ MTK_WCN_BOOL osal_op_is_wait_for_signal(P_OSAL_OP pOp);
 VOID osal_op_raise_signal(P_OSAL_OP pOp, INT32 result);
 VOID osal_set_op_result(P_OSAL_OP pOp, INT32 result);
 VOID osal_opq_dump(const char *qName, P_OSAL_OP_Q pOpQ);
+VOID osal_opq_dump_locked(const char *qName, P_OSAL_OP_Q pOpQ);
 MTK_WCN_BOOL osal_opq_has_op(P_OSAL_OP_Q pOpQ, P_OSAL_OP pOp);
 
 INT32 osal_ftrace_print(const PINT8 str, ...);
