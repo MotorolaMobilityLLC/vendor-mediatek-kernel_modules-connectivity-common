@@ -127,11 +127,16 @@ static MTK_WCN_BOOL mtk_wcn_wmt_func_ctrl(ENUM_WMTDRV_TYPE_T type, ENUM_WMT_OPID
 	P_OSAL_SIGNAL pSignal;
 	PUINT8 pbuf = NULL;
 	INT32 len = 0;
-	MTK_WCN_BOOL bOffload = (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC && type == WMTDRV_TYPE_WIFI);
+	MTK_WCN_BOOL bOffload;
+	MTK_WCN_BOOL bExplicitPwrOn;
+
+	bOffload = (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC && type == WMTDRV_TYPE_WIFI);
+	bExplicitPwrOn = (bOffload && opId == WMT_OPID_FUNC_ON &&
+				wmt_lib_get_drv_status(WMTDRV_TYPE_WMT) != DRV_STS_FUNC_ON);
 
 	/* WIFI on no need to disable psm and prevent WIFI on blocked by psm lock. */
 	/* So we power on connsys separately from function on flow. */
-	if (bOffload)
+	if (bExplicitPwrOn)
 		mtk_wcn_wmt_pwr_on();
 
 	pOp = wmt_lib_get_free_op();
