@@ -370,7 +370,7 @@ extern INT32 wmt_lib_set_stp_wmt_last_close(UINT32 value);
 
 extern VOID wmt_lib_set_patch_num(UINT32 num);
 extern VOID wmt_lib_set_patch_info(P_WMT_PATCH_INFO pPatchinfo);
-extern VOID wmt_lib_set_rom_patch_info(struct wmt_rom_patch_info *pPatchinfo);
+extern VOID wmt_lib_set_rom_patch_info(struct wmt_rom_patch_info *PatchInfo, ENUM_WMTDRV_TYPE_T type);
 extern MTK_WCN_BOOL wmt_lib_stp_is_btif_fullset_mode(VOID);
 
 extern INT32 wmt_lib_set_current_op(P_DEV_WMT pWmtDev, P_OSAL_OP pOp);
