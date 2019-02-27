@@ -758,10 +758,9 @@ static VOID wmt_step_do_actions_from_tp(enum step_trigger_point_id tp_id, char *
 		if (tp_id <= STEP_TRIGGER_POINT_NO_DEFINE || tp_id >= STEP_TRIGGER_POINT_MAX) {
 			WMT_ERR_FUNC("STEP failed: Do actions from tp_id: %d\n", tp_id);
 			result = -1;
-		}
-
-		if (list_empty(&g_step_env.actions[tp_id].list))
+		} else if (list_empty(&g_step_env.actions[tp_id].list)) {
 			result = -1;
+		}
 
 		if (result == 0) {
 			wmt_step_print_trigger_time(tp_id, reason);
