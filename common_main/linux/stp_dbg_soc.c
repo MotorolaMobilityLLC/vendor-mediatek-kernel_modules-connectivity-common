@@ -26,6 +26,10 @@
 #define IS_VISIBLE_CHAR(c) ((c) >= 32 && (c) <= 126)
 #define DUMP_LOG_BYTES_PER_LINE (128)
 
+#define ROM_V2_PATCH "ROMv2"
+#define ROM_V3_PATCH "ROMv3"
+#define ROM_V4_PATCH "ROMv4"
+
 ENUM_STP_FW_ISSUE_TYPE issue_type;
 UINT8 g_paged_trace_buffer[STP_DBG_PAGED_TRACE_SIZE] = { 0 };
 UINT32 g_paged_trace_len;
@@ -45,7 +49,8 @@ static PUINT8 soc_task_str[STP_DBG_TASK_ID_MAX] = {
 	"Task_DrvStp",
 	"Task_DrvBtif",
 	"Task_NatBt",
-	"Task_DrvWifi"
+	"Task_DrvWifi",
+	"Task_GPS"
 };
 
 INT32 const soc_gen_two_task_id_adapter[STP_DBG_TASK_ID_MAX] = {
@@ -61,7 +66,8 @@ INT32 const soc_gen_two_task_id_adapter[STP_DBG_TASK_ID_MAX] = {
 	STP_DBG_TASK_DRVSTP,
 	STP_DBG_TASK_BUS,
 	STP_DBG_TASK_NATBT,
-	STP_DBG_TASK_DRVWIFI
+	STP_DBG_TASK_DRVWIFI,
+	STP_DBG_TASK_DRVGPS
 };
 
 INT32 const soc_gen_three_task_id_adapter[STP_DBG_TASK_ID_MAX] = {
@@ -77,7 +83,8 @@ INT32 const soc_gen_three_task_id_adapter[STP_DBG_TASK_ID_MAX] = {
 	STP_DBG_TASK_DRVSTP,
 	STP_DBG_TASK_BUS,
 	STP_DBG_TASK_NATBT,
-	STP_DBG_TASK_DRVWIFI
+	STP_DBG_TASK_DRVWIFI,
+	STP_DBG_TASK_DRVGPS
 };
 
 static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink);
@@ -495,12 +502,19 @@ PUINT8 stp_dbg_soc_id_to_task(UINT32 id)
 		return NULL;
 	}
 
-	if (osal_strcmp(patch_name, "ROMv2") == 0)
+	if (osal_strncmp(patch_name, ROM_V2_PATCH, strlen(ROM_V2_PATCH)) == 0) {
 		temp_id = soc_gen_two_task_id_adapter[id];
-	else if (osal_strcmp(patch_name, "ROMv3") == 0 || osal_strcmp(patch_name, "ROMv4") == 0)
+		STP_DBG_PR_INFO("id = %d, gen two task_id = %d\n", id, temp_id);
+	} else if (osal_strncmp(patch_name, ROM_V3_PATCH, strlen(ROM_V3_PATCH)) == 0) {
 		temp_id = soc_gen_three_task_id_adapter[id];
-	else
+		STP_DBG_PR_INFO("id = %d, gen three task_id = %d\n", id, temp_id);
+	} else if (osal_strncmp(patch_name, ROM_V4_PATCH, strlen(ROM_V4_PATCH)) == 0) {
+		temp_id = soc_gen_three_task_id_adapter[id];
+		STP_DBG_PR_INFO("id = %d, gen three (ROMv4) task_id = %d\n", id, temp_id);
+	} else {
 		temp_id = id;
+		STP_DBG_PR_INFO("id = %d, CONNAC project task_id = %d\n", id, temp_id);
+	}
 
 	return soc_task_str[temp_id];
 }
