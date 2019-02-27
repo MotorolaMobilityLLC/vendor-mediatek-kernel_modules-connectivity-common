@@ -150,7 +150,7 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 	UINT64 start_ts = 0;
 	ULONG start_nsec = 0;
 	UINT64 elapsed_time = 0;
-	INT32 timeout_abort = 0;
+	INT32 abort = 0;
 
 	g_paged_dump_len = 0;
 	p_ecsi = wmt_plat_get_emi_phy_add();
@@ -204,7 +204,7 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 				/* Since customer's user/userdebug load get coredump via netlink(dump_sink==2). */
 				/* For UX, if get coredump timeout, skip it and do chip reset ASAP. */
 				if (dump_sink == 2)
-					timeout_abort = 1;
+					abort = 1;
 #endif
 				goto paged_dump_end;
 			}
@@ -252,7 +252,7 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 					STP_DBG_INFO_FUNC("aee send fisish!\n");
 				else if (ret == -1) {
 					STP_DBG_ERR_FUNC("aee send timeout!\n");
-					timeout_abort = 1;
+					abort = 1;
 					goto paged_dump_end;
 				} else
 					STP_DBG_ERR_FUNC("aee send error!\n");
@@ -263,7 +263,7 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 					STP_DBG_INFO_FUNC("dump send ok!\n");
 				else if (ret == 1) {
 					STP_DBG_ERR_FUNC("dump send timeout!\n");
-					timeout_abort = 1;
+					abort = 1;
 					goto paged_dump_end;
 				} else
 					STP_DBG_ERR_FUNC("dump send error!\n");
@@ -300,7 +300,7 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 				/* Since customer's user/userdebug load get coredump via netlink(dump_sink==2). */
 				/* For UX, if wait sync state timeout, skip it and do chip reset ASAP. */
 				if (dump_sink == 2)
-					timeout_abort = 1;
+					abort = 1;
 #endif
 				goto paged_dump_end;
 			}
@@ -315,7 +315,7 @@ paged_dump_end:
 			STP_DBG_INFO_FUNC("paged dump end\n");
 			ret = 0;
 			break;
-		} else if (timeout_abort) {
+		} else if (abort || stp_dbg_get_coredump_timer_state() == CORE_DUMP_TIMEOUT) {
 			STP_DBG_ERR_FUNC("paged dump fail\n");
 			stp_dbg_poll_cpupcr(5, 5, 0);
 			stp_dbg_poll_dmaregs(5, 1);
