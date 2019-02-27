@@ -916,16 +916,18 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		} while (0);
 		break;
 	case WMT_IOCTL_FUNC_ONOFF_CTRL:	/* test turn on/off func */
+#if WMT_DBG_SUPPORT
 		do {
 			MTK_WCN_BOOL bRet = MTK_WCN_BOOL_FALSE;
 
-			if (arg & 0x80000000)
+			if (arg >> 4 == 0xBEEF000)
 				bRet = mtk_wcn_wmt_func_on(arg & 0xF);
-			else
+			else if (arg >> 4 == 0xDEAD000)
 				bRet = mtk_wcn_wmt_func_off(arg & 0xF);
 
 			iRet = (bRet == MTK_WCN_BOOL_FALSE) ? -EFAULT : 0;
 		} while (0);
+#endif
 		break;
 	case WMT_IOCTL_LPBK_POWER_CTRL:
 		do {
@@ -934,7 +936,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			switch (arg) {
 			case 0:
 				if (always_pwr_on_flag)
-					bRet	= mtk_wcn_wmt_func_off(WMTDRV_TYPE_LPBK);
+					bRet = mtk_wcn_wmt_func_off(WMTDRV_TYPE_LPBK);
 				break;
 			case 1:
 				if (always_pwr_on_flag)
