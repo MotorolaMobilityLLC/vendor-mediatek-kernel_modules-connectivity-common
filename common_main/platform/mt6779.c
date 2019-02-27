@@ -619,18 +619,22 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 		}
 		WMT_PLAT_PR_DBG("clk_prepare_enable(clk_scp_conn_main) ok\n");
 
-		WMT_PLAT_PR_DBG("AP_PCCIF_DUMMY1 = %x\n",
-			CONSYS_REG_READ(
-				conn_reg.ap_pccif4_base +
-				INFRASYS_COMMON_AP2MD_PCCIF4_AP_DUMMY1_OFFSET));
-		/* Set AP_PCCIF4_PWR_ON bit (bit 0) */
-		CONSYS_REG_WRITE((conn_reg.ap_pccif4_base +
-				  INFRASYS_COMMON_AP2MD_PCCIF4_AP_DUMMY1_OFFSET), 1);
+		if (conn_reg.infra_ao_pericfg_base != 0) {
+			WMT_PLAT_PR_DBG("CON_STA_REG = %x\n",
+				CONSYS_REG_READ(
+					conn_reg.infra_ao_pericfg_base +
+					INFRASYS_COMMON_AP2MD_PCCIF4_AP_PERI_AP_CCU_CONFIG));
 
-		WMT_PLAT_PR_DBG("AP_PCCIF_DUMMY1 = %x\n",
-			CONSYS_REG_READ(
-				conn_reg.ap_pccif4_base +
-				INFRASYS_COMMON_AP2MD_PCCIF4_AP_DUMMY1_OFFSET));
+			/* Set CON_PWR_ON bit (CON_STA_REG[0]) */
+			CONSYS_REG_WRITE_RANGE((conn_reg.infra_ao_pericfg_base +
+				INFRASYS_COMMON_AP2MD_PCCIF4_AP_PERI_AP_CCU_CONFIG),
+				1, 1, 0);
+
+			WMT_PLAT_PR_DBG("CON_STA_REG = %x\n",
+				CONSYS_REG_READ(
+					conn_reg.infra_ao_pericfg_base +
+					INFRASYS_COMMON_AP2MD_PCCIF4_AP_PERI_AP_CCU_CONFIG));
+		}
 #else
 		/* turn on SPM clock gating enable PWRON_CONFG_EN 0x10006000 32'h0b160001 */
 		CONSYS_REG_WRITE((conn_reg.spm_base + CONSYS_PWRON_CONFG_EN_OFFSET),
@@ -818,20 +822,23 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 			}
 		}
 
-		/* Clean AP_PCCIF4_SW_READY and AP_PCCIF4_PWR_ON
-		 * when power off or reset connsys
-		 */
-		WMT_PLAT_PR_DBG("AP_PCCIF_DUMMY1 = %x\n",
-			CONSYS_REG_READ(
-				conn_reg.ap_pccif4_base +
-				INFRASYS_COMMON_AP2MD_PCCIF4_AP_DUMMY1_OFFSET));
-		CONSYS_REG_WRITE_RANGE((conn_reg.ap_pccif4_base +
-			INFRASYS_COMMON_AP2MD_PCCIF4_AP_DUMMY1_OFFSET),
-			0, 1, 0);
-		WMT_PLAT_PR_DBG("AP_PCCIF_DUMMY1 = %x\n",
-			CONSYS_REG_READ(
-				conn_reg.ap_pccif4_base +
-				INFRASYS_COMMON_AP2MD_PCCIF4_AP_DUMMY1_OFFSET));
+		if (conn_reg.infra_ao_pericfg_base != 0) {
+			WMT_PLAT_PR_DBG("CON_STA_REG = %x\n",
+				CONSYS_REG_READ(
+					conn_reg.infra_ao_pericfg_base +
+					INFRASYS_COMMON_AP2MD_PCCIF4_AP_PERI_AP_CCU_CONFIG));
+
+			/* Clean CON_STA_REG
+			 * when power off or reset connsys
+			 */
+			CONSYS_REG_WRITE((conn_reg.infra_ao_pericfg_base +
+				INFRASYS_COMMON_AP2MD_PCCIF4_AP_PERI_AP_CCU_CONFIG), 0);
+
+			WMT_PLAT_PR_DBG("CON_STA_REG = %x\n",
+				CONSYS_REG_READ(
+					conn_reg.infra_ao_pericfg_base +
+					INFRASYS_COMMON_AP2MD_PCCIF4_AP_PERI_AP_CCU_CONFIG));
+		}
 
 		clk_disable_unprepare(clk_scp_conn_main);
 		WMT_PLAT_PR_DBG("clk_disable_unprepare(clk_scp_conn_main) calling\n");
@@ -1405,6 +1412,9 @@ static INT32 consys_read_reg_from_dts(struct platform_device *pdev)
 		conn_reg.ap_pccif4_base = (SIZE_T) of_iomap(node, AP_PCCIF4_BASE_INDEX);
 		WMT_PLAT_PR_DBG("Get ap_pccif4 register base(0x%zx)\n",
 				conn_reg.ap_pccif4_base);
+		conn_reg.infra_ao_pericfg_base = (SIZE_T) of_iomap(node, INFRA_AO_PERICFG_BASE_INDEX);
+		WMT_PLAT_PR_DBG("Get infra_ao_pericfg register base(0x%zx)\n",
+				conn_reg.infra_ao_pericfg_base);
 	} else {
 		WMT_PLAT_PR_ERR("[%s] can't find CONSYS compatible node\n", __func__);
 		return iRet;
