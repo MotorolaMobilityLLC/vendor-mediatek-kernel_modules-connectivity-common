@@ -165,9 +165,9 @@ int wmt_detect_ext_chip_pwr_on(void)
 #ifdef MTK_WCN_COMBO_CHIP_SUPPORT
 	WMT_DETECT_PR_INFO("++\n");
 	if (wmt_detect_chip_pwr_ctrl(1) != 0)
-		return -1;
-	if (wmt_detect_sdio_pwr_ctrl(1) != 0)
 		return -2;
+	if (wmt_detect_sdio_pwr_ctrl(1) != 0)
+		return -3;
 	return 0;
 #else
 	WMT_DETECT_PR_INFO("combo chip is not supported\n");
@@ -192,6 +192,7 @@ int wmt_detect_ext_chip_pwr_off(void)
 int wmt_detect_ext_chip_detect(void)
 {
 	int iRet = -1;
+#ifdef MTK_WCN_COMBO_CHIP_SUPPORT
 	unsigned int chipId = -1;
 	/*if there is no external combo chip, return -1 */
 	int bgfEintStatus = -1;
@@ -206,6 +207,7 @@ int wmt_detect_ext_chip_detect(void)
 	if (bgfEintStatus == 0) {
 		/*external chip does not exist */
 		WMT_DETECT_PR_INFO("external combo chip not detected\n");
+		iRet = -2;
 	} else if (bgfEintStatus == 1) {
 		/*combo chip exists */
 		WMT_DETECT_PR_INFO("external combo chip detected\n");
@@ -220,9 +222,11 @@ int wmt_detect_ext_chip_detect(void)
 	} else {
 		/*Error exists */
 		WMT_DETECT_PR_ERR("error happens when detecting combo chip\n");
+		iRet = -3;
 	}
 	WMT_DETECT_PR_INFO("--\n");
 	/*return 0 */
+#endif
 	return iRet;
 	/*todo: if there is external combo chip, power on chip return 0 */
 }
