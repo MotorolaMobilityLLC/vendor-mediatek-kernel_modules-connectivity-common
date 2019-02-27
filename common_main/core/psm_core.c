@@ -445,13 +445,7 @@ P_OSAL_OP _stp_psm_get_free_op(MTKSTP_PSM_T *stp_psm)
 	if (stp_psm) {
 		pOp = _stp_psm_get_op(stp_psm, &stp_psm->rFreeOpQ);
 		if (pOp) {
-			osal_memset(&pOp->op, 0, sizeof(pOp->op));
-
-			/* at the moment the signal's timeoutValue is initialized by caller of _stp_psm_get_free_op(),
-			 * and the signal's comp is initialized in _stp_psm_put_act_op(),
-			 * leaving us with no choice but to initialize timeoutExtension here.
-			 */
-			pOp->signal.timeoutExtension = 0;
+			osal_memset(pOp, 0, osal_sizeof(OSAL_OP));
 		}
 		return pOp;
 	}
@@ -461,7 +455,6 @@ P_OSAL_OP _stp_psm_get_free_op(MTKSTP_PSM_T *stp_psm)
 INT32 _stp_psm_put_act_op(MTKSTP_PSM_T *stp_psm, P_OSAL_OP pOp)
 {
 	INT32 bRet = 0;		/* MTK_WCN_BOOL_FALSE; */
-	INT32 bCleanup = 0;	/* MTK_WCN_BOOL_FALSE; */
 	INT32 wait_ret = -1;
 	P_OSAL_SIGNAL pSignal = NULL;
 	INT32 ret = 0;
@@ -479,12 +472,14 @@ INT32 _stp_psm_put_act_op(MTKSTP_PSM_T *stp_psm, P_OSAL_OP pOp)
 			osal_signal_init(&pOp->signal);
 		}
 
+		/* Init ref_count to 2, as one is held by current thread, the second by psm thread */
+		atomic_set(&pOp->ref_count, 2);
+
 		/* put to active Q */
 		bRet = _stp_psm_put_op(stp_psm, &stp_psm->rActiveOpQ, pOp);
 
 		if (bRet == 0) {
 			STP_PSM_WARN_FUNC("+++++++++++ Put op Active queue Fail\n");
-			bCleanup = 1;	/* MTK_WCN_BOOL_TRUE; */
 			break;
 		}
 		_stp_psm_opid_dbg_dmp_in(g_stp_psm_opid_dbg, pOp->op.opId, __LINE__);
@@ -493,12 +488,8 @@ INT32 _stp_psm_put_act_op(MTKSTP_PSM_T *stp_psm, P_OSAL_OP pOp)
 
 		if (pSignal->timeoutValue == 0) {
 			bRet = 1;	/* MTK_WCN_BOOL_TRUE; */
-			/* clean it in wmtd */
 			break;
 		}
-
-		/* wait result, clean it here */
-		bCleanup = 1;	/* MTK_WCN_BOOL_TRUE; */
 
 		/* check result */
 		wait_ret = osal_wait_for_signal_timeout(&pOp->signal, &stp_psm->PSMd);
@@ -514,7 +505,7 @@ INT32 _stp_psm_put_act_op(MTKSTP_PSM_T *stp_psm, P_OSAL_OP pOp)
 		}
 	} while (0);
 
-	if (bCleanup) {
+	if (pOp && atomic_dec_and_test(&pOp->ref_count)) {
 		/* put Op back to freeQ */
 		bRet = _stp_psm_put_op(stp_psm, &stp_psm->rFreeOpQ, pOp);
 		if (bRet == 0)
@@ -592,13 +583,13 @@ handler_done:
 			STP_PSM_WARN_FUNC("opid id(0x%x)(%s) error(%d)\n", id,
 					(id >= 4) ? ("???") : (g_psm_op_name[id]), result);
 
-		if (osal_op_is_wait_for_signal(pOp))
-			osal_op_raise_signal(pOp, result);
-		else {
+		if (atomic_dec_and_test(&pOp->ref_count)) {
 			/* put Op back to freeQ */
 			if (_stp_psm_put_op(stp_psm, &stp_psm->rFreeOpQ, pOp) == 0)
 				STP_PSM_WARN_FUNC
 					("+++++++++++ Put op to FreeOpQ fail, maybe disable/enable psm\n");
+		} else if (osal_op_is_wait_for_signal(pOp)) {
+			osal_op_raise_signal(pOp, result);
 		}
 
 		if (id == STP_OPID_PSM_EXIT)
