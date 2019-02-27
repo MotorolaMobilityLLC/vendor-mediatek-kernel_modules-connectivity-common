@@ -61,8 +61,6 @@ static _osal_inline_ INT32 stp_dbg_combo_put_dump_to_aee(VOID)
 	INT32 retry = 0;
 	INT32 ret = 0;
 
-	STP_DBG_INFO_FUNC("Enter..\n");
-
 	do {
 		remain = stp_dbg_dmp_out_ex(&buf[0], &buf_len);
 		if (buf_len > 0) {
@@ -76,7 +74,7 @@ static _osal_inline_ INT32 stp_dbg_combo_put_dump_to_aee(VOID)
 
 					ret = stp_dbg_aee_send(tmp, pkt->hdr.len, 0);
 				} else {
-					STP_DBG_INFO_FUNC("dump entry length is over long\n");
+					STP_DBG_PR_INFO("dump entry length is over long\n");
 					osal_bug_on(0);
 				}
 				retry = 0;
@@ -87,8 +85,6 @@ static _osal_inline_ INT32 stp_dbg_combo_put_dump_to_aee(VOID)
 			osal_sleep_ms(20);
 		}
 	} while ((remain > 0) || (retry < 10));
-
-	STP_DBG_INFO_FUNC("Exit..\n");
 
 	return ret;
 }
@@ -108,8 +104,6 @@ static _osal_inline_ INT32 stp_dbg_combo_put_dump_to_nl(VOID)
 	INT32 retry = 0;
 	INT32 ret = 0;
 	INT32 len;
-
-	STP_DBG_INFO_FUNC("Enter..\n");
 
 	index = 0;
 	tmp[index++] = '[';
@@ -139,7 +133,7 @@ static _osal_inline_ INT32 stp_dbg_combo_put_dump_to_nl(VOID)
 
 					/* schedule(); */
 				} else {
-					STP_DBG_INFO_FUNC("dump entry length is over long\n");
+					STP_DBG_PR_INFO("dump entry length is over long\n");
 					osal_bug_on(0);
 				}
 				retry = 0;
@@ -150,8 +144,6 @@ static _osal_inline_ INT32 stp_dbg_combo_put_dump_to_nl(VOID)
 		}
 	} while ((remain > 0) || (retry < 2));
 
-	STP_DBG_INFO_FUNC("Exit..\n");
-
 	return ret;
 }
 
@@ -161,7 +153,7 @@ INT32 stp_dbg_combo_core_dump(INT32 dump_sink)
 
 	switch (dump_sink) {
 	case 0:
-		STP_DBG_INFO_FUNC("coredump is disabled!\n");
+		STP_DBG_PR_INFO("coredump is disabled!\n");
 		break;
 	case 1:
 		ret = stp_dbg_combo_put_dump_to_aee();
@@ -171,7 +163,7 @@ INT32 stp_dbg_combo_core_dump(INT32 dump_sink)
 		break;
 	default:
 		ret = -1;
-		STP_DBG_ERR_FUNC("unknown sink %d\n", dump_sink);
+		STP_DBG_PR_ERR("unknown sink %d\n", dump_sink);
 	}
 
 	return ret;
@@ -183,7 +175,7 @@ PUINT8 stp_dbg_combo_id_to_task(UINT32 id)
 	UINT32 temp_id;
 
 	if (id >= STP_DBG_TASK_ID_MAX) {
-		STP_DBG_ERR_FUNC("task id(%d) overflow(%d)\n", id, STP_DBG_TASK_ID_MAX);
+		STP_DBG_PR_ERR("task id(%d) overflow(%d)\n", id, STP_DBG_TASK_ID_MAX);
 		return NULL;
 	}
 
