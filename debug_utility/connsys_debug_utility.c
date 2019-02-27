@@ -469,10 +469,8 @@ static void connlog_log_data_handler(struct work_struct *work)
 	} while (ret);
 
 	spin_lock_irqsave(&gDev.irq_lock, gDev.flags);
-	if (gDev.eirqOn) {
-		gDev.workTimer.expires = jiffies + 1;
-		add_timer(&gDev.workTimer);
-	}
+	if (gDev.eirqOn)
+		mod_timer(&gDev.workTimer, jiffies + 1);
 	spin_unlock_irqrestore(&gDev.irq_lock, gDev.flags);
 }
 
