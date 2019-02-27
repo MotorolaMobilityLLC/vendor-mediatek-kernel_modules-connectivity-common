@@ -836,6 +836,10 @@ static struct init_script set_wifi_lte_coex_table_2[] = {
 	INIT_CMD(WMT_COEX_IS_LTE_L_CMD, WMT_COEX_SPLIT_MODE_EVT, "wifi coex is L branch"),
 };
 
+static struct init_script set_wifi_lte_coex_table_3[] = {
+	INIT_CMD(WMT_COEX_IS_LTE_PROJ_CMD, WMT_COEX_SPLIT_MODE_EVT, "set LTE project"),
+};
+
 static struct init_script set_wifi_lte_coex_table_0[] = {
 #if 0
 	INIT_CMD(WMT_COEX_SPLIT_FILTER_CMD_TEST, WMT_COEX_SPLIT_MODE_EVT, "wifi lte coex split filter"),
@@ -1124,10 +1128,13 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		}
 	}
 #if CFG_WMT_POWER_ON_DLM
-	iRet = wmt_core_init_script(wmt_power_on_dlm_table, osal_array_size(wmt_power_on_dlm_table));
-	if (iRet)
-		WMT_ERR_FUNC("wmt_power_on_dlm_table fail(%d)\n", iRet);
-	WMT_DBG_FUNC("wmt_power_on_dlm_table ok\n");
+	if (wmt_ic_ops_soc.icId != 0x6765) {
+		iRet = wmt_core_init_script(wmt_power_on_dlm_table,
+				osal_array_size(wmt_power_on_dlm_table));
+		if (iRet)
+			WMT_ERR_FUNC("wmt_power_on_dlm_table fail(%d)\n", iRet);
+		WMT_DBG_FUNC("wmt_power_on_dlm_table ok\n");
+	}
 #endif
 
 	/* turn on VCN28 for reading efuse */
@@ -1150,19 +1157,20 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		patch_num = mtk_wcn_soc_get_patch_num();
 	}
 #if CFG_WMT_PATCH_DL_OPTM
-	if (wmt_ic_ops_soc.icId == 0x0279 ||
-		wmt_ic_ops_soc.icId == 0x0507 ||
-		wmt_ic_ops_soc.icId == 0x0713 ||
-		wmt_ic_ops_soc.icId == 0x0788 ||
-		wmt_ic_ops_soc.icId == 0x6765 ||
-		wmt_ic_ops_soc.icId == 0x0688) {
-		iRet = wmt_core_init_script(set_mcuclk_table_3, osal_array_size(set_mcuclk_table_3));
-		if (iRet)
-			WMT_ERR_FUNC("set_mcuclk_table_3 fail(%d)\n", iRet);
-	} else {
-		iRet = wmt_core_init_script(set_mcuclk_table_1, osal_array_size(set_mcuclk_table_1));
-		if (iRet)
-			WMT_ERR_FUNC("set_mcuclk_table_1 fail(%d)\n", iRet);
+	if (wmt_ic_ops_soc.icId != 0x6765) {
+		if (wmt_ic_ops_soc.icId == 0x0279 ||
+		    wmt_ic_ops_soc.icId == 0x0507 ||
+		    wmt_ic_ops_soc.icId == 0x0713 ||
+		    wmt_ic_ops_soc.icId == 0x0788 ||
+		    wmt_ic_ops_soc.icId == 0x0688) {
+			iRet = wmt_core_init_script(set_mcuclk_table_3, osal_array_size(set_mcuclk_table_3));
+			if (iRet)
+				WMT_ERR_FUNC("set_mcuclk_table_3 fail(%d)\n", iRet);
+		} else {
+			iRet = wmt_core_init_script(set_mcuclk_table_1, osal_array_size(set_mcuclk_table_1));
+			if (iRet)
+				WMT_ERR_FUNC("set_mcuclk_table_1 fail(%d)\n", iRet);
+		}
 	}
 #endif
 	/* 6.3 Multi-patch Patch download */
@@ -1180,19 +1188,20 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	}
 
 #if CFG_WMT_PATCH_DL_OPTM
-	if (wmt_ic_ops_soc.icId == 0x0279 ||
-		wmt_ic_ops_soc.icId == 0x0507 ||
-		wmt_ic_ops_soc.icId == 0x0713 ||
-		wmt_ic_ops_soc.icId == 0x0788 ||
-		wmt_ic_ops_soc.icId == 0x6765 ||
-		wmt_ic_ops_soc.icId == 0x0688) {
-		iRet = wmt_core_init_script(set_mcuclk_table_4, osal_array_size(set_mcuclk_table_4));
-		if (iRet)
-			WMT_ERR_FUNC("set_mcuclk_table_4 fail(%d)\n", iRet);
-	} else {
-		iRet = wmt_core_init_script(set_mcuclk_table_2, osal_array_size(set_mcuclk_table_2));
-		if (iRet)
-			WMT_ERR_FUNC("set_mcuclk_table_2 fail(%d)\n", iRet);
+	if (wmt_ic_ops_soc.icId != 0x6765) {
+		if (wmt_ic_ops_soc.icId == 0x0279 ||
+		    wmt_ic_ops_soc.icId == 0x0507 ||
+		    wmt_ic_ops_soc.icId == 0x0713 ||
+		    wmt_ic_ops_soc.icId == 0x0788 ||
+		    wmt_ic_ops_soc.icId == 0x0688) {
+			iRet = wmt_core_init_script(set_mcuclk_table_4, osal_array_size(set_mcuclk_table_4));
+			if (iRet)
+				WMT_ERR_FUNC("set_mcuclk_table_4 fail(%d)\n", iRet);
+		} else {
+			iRet = wmt_core_init_script(set_mcuclk_table_2, osal_array_size(set_mcuclk_table_2));
+			if (iRet)
+				WMT_ERR_FUNC("set_mcuclk_table_2 fail(%d)\n", iRet);
+		}
 	}
 #endif
 
@@ -1236,7 +1245,6 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		wmt_ic_ops_soc.icId == 0x0507 ||
 		wmt_ic_ops_soc.icId == 0x0713 ||
 		wmt_ic_ops_soc.icId == 0x0788 ||
-		wmt_ic_ops_soc.icId == 0x6765 ||
 		wmt_ic_ops_soc.icId == 0x0688) {
 		/* add WMT_COXE_CONFIG_EXT_COMPONENT_OPCODE command for 2G4 eLNA demand*/
 		if (pWmtGenConf->coex_wmt_ext_component) {
@@ -1339,12 +1347,14 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	ctrlPa2 = PALDO_OFF;
 	iRet = wmt_core_ctrl(WMT_CTRL_SOC_PALDO_CTRL, &ctrlPa1, &ctrlPa2);
 
-	iRet = wmt_stp_init_coex();
-	if (iRet) {
-		WMT_ERR_FUNC("init_coex fail(%d)\n", iRet);
-		return -10;
+	if (wmt_ic_ops_soc.icId != 0x6765) {
+		iRet = wmt_stp_init_coex();
+		if (iRet) {
+			WMT_ERR_FUNC("init_coex fail(%d)\n", iRet);
+			return -10;
+		}
+		WMT_DBG_FUNC("init_coex ok\n");
 	}
-	WMT_DBG_FUNC("init_coex ok\n");
 
 	if (wmt_ic_ops_soc.icId == 0x0788) {
 		WMT_INFO_FUNC("coex_config_bt_ctrl:0x%x\n", pWmtGenConf->coex_config_bt_ctrl);
@@ -1394,16 +1404,18 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	mtk_wcn_soc_set_sdio_driving();
 #endif
 
-	if (mtk_wcn_soc_co_clock_get() == WMT_CO_CLOCK_EN) {
-		WMT_INFO_FUNC("co-clock enabled.\n");
+	if (wmt_ic_ops_soc.icId != 0x6765) {
+		if (mtk_wcn_soc_co_clock_get() == WMT_CO_CLOCK_EN) {
+			WMT_INFO_FUNC("co-clock enabled.\n");
 
-		iRet = wmt_core_init_script(osc_type_table, osal_array_size(osc_type_table));
-		if (iRet) {
-			WMT_ERR_FUNC("osc_type_table fail(%d), goes on\n", iRet);
-			return -11;
+			iRet = wmt_core_init_script(osc_type_table, osal_array_size(osc_type_table));
+			if (iRet) {
+				WMT_ERR_FUNC("osc_type_table fail(%d), goes on\n", iRet);
+				return -11;
+			}
+		} else {
+			WMT_WARN_FUNC("co-clock disabled.\n");
 		}
-	} else {
-		WMT_WARN_FUNC("co-clock disabled.\n");
 	}
 #if (MTK_WCN_CMB_MERGE_INTERFACE_SUPPORT)
 	iRet = wmt_core_init_script(merge_pcm_table, osal_array_size(merge_pcm_table));
@@ -1435,15 +1447,17 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	/*Open Core Dump Function @QC begin */
 	mtk_wcn_stp_coredump_flag_ctrl(1);
 #endif
-	if (mtk_wcn_stp_coredump_flag_get() != 0) {
-		iRet = wmt_core_init_script(init_table_6, osal_array_size(init_table_6));
-		if (iRet) {
-			WMT_ERR_FUNC("init_table_6 core dump setting fail(%d)\n", iRet);
-			return -15;
+	if (wmt_ic_ops_soc.icId != 0x6765) {
+		if (mtk_wcn_stp_coredump_flag_get() != 0) {
+			iRet = wmt_core_init_script(init_table_6, osal_array_size(init_table_6));
+			if (iRet) {
+				WMT_ERR_FUNC("init_table_6 core dump setting fail(%d)\n", iRet);
+				return -15;
+			}
+			WMT_DBG_FUNC("enable soc_consys firmware coredump\n");
+		} else {
+			WMT_DBG_FUNC("disable soc_consys firmware coredump\n");
 		}
-		WMT_DBG_FUNC("enable soc_consys firmware coredump\n");
-	} else {
-		WMT_DBG_FUNC("disable soc_consys firmware coredump\n");
 	}
 
 #if CFG_WMT_WIFI_5G_SUPPORT
@@ -1948,7 +1962,6 @@ static INT32 wmt_stp_wifi_lte_coex(VOID)
 				wmt_ic_ops_soc.icId == 0x0507 ||
 				wmt_ic_ops_soc.icId == 0x0713 ||
 				wmt_ic_ops_soc.icId == 0x0788 ||
-				wmt_ic_ops_soc.icId == 0x6765 ||
 				wmt_ic_ops_soc.icId == 0x0688) {
 			/* add WMT_COXE_CONFIG_EXT_COMPONENT_OPCODE command for 2G4 eLNA demand*/
 			if (pWmtGenConf->coex_wmt_ext_component) {
@@ -1958,6 +1971,12 @@ static INT32 wmt_stp_wifi_lte_coex(VOID)
 			iRet =
 			    wmt_core_init_script(set_wifi_lte_coex_table_2, osal_array_size(set_wifi_lte_coex_table_2));
 			WMT_DBG_FUNC("wmt_core:set_wifi_lte_coex_table_2 %s(%d)\n", iRet ? "fail" : "ok", iRet);
+		} else if (wmt_ic_ops_soc.icId == 0x6765) {
+			iRet =
+			    wmt_core_init_script(set_wifi_lte_coex_table_3,
+					    osal_array_size(set_wifi_lte_coex_table_3));
+			WMT_DBG_FUNC("wmt_core:set_wifi_lte_coex_table_3 %s(%d)\n",
+					iRet ? "fail" : "ok", iRet);
 		} else {
 			iRet =
 			    wmt_core_init_script(set_wifi_lte_coex_table_0, osal_array_size(set_wifi_lte_coex_table_0));
