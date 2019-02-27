@@ -304,8 +304,23 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 				wmt_consys_ic_ops->consys_ic_clock_buffer_ctrl(ENABLE);
 		}
 
-		if (wmt_consys_ic_ops->consys_ic_hw_vcn28_ctrl)
-			wmt_consys_ic_ops->consys_ic_hw_vcn28_ctrl(ENABLE);
+		if (co_clock_type) {
+			/*if co-clock mode: */
+			/*1.set VCN28 to SW control mode (with PMIC_WRAP API) */
+			if (wmt_consys_ic_ops->consys_ic_vcn28_hw_mode_ctrl)
+				wmt_consys_ic_ops->consys_ic_vcn28_hw_mode_ctrl(DISABLE);
+		} else {
+			/*if NOT co-clock: */
+			/*1.set VCN28 to HW control mode (with PMIC_WRAP API) */
+			/*2.turn on VCN28 LDO (with PMIC_WRAP API)" */
+			if (wmt_consys_ic_ops->consys_ic_vcn28_hw_mode_ctrl)
+				wmt_consys_ic_ops->consys_ic_vcn28_hw_mode_ctrl(ENABLE);
+			if (wmt_consys_ic_ops->consys_ic_hw_vcn28_ctrl)
+				wmt_consys_ic_ops->consys_ic_hw_vcn28_ctrl(ENABLE);
+		}
+
+		/* turn on VCN28 LDO for reading efuse usage */
+		mtk_wcn_consys_hw_efuse_paldo_ctrl(ENABLE, co_clock_type);
 
 		if (wmt_consys_ic_ops->consys_ic_hw_reset_bit_set)
 			wmt_consys_ic_ops->consys_ic_hw_reset_bit_set(ENABLE);
@@ -377,6 +392,20 @@ INT32 mtk_wcn_consys_hw_wifi_paldo_ctrl(UINT32 enable)
 	return 0;
 }
 EXPORT_SYMBOL(mtk_wcn_consys_hw_wifi_paldo_ctrl);
+
+INT32 mtk_wcn_consys_hw_efuse_paldo_ctrl(UINT32 enable, UINT32 co_clock_type)
+{
+	if (co_clock_type) {
+		if (wmt_consys_ic_ops->consys_ic_hw_vcn28_ctrl)
+			wmt_consys_ic_ops->consys_ic_hw_vcn28_ctrl(enable);
+		if (enable)
+			WMT_PLAT_PR_INFO("turn on vcn28 for efuse usage in co-clock mode\n");
+		else
+			WMT_PLAT_PR_INFO("turn off vcn28 for efuse usage in co-clock mode\n");
+	}
+	return 0;
+}
+EXPORT_SYMBOL(mtk_wcn_consys_hw_efuse_paldo_ctrl);
 
 INT32 mtk_wcn_consys_hw_vcn28_ctrl(UINT32 enable)
 {
