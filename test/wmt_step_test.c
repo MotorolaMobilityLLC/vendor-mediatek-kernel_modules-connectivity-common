@@ -735,7 +735,7 @@ int wmt_step_test_is_can_write(SIZE_T addr, int mask)
 int wmt_step_test_find_can_write_register(SIZE_T addr, int max, int mask)
 {
 	int i;
-	bool is_write;
+	int write_able;
 
 	if (DISABLE_PSM_MONITOR()) {
 		WMT_ERR_FUNC("wake up failed\n");
@@ -743,8 +743,8 @@ int wmt_step_test_find_can_write_register(SIZE_T addr, int max, int mask)
 	}
 
 	for (i = 0x0; i < max; i += 0x4) {
-		is_write = wmt_step_test_is_can_write(addr + i, mask);
-		if (is_write == STEP_CAN_WRITE_YES) {
+		write_able = wmt_step_test_is_can_write(addr + i, mask);
+		if (write_able == STEP_CAN_WRITE_YES) {
 			ENABLE_PSM_MONITOR();
 			return i;
 		}
