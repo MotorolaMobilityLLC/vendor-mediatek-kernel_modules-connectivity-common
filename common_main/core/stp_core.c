@@ -1702,7 +1702,7 @@ INT32 mtk_wcn_stp_dbg_log_ctrl(UINT32 on)
 
 INT32 mtk_wcn_stp_coredump_flag_ctrl(UINT32 on)
 {
-	static INT32 pre_coredump_mode;
+	static INT32 pre_coredump_mode = 2;
 
 	STP_ENABLE_FW_COREDUMP(stp_core_ctx, on);
 	STP_INFO_FUNC("%s coredump function.\n", 0 == on ? "disable" : "enable");
