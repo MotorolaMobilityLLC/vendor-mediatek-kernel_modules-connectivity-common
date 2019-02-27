@@ -432,6 +432,7 @@ static VOID consys_set_if_pinmux(MTK_WCN_BOOL enable)
 static VOID consys_hw_reset_bit_set(MTK_WCN_BOOL enable)
 {
 	UINT32 consys_ver_id = 0;
+	UINT32 cnt = 0;
 
 	if (enable) {
 		/*3.assert CONNSYS CPU SW reset  0x10007018 "[12]=1'b1  [31:24]=8'h88 (key)" */
@@ -446,6 +447,8 @@ static VOID consys_hw_reset_bit_set(MTK_WCN_BOOL enable)
 
 		consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_base + 0x600);
 		while (consys_ver_id != 0x1D1E) {
+			if (cnt > 10)
+				break;
 			consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_base + 0x600);
 			WMT_PLAT_INFO_FUNC("0x18002600(0x%x)\n", consys_ver_id);
 			WMT_PLAT_INFO_FUNC("0x1800216c(0x%x)\n",
@@ -453,6 +456,7 @@ static VOID consys_hw_reset_bit_set(MTK_WCN_BOOL enable)
 			WMT_PLAT_INFO_FUNC("0x18007104(0x%x)\n",
 					CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base + CONSYS_CPUPCR_OFFSET));
 			msleep(20);
+			cnt++;
 		}
 
 	}
