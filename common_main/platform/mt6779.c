@@ -1522,14 +1522,18 @@ static INT32 consys_check_reg_readable(VOID)
 {
 	INT32 flag = 0;
 	UINT32 value = 0;
+	P_DEV_WMT pDev = &gDevWmt;
 
-	/*check connsys clock and sleep status*/
-	CONSYS_REG_WRITE(conn_reg.mcu_conn_hif_on_base, CONSYS_CLOCK_CHECK_VALUE);
-	udelay(1000);
-	value = CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base);
-	if ((value & CONSYS_HCLK_CHECK_BIT) &&
-	    (value & CONSYS_OSCCLK_CHECK_BIT))
-		flag = 1;
+	if (osal_test_bit(WMT_STAT_PWR, &pDev->state)) {
+		/*check connsys clock and sleep status*/
+		CONSYS_REG_WRITE(conn_reg.mcu_conn_hif_on_base, CONSYS_CLOCK_CHECK_VALUE);
+		udelay(1000);
+		value = CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base);
+		if ((value & CONSYS_HCLK_CHECK_BIT) &&
+		    (value & CONSYS_OSCCLK_CHECK_BIT))
+			flag = 1;
+	}
+
 	if (!flag)
 		WMT_PLAT_PR_ERR("connsys clock check fail 0x18007000(0x%x)\n", value);
 
