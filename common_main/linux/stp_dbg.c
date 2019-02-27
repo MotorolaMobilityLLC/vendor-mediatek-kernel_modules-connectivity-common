@@ -430,14 +430,6 @@ static _osal_inline_ INT32 stp_dbg_core_dump_post_handle(P_WCN_CORE_DUMP_T dmp)
 	}
 	dmp->head_len = 0;
 
-	/*set host trigger assert flag to 0 */
-	stp_dbg_set_host_assert_info(0, 0, 0);
-#if 0
-	if (dmp->p_head != NULL) {
-		osal_free(dmp->p_head);
-		dmp->p_head = NULL;
-	}
-#endif
 	/*set ret value to notify upper layer do dump flush operation */
 	ret = 1;
 
@@ -2288,7 +2280,7 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 
 			osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 			switch (g_stp_dbg_cpupcr->host_assert_info.drv_type) {
-			case 0:
+			case WMTDRV_TYPE_BT:
 				STP_DBG_PR_INFO("BT trigger assert\n");
 				if (g_stp_dbg_cpupcr->host_assert_info.reason != 31)
 					g_stp_dbg_cpupcr->fwTaskId = STP_DBG_TASK_BT; /*BT firmware trigger assert */
@@ -2297,24 +2289,33 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 					g_stp_dbg_cpupcr->fwTaskId = STP_DBG_TASK_NATBT;
 				}
 				break;
-			case 1:
+			case WMTDRV_TYPE_FM:
 				STP_DBG_PR_INFO("FM trigger assert\n");
 				g_stp_dbg_cpupcr->fwTaskId = STP_DBG_TASK_FM;
 				break;
-			case 2:
+			case WMTDRV_TYPE_GPS:
 				STP_DBG_PR_INFO("GPS trigger assert\n");
 				g_stp_dbg_cpupcr->fwTaskId = STP_DBG_TASK_DRVGPS;
 				break;
-			case 3:
+			case WMTDRV_TYPE_WIFI:
 				STP_DBG_PR_INFO("WIFI trigger assert\n");
 				g_stp_dbg_cpupcr->fwTaskId = STP_DBG_TASK_DRVWIFI;
 				break;
-			case 4:
+			case WMTDRV_TYPE_WMT:
 				STP_DBG_PR_INFO("WMT trigger assert\n");
 				if (issue_type == STP_HOST_TRIGGER_ASSERT_TIMEOUT)
 					osal_memcpy(&g_stp_dbg_cpupcr->assert_info[0], issue_info, len);
-
-				g_stp_dbg_cpupcr->fwTaskId = STP_DBG_TASK_DRVSTP;
+				/* 30: adb trigger assert */
+				/* 43: process packet fail count > 10 */
+				/* 44: rx timeout with pending data */
+				/* 45: tx timeout with pending data */
+				if (g_stp_dbg_cpupcr->host_assert_info.reason == 30 ||
+				    g_stp_dbg_cpupcr->host_assert_info.reason == 43 ||
+				    g_stp_dbg_cpupcr->host_assert_info.reason == 44 ||
+				    g_stp_dbg_cpupcr->host_assert_info.reason == 45)
+					g_stp_dbg_cpupcr->fwTaskId = STP_DBG_TASK_DRVSTP;
+				else
+					g_stp_dbg_cpupcr->fwTaskId = STP_DBG_TASK_WMT;
 				break;
 			default:
 				break;
