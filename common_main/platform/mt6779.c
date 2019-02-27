@@ -1504,11 +1504,10 @@ static INT32 consys_is_connsys_reg(UINT32 addr)
 
 static VOID consys_resume_dump_info(VOID)
 {
-	stp_dbg_poll_cpupcr(5, 0, 1);
-
 	if (conn_reg.mcu_cfg_on_base != 0 &&
 	    conn_reg.mcu_top_misc_on_base != 0 &&
 	    mtk_consys_check_reg_readable()) {
+		stp_dbg_poll_cpupcr(5, 0, 1);
 		CONSYS_REG_WRITE(conn_reg.mcu_cfg_on_base + 0x104, 0x1);
 		CONSYS_REG_WRITE(conn_reg.mcu_top_misc_on_base + 0x320, 0x80000001);
 		CONSYS_REG_WRITE(conn_reg.mcu_top_misc_on_base + 0x310, 0x3);
