@@ -21,6 +21,9 @@
 
 #define STEP_CONFIG_NAME "WMT_STEP.cfg"
 
+#define STEP_PERIODIC_DUMP_WORK_QUEUE "wmt_step_pd_wq"
+#define STEP_PERIODIC_DUMP_THREAD "wmt_pd"
+
 #define STEP_ACTION_NAME_EMI "_EMI"
 #define STEP_ACTION_NAME_REGISTER "_REG"
 #define STEP_ACTION_NAME_GPIO "GPIO"
@@ -40,6 +43,7 @@ enum step_action_id {
 	STEP_ACTION_INDEX_CHIP_RESET,
 	STEP_ACTION_INDEX_KEEP_WAKEUP,
 	STEP_ACTION_INDEX_CANCEL_WAKEUP,
+	STEP_ACTION_INDEX_PERIODIC_DUMP,
 	STEP_ACTION_INDEX_MAX,
 };
 
@@ -94,6 +98,30 @@ struct step_action_list {
 	struct list_head list;
 };
 
+struct step_pd_entry {
+	bool is_enable;
+	unsigned int expires_ms;
+	struct step_action_list action_list;
+	OSAL_TIMER dump_timer;
+	struct delayed_work pd_work;
+	struct list_head list;
+};
+
+#define STP_STEP_PD_RECORD_SIZE 32
+struct step_pd_record {
+	OSAL_UNSLEEPABLE_LOCK mutex;
+	unsigned int write;
+	unsigned int read;
+	unsigned int size;
+	struct step_pd_entry *queue[STP_STEP_PD_RECORD_SIZE];
+};
+
+struct step_pd_struct {
+	bool is_init;
+	struct workqueue_struct *step_pd_wq;
+	struct list_head pd_list;
+};
+
 struct step_action {
 	struct list_head list;
 	enum step_action_id action_id;
@@ -143,6 +171,11 @@ struct step_cancel_wakeup_action {
 	struct step_action base;
 };
 
+struct step_periodic_dump_action {
+	struct step_pd_entry *pd_entry;
+	struct step_action base;
+};
+
 #define list_entry_emi_action(ptr) \
 	container_of(ptr, struct step_emi_action, base)
 #define list_entry_register_action(ptr) \
@@ -157,6 +190,8 @@ struct step_cancel_wakeup_action {
 	container_of(ptr, struct step_keep_wakeup_action, base)
 #define list_entry_cwak_action(ptr) \
 	container_of(ptr, struct step_cancel_wakeup_action, base)
+#define list_entry_pd_action(ptr) \
+		container_of(ptr, struct step_periodic_dump_action, base)
 
 struct step_reg_addr_info {
 	int address_type;
@@ -166,6 +201,7 @@ struct step_reg_addr_info {
 struct step_target_act_list_info {
 	enum step_trigger_point_id tp_id;
 	struct step_action_list *p_target_list;
+	struct step_pd_entry *p_pd_entry;
 };
 
 #define STEP_PARAMETER_SIZE 10
@@ -191,6 +227,7 @@ struct step_env_struct {
 	struct step_action_list actions[STEP_TRIGGER_POINT_MAX];
 	unsigned char __iomem *emi_base_addr;
 	struct step_register_base_struct reg_base[STEP_REGISTER_MAX];
+	struct step_pd_struct pd_struct;
 };
 
 /********************************************************************************
@@ -220,6 +257,9 @@ void wmt_step_command_timeout_do_actions(char *reason);
 *********************************************************************************/
 int wmt_step_read_file(const char *file_name);
 int wmt_step_parse_data(const char *in_buf, unsigned int size, STEP_WRITE_ACT_TO_LIST func_act_to_list);
+int wmt_step_init_pd_env(void);
+int wmt_step_deinit_pd_env(void);
+struct step_pd_entry *wmt_step_get_periodic_dump_entry(unsigned int expires);
 struct step_action *wmt_step_create_action(enum step_action_id act_id, char *params[]);
 int wmt_step_do_emi_action(struct step_action *p_act, STEP_DO_EXTRA func_do_extra);
 int wmt_step_do_register_action(struct step_action *p_act, STEP_DO_EXTRA func_do_extra);
@@ -228,6 +268,7 @@ int wmt_step_do_disable_reset_action(struct step_action *p_act, STEP_DO_EXTRA fu
 int wmt_step_do_chip_reset_action(struct step_action *p_act, STEP_DO_EXTRA func_do_extra);
 int wmt_step_do_keep_wakeup_action(struct step_action *p_act, STEP_DO_EXTRA func_do_extra);
 int wmt_step_do_cancel_wakeup_action(struct step_action *p_act, STEP_DO_EXTRA func_do_extra);
+int wmt_step_do_periodic_dump_action(struct step_action *p_act, STEP_DO_EXTRA func_do_extra);
 void wmt_step_remove_action(struct step_action *p_act);
 
 #endif /* end of _WMT_STEP_H_ */

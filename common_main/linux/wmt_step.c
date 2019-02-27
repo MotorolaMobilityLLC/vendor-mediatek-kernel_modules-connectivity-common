@@ -31,6 +31,7 @@ static struct step_action *wmt_step_create_disable_reset(char *params[]);
 static struct step_action *wmt_step_create_chip_reset(char *params[]);
 static struct step_action *wmt_step_create_keep_wakeup(char *params[]);
 static struct step_action *wmt_step_create_cancel_wakeup(char *params[]);
+static struct step_action *wmt_step_create_periodic_dump(char *params[]);
 
 static void wmt_step_remove_emi_action(struct step_action *p_act);
 static void wmt_step_remove_register_action(struct step_action *p_act);
@@ -39,6 +40,7 @@ static void wmt_step_remove_disable_reset_action(struct step_action *p_act);
 static void wmt_step_remove_chip_reset_action(struct step_action *p_act);
 static void wmt_step_remove_keep_wakeup_action(struct step_action *p_act);
 static void wmt_step_remove_cancel_wakeup_action(struct step_action *p_act);
+static void wmt_step_remove_periodic_dump_action(struct step_action *p_act);
 
 static int wmt_step_access_line_state_init(char *tok,
 	struct step_target_act_list_info *p_parse_info,
@@ -50,6 +52,9 @@ static int wmt_step_access_line_state_at(char *tok,
 	struct step_target_act_list_info *p_parse_info,
 	struct step_parse_line_data_param_info *p_parse_line_info);
 static int wmt_step_access_line_state_at_op(char *tok,
+	struct step_target_act_list_info *p_parse_info,
+	struct step_parse_line_data_param_info *p_parse_line_info);
+static int wmt_step_access_line_state_pd(char *tok,
 	struct step_target_act_list_info *p_parse_info,
 	struct step_parse_line_data_param_info *p_parse_line_info);
 
@@ -68,6 +73,8 @@ static int wmt_step_access_line_state_at_op(char *tok,
 #define STEP_PARSE_LINE_STATE_TP 1
 #define STEP_PARSE_LINE_STATE_AT 2
 #define STEP_PARSE_LINE_STATE_AT_OP 3
+#define STEP_PARSE_LINE_STATE_PD_START 4
+#define STEP_PARSE_LINE_STATE_PD_END 5
 /*******************************************************************************
  *                           P R I V A T E   D A T A
 ********************************************************************************/
@@ -108,6 +115,11 @@ static const struct step_action_contrl wmt_step_action_map[] = {
 		wmt_step_create_cancel_wakeup,
 		wmt_step_do_cancel_wakeup_action,
 		wmt_step_remove_cancel_wakeup_action
+	},
+	[STEP_ACTION_INDEX_PERIODIC_DUMP] = {
+		wmt_step_create_periodic_dump,
+		wmt_step_do_periodic_dump_action,
+		wmt_step_remove_periodic_dump_action,
 	},
 };
 
@@ -186,6 +198,7 @@ static const STEP_LINE_STATE wmt_step_line_state_action_map[] = {
 	[STEP_PARSE_LINE_STATE_TP] = wmt_step_access_line_state_tp,
 	[STEP_PARSE_LINE_STATE_AT] = wmt_step_access_line_state_at,
 	[STEP_PARSE_LINE_STATE_AT_OP] = wmt_step_access_line_state_at_op,
+	[STEP_PARSE_LINE_STATE_PD_START] = wmt_step_access_line_state_pd,
 };
 
 /*******************************************************************************
@@ -339,6 +352,16 @@ static enum step_trigger_point_id wmt_step_parse_tp_id(char *str)
 	return (enum step_trigger_point_id)tp_id;
 }
 
+static int wmt_step_parse_pd_expires(PINT8 ptr)
+{
+	long expires_ms;
+
+	if (osal_strtol(ptr, 0, &expires_ms))
+		return -1;
+
+	return (int)expires_ms;
+}
+
 static int wmt_step_parse_act_id(char *str)
 {
 	int str_to_int = STEP_ACTION_INDEX_NO_DEFINE;
@@ -399,6 +422,16 @@ static int wmt_step_access_line_state_init(char *tok,
 		return STEP_PARSE_LINE_RET_BREAK;
 	}
 
+	if (osal_strcmp(tok, "[PD+]") == 0) {
+		wmt_step_set_line_state(&p_parse_line_info->state, STEP_PARSE_LINE_STATE_PD_START);
+		return STEP_PARSE_LINE_RET_CONTINUE;
+	}
+
+	if (osal_strcmp(tok, "[PD-]") == 0) {
+		wmt_step_set_line_state(&p_parse_line_info->state, STEP_PARSE_LINE_STATE_PD_END);
+		return STEP_PARSE_LINE_RET_BREAK;
+	}
+
 	if (osal_strcmp(tok, "[AT]") == 0) {
 		wmt_step_set_line_state(&p_parse_line_info->state, STEP_PARSE_LINE_STATE_AT);
 		return STEP_PARSE_LINE_RET_CONTINUE;
@@ -412,6 +445,11 @@ static int wmt_step_access_line_state_tp(char *tok,
 	struct step_parse_line_data_param_info *p_parse_line_info)
 {
 	char *pch;
+
+	if (p_parse_info->p_pd_entry != NULL) {
+		WMT_ERR_FUNC("STEP failed: Please add [PD-] after [PD+], tok = %s\n", tok);
+		p_parse_info->p_pd_entry = NULL;
+	}
 
 	pch = osal_strchr(tok, ']');
 	if (pch == NULL) {
@@ -452,6 +490,28 @@ static int wmt_step_access_line_state_at_op(char *tok,
 	return STEP_PARSE_LINE_RET_CONTINUE;
 }
 
+static int wmt_step_access_line_state_pd(char *tok,
+	struct step_target_act_list_info *p_parse_info,
+	struct step_parse_line_data_param_info *p_parse_line_info)
+{
+	int pd_ms = -1;
+
+	pd_ms = wmt_step_parse_pd_expires(tok);
+	if (pd_ms == -1)
+		WMT_ERR_FUNC("STEP failed: PD ms failed %s\n", tok);
+
+	if (p_parse_info->p_pd_entry != NULL)
+		WMT_ERR_FUNC("STEP failed: Please add [PD-] after [PD+], tok = %s\n", tok);
+
+	p_parse_info->p_pd_entry = wmt_step_get_periodic_dump_entry(pd_ms);
+	if (p_parse_info->p_pd_entry == NULL)
+		WMT_ERR_FUNC("STEP failed: p_pd_entry create fail\n");
+	else
+		p_parse_info->p_target_list = &(p_parse_info->p_pd_entry->action_list);
+
+	return STEP_PARSE_LINE_RET_BREAK;
+}
+
 static void wmt_step_parse_line_data(char *line, struct step_target_act_list_info *p_parse_info,
 	STEP_WRITE_ACT_TO_LIST func_act_to_list)
 {
@@ -483,6 +543,14 @@ static void wmt_step_parse_line_data(char *line, struct step_target_act_list_inf
 	if (parse_line_info.state == STEP_PARSE_LINE_STATE_AT_OP) {
 		func_act_to_list(p_parse_info->p_target_list,
 			parse_line_info.act_id, parse_line_info.act_params);
+	} else if (parse_line_info.state == STEP_PARSE_LINE_STATE_PD_END) {
+		p_parse_info->p_target_list = wmt_step_get_tp_list(p_parse_info->tp_id);
+		if (p_parse_info->p_pd_entry != NULL) {
+			parse_line_info.act_params[0] = (PINT8)p_parse_info->p_pd_entry;
+			func_act_to_list(p_parse_info->p_target_list,
+				STEP_ACTION_INDEX_PERIODIC_DUMP, parse_line_info.act_params);
+			p_parse_info->p_pd_entry = NULL;
+		}
 	}
 }
 
@@ -501,6 +569,53 @@ static void _wmt_step_do_actions(struct step_action_list *action_list)
 		else
 			WMT_ERR_FUNC("STEP failed: Action is NULL\n");
 	}
+}
+
+static void wmt_step_start_work(struct step_pd_entry *p_entry)
+{
+	unsigned int timeout;
+
+	if (!g_step_env.pd_struct.step_pd_wq) {
+		WMT_ERR_FUNC("STEP failed: step wq doesn't run\n");
+		return;
+	}
+
+	if (p_entry == NULL) {
+		WMT_ERR_FUNC("STEP failed: entry is null\n");
+		return;
+	}
+
+	timeout = p_entry->expires_ms;
+	queue_delayed_work(g_step_env.pd_struct.step_pd_wq, &p_entry->pd_work, timeout);
+}
+
+static void wmt_step_pd_work(struct work_struct *work)
+{
+	struct step_pd_entry *p_entry;
+	struct delayed_work *delayed_work = to_delayed_work(work);
+
+	p_entry = container_of(delayed_work, struct step_pd_entry, pd_work);
+
+	WMT_INFO_FUNC("STEP show: Periodic dump: %d ms\n", p_entry->expires_ms);
+	_wmt_step_do_actions(&p_entry->action_list);
+	wmt_step_start_work(p_entry);
+}
+
+static struct step_pd_entry *wmt_step_create_periodic_dump_entry(unsigned int expires)
+{
+	struct step_pd_entry *p_pd_entry = NULL;
+
+	p_pd_entry = kzalloc(sizeof(struct step_pd_entry), GFP_KERNEL);
+	if (p_pd_entry == NULL) {
+		WMT_ERR_FUNC("STEP failed: kzalloc fail\n");
+		return NULL;
+	}
+	p_pd_entry->expires_ms = expires;
+
+	INIT_DELAYED_WORK(&p_pd_entry->pd_work, wmt_step_pd_work);
+	INIT_LIST_HEAD(&(p_pd_entry->action_list.list));
+
+	return p_pd_entry;
 }
 
 static void wmt_step_print_trigger_time(enum step_trigger_point_id tp_id, char *reason)
@@ -807,6 +922,25 @@ static struct step_action *wmt_step_create_cancel_wakeup(char *params[])
 	return &(p_cwak_act->base);
 }
 
+static struct step_action *wmt_step_create_periodic_dump(char *params[])
+{
+	struct step_periodic_dump_action *p_pd_act = NULL;
+
+	p_pd_act = kzalloc(sizeof(struct step_periodic_dump_action), GFP_KERNEL);
+	if (p_pd_act == NULL) {
+		WMT_ERR_FUNC("STEP failed: kzalloc fail\n");
+		return NULL;
+	}
+
+	if (params[0] == NULL) {
+		WMT_ERR_FUNC("STEP failed: param null\n");
+		return NULL;
+	}
+
+	p_pd_act->pd_entry = (struct step_pd_entry *)params[0];
+	return &(p_pd_act->base);
+}
+
 static int wmt_step_do_write_register_action(struct step_register_action *p_reg_act,
 	STEP_DO_EXTRA func_do_extra)
 {
@@ -948,8 +1082,7 @@ static void wmt_step_remove_register_action(struct step_action *p_act)
 {
 	struct step_register_action *p_reg_act = NULL;
 
-	p_reg_act =
-		(struct step_register_action *) list_entry_register_action(p_act);
+	p_reg_act = (struct step_register_action *) list_entry_register_action(p_act);
 	kfree(p_reg_act);
 }
 
@@ -965,8 +1098,7 @@ static void wmt_step_remove_disable_reset_action(struct step_action *p_act)
 {
 	struct step_disable_reset_action *p_drst = NULL;
 
-	p_drst =
-		(struct step_disable_reset_action *) list_entry_drst_action(p_act);
+	p_drst = (struct step_disable_reset_action *) list_entry_drst_action(p_act);
 	kfree(p_drst);
 }
 
@@ -990,9 +1122,16 @@ static void wmt_step_remove_cancel_wakeup_action(struct step_action *p_act)
 {
 	struct step_cancel_wakeup_action *p_cwak = NULL;
 
-	p_cwak =
-		(struct step_cancel_wakeup_action *) list_entry_cwak_action(p_act);
+	p_cwak = (struct step_cancel_wakeup_action *) list_entry_cwak_action(p_act);
 	kfree(p_cwak);
+}
+
+static void wmt_step_remove_periodic_dump_action(struct step_action *p_act)
+{
+	struct step_periodic_dump_action *p_pd = NULL;
+
+	p_pd = (struct step_periodic_dump_action *) list_entry_pd_action(p_act);
+	kfree(p_pd);
 }
 
 /*******************************************************************************
@@ -1148,6 +1287,24 @@ int wmt_step_do_cancel_wakeup_action(struct step_action *p_act, STEP_DO_EXTRA fu
 	return 0;
 }
 
+int wmt_step_do_periodic_dump_action(struct step_action *p_act, STEP_DO_EXTRA func_do_extra)
+{
+	struct step_periodic_dump_action *p_pd_act = NULL;
+
+	p_pd_act = (struct step_periodic_dump_action *) list_entry_pd_action(p_act);
+	if (p_pd_act->pd_entry->is_enable == 0) {
+		WMT_INFO_FUNC("STEP show: Start periodic dump(%d ms)\n",
+			p_pd_act->pd_entry->expires_ms);
+		wmt_step_start_work(p_pd_act->pd_entry);
+		p_pd_act->pd_entry->is_enable = 1;
+	}
+
+	if (func_do_extra != NULL)
+		func_do_extra(0);
+
+	return 0;
+}
+
 struct step_action *wmt_step_create_action(enum step_action_id act_id, char *params[])
 {
 	struct step_action *p_act = NULL;
@@ -1168,6 +1325,55 @@ struct step_action *wmt_step_create_action(enum step_action_id act_id, char *par
 	return p_act;
 }
 
+int wmt_step_init_pd_env(void)
+{
+	g_step_env.pd_struct.step_pd_wq = create_workqueue(STEP_PERIODIC_DUMP_WORK_QUEUE);
+	if (!g_step_env.pd_struct.step_pd_wq) {
+		WMT_ERR_FUNC("create_workqueue fail\n");
+		return -1;
+	}
+	INIT_LIST_HEAD(&g_step_env.pd_struct.pd_list);
+
+	return 0;
+}
+
+int wmt_step_deinit_pd_env(void)
+{
+	struct step_pd_entry *p_current;
+	struct step_pd_entry *p_next;
+
+	if (!g_step_env.pd_struct.step_pd_wq)
+		return -1;
+
+	destroy_workqueue(g_step_env.pd_struct.step_pd_wq);
+	list_for_each_entry_safe(p_current, p_next, &g_step_env.pd_struct.pd_list, list) {
+		osal_timer_stop(&p_current->dump_timer);
+		wmt_step_clear_action_list(&p_current->action_list);
+	}
+
+	return 0;
+}
+
+struct step_pd_entry *wmt_step_get_periodic_dump_entry(unsigned int expires)
+{
+	struct step_pd_entry *p_current;
+
+	if (expires <= 0)
+		return NULL;
+
+	if (!g_step_env.pd_struct.step_pd_wq) {
+		if (wmt_step_init_pd_env() != 0)
+			return NULL;
+	}
+
+	p_current = wmt_step_create_periodic_dump_entry(expires);
+	if (p_current == NULL)
+		return NULL;
+	list_add_tail(&(p_current->list), &(g_step_env.pd_struct.pd_list));
+
+	return p_current;
+}
+
 int wmt_step_parse_data(const char *in_buf, unsigned int size,
 	STEP_WRITE_ACT_TO_LIST func_act_to_list)
 {
@@ -1185,6 +1391,8 @@ int wmt_step_parse_data(const char *in_buf, unsigned int size,
 	buf[size] = '\0';
 
 	parse_info.tp_id = STEP_TRIGGER_POINT_NO_DEFINE;
+	parse_info.p_target_list = NULL;
+	parse_info.p_pd_entry = NULL;
 
 	while ((line = osal_strsep(&buf, "\r\n")) != NULL)
 		wmt_step_parse_line_data(line, &parse_info, func_act_to_list);
@@ -1251,6 +1459,7 @@ void wmt_step_deinit(void)
 {
 	wmt_step_clear_list();
 	wmt_step_unioremap_emi();
+	wmt_step_deinit_pd_env();
 }
 
 void wmt_step_do_actions(enum step_trigger_point_id tp_id)
