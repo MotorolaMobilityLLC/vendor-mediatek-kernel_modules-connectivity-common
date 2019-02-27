@@ -311,6 +311,7 @@ const char timesync_head[] = {0x55, 0x00, 0x25, 0x62};
 static char log_line[LOG_MAX_LEN];
 static void connlog_fw_log_parser(int conn_type, const char *buf, ssize_t sz)
 {
+	unsigned int systime = 0;
 	unsigned int utc_s = 0;
 	unsigned int utc_us = 0;
 	unsigned int buf_len = 0;
@@ -330,9 +331,11 @@ static void connlog_fw_log_parser(int conn_type, const char *buf, ssize_t sz)
 			}
 		} else if (*buf == timesync_head[0] && sz >= TIMESYNC_LENG) {
 			if (!memcmp(buf, timesync_head, sizeof(timesync_head))) {
+				memcpy(&systime, buf + 28, sizeof(systime));
 				memcpy(&utc_s, buf + 32, sizeof(utc_s));
 				memcpy(&utc_us, buf + 36, sizeof(utc_us));
-				pr_info("%s: timesync :  %u.%u\n", type_to_title[conn_type], utc_s, utc_us);
+				pr_info("%s: timesync :  (%u) %u.%06u\n",
+					type_to_title[conn_type], systime, utc_s, utc_us);
 				sz -= TIMESYNC_LENG;
 				buf += TIMESYNC_LENG;
 				continue;
@@ -949,6 +952,28 @@ void __iomem *connsys_log_get_emi_log_base_vir_addr(void)
 	return gVirAddrEmiLogBase;
 }
 EXPORT_SYMBOL(connsys_log_get_emi_log_base_vir_addr);
+
+/*****************************************************************************
+* FUNCTION
+*  connsys_dedicated_log_get_utc_time
+* DESCRIPTION
+*  return EMI log base address whitch has done ioremap.
+* PARAMETERS
+*  second         [IN]        UTC seconds
+*  usecond        [IN]        UTC usecons
+* RETURNS
+*  void
+*****************************************************************************/
+void connsys_dedicated_log_get_utc_time(unsigned int *second,
+	unsigned int *usecond)
+{
+	struct timeval time;
+
+	do_gettimeofday(&time);
+	*second = (unsigned int)time.tv_sec; /* UTC time second unit */
+	*usecond = (unsigned int)time.tv_usec; /* UTC time microsecond unit */
+}
+EXPORT_SYMBOL(connsys_dedicated_log_get_utc_time);
 
 /*****************************************************************************
 * FUNCTION
