@@ -66,7 +66,7 @@
 ********************************************************************************
 */
 
-/* A table for translation: enum CMB_STUB_AIF_X=>WMT_IC_PIN_STATE */
+/* A table for translation: CMB_STUB_AIF_X=>WMT_IC_PIN_STATE */
 static const WMT_IC_PIN_STATE cmb_aif2pin_stat[] = {
 	[CMB_STUB_AIF_0] = WMT_IC_AIF_0,
 	[CMB_STUB_AIF_1] = WMT_IC_AIF_1,
@@ -129,7 +129,7 @@ static MTK_WCN_BOOL wmt_lib_hw_state_show(VOID);
 *                              F U N C T I O N S
 ********************************************************************************
 */
-INT32 __weak mtk_wcn_consys_stp_btif_dpidle_ctrl(enum _ENUM_BTIF_DPIDLE_ en_flag)
+INT32 __weak mtk_wcn_consys_stp_btif_dpidle_ctrl(ENUM_BTIF_DPIDLE_CTRL en_flag)
 {
 	WMT_ERR_FUNC("mtk_wcn_consys_stp_btif_dpidle_ctrl is not define!!!\n");
 
@@ -1600,7 +1600,7 @@ INT32 wmt_lib_efuse_rw(UINT32 isWrite, UINT32 offset, PUINT32 pvalue, UINT32 mas
  * \retval -1 invalid aif
  * \retval < 0 error for invalid parameters or operation fail
  */
-INT32 wmt_lib_set_aif(enum CMB_STUB_AIF_X aif, MTK_WCN_BOOL share)
+INT32 wmt_lib_set_aif(CMB_STUB_AIF_X aif, MTK_WCN_BOOL share)
 {
 	if (aif >= CMB_STUB_AIF_MAX) {
 		WMT_ERR_FUNC("invalid aif (%d)\n", aif);
@@ -1608,7 +1608,7 @@ INT32 wmt_lib_set_aif(enum CMB_STUB_AIF_X aif, MTK_WCN_BOOL share)
 	}
 	WMT_DBG_FUNC("call pin_ctrl for aif:%d, share:%d\n", aif,
 		     (share == MTK_WCN_BOOL_TRUE) ? 1 : 0);
-	/* Translate enum CMB_STUB_AIF_X into WMT_IC_PIN_STATE by array */
+	/* Translate CMB_STUB_AIF_X into WMT_IC_PIN_STATE by array */
 	return wmt_lib_pin_ctrl(WMT_IC_PIN_AUDIO,
 				cmb_aif2pin_stat[aif],
 				(MTK_WCN_BOOL_TRUE ==

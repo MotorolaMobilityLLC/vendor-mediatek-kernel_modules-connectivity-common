@@ -177,7 +177,7 @@ static const fp_set_pin gfp_set_pin_table[] = {
  * \retval -1 invalid parameters
  * \retval < 0 error for operation fail
  */
-INT32 wmt_plat_audio_ctrl(enum CMB_STUB_AIF_X state, enum CMB_STUB_AIF_CTRL ctrl)
+INT32 wmt_plat_audio_ctrl(CMB_STUB_AIF_X state, CMB_STUB_AIF_CTRL ctrl)
 {
 	INT32 iRet = 0;
 	UINT32 pinShare = 0;
@@ -335,7 +335,7 @@ static UINT32 wmt_plat_soc_co_clock_flag_set(UINT32 flag)
 
 INT32 wmt_plat_init(P_PWR_SEQ_TIME pPwrSeqTime, UINT32 co_clock_type)
 {
-	struct _CMB_STUB_CB_ stub_cb;
+	CMB_STUB_CB stub_cb;
 	INT32 iret = -1;
 
 	if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC) {
