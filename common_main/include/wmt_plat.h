@@ -270,6 +270,8 @@ typedef struct _CONSYS_EMI_ADDR_INFO_ {
 	UINT32 emi_met_size;
 	UINT32 emi_met_data_offset;
 	UINT32 emi_core_dump_offset;
+	UINT32 emi_direct_path_ap_phy_addr;
+	UINT32 emi_direct_path_size;
 } CONSYS_EMI_ADDR_INFO, *P_CONSYS_EMI_ADDR_INFO;
 
 typedef struct _GPIO_TDM_REQ_INFO_ {

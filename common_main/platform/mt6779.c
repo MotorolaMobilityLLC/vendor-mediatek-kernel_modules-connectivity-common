@@ -586,6 +586,13 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 
 	if (enable) {
 #if CONSYS_PWR_ON_OFF_API_AVAILABLE
+		iRet = clk_prepare_enable(clk_infracfg_ao_ccif4_ap_cg);
+		if (iRet) {
+			WMT_PLAT_PR_ERR("clk_prepare_enable(clk_infracfg_ao_ccif4_ap_cg) fail(%d)\n", iRet);
+			return iRet;
+		}
+		WMT_PLAT_PR_DBG("clk_prepare_enable(clk_infracfg_ao_ccif4_ap_cg) ok\n");
+
 		iRet = clk_prepare_enable(clk_scp_conn_main);
 		if (iRet) {
 			WMT_PLAT_PR_ERR("clk_prepare_enable(clk_scp_conn_main) fail(%d)\n", iRet);
@@ -593,12 +600,18 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 		}
 		WMT_PLAT_PR_DBG("clk_prepare_enable(clk_scp_conn_main) ok\n");
 
-		iRet = clk_prepare_enable(clk_infracfg_ao_ccif4_ap_cg);
-		if (iRet) {
-			WMT_PLAT_PR_ERR("clk_prepare_enable(clk_infracfg_ao_ccif4_ap_cg) fail(%d)\n", iRet);
-			return iRet;
-		}
-		WMT_PLAT_PR_DBG("clk_prepare_enable(clk_infracfg_ao_ccif4_ap_cg) ok\n");
+		WMT_PLAT_PR_DBG("AP_PCCIF_DUMMY1 = %x\n",
+			CONSYS_REG_READ(
+				conn_reg.ap_pccif4_base +
+				INFRASYS_COMMON_AP2MD_PCCIF4_AP_DUMMY1_OFFSET));
+		/* Set AP_PCCIF4_PWR_ON bit (bit 0) */
+		CONSYS_REG_WRITE((conn_reg.ap_pccif4_base +
+				  INFRASYS_COMMON_AP2MD_PCCIF4_AP_DUMMY1_OFFSET), 1);
+
+		WMT_PLAT_PR_DBG("AP_PCCIF_DUMMY1 = %x\n",
+			CONSYS_REG_READ(
+				conn_reg.ap_pccif4_base +
+				INFRASYS_COMMON_AP2MD_PCCIF4_AP_DUMMY1_OFFSET));
 #else
 		/* turn on SPM clock gating enable PWRON_CONFG_EN 0x10006000 32'h0b160001 */
 		CONSYS_REG_WRITE((conn_reg.spm_base + CONSYS_PWRON_CONFG_EN_OFFSET),
@@ -751,11 +764,42 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 #endif /* CONSYS_PWR_ON_OFF_API_AVAILABLE */
 	} else {
 #if CONSYS_PWR_ON_OFF_API_AVAILABLE
-		clk_disable_unprepare(clk_infracfg_ao_ccif4_ap_cg);
-		WMT_PLAT_PR_DBG("clk_disable_unprepare(clk_infracfg_ao_ccif4_ap_cg) calling\n");
+		/* Clean AP_PCCIF4_SW_READY and AP_PCCIF4_PWR_ON
+		 * when power off or reset connsys
+		 */
+		WMT_PLAT_PR_DBG("AP_PCCIF_DUMMY1 = %x\n",
+			CONSYS_REG_READ(
+				conn_reg.ap_pccif4_base +
+				INFRASYS_COMMON_AP2MD_PCCIF4_AP_DUMMY1_OFFSET));
+		CONSYS_REG_WRITE_RANGE((conn_reg.ap_pccif4_base +
+			INFRASYS_COMMON_AP2MD_PCCIF4_AP_DUMMY1_OFFSET),
+			0, 1, 0);
+		WMT_PLAT_PR_DBG("AP_PCCIF_DUMMY1 = %x\n",
+			CONSYS_REG_READ(
+				conn_reg.ap_pccif4_base +
+				INFRASYS_COMMON_AP2MD_PCCIF4_AP_DUMMY1_OFFSET));
 
 		clk_disable_unprepare(clk_scp_conn_main);
 		WMT_PLAT_PR_DBG("clk_disable_unprepare(clk_scp_conn_main) calling\n");
+
+		/* Clean CCIF4 ACK status */
+		/* Wait 100us to make sure all ongoing tx interrupt could be
+		 * reset.
+		 * According to profiling result, the time between read
+		 * register and send tx interrupt is less than 20 us.
+		 */
+		udelay(100);
+		CONSYS_REG_WRITE((conn_reg.ap_pccif4_base +
+			INFRASYS_COMMON_AP2MD_PCCIF4_AP_PCCIF_ACK_OFFSET),
+			0xFF);
+		WMT_PLAT_PR_DBG("AP_PCCIF_ACK = %x\n",
+			CONSYS_REG_READ(
+				conn_reg.ap_pccif4_base +
+				INFRASYS_COMMON_AP2MD_PCCIF4_AP_PCCIF_ACK_OFFSET));
+
+		clk_disable_unprepare(clk_infracfg_ao_ccif4_ap_cg);
+		WMT_PLAT_PR_DBG("clk_disable_unprepare(clk_infracfg_ao_ccif4_ap_cg) calling\n");
+
 #else
 		/* Turn on AHB bus sleep protect (AP2CONN AHB Bus protect)
 		 * (apply this for INFRA AXI bus protection to prevent bus hang
@@ -1218,6 +1262,8 @@ static UINT32 consys_emi_set_remapping_reg(VOID)
 		WMT_PLAT_PR_INFO("MD_MAPPING dump in restore cb(0x%08x)\n",
 			CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_AP_MD_OFFSET));
 	}
+	mtk_wcn_emi_addr_info.emi_direct_path_ap_phy_addr = mdPhy;
+	mtk_wcn_emi_addr_info.emi_direct_path_size = size;
 
 	return 0;
 }
@@ -1276,6 +1322,9 @@ static INT32 consys_read_reg_from_dts(struct platform_device *pdev)
 		conn_reg.mcu_top_misc_on_base = (SIZE_T) of_iomap(node, MCU_TOP_MISC_ON_BASE_INDEX);
 		WMT_PLAT_PR_DBG("Get mcu_top_misc_off register base(0x%zx)\n",
 				conn_reg.mcu_top_misc_on_base);
+		conn_reg.ap_pccif4_base = (SIZE_T) of_iomap(node, AP_PCCIF4_BASE_INDEX);
+		WMT_PLAT_PR_DBG("Get ap_pccif4 register base(0x%zx)\n",
+				conn_reg.ap_pccif4_base);
 	} else {
 		WMT_PLAT_PR_ERR("[%s] can't find CONSYS compatible node\n", __func__);
 		return iRet;
