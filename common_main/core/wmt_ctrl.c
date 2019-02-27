@@ -295,6 +295,11 @@ INT32 wmt_ctrl_rx(P_WMT_CTRL_DATA pWmtCtrlData /*UINT8 *pBuff, UINT32 buffLen, U
 						osal_thread_sched_mark(p_rx_thread, &schedstats);
 						continue;
 					}
+					/* wmt is closed, device is shuting down */
+					if (wmt_dev_is_close() || mtk_wcn_stp_is_wmt_last_close() == 1) {
+						leftCnt = 10;
+						continue;
+					}
 				}
 
 				osal_thread_sched_unmark(p_rx_thread, &schedstats);
