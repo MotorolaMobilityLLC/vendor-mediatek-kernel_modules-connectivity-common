@@ -1643,9 +1643,9 @@ static VOID consys_ic_clock_fail_dump(VOID)
 	temp += sprintf(temp, "0x180bc020=0x%08x\n", CONSYS_REG_READ(addr + 0x20));
 	iounmap(addr);
 
-	addr = ioremap_nocache(0x1807013c, 0x100);
+	addr = ioremap_nocache(0x1800713c, 0x100);
 	/* conn_hif_on misc info */
-	temp += sprintf(temp, "0x1807013c=0x%08x\n", CONSYS_REG_READ(addr));
+	temp += sprintf(temp, "0x1800713c=0x%08x\n", CONSYS_REG_READ(addr));
 	iounmap(addr);
 
 	addr = ioremap_nocache(0x180c1144, 0x100);
