@@ -252,10 +252,10 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 			chip_state = (ENUM_CHIP_DUMP_STATE)wmt_plat_get_dump_info(
 					p_ecsi->p_ecso->emi_apmem_ctrl_chip_sync_state);
 			if (chip_state == STP_CHIP_DUMP_PUT_DONE) {
-				STP_DBG_PR_INFO("chip put done\n");
+				STP_DBG_PR_DBG("chip put done\n");
 				break;
 			}
-			STP_DBG_PR_INFO("waiting chip put done, chip_state: %d\n", chip_state);
+			STP_DBG_PR_DBG("waiting chip put done, chip_state: %d\n", chip_state);
 #if WMT_DBG_SUPPORT
 			if (chip_state == 0 && __ratelimit(&_rs))
 				stp_dbg_poll_cpupcr(5, 1, 1);
@@ -301,7 +301,7 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 		osal_memcpy_fromio(&g_paged_dump_buffer[0], dump_vir_addr, dump_len);
 
 		if (dump_len <= 32 * 1024) {
-			pr_info("coredump mode: %d!\n", dump_sink);
+			STP_DBG_PR_DBG("coredump mode: %d!\n", dump_sink);
 			switch (dump_sink) {
 			case 0:
 				STP_DBG_PR_INFO("coredump is disabled!\n");
@@ -309,9 +309,9 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 			case 1:
 				ret = stp_dbg_aee_send(&g_paged_dump_buffer[0], dump_len, 0);
 				if (ret == 0)
-					STP_DBG_PR_INFO("aee send ok!\n");
+					STP_DBG_PR_DBG("aee send ok!\n");
 				else if (ret == 1)
-					STP_DBG_PR_INFO("aee send fisish!\n");
+					STP_DBG_PR_DBG("aee send fisish!\n");
 				else if (ret == -1) {
 					STP_DBG_PR_ERR("aee send timeout!\n");
 					abort = 1;
@@ -322,7 +322,7 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 			case 2:
 				ret = stp_dbg_soc_put_emi_dump_to_nl(&g_paged_dump_buffer[0], dump_len);
 				if (ret == 0)
-					STP_DBG_PR_INFO("dump send ok!\n");
+					STP_DBG_PR_DBG("dump send ok!\n");
 				else if (ret == 1) {
 					STP_DBG_PR_ERR("dump send timeout!\n");
 					abort = 1;
@@ -341,11 +341,11 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 		wmt_plat_update_host_sync_num();
 		wmt_plat_set_host_dump_state(STP_HOST_DUMP_GET_DONE);
 
-		STP_DBG_PR_INFO("host sync num(%d),chip sync num(%d)\n",
+		STP_DBG_PR_DBG("host sync num(%d),chip sync num(%d)\n",
 				wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_host_sync_num),
 				wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_chip_sync_num));
 		page_counter++;
-		STP_DBG_PR_INFO("++ paged dump counter(%d) ++\n", page_counter);
+		STP_DBG_PR_DBG("++ paged dump counter(%d) ++\n", page_counter);
 		/* dump 1st 512 bytes data to kernel log for fw requirement */
 		if (page_counter == 1)
 			stp_dbg_dump_log(&g_paged_dump_buffer[0], dump_len < 512 ? dump_len : 512);
@@ -356,10 +356,10 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 			chip_state = (ENUM_CHIP_DUMP_STATE)wmt_plat_get_dump_info(
 					p_ecsi->p_ecso->emi_apmem_ctrl_chip_sync_state);
 			if (chip_state == STP_CHIP_DUMP_END) {
-				STP_DBG_PR_INFO("chip put end\n");
+				STP_DBG_PR_DBG("chip put end\n");
 				break;
 			}
-			STP_DBG_PR_INFO("waiting chip put end, chip_state: %d\n", chip_state);
+			STP_DBG_PR_DBG("waiting chip put end, chip_state: %d\n", chip_state);
 			if (elapsed_time > EMI_SYNC_TIMEOUT) {
 #if !WMT_DBG_SUPPORT
 				STP_DBG_PR_ERR("Wait Timeout: %llu > %d\n", elapsed_time, EMI_SYNC_TIMEOUT);
