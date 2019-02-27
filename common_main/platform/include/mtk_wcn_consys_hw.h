@@ -110,6 +110,7 @@ struct CONSYS_BASE_ADDRESS {
 	SIZE_T mcu_cfg_on_base;
 	SIZE_T mcu_cirq_base;
 	SIZE_T da_xobuf_base;
+	SIZE_T mcu_top_misc_on_base;
 };
 
 enum CONSYS_BASE_ADDRESS_INDEX {
@@ -121,6 +122,7 @@ enum CONSYS_BASE_ADDRESS_INDEX {
 	MCU_TOP_MISC_OFF_BASE_INDEX,
 	MCU_CFG_ON_BASE_INDEX,
 	MCU_CIRQ_BASE_INDEX,
+	MCU_TOP_MISC_ON_BASE_INDEX,
 };
 
 typedef enum _ENUM_EMI_CTRL_STATE_OFFSET_ {
