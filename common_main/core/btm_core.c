@@ -223,8 +223,9 @@ static INT32 _stp_btm_put_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP_Q pOpQ, P_OSAL_OP 
 		pOp_current = stp_btm_get_current_op(stp_btm);
 		if (pOp_current) {
 			if (pOp_current->op.opId == STP_OPID_BTM_RST ||
-			    pOp_current->op.opId == STP_OPID_BTM_ASSERT_TIMEOUT ||
-			    pOp_current->op.opId == STP_OPID_BTM_DUMP_TIMEOUT) {
+			    pOp_current->op.opId == STP_OPID_BTM_DUMP_TIMEOUT ||
+			    (pOp_current->op.opId == STP_OPID_BTM_ASSERT_TIMEOUT &&
+			     pOp->op.opId != STP_OPID_BTM_DBG_DUMP)) {
 				STP_BTM_DBG_FUNC("current: 0x%x\n", pOp_current->op.opId);
 				flag_current = 0;
 			}
