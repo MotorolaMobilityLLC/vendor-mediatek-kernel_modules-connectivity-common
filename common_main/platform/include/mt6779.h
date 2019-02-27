@@ -194,6 +194,10 @@
 #define INFRASYS_COMMON_AP2MD_PCCIF4_AP_DUMMY1_OFFSET (0x20)
 #define INFRASYS_COMMON_AP2MD_PCCIF4_AP_PCCIF_ACK_OFFSET (0x14)
 
+/* MCU Sleep handshake */
+#define MCU_GOTO_SLEEP 0x5aa5
+#define MCU_SLEEP_DONE 0x7788
+
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************

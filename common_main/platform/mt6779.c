@@ -160,6 +160,7 @@ EMI_CTRL_STATE_OFFSET mtk_wcn_emi_state_off = {
 	.emi_apmem_ctrl_host_outband_assert_w1 = EXP_APMEM_CTRL_HOST_OUTBAND_ASSERT_W1,
 	.emi_apmem_ctrl_chip_page_dump_num = EXP_APMEM_CTRL_CHIP_PAGE_DUMP_NUM,
 	.emi_apmem_ctrl_assert_flag = EXP_APMEM_CTRL_ASSERT_FLAG,
+	.emi_apmem_ctrl_chip_check_sleep = EXP_APMEM_CTRL_CHIP_CHECK_SLEEP,
 };
 
 CONSYS_EMI_ADDR_INFO mtk_wcn_emi_addr_info = {
@@ -579,6 +580,10 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 {
 #if CONSYS_PWR_ON_OFF_API_AVAILABLE
 	INT32 iRet = 0;
+	UINT8 *check_sleep_reg = NULL;
+	UINT32 check_sleep = 0;
+	UINT32 retry = 100;
+	P_CONSYS_EMI_ADDR_INFO p_ecsi;
 #else
 	INT32 value = 0;
 	INT32 i = 0;
@@ -764,6 +769,33 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 #endif /* CONSYS_PWR_ON_OFF_API_AVAILABLE */
 	} else {
 #if CONSYS_PWR_ON_OFF_API_AVAILABLE
+		p_ecsi = wmt_plat_get_emi_phy_add();
+		osal_assert(p_ecsi);
+		check_sleep_reg = wmt_plat_get_emi_virt_add
+				(p_ecsi->p_ecso->emi_apmem_ctrl_chip_check_sleep);
+
+		/* Handshake flow: Notify MCU goto sleep before connsys power off */
+		if (check_sleep_reg) {
+			/* 1. write pattern EMI CR: F006804C = 0x5aa5 */
+			CONSYS_REG_WRITE(check_sleep_reg, MCU_GOTO_SLEEP);
+
+			/* 2. trigger EINT */
+			mtk_wcn_force_trigger_assert_debug_pin();
+
+			/* 3. Polling EMI CR: F006804C == 0x7788 */
+			while (retry-- > 0) {
+				check_sleep = CONSYS_REG_READ(check_sleep_reg);
+				if (check_sleep == MCU_SLEEP_DONE) {
+					WMT_PLAT_PR_INFO("consys is ready to sleep\n");
+					break;
+				}
+				WMT_PLAT_PR_INFO("check_sleep_reg=(0x%x)\n", check_sleep);
+				msleep(20);
+			}
+			/* 4. Clear EMI CR: F006804C = 0 */
+			CONSYS_REG_WRITE(check_sleep_reg, 0x0);
+		}
+
 		/* Clean AP_PCCIF4_SW_READY and AP_PCCIF4_PWR_ON
 		 * when power off or reset connsys
 		 */
