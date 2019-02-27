@@ -111,7 +111,7 @@ static VOID force_trigger_assert_debug_pin(VOID);
 static INT32 consys_co_clock_type(VOID);
 static P_CONSYS_EMI_ADDR_INFO consys_soc_get_emi_phy_add(VOID);
 static VOID consys_set_if_pinmux(MTK_WCN_BOOL enable);
-static INT32 consys_dl_rom_patch(UINT32 ip_ver);
+static INT32 consys_dl_rom_patch(UINT32 ip_ver, UINT32 fw_ver);
 static VOID consys_set_dl_rom_patch_flag(INT32 flag);
 static INT32 consys_dedicated_log_path_init(struct platform_device *pdev);
 static VOID consys_dedicated_log_path_deinit(VOID);
@@ -138,11 +138,14 @@ struct clk *clk_infracfg_ao_ccif4_ap_cg;       /* For direct path */
 struct regulator *reg_VCN18;
 #if CONSYS_PMIC_CTRL_6635
 struct regulator *reg_VCN13;
+struct regulator *reg_VCN33_1_BT;
+struct regulator *reg_VCN33_1_WIFI;
+struct regulator *reg_VCN33_2_WIFI;
 #else
 struct regulator *reg_VCN28;
-#endif
 struct regulator *reg_VCN33_BT;
 struct regulator *reg_VCN33_WIFI;
+#endif
 #endif
 
 EMI_CTRL_STATE_OFFSET mtk_wcn_emi_state_off = {
@@ -424,12 +427,15 @@ static INT32 consys_pmic_get_from_dts(struct platform_device *pdev)
 	reg_VCN13 = regulator_get(&pdev->dev, "vcn13");
 	if (!reg_VCN13)
 		WMT_PLAT_PR_ERR("Regulator_get VCN_1V3 fail\n");
-	reg_VCN33_BT = regulator_get(&pdev->dev, "vcn33_1_bt");
-	if (!reg_VCN33_BT)
-		WMT_PLAT_PR_ERR("Regulator_get VCN33_BT fail\n");
-	reg_VCN33_WIFI = regulator_get(&pdev->dev, "vcn33_1_wifi");
-	if (!reg_VCN33_WIFI)
-		WMT_PLAT_PR_ERR("Regulator_get VCN33_WIFI fail\n");
+	reg_VCN33_1_BT = regulator_get(&pdev->dev, "vcn33_1_bt");
+	if (!reg_VCN33_1_BT)
+		WMT_PLAT_PR_ERR("Regulator_get VCN33_1_BT fail\n");
+	reg_VCN33_1_WIFI = regulator_get(&pdev->dev, "vcn33_1_wifi");
+	if (!reg_VCN33_1_WIFI)
+		WMT_PLAT_PR_ERR("Regulator_get VCN33_1_WIFI fail\n");
+	reg_VCN33_2_WIFI = regulator_get(&pdev->dev, "vcn33_2_wifi");
+	if (!reg_VCN33_2_WIFI)
+		WMT_PLAT_PR_ERR("Regulator_get VCN33_2_WIFI fail\n");
 #else
 	reg_VCN28 = regulator_get(&pdev->dev, "vcn28");
 	if (!reg_VCN28)
@@ -851,6 +857,8 @@ static INT32 polling_consys_chipid(VOID)
 {
 	UINT32 retry = 10;
 	UINT32 consys_ver_id = 0;
+	UINT32 consys_hw_ver = 0;
+	UINT32 consys_fw_ver = 0;
 	UINT8 *consys_reg_base = NULL;
 	UINT32 value = 0;
 
@@ -861,7 +869,12 @@ static INT32 polling_consys_chipid(VOID)
 		if (consys_ver_id == CONSYS_IP_VER_ID) {
 			WMT_PLAT_PR_INFO("retry(%d)consys version id(0x%08x)\n",
 					retry, consys_ver_id);
-			consys_dl_rom_patch(consys_ver_id);
+			consys_hw_ver = CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_HW_ID_OFFSET);
+			WMT_PLAT_PR_INFO("consys HW version id(0x%x)\n", consys_hw_ver & 0xFFFF);
+			consys_fw_ver = CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_FW_ID_OFFSET);
+			WMT_PLAT_PR_INFO("consys FW version id(0x%x)\n", consys_fw_ver & 0xFFFF);
+
+			consys_dl_rom_patch(consys_ver_id, consys_fw_ver);
 			break;
 		}
 		WMT_PLAT_PR_ERR("Read CONSYS version id(0x%08x)", consys_ver_id);
@@ -1106,9 +1119,10 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 		/*switch BT PALDO control from SW mode to HW mode:0x416[5]-->0x1 */
 #if CONSYS_PMIC_CTRL_ENABLE
 		/* VOL_DEFAULT, VOL_3300, VOL_3400, VOL_3500, VOL_3600 */
-		if (reg_VCN33_BT) {
-			regulator_set_voltage(reg_VCN33_BT, 3300000, 3300000);
-			if (regulator_enable(reg_VCN33_BT))
+		KERNEL_upmu_set_reg_value(MT6359_LDO_VCN33_1_OP_EN, 0x1);
+		if (reg_VCN33_1_BT) {
+			regulator_set_voltage(reg_VCN33_1_BT, 3300000, 3300000);
+			if (regulator_enable(reg_VCN33_1_BT))
 				WMT_PLAT_PR_ERR("WMT do BT PMIC on fail!\n");
 		}
 
@@ -1122,8 +1136,8 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 #if CONSYS_PMIC_CTRL_ENABLE
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_1_HW0_OP_EN, 0);
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_1_HW0_OP_CFG, 0);
-		if (reg_VCN33_BT)
-			regulator_disable(reg_VCN33_BT);
+		if (reg_VCN33_1_BT)
+			regulator_disable(reg_VCN33_1_BT);
 #endif
 		WMT_PLAT_PR_DBG("WMT do BT PMIC off\n");
 	}
@@ -1143,9 +1157,16 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 		/*do WIFI PMIC on,depenency PMIC API ready */
 		/*switch WIFI PALDO control from SW mode to HW mode:0x418[14]-->0x1 */
 #if CONSYS_PMIC_CTRL_ENABLE
-		if (reg_VCN33_WIFI) {
-			regulator_set_voltage(reg_VCN33_WIFI, 3300000, 3300000);
-			if (regulator_enable(reg_VCN33_WIFI))
+		KERNEL_upmu_set_reg_value(MT6359_LDO_VCN33_1_OP_EN, 0x1);
+		if (reg_VCN33_1_WIFI) {
+			regulator_set_voltage(reg_VCN33_1_WIFI, 3300000, 3300000);
+			if (regulator_enable(reg_VCN33_1_WIFI))
+				WMT_PLAT_PR_ERR("WMT do WIFI PMIC on fail!\n");
+		}
+		KERNEL_upmu_set_reg_value(MT6359_LDO_VCN33_2_OP_EN, 0x1);
+		if (reg_VCN33_2_WIFI) {
+			regulator_set_voltage(reg_VCN33_2_WIFI, 3300000, 3300000);
+			if (regulator_enable(reg_VCN33_2_WIFI))
 				WMT_PLAT_PR_ERR("WMT do WIFI PMIC on fail!\n");
 		}
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_1_HW0_OP_EN, 1);
@@ -1158,8 +1179,10 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 #if CONSYS_PMIC_CTRL_ENABLE
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_1_HW0_OP_EN, 0);
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_1_HW0_OP_CFG, 0);
-		if (reg_VCN33_WIFI)
-			regulator_disable(reg_VCN33_WIFI);
+		if (reg_VCN33_1_WIFI)
+			regulator_disable(reg_VCN33_1_WIFI);
+		if (reg_VCN33_2_WIFI)
+			regulator_disable(reg_VCN33_2_WIFI);
 #endif
 		WMT_PLAT_PR_DBG("WMT do WIFI PMIC off\n");
 	}
@@ -1329,10 +1352,10 @@ P_WMT_CONSYS_IC_OPS mtk_wcn_get_consys_ic_ops(VOID)
 	return &consys_ic_ops;
 }
 
-static INT32 consys_dl_rom_patch(UINT32 ip_ver)
+static INT32 consys_dl_rom_patch(UINT32 ip_ver, UINT32 fw_ver)
 {
 	if (rom_patch_dl_flag) {
-		if (mtk_wcn_soc_rom_patch_dwn(ip_ver) == 0)
+		if (mtk_wcn_soc_rom_patch_dwn(ip_ver, fw_ver) == 0)
 			rom_patch_dl_flag = 1;
 	}
 
