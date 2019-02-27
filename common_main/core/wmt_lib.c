@@ -2580,6 +2580,16 @@ INT32 wmt_lib_fdb_ctrl(struct wmt_fdb_ctrl *fdb_ctrl)
 			&(fdb_ctrl->value));
 }
 
+VOID wmt_lib_set_ext_ldo(UINT32 flag)
+{
+	gDevWmt.ext_ldo_flag = flag;
+}
+
+UINT32 wmt_lib_get_ext_ldo(VOID)
+{
+	return gDevWmt.ext_ldo_flag;
+}
+
 static VOID wmt_lib_utc_sync_timeout_handler(ULONG data)
 {
 	schedule_work(&gDevWmt.utcSyncWorker);
