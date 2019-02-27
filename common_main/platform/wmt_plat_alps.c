@@ -1618,12 +1618,7 @@ INT32 wmt_plat_soc_paldo_ctrl(ENUM_PALDO_TYPE ePt, ENUM_PALDO_OP ePo)
 		iRet = mtk_wcn_consys_hw_vcn28_ctrl(ePo);
 		break;
 	case EFUSE_PALDO:
-		/* For reading efuse: turn on/off VCN28 only support co-clock platform */
-		if (wmt_plat_soc_co_clock_flag_get())
-			mtk_wcn_consys_hw_vcn28_ctrl(ePo);
-		else
-			WMT_PLAT_PR_INFO("co_clock_type = %d, no need to turn on/off VCN28\n",
-					wmt_plat_soc_co_clock_flag_get());
+		iRet = mtk_wcn_consys_hw_efuse_paldo_ctrl(ePo, wmt_plat_soc_co_clock_flag_get());
 		break;
 	default:
 		WMT_PLAT_PR_WARN("WMT-PLAT:Warnning, invalid type(%d) in palod_ctrl\n", ePt);
