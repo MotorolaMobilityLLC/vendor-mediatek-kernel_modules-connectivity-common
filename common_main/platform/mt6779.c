@@ -1599,7 +1599,9 @@ static VOID consys_ic_clock_fail_dump(VOID)
 
 	temp += sprintf(temp, "CONSYS_HIF_DBG_PROBE=0x%08x CONN_MCU_EMI_CONTROL=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_HIF_DBG_PROBE),
-		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_SW_IRQ_OFFSET));
+		CONSYS_REG_READ(conn_reg.mcu_base + CONN_MCU_EMI_CONTROL));
+	temp += sprintf(temp, "EMI_CONTROL_DBG_PROBE=0x%08x\n",
+		CONSYS_REG_READ(conn_reg.mcu_base + EMI_CONTROL_DBG_PROBE));
 	temp += sprintf(temp, "CONN_MCU_CLOCK_CONTROL=0x%08x CONN_MCU_BUS_CONTROL=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_CLOCK_CONTROL),
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_BUS_CONTROL));
@@ -1651,6 +1653,11 @@ static VOID consys_ic_clock_fail_dump(VOID)
 	addr = ioremap_nocache(0x180c1144, 0x100);
 	/* conn_on_host debug flag */
 	temp += sprintf(temp, "0x180c1144=0x%08x\n", CONSYS_REG_READ(addr));
+	iounmap(addr);
+
+	addr = ioremap_nocache(0x1020E804, 0x100);
+	/* 0x1020E804 */
+	temp += sprintf(temp, "0x1020E804=0x%08x\n", CONSYS_REG_READ(addr));
 	iounmap(addr);
 
 	WMT_PLAT_PR_ERR("%s length = %d", buffer, osal_strlen(buffer));
