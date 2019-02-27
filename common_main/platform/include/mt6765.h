@@ -79,6 +79,8 @@
 #define CONSYS_MCU_ROM_DELSEL_OFFSET    0x00000114
 #define CONSYS_MCU_ROM_DELSEL_VALUE     0x00000017
 #define CONSYS_EMI_CTRL_VALUE           (1 << 0 | 1 << 15 | 1 << 21)
+/*CONN_HIF_TOP*/
+#define CONSYS_HIF_PDMA_AXI_RREADY      0x00000154
 
 /*CONN_HIF_ON_BASE*/
 #define CONSYS_BUSY_OFFSET              0x110
@@ -95,6 +97,7 @@
 #define CONSYS_AXI_TX_PROT_STA_OFFSET	0x258
 #define CONSYS_PROT_MASK		((0x1<<13) | (0x1<<14))	/* bit 13, 14 */
 #define CONSYS_TX_PROT_MASK		(0x1<<18)	/* bit 18 */
+#define CONSYS_PDMA_AXI_RREADY_MASK	(0x1 << 1)	/* bit 1 */
 
 /*SPM clock gating control register */
 #define CONSYS_PWRON_CONFG_EN_VALUE	(0x0b160001)
