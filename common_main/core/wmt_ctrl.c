@@ -394,7 +394,7 @@ INT32 wmt_ctrl_ul_cmd(P_DEV_WMT pWmtDev, const PUINT8 pCmdStr)
 
 	pCmdSignal = &pWmtDev->cmdResp;
 	osal_signal_init(pCmdSignal);
-	pCmdSignal->timeoutValue = 2000;
+	pCmdSignal->timeoutValue = 6000;
 	osal_strncpy(pWmtDev->cCmd, pCmdStr, NAME_MAX);
 	pWmtDev->cCmd[NAME_MAX] = '\0';
 
