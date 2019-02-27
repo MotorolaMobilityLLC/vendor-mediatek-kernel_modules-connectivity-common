@@ -1526,6 +1526,13 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		iRet = wmt_core_rx(evtbuf, sizeof(WMT_GET_SOC_ADIE_CHIPID_EVT), &u4Res);
 		if (iRet || (u4Res != sizeof(WMT_GET_SOC_ADIE_CHIPID_EVT))) {
 			WMT_ERR_FUNC("wmt_core:read A die chipid EVT fail(%d),size(%d)\n", iRet, u4Res);
+			WMT_INFO_FUNC("buf:[%2X,%2X,%2X,%2X,%2X] evt:[%2X,%2X,%2X,%2X,%2X]\n",
+					evtbuf[0], evtbuf[1], evtbuf[2], evtbuf[3], evtbuf[4],
+					WMT_GET_SOC_ADIE_CHIPID_EVT[0],
+					WMT_GET_SOC_ADIE_CHIPID_EVT[1],
+					WMT_GET_SOC_ADIE_CHIPID_EVT[2],
+					WMT_GET_SOC_ADIE_CHIPID_EVT[3],
+					WMT_GET_SOC_ADIE_CHIPID_EVT[4]);
 			mtk_wcn_stp_dbg_dump_package();
 			return -17;
 		}
@@ -1543,6 +1550,12 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 			iRet = wmt_core_rx(evtbuf, sizeof(WMT_GET_SOC_6625_L_EVT), &u4Res);
 			if (iRet || (u4Res != sizeof(WMT_GET_SOC_6625_L_EVT))) {
 				WMT_ERR_FUNC("wmt_core:read A die efuse EVT fail(%d),size(%d)\n", iRet, u4Res);
+				WMT_INFO_FUNC("buf:[%2X,%2X,%2X,%2X] evt:[%2X,%2X,%2X,%2X]\n",
+						evtbuf[0], evtbuf[1], evtbuf[2], evtbuf[3],
+						WMT_GET_SOC_6625_L_EVT[0],
+						WMT_GET_SOC_6625_L_EVT[1],
+						WMT_GET_SOC_6625_L_EVT[2],
+						WMT_GET_SOC_6625_L_EVT[3]);
 				mtk_wcn_stp_dbg_dump_package();
 			}
 			WMT_INFO_FUNC("read SOC Adie Efuse(0x120) value:0x%2x,0x%2x,0x%2x,0x%2x -> %s\n",
@@ -2459,6 +2472,12 @@ static INT32 mtk_wcn_soc_normal_patch_dwn(PUINT8 pPatchBuf, UINT32 patchSize, PU
 		iRet = wmt_core_rx(addressevtBuf, sizeof(WMT_PATCH_ADDRESS_EVT_NEW), &u4Res);
 		if (iRet || (u4Res != sizeof(WMT_PATCH_ADDRESS_EVT_NEW))) {
 			WMT_ERR_FUNC("wmt_core:wmt patch address EVT fail(%d),size(%d)\n", iRet, u4Res);
+			WMT_INFO_FUNC("buf:[%2X,%2X,%2X,%2X,%2X] evt:[%2X,%2X,%2X,%2X,%2X]\n",
+					addressevtBuf[0], addressevtBuf[1], addressevtBuf[2],
+					addressevtBuf[3], addressevtBuf[4],
+					WMT_PATCH_ADDRESS_EVT_NEW[0], WMT_PATCH_ADDRESS_EVT_NEW[1],
+					WMT_PATCH_ADDRESS_EVT_NEW[2], WMT_PATCH_ADDRESS_EVT_NEW[3],
+					WMT_PATCH_ADDRESS_EVT_NEW[4]);
 			mtk_wcn_stp_dbg_dump_package();
 			return -1;
 		}
@@ -2630,6 +2649,11 @@ static INT32 mtk_wcn_soc_pda_patch_dwn(PUINT8 pPatchBuf, UINT32 patchSize, PUINT
 	if (iRet || (u4Res != sizeof(WMT_PATCH_PDA_CFG_EVT))) {
 		WMT_ERR_FUNC("wmt_core:wmt patch PDA config EVT fail(%d),size(%d)\n",
 				iRet, u4Res);
+		WMT_INFO_FUNC("buf:[%2X,%2X,%2X,%2X,%2X] evt:[%2X,%2X,%2X,%2X,%2X]\n",
+				evtBuf[0], evtBuf[1], evtBuf[2], evtBuf[3], evtBuf[4],
+				WMT_PATCH_PDA_CFG_EVT[0], WMT_PATCH_PDA_CFG_EVT[1],
+				WMT_PATCH_PDA_CFG_EVT[2], WMT_PATCH_PDA_CFG_EVT[3],
+				WMT_PATCH_PDA_CFG_EVT[4]);
 		mtk_wcn_stp_dbg_dump_package();
 		return -1;
 	}
