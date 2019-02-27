@@ -1551,3 +1551,94 @@ MTK_WCN_BOOL osal_opq_has_op(P_OSAL_OP_Q pOpQ, P_OSAL_OP pOp)
 	}
 	return MTK_WCN_BOOL_FALSE;
 }
+
+VOID osal_op_history_init(struct osal_op_history *log_history, INT32 queue_size)
+{
+	int size = queue_size * sizeof(struct osal_op_history_entry);
+
+	log_history->queue = kzalloc(size, GFP_ATOMIC);
+	if (log_history->queue == NULL)
+		return;
+
+	/* queue_size must be power of 2 */
+	ring_cache_init(
+		&log_history->queue,
+		queue_size,
+		0,
+		0,
+		&log_history->ring_buffer);
+}
+
+VOID osal_op_history_print(struct osal_op_history *log_history, PINT8 name)
+{
+	struct osal_op_history_entry *entry;
+	struct ring_cache_segment seg;
+	struct ring_cache *ring_buffer;
+	INT32 index = 0;
+	ULONG flags;
+
+	if (log_history->queue == NULL) {
+		pr_info("Queue is NULL, name: %s\n", name);
+		return;
+	}
+
+	spin_lock_irqsave(&(log_history->lock), flags);
+	ring_buffer = &log_history->ring_buffer;
+
+	RING_CACHE_READ_FOR_EACH_ITEM(RING_CACHE_SIZE(ring_buffer), seg, ring_buffer) {
+		index = seg.ring_cache_pt - ring_buffer->base;
+		entry = &log_history->queue[index];
+		pr_info("(%llu.%06lu) %s: pOp(%p):%u(%d)-%x-%zx,%zx,%zx,%zx\n",
+			entry->ts,
+			entry->usec,
+			name,
+			entry->opbuf_address,
+			entry->op_id,
+			entry->opbuf_ref_count,
+			entry->op_info_bit,
+			entry->param_0,
+			entry->param_1,
+			entry->param_2,
+			entry->param_3);
+	}
+	spin_unlock_irqrestore(&(log_history->lock), flags);
+}
+
+VOID osal_op_history_save(struct osal_op_history *log_history, P_OSAL_OP pOp)
+{
+	struct osal_op_history_entry *entry = NULL;
+	struct ring_cache_segment seg;
+	INT32 index;
+	UINT64 sec = 0;
+	ULONG usec = 0;
+	ULONG flags;
+
+	if (log_history->queue == NULL)
+		return;
+
+	osal_get_local_time(&sec, &usec);
+
+	spin_lock_irqsave(&(log_history->lock), flags);
+	RING_CACHE_OVERWRITE_FOR_EACH(1, seg, &log_history->ring_buffer) {
+		index = seg.ring_cache_pt - log_history->ring_buffer.base;
+		entry = &log_history->queue[index];
+	}
+
+	if (entry == NULL) {
+		pr_info("Entry is null, size %d\n", RING_CACHE_SIZE(&log_history->ring_buffer));
+		spin_unlock_irqrestore(&(log_history->lock), flags);
+		return;
+	}
+
+	entry->opbuf_address = pOp;
+	entry->op_id = pOp->op.opId;
+	entry->opbuf_ref_count = atomic_read(&pOp->ref_count);
+	entry->op_info_bit = pOp->op.u4InfoBit;
+	entry->param_0 = pOp->op.au4OpData[0];
+	entry->param_1 = pOp->op.au4OpData[1];
+	entry->param_2 = pOp->op.au4OpData[2];
+	entry->param_3 = pOp->op.au4OpData[3];
+	entry->ts = sec;
+	entry->usec = usec;
+	spin_unlock_irqrestore(&(log_history->lock), flags);
+}
