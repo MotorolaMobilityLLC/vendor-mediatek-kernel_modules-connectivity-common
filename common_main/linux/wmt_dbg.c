@@ -1461,6 +1461,7 @@ ssize_t wmt_dbg_write(struct file *filp, const char __user *buffer, size_t count
 #if (WMT_DBG_SUPPORT)
 	if (0xDB9DB9 == x) {
 		dbgEnabled = 1;
+		return len;
 	}
 #endif
 	/* For user load, only 0x15 is allowed to execute */
