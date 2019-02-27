@@ -1025,7 +1025,9 @@ static INT32 wmtd_thread(void *pvData)
 			continue;
 		}
 		if (__ratelimit(&_rs))
-			WMT_INFO_FUNC("pOp(%p):%u-%x-%zx,%zx,%zx,%zx\n", pOp, pOp->op.opId, pOp->op.u4InfoBit,
+			WMT_INFO_FUNC("pOp(%p):%u(%d)-%x-%zx,%zx,%zx,%zx\n", pOp, pOp->op.opId,
+					atomic_read(&pOp->ref_count),
+					pOp->op.u4InfoBit,
 					pOp->op.au4OpData[0],
 					pOp->op.au4OpData[1],
 					pOp->op.au4OpData[2],
@@ -1217,6 +1219,7 @@ static INT32 wmtd_worker_thread(void *pvData)
 			WMT_WARN_FUNC("get activeWorkerQ fail\n");
 			continue;
 		}
+		WMT_INFO_FUNC("pOp(%p):%u(%d)\n", pOp, pOp->op.opId, atomic_read(&pOp->ref_count));
 
 		if (osal_test_bit(WMT_STAT_RST_ON, &pWmtDev->state)) {
 			iResult = -2;
@@ -1892,10 +1895,10 @@ VOID wmt_lib_state_init(VOID)
 	while (!RB_EMPTY(&pDevWmt->rActiveOpQ)) {
 		pOp = wmt_lib_get_op(&pDevWmt->rActiveOpQ);
 		if (pOp) {
-			if (osal_op_is_wait_for_signal(pOp))
-				osal_op_raise_signal(pOp, -1);
-			else
+			if (atomic_dec_and_test(&pOp->ref_count))
 				wmt_lib_put_op(&pDevWmt->rFreeOpQ, pOp);
+			else if (osal_op_is_wait_for_signal(pOp))
+				osal_op_raise_signal(pOp, -1);
 		}
 	}
 }
