@@ -1455,7 +1455,6 @@ static INT32 consys_reset_emi_coredump(UINT8 __iomem *addr)
 
 static INT32 consys_check_reg_readable(VOID)
 {
-#if 0 /* not support yet, need confirm by DE */
 	INT32 flag = 0;
 	UINT32 value = 0;
 
@@ -1464,16 +1463,12 @@ static INT32 consys_check_reg_readable(VOID)
 	udelay(1000);
 	value = CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base);
 	if ((value & CONSYS_HCLK_CHECK_BIT) &&
-	    (value & CONSYS_OSCCLK_CHECK_BIT) &&
-	    ((value & CONSYS_SLEEP_CHECK_BIT) == 0))
+	    (value & CONSYS_OSCCLK_CHECK_BIT))
 		flag = 1;
 	if (!flag)
 		WMT_PLAT_PR_ERR("connsys clock check fail 0x18007000(0x%x)\n", value);
 
 	return flag;
-#endif
-
-	return 0;
 }
 
 static VOID consys_ic_clock_fail_dump(VOID)
