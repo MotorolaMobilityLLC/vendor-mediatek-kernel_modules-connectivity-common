@@ -793,7 +793,8 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 		/* Handshake flow: Notify MCU goto sleep before connsys power off */
 		if ((check_sleep_reg) && (check_coredump_reg)) {
 			/* check if chip reset flow */
-			if (CONSYS_REG_READ(check_coredump_reg) == 0) {
+			if ((CONSYS_REG_READ(check_coredump_reg) == 0)
+					&& (mtk_consys_chip_reset_status() != 1)) {
 				/* 1. write pattern EMI CR: F006804C = 0x5aa5 */
 				CONSYS_REG_WRITE(check_sleep_reg, MCU_GOTO_SLEEP);
 
