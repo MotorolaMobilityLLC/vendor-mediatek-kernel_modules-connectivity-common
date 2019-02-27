@@ -68,6 +68,8 @@
 #include "hif_sdio.h"
 #include "wmt_step.h"
 
+#include "connsys_debug_utility.h"
+
 #ifdef CONFIG_COMPAT
 #define COMPAT_WMT_IOCTL_SET_PATCH_NAME		_IOW(WMT_IOC_MAGIC, 4, compat_uptr_t)
 #define COMPAT_WMT_IOCTL_LPBK_TEST		_IOWR(WMT_IOC_MAGIC, 8, compat_uptr_t)
@@ -260,8 +262,10 @@ static VOID wmt_pwr_on_off_handler(struct work_struct *work)
 	WMT_DBG_FUNC("wmt_pwr_on_off_handler start to run\n");
 
 	/* Update blank off status before wmt power off */
-	if (wmt_dev_get_blank_state() == 0)
+	if (wmt_dev_get_blank_state() == 0) {
 		wmt_dev_blank_handler();
+		connsys_log_blank_state_changed(0);
+	}
 
 	if (always_pwr_on_flag == 0) {
 		while ((wmt_lib_get_drv_status(WMTDRV_TYPE_LPBK) == DRV_STS_FUNC_ON) !=
@@ -274,8 +278,10 @@ static VOID wmt_pwr_on_off_handler(struct work_struct *work)
 	}
 
 	/* Update blank on status after wmt power on */
-	if (wmt_dev_get_blank_state() == 1)
+	if (wmt_dev_get_blank_state() == 1) {
 		wmt_dev_blank_handler();
+		connsys_log_blank_state_changed(1);
+	}
 }
 
 INT32 wmt_lpbk_handler(UINT32 on_off_flag, UINT32 retry)
