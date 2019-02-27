@@ -926,14 +926,14 @@ static struct step_action *wmt_step_create_periodic_dump(char *params[])
 {
 	struct step_periodic_dump_action *p_pd_act = NULL;
 
-	p_pd_act = kzalloc(sizeof(struct step_periodic_dump_action), GFP_KERNEL);
-	if (p_pd_act == NULL) {
-		WMT_ERR_FUNC("STEP failed: kzalloc fail\n");
+	if (params[0] == NULL) {
+		WMT_ERR_FUNC("STEP failed: param null\n");
 		return NULL;
 	}
 
-	if (params[0] == NULL) {
-		WMT_ERR_FUNC("STEP failed: param null\n");
+	p_pd_act = kzalloc(sizeof(struct step_periodic_dump_action), GFP_KERNEL);
+	if (p_pd_act == NULL) {
+		WMT_ERR_FUNC("STEP failed: kzalloc fail\n");
 		return NULL;
 	}
 
