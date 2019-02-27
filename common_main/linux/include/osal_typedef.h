@@ -45,7 +45,8 @@
 #include <aee.h>
 #endif
 #include <linux/kfifo.h>
-#include <linux/wakelock.h>
+#include <linux/device.h>
+#include <linux/pm_wakeup.h>
 #include <linux/log2.h>
 #include <linux/atomic.h>
 
