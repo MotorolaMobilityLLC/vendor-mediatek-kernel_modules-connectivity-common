@@ -55,35 +55,30 @@
 
 extern UINT32 gStpDbgDbgLevel;
 
-#define STP_DBG_LOUD_FUNC(fmt, arg...) \
+#define STP_DBG_PR_LOUD(fmt, arg...) \
 do { \
 	if (gStpDbgDbgLevel >= STP_DBG_LOG_LOUD) \
 		pr_warn(PFX_STP_DBG "%s: "  fmt, __func__, ##arg); \
 } while (0)
-#define STP_DBG_DBG_FUNC(fmt, arg...) \
+#define STP_DBG_PR_DBG(fmt, arg...) \
 do { \
 	if (gStpDbgDbgLevel >= STP_DBG_LOG_DBG) \
 		pr_warn(PFX_STP_DBG "%s: "  fmt, __func__, ##arg); \
 } while (0)
-#define STP_DBG_INFO_FUNC(fmt, arg...) \
+#define STP_DBG_PR_INFO(fmt, arg...) \
 do { \
 	if (gStpDbgDbgLevel >= STP_DBG_LOG_INFO) \
 		pr_warn(PFX_STP_DBG "%s: "  fmt, __func__, ##arg); \
 } while (0)
-#define STP_DBG_WARN_FUNC(fmt, arg...) \
+#define STP_DBG_PR_WARN(fmt, arg...) \
 do { \
 	if (gStpDbgDbgLevel >= STP_DBG_LOG_WARN) \
 		pr_warn(PFX_STP_DBG "%s: "  fmt, __func__, ##arg); \
 } while (0)
-#define STP_DBG_ERR_FUNC(fmt, arg...) \
+#define STP_DBG_PR_ERR(fmt, arg...) \
 do { \
 	if (gStpDbgDbgLevel >= STP_DBG_LOG_ERR) \
 		pr_err(PFX_STP_DBG "%s: "   fmt, __func__, ##arg); \
-} while (0)
-#define STP_DBG_TRC_FUNC(f) \
-do { \
-	if (gStpDbgDbgLevel >= STP_DBG_LOG_DBG) \
-		pr_warn(PFX_STP_DBG "<%s> <%d>\n", __func__, __LINE__); \
 } while (0)
 
 typedef enum {
