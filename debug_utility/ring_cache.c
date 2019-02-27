@@ -60,7 +60,6 @@ unsigned int ring_cache_write_prepare(unsigned int sz, struct ring_cache_segment
 	unsigned int rd = *ring_cache->read;
 
 	memset(seg, 0, sizeof(struct ring_cache_segment));
-	pr_info("ring_cache_write_prepare: sz(%d), wt(%d), rd(%d), max_size(%d)\n", sz, wt, rd, ring_cache->max_size);
 	if (sz > ring_cache->max_size - (wt - rd))
 		sz = ring_cache->max_size - (wt - rd);
 	seg->remain = sz;
