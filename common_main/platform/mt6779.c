@@ -978,7 +978,7 @@ static INT32 polling_consys_chipid(VOID)
 	 * to optimize the wakeup time after sleep
 	 * clear "source clock enable ack to XO state" mask
 	 */
-	if (mtk_wcn_soc_co_clock_get()) {
+	if (wmt_plat_soc_co_clock_flag_get()) {
 		consys_reg_base = ioremap_nocache(CONSYS_COCLOCK_STABLE_TIME_BASE, 0x100);
 		if (consys_reg_base) {
 			value = CONSYS_REG_READ(consys_reg_base);
@@ -986,6 +986,8 @@ static INT32 polling_consys_chipid(VOID)
 					CONSYS_COCLOCK_STABLE_TIME;
 			CONSYS_REG_WRITE(consys_reg_base, value);
 			value = CONSYS_REG_READ(consys_reg_base + CONSYS_COCLOCK_ACK_ENABLE_OFFSET);
+			value = (value & CONSYS_COCLOCK_ACK_ENABLE_MAST) |
+					CONSYS_COCLOCK_ACK_ENABLE_VALUE;
 			value = value & (~CONSYS_COCLOCK_ACK_ENABLE_BIT);
 			CONSYS_REG_WRITE(consys_reg_base + CONSYS_COCLOCK_ACK_ENABLE_OFFSET, value);
 			iounmap(consys_reg_base);
@@ -993,9 +995,6 @@ static INT32 polling_consys_chipid(VOID)
 			WMT_PLAT_PR_ERR("connsys co_clock stable time base(0x%x) ioremap fail!\n",
 					  CONSYS_COCLOCK_STABLE_TIME_BASE);
 	}
-
-	/* EMI control CR setting(bypass hw mode) */
-	CONSYS_SET_BIT(conn_reg.mcu_base + CONSYS_SW_IRQ_OFFSET, CONSYS_EMI_CTRL_VALUE);
 
 	/* write reserverd cr for identify adie is 6635 or 6631 */
 	consys_reg_base = ioremap_nocache(CONSYS_IDENTIFY_ADIE_CR_ADDRESS, 0x8);
