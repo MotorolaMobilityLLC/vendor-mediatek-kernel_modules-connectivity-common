@@ -176,6 +176,8 @@ int mtk_wcn_cmb_stub_reg(struct _CMB_STUB_CB_ *p_stub_cb)
 {
 #ifndef MTK_WCN_REMOVE_KERNEL_MODULE
 	struct wmt_platform_bridge pbridge;
+
+	memset(&pbridge, 0, sizeof(struct wmt_platform_bridge));
 #endif
 
 	if ((!p_stub_cb)
