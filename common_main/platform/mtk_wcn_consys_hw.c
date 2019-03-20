@@ -769,3 +769,9 @@ INT32 mtk_consys_is_connsys_reg(UINT32 addr)
 	else
 		return 0;
 }
+
+VOID mtk_wcn_consys_ic_get_ant_sel_cr_addr(PUINT32 default_invert_cr, PUINT32 default_invert_bit)
+{
+	if (wmt_consys_ic_ops->consys_ic_get_ant_sel_cr_addr)
+		wmt_consys_ic_ops->consys_ic_get_ant_sel_cr_addr(default_invert_cr, default_invert_bit);
+}

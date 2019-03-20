@@ -274,12 +274,24 @@ INT32 osal_sprintf(PINT8 str, const PINT8 format, ...)
 
 PVOID osal_malloc(UINT32 size)
 {
-	return vmalloc(size);
+	PVOID p = NULL;
+
+	if (size > (PAGE_SIZE << 1))
+		p = vmalloc(size);
+	else
+		p = kmalloc(size, GFP_KERNEL);
+
+	/* If there is fragment, kmalloc may not get memory when size > one page.
+	 * For this case, use vmalloc instead.
+	 */
+	if (p == NULL && size > PAGE_SIZE)
+		p = vmalloc(size);
+	return p;
 }
 
 VOID osal_free(const PVOID dst)
 {
-	vfree(dst);
+	kvfree(dst);
 }
 
 PVOID osal_memset(PVOID buf, INT32 i, UINT32 len)
