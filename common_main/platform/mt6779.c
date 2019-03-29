@@ -56,9 +56,7 @@
 #endif
 
 #if CONSYS_PMIC_CTRL_ENABLE
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6359)
 #include <mtk_pmic_api_buck.h>
-#endif
 #include <upmu_common.h>
 #include <linux/regulator/consumer.h>
 #endif
@@ -144,14 +142,10 @@ struct clk *clk_infracfg_ao_ccif4_ap_cg;       /* For direct path */
 struct regulator *reg_VCN18;
 #if CONSYS_PMIC_CTRL_6635
 struct regulator *reg_VCN13;
+#endif
 struct regulator *reg_VCN33_1_BT;
 struct regulator *reg_VCN33_1_WIFI;
 struct regulator *reg_VCN33_2_WIFI;
-#else
-struct regulator *reg_VCN28;
-struct regulator *reg_VCN33_BT;
-struct regulator *reg_VCN33_WIFI;
-#endif
 #endif
 
 EMI_CTRL_STATE_OFFSET mtk_wcn_emi_state_off = {
@@ -437,6 +431,7 @@ static INT32 consys_pmic_get_from_dts(struct platform_device *pdev)
 	reg_VCN13 = regulator_get(&pdev->dev, "vcn13");
 	if (!reg_VCN13)
 		WMT_PLAT_PR_ERR("Regulator_get VCN_1V3 fail\n");
+#endif
 	reg_VCN33_1_BT = regulator_get(&pdev->dev, "vcn33_1_bt");
 	if (!reg_VCN33_1_BT)
 		WMT_PLAT_PR_ERR("Regulator_get VCN33_1_BT fail\n");
@@ -446,17 +441,6 @@ static INT32 consys_pmic_get_from_dts(struct platform_device *pdev)
 	reg_VCN33_2_WIFI = regulator_get(&pdev->dev, "vcn33_2_wifi");
 	if (!reg_VCN33_2_WIFI)
 		WMT_PLAT_PR_ERR("Regulator_get VCN33_2_WIFI fail\n");
-#else
-	reg_VCN28 = regulator_get(&pdev->dev, "vcn28");
-	if (!reg_VCN28)
-		WMT_PLAT_PR_ERR("Regulator_get VCN_2V8 fail\n");
-	reg_VCN33_BT = regulator_get(&pdev->dev, "vcn33_bt");
-	if (!reg_VCN33_BT)
-		WMT_PLAT_PR_ERR("Regulator_get VCN33_BT fail\n");
-	reg_VCN33_WIFI = regulator_get(&pdev->dev, "vcn33_wifi");
-	if (!reg_VCN33_WIFI)
-		WMT_PLAT_PR_ERR("Regulator_get VCN33_WIFI fail\n");
-#endif
 #endif
 
 	return 0;
@@ -1017,7 +1001,7 @@ static INT32 polling_consys_chipid(VOID)
 #if CONSYS_PMIC_CTRL_6635
 		value = value & (~CONSYS_IDENTIFY_ADIE_ENABLE_BIT);
 #else
-		value = value & (CONSYS_IDENTIFY_ADIE_ENABLE_BIT);
+		value = value | (CONSYS_IDENTIFY_ADIE_ENABLE_BIT);
 #endif
 		CONSYS_REG_WRITE(consys_reg_base, value);
 		iounmap(consys_reg_base);
@@ -1097,9 +1081,7 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 #if CONSYS_PMIC_CTRL_ENABLE
 	if (enable) {
 		/*Set VCN18_SW_OP_EN as 1*/
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6359)
 		KERNEL_pmic_ldo_vcn18_lp(SW, 1, 1, SW_OFF);
-#endif
 		/*Set VCN18_SW_EN as 1 and set votage as 1V8*/
 		if (reg_VCN18) {
 			regulator_set_voltage(reg_VCN18, 1800000, 1800000);
@@ -1111,16 +1093,12 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 		/*Set VCN18 SW_LP as 0*/
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN18_LP, 0);
 		/*Set VCN18 as low-power mode(1), HW0_OP_EN as 1, HW0_OP_CFG as HW_LP(1)*/
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6359)
 		KERNEL_pmic_ldo_vcn18_lp(SRCLKEN0, 1, 1, HW_LP);
-#endif
 #if CONSYS_PMIC_CTRL_6635
 		/* delay 300us (VCN18 stable time) */
 		udelay(300);
 		/*Set VCN13_SW_OP_EN as 1*/
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6359)
 		KERNEL_pmic_ldo_vcn13_lp(SW, 1, 1, SW_OFF);
-#endif
 		/*Set VCN13_SW_EN as 1 and set votage as 1V3*/
 		if (reg_VCN13) {
 			regulator_set_voltage(reg_VCN13, 1300000, 1300000);
@@ -1132,15 +1110,13 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 		/*Set VCN13 SW_LP as 0*/
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN13_LP, 0);
 		/*Set VCN13 as low-power mode(1), HW0_OP_EN as 1, HW0_OP_CFG as HW_LP(1)*/
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6359)
 		KERNEL_pmic_ldo_vcn13_lp(SRCLKEN0, 1, 1, HW_LP);
-#endif
 #else
 		/*1.AP power on VCN_3V3 LDO (with PMIC_WRAP API) VCN_3V3  */
 		/*default vcn33_1 SW mode*/
-		if (reg_VCN33_BT) {
-			regulator_set_voltage(reg_VCN33_BT, 3300000, 3300000);
-			if (regulator_enable(reg_VCN33_BT))
+		if (reg_VCN33_1_BT) {
+			regulator_set_voltage(reg_VCN33_1_BT, 3300000, 3300000);
+			if (regulator_enable(reg_VCN33_1_BT))
 				WMT_PLAT_PR_ERR("WMT do BT PMIC on fail!\n");
 		}
 #endif
@@ -1149,8 +1125,8 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 		if (reg_VCN13)
 			regulator_disable(reg_VCN13);
 #else
-		if (reg_VCN33_BT)
-			regulator_disable(reg_VCN33_BT);
+		if (reg_VCN33_1_BT)
+			regulator_disable(reg_VCN33_1_BT);
 #endif
 		/* delay 300us */
 		udelay(300);
@@ -1172,13 +1148,12 @@ static VOID consys_vcn28_hw_mode_ctrl(UINT32 enable)
 #if CONSYS_PMIC_CTRL_6635
 	/* 6635 not supported */
 #else
-	if (enable) {
-		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN28_HW0_OP_EN, 1);
-		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN28_HW0_OP_CFG, 0);
-	} else {
-		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN28_HW0_OP_EN, 0);
-		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN28_HW0_OP_CFG, 0);
-	}
+	if (enable)
+		/*Set VCN33_2_SW_OP_EN as 1*/
+		KERNEL_pmic_ldo_vcn33_2_lp(SW, 1, 1, SW_OFF);
+	else
+		/*Set VCN33_2 as low-power mode(1), HW0_OP_EN as 0, HW0_OP_CFG as HW_OFF(0)*/
+		KERNEL_pmic_ldo_vcn33_2_lp(SRCLKEN0, 1, 0, HW_OFF);
 #endif
 #endif
 }
@@ -1190,18 +1165,26 @@ static INT32 consys_hw_vcn28_ctrl(UINT32 enable)
 	/* 6635 not supported */
 #else
 	if (enable) {
-		/*in co-clock mode,need to turn on vcn28 when fm on */
-		if (reg_VCN28) {
-			regulator_set_voltage(reg_VCN28, 2800000, 2800000);
-			if (regulator_enable(reg_VCN28))
-				WMT_PLAT_PR_ERR("WMT do VCN28 PMIC on fail!\n");
+		/*in co-clock mode,need to turn on vcn33_2 when fm on */
+		/*Set VCN33_2_SW_OP_EN as 1*/
+		KERNEL_pmic_ldo_vcn33_2_lp(SW, 1, 1, SW_OFF);
+		/*Set VCN33_1_SW_EN as 1 and set votage as 2V8*/
+		if (reg_VCN33_2_WIFI) {
+			regulator_set_voltage(reg_VCN33_2_WIFI, 2800000, 2800000);
+			regulator_enable(reg_VCN33_2_WIFI);
 		}
-		WMT_PLAT_PR_INFO("turn on vcn28 for fm/gps usage in co-clock mode\n");
+		/*Set VCN33_2 SW_LP as 0*/
+		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_2_LP, 0);
+		/*Set VCN33_2 as low-power mode(1), HW0_OP_EN as 1, HW0_OP_CFG as HW_OFF(0)*/
+		KERNEL_pmic_ldo_vcn33_2_lp(SRCLKEN0, 1, 1, HW_OFF);
+		WMT_PLAT_PR_INFO("turn on vcn33_2 for fm/gps usage in co-clock mode\n");
 	} else {
-		/*in co-clock mode,need to turn off vcn28 when fm off */
-		if (reg_VCN28)
-			regulator_disable(reg_VCN28);
-		WMT_PLAT_PR_INFO("turn off vcn28 for fm/gps usage in co-clock mode\n");
+		/*in co-clock mode,need to turn off vcn33_2 when fm off */
+		/*Set VCN33_2 as low-power mode(1), HW0_OP_EN as 0, HW0_OP_CFG as HW_OFF(0)*/
+		KERNEL_pmic_ldo_vcn33_2_lp(SRCLKEN0, 1, 0, HW_OFF);
+		if (reg_VCN33_2_WIFI)
+			regulator_disable(reg_VCN33_2_WIFI);
+		WMT_PLAT_PR_INFO("turn off vcn33_2 for fm/gps usage in co-clock mode\n");
 	}
 #endif
 #endif
@@ -1215,9 +1198,7 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 	if (enable) {
 #if CONSYS_PMIC_CTRL_ENABLE
 		/*Set VCN33_1_SW_OP_EN as 1*/
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6359)
 		KERNEL_pmic_ldo_vcn33_1_lp(SW, 1, 1, SW_OFF);
-#endif
 		/*Set VCN33_1_SW_EN as 1 and set votage as 3V3*/
 		if (reg_VCN33_1_BT) {
 			regulator_set_voltage(reg_VCN33_1_BT, 3300000, 3300000);
@@ -1227,9 +1208,7 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 		/*Set VCN33_1 SW_LP as 0*/
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_1_LP, 0);
 		/*Set VCN33_1 as low-power mode(1), HW0_OP_EN as 1, HW0_OP_CFG as HW_OFF(0)*/
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6359)
 		KERNEL_pmic_ldo_vcn33_1_lp(SRCLKEN0, 1, 1, HW_OFF);
-#endif
 		/* request VS2 to 1.4V by VS2 VOTER (use bit 4) */
 		KERNEL_pmic_set_register_value(PMIC_RG_BUCK_VS2_VOTER_EN_SET, 0x10);
 		/* Set VCN13 to 1.32V */
@@ -1242,9 +1221,7 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 		/*switch BT PALDO control from HW mode to SW mode:0x416[5]-->0x0 */
 #if CONSYS_PMIC_CTRL_ENABLE
 		/*Set VCN33_1 as low-power mode(1), HW0_OP_EN as 0, HW0_OP_CFG as HW_OFF(0)*/
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6359)
 		KERNEL_pmic_ldo_vcn33_1_lp(SRCLKEN0, 1, 0, HW_OFF);
-#endif
 		/* restore VCN13 to 1.3V */
 		KERNEL_pmic_set_register_value(PMIC_RG_VCN13_VOCAL, 0);
 		/* clear bit 4 of VS2 VOTER then VS2 can restore to 1.35V */
@@ -1266,9 +1243,7 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 	if (enable) {
 #if CONSYS_PMIC_CTRL_ENABLE
 		/*Set VCN33_1_SW_OP_EN as 1*/
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6359)
 		KERNEL_pmic_ldo_vcn33_1_lp(SW, 1, 1, SW_OFF);
-#endif
 		/*Set VCN33_1_SW_EN as 1 and set votage as 3V3*/
 		if (reg_VCN33_1_WIFI) {
 			regulator_set_voltage(reg_VCN33_1_WIFI, 3300000, 3300000);
@@ -1278,14 +1253,10 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 		/*Set VCN33_1 SW_LP as 0*/
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_1_LP, 0);
 		/*Set VCN33_1 as low-power mode(1), HW0_OP_EN as 1, HW0_OP_CFG as HW_OFF(0)*/
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6359)
 		KERNEL_pmic_ldo_vcn33_1_lp(SRCLKEN0, 1, 1, HW_OFF);
-#endif
 
 		/*Set VCN33_2_SW_OP_EN as 1*/
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6359)
 		KERNEL_pmic_ldo_vcn33_2_lp(SW, 1, 1, SW_OFF);
-#endif
 		/*Set VCN33_1_SW_EN as 1 and set votage as 3V3*/
 		if (reg_VCN33_2_WIFI) {
 			regulator_set_voltage(reg_VCN33_2_WIFI, 3300000, 3300000);
@@ -1295,9 +1266,7 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 		/*Set VCN33_2 SW_LP as 0*/
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_2_LP, 0);
 		/*Set VCN33_2 as low-power mode(1), HW0_OP_EN as 1, HW0_OP_CFG as HW_OFF(0)*/
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6359)
 		KERNEL_pmic_ldo_vcn33_2_lp(SRCLKEN0, 1, 1, HW_OFF);
-#endif
 #endif
 		WMT_PLAT_PR_DBG("WMT do WIFI PMIC on\n");
 	} else {
@@ -1305,16 +1274,12 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 		/*switch WIFI PALDO control from HW mode to SW mode:0x418[14]-->0x0 */
 #if CONSYS_PMIC_CTRL_ENABLE
 		/*Set VCN33_1 as low-power mode(1), HW0_OP_EN as 0, HW0_OP_CFG as HW_OFF(0)*/
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6359)
 		KERNEL_pmic_ldo_vcn33_1_lp(SRCLKEN0, 1, 0, HW_OFF);
-#endif
 		if (reg_VCN33_1_WIFI)
 			regulator_disable(reg_VCN33_1_WIFI);
 
 		/*Set VCN33_2 as low-power mode(1), HW0_OP_EN as 0, HW0_OP_CFG as HW_OFF(0)*/
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6359)
 		KERNEL_pmic_ldo_vcn33_2_lp(SRCLKEN0, 1, 0, HW_OFF);
-#endif
 		if (reg_VCN33_2_WIFI)
 			regulator_disable(reg_VCN33_2_WIFI);
 #endif
