@@ -533,7 +533,8 @@ INT32 wmt_func_gps_on(P_WMT_IC_OPS pOps, P_WMT_GEN_CONF pConf)
 	}
 	iRet = wmt_func_gps_pre_on(pOps, pConf);
 	if (iRet == 0) {
-		iRet = wmt_func_gps_ctrl(FUNC_ON);
+		if (!pConf || pConf->wmt_gps_suspend_ctrl == 0)
+			iRet = wmt_func_gps_ctrl(FUNC_ON);
 		if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC) {
 			if (!iRet) {
 				osal_set_bit(WMT_GPS_ON, &gBtWifiGpsState);
@@ -546,6 +547,7 @@ INT32 wmt_func_gps_on(P_WMT_IC_OPS pOps, P_WMT_GEN_CONF pConf)
 				}
 				if ((co_clock_type) && (pConf->wmt_gps_lna_enable == 0)) /* use SOC external LNA */
 					osal_set_bit(WMT_GPS_ON, &gGpsFmState);
+				osal_clear_bit(WMT_GPS_SUSPEND, &gGpsFmState);
 			}
 		}
 	}
@@ -559,9 +561,11 @@ INT32 wmt_func_gps_off(P_WMT_IC_OPS pOps, P_WMT_GEN_CONF pConf)
 	unsigned long ctrlPa2 = 0;
 	UINT8 co_clock_type = (pConf->co_clock_flag & 0x0f);
 
-	iRet = wmt_func_gps_pre_off(pOps, pConf);
+	if (!osal_test_bit(WMT_GPS_SUSPEND, &gGpsFmState))
+		iRet = wmt_func_gps_pre_off(pOps, pConf);
 	if (iRet == 0) {
-		iRet = wmt_func_gps_ctrl(FUNC_OFF);
+		if (!pConf || pConf->wmt_gps_suspend_ctrl == 0)
+			iRet = wmt_func_gps_ctrl(FUNC_OFF);
 		if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC) {
 			if (!iRet) {
 				osal_clear_bit(WMT_GPS_ON, &gBtWifiGpsState);
@@ -579,12 +583,16 @@ INT32 wmt_func_gps_off(P_WMT_IC_OPS pOps, P_WMT_GEN_CONF pConf)
 		if ((co_clock_type) && (pConf->wmt_gps_lna_enable == 0)) {	/* use SOC external LNA */
 			if (osal_test_bit(WMT_FM_ON, &gGpsFmState))
 				WMT_INFO_FUNC("FM is still on, do not turn off LDO VCN28\n");
+			else if (osal_test_bit(WMT_GPS_SUSPEND, &gGpsFmState))
+				WMT_INFO_FUNC("It's GPS suspend mode, LDO VCN28 has been turned off\n");
 			else {
 				ctrlPa1 = GPS_PALDO;
 				ctrlPa2 = PALDO_OFF;
 				wmt_core_ctrl(WMT_CTRL_SOC_PALDO_CTRL, &ctrlPa1, &ctrlPa2);
 			}
 			osal_clear_bit(WMT_GPS_ON, &gGpsFmState);
+			if (pConf != NULL && pConf->wmt_gps_suspend_ctrl == 1)
+				osal_set_bit(WMT_GPS_SUSPEND, &gGpsFmState);
 		}
 	}
 	return iRet;
