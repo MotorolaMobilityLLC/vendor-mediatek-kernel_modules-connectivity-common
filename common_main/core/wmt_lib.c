@@ -93,6 +93,7 @@ static PF_WMT_SDIO_DEEP_SLEEP sdio_deep_sleep_flag_set;
 static UINT8 g_cpupcr_buf[WMT_STP_CPUPCR_BUF_SIZE] = { 0 };
 static UINT32 g_quick_sleep_ctrl = 1;
 static UINT32 g_fw_patch_update_rst;
+static u64 fw_patch_rst_time;
 
 #define ASSERT_KEYWORD_LENGTH 20
 struct assert_work_st {
@@ -113,6 +114,7 @@ static INT32 g_bt_no_br_acl_link;
 #define EMI_MET_READ_OFFSET	0x0
 #define EMI_MET_WRITE_OFFSET	0x4
 #define EMI_MET_DATA_OFFSET	0x8
+#define FW_PATCH_UPDATE_RST_DURATION 180 /* 180 seconds */
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -1049,6 +1051,9 @@ INT32 wmt_lib_update_fw_patch_chip_rst(VOID)
 	if (chip_reset_only == 1)
 		return 0;
 
+	if (time_before_eq64(get_jiffies_64(), fw_patch_rst_time))
+		return 0;
+
 	if (wmt_lib_get_drv_status(WMTDRV_TYPE_WIFI) == DRV_STS_FUNC_ON) {
 		if (wmt_lib_wlan_lock_trylock() == 0)
 			return 0;
@@ -1075,6 +1080,7 @@ INT32 wmt_lib_update_fw_patch_chip_rst(VOID)
 
 	wmt_lib_fw_patch_update_rst_ctrl(0);
 	chip_reset_only = 1;
+	fw_patch_rst_time = get_jiffies_64() + (FW_PATCH_UPDATE_RST_DURATION * HZ);
 	WMT_INFO_FUNC("Invoke whole chip reset from fw patch update!!!\n");
 	return wmt_lib_trigger_reset();
 }
@@ -2301,6 +2307,7 @@ ENUM_WMTRSTRET_TYPE_T wmt_lib_cmb_rst(ENUM_WMTRSTSRC_TYPE_T src)
 	if (wmt_lib_psm_lock_trylock() == 0) {
 		if (chip_reset_only == 1) {
 			wmt_lib_fw_patch_update_rst_ctrl(1);
+			fw_patch_rst_time = 0;
 			retval = WMTRSTRET_RETRY;
 			goto rstDone;
 		}
