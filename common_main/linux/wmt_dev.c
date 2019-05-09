@@ -1583,32 +1583,40 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		break;
 	case WMT_IOCTL_SET_ACTIVE_PATCH_VERSION:
 		do {
-			UINT8 version[WMT_FIRMWARE_VERSION_LENGTH + 1];
+			struct wmt_vendor_patch patch;
 
-			if (copy_from_user(version, (PVOID)arg,
-				WMT_FIRMWARE_VERSION_LENGTH + 1)) {
-				WMT_ERR_FUNC("copy_from_user failed at %d\n",
-					 __LINE__);
+			if (copy_from_user(&patch, (PVOID)arg,
+				sizeof(struct wmt_vendor_patch))) {
+				WMT_ERR_FUNC("copy_from_user failed at %d\n", __LINE__);
 				iRet = -EFAULT;
 				break;
 			}
 
-			version[WMT_FIRMWARE_VERSION_LENGTH] = '\0';
-			iRet = wmt_lib_set_active_patch_version(version);
+			iRet = wmt_lib_set_active_patch_version(&patch);
+			WMT_ERR_FUNC("wmt_lib_set_active_patch_version ret = %d\n", iRet);
+			if (iRet) {
+				iRet = -EFAULT;
+				break;
+			}
 		} while (0);
 		break;
 	case WMT_IOCTL_GET_ACTIVE_PATCH_VERSION:
 		do {
-			UINT8 version[WMT_FIRMWARE_VERSION_LENGTH + 1];
+			struct wmt_vendor_patch patch;
 
-			iRet = wmt_lib_get_active_patch_version(version);
+			if (copy_from_user(&patch, (PVOID)arg, sizeof(struct wmt_vendor_patch))) {
+				WMT_ERR_FUNC("copy_from_user failed at %d\n", __LINE__);
+				iRet = -EFAULT;
+				break;
+			}
+
+			iRet = wmt_lib_get_active_patch_version(&patch);
 			if (iRet) {
 				iRet = -EFAULT;
 				break;
 			}
 
-			if (copy_to_user((PVOID)arg, version,
-				osal_strlen(version) + 1))
+			if (copy_to_user((PVOID)arg, &patch, sizeof(struct wmt_vendor_patch)))
 				iRet = -EFAULT;
 		} while (0);
 		break;
