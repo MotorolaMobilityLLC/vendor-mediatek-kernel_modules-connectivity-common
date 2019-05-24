@@ -162,6 +162,7 @@ static INT32 opfunc_gps_mcu_ctrl(P_WMT_OP pWmtOp);
 static INT32 opfunc_blank_status_ctrl(P_WMT_OP pWmtOp);
 static INT32 opfunc_met_ctrl(P_WMT_OP pWmtOp);
 static INT32 opfunc_gps_suspend(P_WMT_OP pWmtOp);
+static INT32 opfunc_resume_dump_info(P_WMT_OP pWmtOp);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -330,6 +331,7 @@ static const WMT_OPID_FUNC wmt_core_opfunc[] = {
 	[WMT_OPID_BLANK_STATUS_CTRL] = opfunc_blank_status_ctrl,
 	[WMT_OPID_MET_CTRL] = opfunc_met_ctrl,
 	[WMT_OPID_GPS_SUSPEND] = opfunc_gps_suspend,
+	[WMT_OPID_RESUME_DUMP_INFO] = opfunc_resume_dump_info,
 };
 
 atomic_t g_wifi_on_off_ready;
@@ -3688,4 +3690,9 @@ static INT32 opfunc_met_ctrl(P_WMT_OP pWmtOp)
 	}
 
 	return 0;
+}
+
+static INT32 opfunc_resume_dump_info(P_WMT_OP pWmtOp)
+{
+	return mtk_consys_resume_dump_info();
 }
