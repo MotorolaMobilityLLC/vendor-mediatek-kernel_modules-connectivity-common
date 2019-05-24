@@ -2529,7 +2529,8 @@ INT32 mtk_wcn_stp_set_wmt_last_close(UINT32 value)
 {
 	STP_INFO_FUNC("set wmt_last_close flag (%d)\n", value);
 
-	STP_SET_WMT_LAST_CLOSE(stp_core_ctx, value);
+	/* test whether last_close can be removed safely */
+	/* STP_SET_WMT_LAST_CLOSE(stp_core_ctx, value); */
 
 	return 0;
 }
@@ -3466,7 +3467,7 @@ INT32 mtk_wcn_stp_assert_timeout_handle(VOID)
 	mtk_wcn_consys_stp_btif_logger_ctrl(BTIF_DUMP_BTIF_REG);
 	mtk_wcn_consys_stp_btif_logger_ctrl(BTIF_DUMP_LOG);
 	mtk_wcn_stp_coredump_start_ctrl(1);
-	if (p_ecsi != NULL && wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_assert_flag)) {
+	if (wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_assert_flag)) {
 		STP_INFO_FUNC("EMI assert flag was set. To do coredump.\n");
 		mtk_wcn_stp_ctx_save();
 		ret = stp_btm_notify_wmt_dmp_wq(STP_BTM_CORE(stp_core_ctx));
