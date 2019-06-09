@@ -80,7 +80,6 @@
 #define COMPAT_WMT_IOCTL_ADIE_LPBK_TEST		_IOWR(WMT_IOC_MAGIC, 26, compat_uptr_t)
 #define COMPAT_WMT_IOCTL_DYNAMIC_DUMP_CTRL	_IOR(WMT_IOC_MAGIC, 30, compat_uptr_t)
 #define COMPAT_WMT_IOCTL_SET_ROM_PATCH_INFO	_IOW(WMT_IOC_MAGIC, 31, compat_uptr_t)
-#define COMPAT_WMT_IOCTL_FDB_CTRL		_IOW(WMT_IOC_MAGIC, 32, compat_uptr_t)
 #define COMPAT_WMT_IOCTL_GET_VENDOR_PATCH_VERSION	_IOR(WMT_IOC_MAGIC, 36, compat_uptr_t)
 #define COMPAT_WMT_IOCTL_SET_VENDOR_PATCH_VERSION	_IOW(WMT_IOC_MAGIC, 37, compat_uptr_t)
 #define COMPAT_WMT_IOCTL_SET_ACTIVE_PATCH_VERSION	_IOR(WMT_IOC_MAGIC, 40, compat_uptr_t)
@@ -108,7 +107,6 @@
 #define WMT_IOCTL_FW_DBGLOG_CTRL	_IOR(WMT_IOC_MAGIC, 29, int)
 #define WMT_IOCTL_DYNAMIC_DUMP_CTRL	_IOR(WMT_IOC_MAGIC, 30, char*)
 #define WMT_IOCTL_SET_ROM_PATCH_INFO	_IOW(WMT_IOC_MAGIC, 31, char*)
-#define WMT_IOCTL_FDB_CTRL		_IOW(WMT_IOC_MAGIC, 32, char*)
 #define WMT_IOCTL_GET_EMI_PHY_SIZE  _IOR(WMT_IOC_MAGIC, 33, unsigned int)
 #define WMT_IOCTL_FW_PATCH_UPDATE_RST	_IOR(WMT_IOC_MAGIC, 34, int)
 #define WMT_IOCTL_GET_VENDOR_PATCH_NUM		_IOW(WMT_IOC_MAGIC, 35, int)
@@ -142,13 +140,7 @@ static atomic_t gWmtRefCnt = ATOMIC_INIT(0);
 static UINT8 gLpbkBuf[WMT_LPBK_BUF_LEN] = { 0 };
 
 static UINT32 gLpbkBufLog;	/* George LPBK debug */
-
-enum wmt_init_status {
-	WMT_INIT_NOT_START,
-	WMT_INIT_START,
-	WMT_INIT_DONE,
-};
-static INT32 gWmtInitStatus = WMT_INIT_NOT_START;
+static INT32 gWmtInitDone;
 static wait_queue_head_t gWmtInitWq;
 #ifdef CONFIG_MTK_COMBO_COMM_APO
 UINT32 always_pwr_on_flag = 1;
@@ -1494,37 +1486,6 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			wmt_lib_set_rom_patch_info(&wmtRomPatchInfo, wmtRomPatchInfo.type);
 		} while (0);
 		break;
-	case WMT_IOCTL_FDB_CTRL:
-#if WMT_DBG_SUPPORT
-		do {
-			struct wmt_fdb_ctrl fdb_ctrl;
-
-			if (copy_from_user(&fdb_ctrl, (PVOID)arg, sizeof(struct wmt_fdb_ctrl))) {
-				WMT_ERR_FUNC("copy_from_user failed at %d\n", __LINE__);
-				iRet = -EFAULT;
-				break;
-			}
-
-			if (fdb_ctrl.base_index < MCU_BASE_INDEX ||
-			    fdb_ctrl.base_index > MCU_CIRQ_BASE_INDEX) {
-				WMT_ERR_FUNC("base index abnormal(%d)\n", fdb_ctrl.base_index);
-				iRet = -EFAULT;
-				break;
-			}
-			iRet = wmt_lib_fdb_ctrl(&fdb_ctrl);
-			if (iRet) {
-				WMT_ERR_FUNC("wmt_lib_fdb_ctrl fail(%d)\n", iRet);
-				iRet = -EFAULT;
-				break;
-			}
-
-			if (copy_to_user((PVOID)arg, &fdb_ctrl, sizeof(struct wmt_fdb_ctrl))) {
-				iRet = -EFAULT;
-				break;
-			}
-		} while (0);
-#endif
-		break;
 	case WMT_IOCTL_GET_EMI_PHY_SIZE:
 		do {
 			WMT_INFO_FUNC("gConEmiSize %p\n", gConEmiSize);
@@ -1675,9 +1636,6 @@ LONG WMT_compat_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		case COMPAT_WMT_IOCTL_SET_ROM_PATCH_INFO:
 			ret = WMT_unlocked_ioctl(filp, WMT_IOCTL_SET_ROM_PATCH_INFO, (ULONG)compat_ptr(arg));
 			break;
-		case COMPAT_WMT_IOCTL_FDB_CTRL:
-			ret = WMT_unlocked_ioctl(filp, WMT_IOCTL_FDB_CTRL, (ULONG)compat_ptr(arg));
-			break;
 		default: {
 			ret = WMT_unlocked_ioctl(filp, cmd, arg);
 			break;
@@ -1692,7 +1650,7 @@ static INT32 WMT_open(struct inode *inode, struct file *file)
 	LONG ret;
 
 	WMT_INFO_FUNC("major %d minor %d (pid %d)\n", imajor(inode), iminor(inode), current->pid);
-	ret = wait_event_timeout(gWmtInitWq, gWmtInitStatus == WMT_INIT_DONE, msecs_to_jiffies(WMT_DEV_INIT_TO_MS));
+	ret = wait_event_timeout(gWmtInitWq, gWmtInitDone != 0, msecs_to_jiffies(WMT_DEV_INIT_TO_MS));
 	if (!ret) {
 		WMT_WARN_FUNC("wait_event_timeout (%d)ms,(%d)jiffies,return -EIO\n",
 			      WMT_DEV_INIT_TO_MS, msecs_to_jiffies(WMT_DEV_INIT_TO_MS));
@@ -1794,11 +1752,9 @@ static INT32 WMT_init(VOID)
 	ENUM_WMT_CHIP_TYPE chip_type;
 
 	WMT_DBG_FUNC("WMT Version= %s DATE=%s\n", MTK_WMT_VERSION, MTK_WMT_DATE);
-	if (gWmtInitStatus != WMT_INIT_NOT_START)
-		return 0;
 	/* Prepare a UINT8 device */
 	/*static allocate chrdev */
-	gWmtInitStatus = WMT_INIT_START;
+	gWmtInitDone = 0;
 	init_waitqueue_head((wait_queue_head_t *) &gWmtInitWq);
 #if (MTK_WCN_REMOVE_KO)
 	/* called in do_common_drv_init() */
@@ -1810,7 +1766,6 @@ static INT32 WMT_init(VOID)
 	ret = register_chrdev_region(devID, WMT_DEV_NUM, WMT_DRIVER_NAME);
 	if (ret) {
 		WMT_ERR_FUNC("fail to register chrdev\n");
-		gWmtInitStatus = WMT_INIT_NOT_START;
 		return ret;
 	}
 
@@ -1888,7 +1843,7 @@ static INT32 WMT_init(VOID)
 	if (chip_type == WMT_CHIP_TYPE_SOC)
 		wmt_dev_bgw_desense_init();
 
-	gWmtInitStatus = WMT_INIT_DONE;
+	gWmtInitDone = 1;
 	wake_up(&gWmtInitWq);
 
 	INIT_WORK(&gPwrOnOffWork, wmt_pwr_on_off_handler);
@@ -1936,7 +1891,6 @@ error:
 		gWmtMajor = -1;
 	}
 
-	gWmtInitStatus = WMT_INIT_NOT_START;
 	WMT_ERR_FUNC("fail\n");
 
 	return -1;
@@ -1945,9 +1899,6 @@ error:
 static VOID WMT_exit(VOID)
 {
 	dev_t dev = MKDEV(gWmtMajor, 0);
-
-	if (gWmtInitStatus != WMT_INIT_DONE)
-		return;
 
 	osal_unsleepable_lock_deinit(&g_temp_query_spinlock);
 	osal_sleepable_lock_deinit(&g_aee_read_lock);
@@ -1997,7 +1948,6 @@ static VOID WMT_exit(VOID)
 
 	stp_drv_exit();
 	mtk_wcn_hif_sdio_driver_exit();
-	gWmtInitStatus = WMT_INIT_NOT_START;
 	WMT_INFO_FUNC("done\n");
 }
 

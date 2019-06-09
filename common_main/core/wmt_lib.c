@@ -2900,12 +2900,6 @@ INT32 wmt_lib_met_ctrl(INT32 met_ctrl, INT32 log_ctrl)
 	return 0;
 }
 
-INT32 wmt_lib_fdb_ctrl(struct wmt_fdb_ctrl *fdb_ctrl)
-{
-	return mtk_wcn_consys_reg_ctrl(fdb_ctrl->is_write, fdb_ctrl->base_index, fdb_ctrl->offset,
-			&(fdb_ctrl->value));
-}
-
 VOID wmt_lib_set_ext_ldo(UINT32 flag)
 {
 	gDevWmt.ext_ldo_flag = flag;
@@ -3217,34 +3211,4 @@ VOID wmt_lib_trigger_assert_keyword_delay(ENUM_WMTDRV_TYPE_T type, UINT32 reason
 	snprintf(a->keyword, sizeof(a->keyword), "%s", keyword);
 	WMT_ERR_FUNC("Assert: type = %d, reason = %d, keyword = %s", type, reason, keyword);
 	schedule_work(&(a->work));
-}
-
-INT32 wmt_lib_resume_dump_info(VOID)
-{
-	P_OSAL_OP pOp;
-	MTK_WCN_BOOL bRet;
-	P_OSAL_SIGNAL pSignal;
-
-	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_WHEN_AP_RESUME);
-
-	if (mtk_consys_check_reg_readable() == 0)
-		return MTK_WCN_BOOL_TRUE;
-
-	pOp = wmt_lib_get_free_op();
-
-	if (!pOp) {
-		WMT_DBG_FUNC("get_free_lxop fail\n");
-		return MTK_WCN_BOOL_FALSE;
-	}
-	pSignal = &pOp->signal;
-	pOp->op.opId = WMT_OPID_RESUME_DUMP_INFO;
-	pSignal->timeoutValue = 0;
-
-	bRet = wmt_lib_put_act_op(pOp);
-	if (bRet == MTK_WCN_BOOL_FALSE) {
-		WMT_WARN_FUNC("WMT_OPID_RESUME_DUMP_INFO failed\n");
-		return MTK_WCN_BOOL_FALSE;
-	}
-
-	return MTK_WCN_BOOL_TRUE;
 }
