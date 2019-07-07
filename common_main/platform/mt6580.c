@@ -924,14 +924,10 @@ static INT32 consys_emi_mpu_set_region_protection(VOID)
 #if CONSYS_EMI_MPU_SETTING
 	/*set MPU for EMI share Memory */
 	WMT_PLAT_PR_INFO("setting MPU for EMI share memory\n");
-#if defined(CONFIG_ARCH_MT6580)
 	emi_mpu_set_region_protection(gConEmiPhyBase + SZ_1M/2,
-			gConEmiPhyBase + SZ_1M - 1,
+			gConEmiPhyBase + gConEmiSize - 1,
 			6,
 			SET_ACCESS_PERMISSON(FORBIDDEN, NO_PROTECTION, FORBIDDEN, NO_PROTECTION));
-#else
-	WMT_PLAT_PR_WARN("not define platform config\n");
-#endif
 #endif
 	return 0;
 }
