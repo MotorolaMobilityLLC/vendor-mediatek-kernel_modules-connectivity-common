@@ -1185,8 +1185,9 @@ pwr_on_rty:
 	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WMT] = DRV_STS_FUNC_ON;
 
 	/* update blank status when ConnSys power on */
-	pWmtOp->au4OpData[0] = wmt_dev_get_blank_state();
-	opfunc_blank_status_ctrl(pWmtOp);
+//TINNO add P43 patch fix wifi turn on failed bug (ALPS04662156) begin:
+	wmt_blank_status_ctrl(wmt_dev_get_blank_state());
+//TINNO add P43 patch fix wifi turn on failed bug (ALPS04662156) end
 
 	/* What to do when state is changed from POWER_OFF to POWER_ON?
 	 * 1. STP driver does s/w reset
@@ -3531,15 +3532,18 @@ UINT32 wmt_core_get_blank_status(VOID)
 	return gMtkWmtCtx.wmtBlankStatus;
 }
 
-static INT32 opfunc_blank_status_ctrl(P_WMT_OP pWmtOp)
+//TINNO add P43 patch fix wifi turn on failed bug (ALPS04662156) begin:
+INT32 wmt_blank_status_ctrl(UINT32 on_off_flag)
+//TINNO add P43 patch fix wifi turn on failed bug (ALPS04662156) end
 {
 	INT32 iRet = 0;
 #ifdef CONFIG_MTK_CONNSYS_DEDICATED_LOG_PATH
 	UINT32 u4Res;
 	UINT32 evtLen;
 	UINT8 evtBuf[16] = { 0 };
-
-	WMT_BLANK_STATUS_CMD[5] = (pWmtOp->au4OpData[0]) ? 0x1 : 0x0;
+//TINNO add P43 patch fix wifi turn on failed bug (ALPS04662156) begin:
+	WMT_BLANK_STATUS_CMD[5] = (on_off_flag) ? 0x1 : 0x0;
+//TINNO add P43 patch fix wifi turn on failed bug (ALPS04662156) end
 
 	/* send command */
 	iRet = wmt_core_tx((PUINT8)WMT_BLANK_STATUS_CMD, osal_sizeof(WMT_BLANK_STATUS_CMD), &u4Res,
@@ -3567,6 +3571,13 @@ static INT32 opfunc_blank_status_ctrl(P_WMT_OP pWmtOp)
 #endif
 	return iRet;
 }
+
+//TINNO add P43 patch fix wifi turn on failed bug (ALPS04662156) begin:
+static INT32 opfunc_blank_status_ctrl(P_WMT_OP pWmtOp)
+{
+	return wmt_blank_status_ctrl(pWmtOp->au4OpData[0]);
+}
+//TINNO add P43 patch fix wifi turn on failed bug (ALPS04662156) end
 
 static INT32 opfunc_met_ctrl(P_WMT_OP pWmtOp)
 {
