@@ -373,7 +373,7 @@ static ssize_t wmt_dev_proc_for_aee_read(struct file *filp, char __user *buf, si
 	INT32 retval = 0;
 	UINT32 len = 0;
 
-	WMT_INFO_FUNC("%s: count %d pos %lld\n", __func__, count, *f_pos);
+	WMT_INFO_FUNC("%s: count %lu pos %lld\n", __func__, count, *f_pos);
 
 	if (osal_lock_sleepable_lock(&g_aee_read_lock)) {
 		WMT_ERR_FUNC("lock failed\n");
@@ -465,7 +465,7 @@ static ssize_t wmt_dev_proc_for_dump_info_read(struct file *filp, char __user *b
 	INT32 retval = 0;
 	UINT32 len = 0;
 
-	WMT_INFO_FUNC("%s: count %d pos %lld\n", __func__, count, *f_pos);
+	WMT_INFO_FUNC("%s: count %lu pos %lld\n", __func__, count, *f_pos);
 
 	if (osal_lock_sleepable_lock(&g_dump_info_read_lock)) {
 		WMT_ERR_FUNC("lock failed\n");
@@ -700,10 +700,10 @@ static UINT32 wmt_dev_tra_poll(VOID)
 	else
 		poll_during_time = 0xffffffff;
 
-	WMT_DBG_FUNC("**jiffies_to_mesecs(0xffffffff) = %lu\n", jiffies_to_msecs(0xffffffff));
+	WMT_DBG_FUNC("**jiffies_to_mesecs(0xffffffff) = %d\n", jiffies_to_msecs(0xffffffff));
 
 	if (jiffies_to_msecs(poll_during_time) < TIME_THRESHOLD_TO_TEMP_QUERY) {
-		WMT_DBG_FUNC("**poll_during_time = %lu < %lu, not to query\n",
+		WMT_DBG_FUNC("**poll_during_time = %d < %d, not to query\n",
 			     jiffies_to_msecs(poll_during_time), TIME_THRESHOLD_TO_TEMP_QUERY);
 		return -1;
 	}
@@ -728,7 +728,7 @@ static UINT32 wmt_dev_tra_poll(VOID)
 	}
 
 	if (during_count < COUNT_THRESHOLD_TO_TEMP_QUERY) {
-		WMT_DBG_FUNC("**during_count = %lu < %lu, not to query\n", during_count,
+		WMT_DBG_FUNC("**during_count = %lu < %d, not to query\n", during_count,
 				COUNT_THRESHOLD_TO_TEMP_QUERY);
 		return -2;
 	}
@@ -740,7 +740,7 @@ static UINT32 wmt_dev_tra_poll(VOID)
 		(*mtk_wcn_wlan_bus_tx_cnt_clr)();
 	else
 		WMT_ERR_FUNC("WMT-DEV:error chip type(%d)\n", chip_type);
-	WMT_INFO_FUNC("**poll_during_time = %lu > %lu, during_count = %lu > %lu, query\n",
+	WMT_INFO_FUNC("**poll_during_time = %d > %d, during_count = %d > %d, query\n",
 		      jiffies_to_msecs(poll_during_time), TIME_THRESHOLD_TO_TEMP_QUERY,
 		      jiffies_to_msecs(during_count), COUNT_THRESHOLD_TO_TEMP_QUERY);
 
@@ -829,7 +829,7 @@ LONG wmt_dev_tm_temp_query(VOID)
 			query_cond = 1;
 
 			WMT_INFO_FUNC
-				("It is long time (prev(%ld), now(%ld), > %d sec) not to query, query temp again..\n",
+				("It is long time (prev(%lu), now(%lu), > %d sec) not to query, query temp again..\n",
 				 query_time.tv_sec, now_time.tv_sec, REFRESH_TIME);
 			for (index = 0; index < HISTORY_NUM; index++)
 				temp_table[index] = 99;
@@ -889,7 +889,7 @@ LONG wmt_dev_tm_temp_query(VOID)
 		osal_lock_unsleepable_lock(&g_temp_query_spinlock);
 		WMT_DBG_FUNC("[Thermal] s_idx_temp_table = %d, idx_temp_table = %d\n",
 			s_idx_temp_table, idx_temp_table);
-		WMT_DBG_FUNC("[Thermal] now.time = %d, s_query.time = %d, query.time = %d, REFRESH_TIME = %d\n",
+		WMT_DBG_FUNC("[Thermal] now.time = %lu, s_query.time = %lu, query.time = %lu, REFRESH_TIME = %d\n",
 			now_time.tv_sec, s_query_time.tv_sec, query_time.tv_sec, REFRESH_TIME);
 
 		WMT_DBG_FUNC("[0] = %d, [1] = %d, [2] = %d\n----\n",
@@ -908,7 +908,7 @@ ssize_t WMT_write(struct file *filp, const char __user *buf, size_t count, loff_
 	UINT8 wrBuf[NAME_MAX + 1] = { 0 };
 	INT32 copySize = (count < NAME_MAX) ? count : NAME_MAX;
 
-	WMT_LOUD_FUNC("count:%d copySize:%d\n", count, copySize);
+	WMT_LOUD_FUNC("count:%lu copySize:%d\n", count, copySize);
 
 	if (copySize > 0) {
 		if (copy_from_user(wrBuf, buf, copySize)) {
@@ -1134,7 +1134,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			pOp->op.au4OpData[1] = (SIZE_T)&gLpbkBuf[0];	/* packet buffer pointer */
 			memcpy(&gLpbkBufLog, &gLpbkBuf[((effectiveLen >= 4) ? effectiveLen - 4 : 0)], 4);
 			pSignal->timeoutValue = MAX_EACH_WMT_CMD;
-			WMT_INFO_FUNC("OPID(%d) type(%d) start\n", pOp->op.opId, pOp->op.au4OpData[0]);
+			WMT_INFO_FUNC("OPID(%d) type(%lu) start\n", pOp->op.opId, pOp->op.au4OpData[0]);
 			if (DISABLE_PSM_MONITOR()) {
 				WMT_ERR_FUNC("wake up failed,OPID(%d) type(%d) abort\n",
 					     pOp->op.opId, pOp->op.au4OpData[0]);
@@ -1280,7 +1280,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		break;
 	case WMT_IOCTL_SET_PATCH_NUM:
 		if (arg == 0 || arg > MAX_PATCH_NUM) {
-			WMT_ERR_FUNC("patch num(%d) == 0 or > %d!\n", arg, MAX_PATCH_NUM);
+			WMT_ERR_FUNC("patch num(%lu) == 0 or > %d!\n", arg, MAX_PATCH_NUM);
 			iRet = -1;
 			break;
 		}
@@ -1494,7 +1494,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		break;
 	case WMT_IOCTL_GET_EMI_PHY_SIZE:
 		do {
-			WMT_INFO_FUNC("gConEmiSize %p\n", gConEmiSize);
+			WMT_INFO_FUNC("gConEmiSize %llu\n", gConEmiSize);
 			return (UINT32)gConEmiSize;
 		} while (0);
 		break;
@@ -1658,7 +1658,7 @@ static INT32 WMT_open(struct inode *inode, struct file *file)
 	WMT_INFO_FUNC("major %d minor %d (pid %d)\n", imajor(inode), iminor(inode), current->pid);
 	ret = wait_event_timeout(gWmtInitWq, gWmtInitStatus == WMT_INIT_DONE, msecs_to_jiffies(WMT_DEV_INIT_TO_MS));
 	if (!ret) {
-		WMT_WARN_FUNC("wait_event_timeout (%d)ms,(%d)jiffies,return -EIO\n",
+		WMT_WARN_FUNC("wait_event_timeout (%d)ms,(%lu)jiffies,return -EIO\n",
 			      WMT_DEV_INIT_TO_MS, msecs_to_jiffies(WMT_DEV_INIT_TO_MS));
 		return -EIO;
 	}
@@ -1688,14 +1688,14 @@ static INT32 WMT_mmap(struct file *pFile, struct vm_area_struct *pVma)
 	unsigned long bufId = pVma->vm_pgoff;
 	P_CONSYS_EMI_ADDR_INFO emiInfo = mtk_wcn_consys_soc_get_emi_phy_add();
 
-	WMT_INFO_FUNC("WMT_mmap start:%p end:%p size: %p buffer id=%d\n",
+	WMT_INFO_FUNC("WMT_mmap start:%lu end:%lu size: %lu buffer id=%lu\n",
 		pVma->vm_start, pVma->vm_end,
 		pVma->vm_end - pVma->vm_start, bufId);
 
 	if (bufId == 0) {
 		if (pVma->vm_end - pVma->vm_start > gConEmiSize)
 			return -1;
-		WMT_INFO_FUNC("WMT_mmap size: %p\n", pVma->vm_end - pVma->vm_start);
+		WMT_INFO_FUNC("WMT_mmap size: %lu\n", pVma->vm_end - pVma->vm_start);
 		if (remap_pfn_range(pVma, pVma->vm_start, gConEmiPhyBase >> PAGE_SHIFT,
 			pVma->vm_end - pVma->vm_start, pVma->vm_page_prot))
 			return -EAGAIN;
@@ -1705,7 +1705,7 @@ static INT32 WMT_mmap(struct file *pFile, struct vm_area_struct *pVma)
 		if (emiInfo->emi_direct_path_size == 0 ||
 		    pVma->vm_end - pVma->vm_start > emiInfo->emi_direct_path_size)
 			return -1;
-		WMT_INFO_FUNC("MD direct path size=%d map size=%p\n",
+		WMT_INFO_FUNC("MD direct path size=%d map size=%lu\n",
 			emiInfo->emi_direct_path_size,
 			pVma->vm_end - pVma->vm_start);
 		if (remap_pfn_range(pVma, pVma->vm_start,
