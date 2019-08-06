@@ -630,6 +630,7 @@ VOID wmt_dev_patch_info_free(VOID)
 {
 	kfree(pPatchInfo);
 	pPatchInfo = NULL;
+	wmt_lib_set_patch_info(NULL);
 }
 
 MTK_WCN_BOOL wmt_dev_is_file_exist(PUINT8 pFileName)
