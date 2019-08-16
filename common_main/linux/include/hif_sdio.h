@@ -220,6 +220,7 @@ typedef enum {
 #define CLTCTX_BLK_SZ(ctx) (((ctx) >> 0) & 0xFF00)
 #define CLTCTX_IDX(ctx) ((ctx) & 0xF)
 #define CLTCTX_IDX_VALID(idx) ((idx >= 0) && (idx < CFG_CLIENT_COUNT))
+#define CLTCTX_UIDX_VALID(idx) (idx < CFG_CLIENT_COUNT)
 
 
 /*!
@@ -243,7 +244,7 @@ typedef enum {
 #define DFT_TAG         "[HIF-SDIO]"
 #endif
 
-extern UINT32 gHifSdioDbgLvl;
+extern INT32 gHifSdioDbgLvl;
 
 
 #define HIF_SDIO_LOUD_FUNC(fmt, arg...)	\

@@ -32,7 +32,7 @@
 #define STP_DEL_SIZE   2	/* STP delimiter length */
 #define STP_MAX_TX_TIMEOUT_LOOP 3
 
-UINT32 gStpDbgLvl = STP_LOG_INFO;
+INT32 gStpDbgLvl = STP_LOG_INFO;
 unsigned int chip_reset_only;
 INT32 wmt_dbg_sdio_retry_ctrl = 1;
 
@@ -242,7 +242,7 @@ static INT32 stp_ctx_unlock(mtkstp_context_struct *pctx)
 }
 
 
-MTK_WCN_BOOL mtk_wcn_stp_dbg_level(UINT32 dbglevel)
+MTK_WCN_BOOL mtk_wcn_stp_dbg_level(INT32 dbglevel)
 {
 	if (dbglevel >= 0 && dbglevel <= 4) {
 		gStpDbgLvl = dbglevel;
@@ -3181,7 +3181,7 @@ VOID mtk_wcn_stp_flush_rx_queue(UINT32 type)
 {
 	INT32 ret = 0;
 
-	if (type >= 0 && type < MTKSTP_MAX_TASK_NUM) {
+	if (type < MTKSTP_MAX_TASK_NUM) {
 		ret = osal_lock_unsleepable_lock(&stp_core_ctx.ring[type].mtx);
 		if (ret != 0) {
 			STP_WARN_FUNC("stp context lock failed, ret=%d\n", ret);
