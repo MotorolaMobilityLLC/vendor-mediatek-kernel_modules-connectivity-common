@@ -443,21 +443,29 @@ INT32 wmt_lib_deinit(VOID)
 {
 	INT32 iRet;
 	P_DEV_WMT pDevWmt;
-	P_OSAL_THREAD pThraed;
+	P_OSAL_THREAD pThread;
+	P_OSAL_THREAD pWorkerThread;
 	INT32 i;
 	INT32 iResult;
 	struct vendor_patch_table *table = &(gDevWmt.patch_table);
 
 	pDevWmt = &gDevWmt;
-	pThraed = &gDevWmt.thread;
+	pThread = &gDevWmt.thread;
+	pWorkerThread = &gDevWmt.worker_thread;
 	iResult = 0;
 
 	/* stop->deinit->destroy */
 
 	/* 1. stop: stop running mtk_wmtd */
-	iRet = osal_thread_stop(pThraed);
+	iRet = osal_thread_stop(pThread);
 	if (iRet) {
-		WMT_ERR_FUNC("osal_thread_stop(0x%p) fail(%d)\n", pThraed, iRet);
+		WMT_ERR_FUNC("osal_thread_stop(0x%p) fail(%d)\n", pThread, iRet);
+		iResult += 1;
+	}
+
+	iRet = osal_thread_stop(pWorkerThread);
+	if (iRet) {
+		WMT_ERR_FUNC("osal_thread_stop(0x%p) fail(%d)\n", pWorkerThread, iRet);
 		iResult += 1;
 	}
 
@@ -508,16 +516,22 @@ INT32 wmt_lib_deinit(VOID)
 	}
 
 	/* 3. destroy */
-	iRet = osal_thread_destroy(pThraed);
+	iRet = osal_thread_destroy(pThread);
 	if (iRet) {
-		WMT_ERR_FUNC("osal_thread_stop(0x%p) fail(%d)\n", pThraed, iRet);
+		WMT_ERR_FUNC("osal_thread_stop(0x%p) fail(%d)\n", pThread, iRet);
 		iResult += 16;
+	}
+
+	iRet = osal_thread_destroy(pWorkerThread);
+	if (iRet) {
+		WMT_ERR_FUNC("osal_thread_stop(0x%p) fail(%d)\n", pWorkerThread, iRet);
+		iResult += 32;
 	}
 
 	iRet = wmt_conf_deinit();
 	if (iRet) {
 		WMT_ERR_FUNC("wmt_conf_deinit fail(%d)\n", iRet);
-		iResult += 32;
+		iResult += 64;
 	}
 
 	osal_memset(&gDevWmt, 0, sizeof(gDevWmt));
@@ -1401,6 +1415,12 @@ static INT32 wmtd_worker_thread(void *pvData)
 
 	for (;;) {
 		osal_thread_wait_for_event(&pWmtDev->worker_thread, pEvent, wmt_lib_worker_wait_event_checker);
+
+		if (osal_thread_should_stop(&pWmtDev->worker_thread)) {
+			WMT_INFO_FUNC("wmtd worker thread should stop now...\n");
+			/* TODO: clean up active opQ */
+			break;
+		}
 
 		/* get Op from activeWorkerQ */
 		pOp = wmt_lib_get_op(&pWmtDev->rWorkerOpQ);
