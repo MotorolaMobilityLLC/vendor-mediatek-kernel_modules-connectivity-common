@@ -131,7 +131,7 @@ static MTK_WCN_BOOL mtk_wcn_wmt_func_ctrl(ENUM_WMTDRV_TYPE_T type, ENUM_WMT_OPID
 	MTK_WCN_BOOL bOffload;
 	MTK_WCN_BOOL bExplicitPwrOn;
 
-	bOffload = (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC && type == WMTDRV_TYPE_WIFI);
+	bOffload = (type == WMTDRV_TYPE_WIFI);
 	bExplicitPwrOn = (bOffload && opId == WMT_OPID_FUNC_ON &&
 				wmt_lib_get_drv_status(WMTDRV_TYPE_WMT) != DRV_STS_FUNC_ON);
 
