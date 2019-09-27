@@ -3402,6 +3402,9 @@ INT32 mtk_wcn_soc_rom_patch_dwn(UINT32 ip_ver)
 		if (iRet > 0) {
 			WMT_INFO_FUNC("There is no need to download (%d) type patch!\n", type);
 			continue;
+		} else if (iRet < 0) {
+			WMT_ERR_FUNC("failed to get patch (type: %d, ret: %d)\n", type, iRet);
+			goto done;
 		}
 
 		/* <2.2> read patch content */
