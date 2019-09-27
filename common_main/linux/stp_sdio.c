@@ -3223,7 +3223,7 @@ ssize_t stp_sdio_own_write(struct file *filp, const char __user *buffer, size_t 
 	PINT8 pDelimiter = " \t";
 	INT32 x = 0;
 	INT8 buf[128] = { 0 };
-	LONG res;
+	LONG res = 0;
 
 	if (len >= osal_sizeof(buf)) {
 		STPSDIO_PR_ERR("input handling fail!\n");
