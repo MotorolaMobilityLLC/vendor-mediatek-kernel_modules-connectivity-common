@@ -2641,7 +2641,8 @@ static INT32 wmt_stp_init_wifi_ant_swap(VOID)
 	INT32 iRet;
 	unsigned long addr = 0;
 	WMT_GEN_CONF *pWmtGenConf;
-	UINT8 ant_swap_mode = 0;
+	UINT8 ant_swap_mode, polarity, ant_sel;
+
 	/*Get wmt config */
 	iRet = wmt_core_ctrl(WMT_CTRL_GET_WMT_CONF, &addr, 0);
 	if (iRet) {
@@ -2660,10 +2661,11 @@ static INT32 wmt_stp_init_wifi_ant_swap(VOID)
 	}
 
 	ant_swap_mode = pWmtGenConf->wifi_ant_swap_mode;
+	polarity = pWmtGenConf->wifi_main_ant_polarity;
+	ant_sel = pWmtGenConf->wifi_ant_swap_ant_sel_gpio;
 
 	WMT_INFO_FUNC("ant swap mode = %d, main_polarity = %d, ant_sel = %d\n",
-		ant_swap_mode, pWmtGenConf->wifi_main_ant_polarity,
-		pWmtGenConf->wifi_ant_swap_ant_sel_gpio);
+		ant_swap_mode, polarity, ant_sel);
 
 	if (ant_swap_mode <= 0 || ant_swap_mode > 2)
 		return 0;
@@ -2672,14 +2674,22 @@ static INT32 wmt_stp_init_wifi_ant_swap(VOID)
 		mtk_consys_is_ant_swap_enable_by_hwid() == 0)
 		return 0;
 
-	wifi_ant_swap_table[0].cmd[6] = pWmtGenConf->wifi_main_ant_polarity;
-	wifi_ant_swap_table[0].cmd[7] = pWmtGenConf->wifi_ant_swap_ant_sel_gpio;
+	wifi_ant_swap_table[0].cmd[6] = polarity;
+
+	if (ant_sel > 0)
+		wifi_ant_swap_table[0].cmd[7] = ant_sel;
+	else {
+		/* backward compatible */
+		wifi_ant_swap_table[0].cmdSz = sizeof(WMT_WIFI_ANT_SWAP_CMD) - 1;
+		wifi_ant_swap_table[0].cmd[2] = 3; /* length */
+		wifi_ant_swap_table[0].cmd[4] = 6; /* op id */
+		wifi_ant_swap_table[0].evt[5] = 6; /* op id */
+	}
 
 	iRet = wmt_core_init_script(wifi_ant_swap_table, ARRAY_SIZE(wifi_ant_swap_table));
 
 	return iRet;
 }
-
 
 #if CFG_WMT_SDIO_DRIVING_SET
 static INT32 mtk_wcn_soc_set_sdio_driving(void)
