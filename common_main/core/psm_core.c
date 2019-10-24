@@ -354,8 +354,12 @@ static INT32 _stp_psm_clean_up_redundant_active_op(P_OSAL_OP_Q pOpQ)
 				RB_PUT(pFreeOpQ, pOp);
 			} else if (prev_opId == prev_prev_opId) {
 				RB_GET(pOpQ, pOp);
-				STP_PSM_PR_DBG("redundant opId(%d) found, remove it\n",
+				if (!pOp) {
+					STP_PSM_PR_DBG("RB_GET pOp == NULL\n");
+				} else {
+					STP_PSM_PR_DBG("redundant opId(%d) found, remove it\n",
 						 pOp->op.opId);
+				}
 				RB_PUT(pFreeOpQ, pOp);
 			} else
 			    if ((prev_opId == STP_OPID_PSM_WAKEUP
