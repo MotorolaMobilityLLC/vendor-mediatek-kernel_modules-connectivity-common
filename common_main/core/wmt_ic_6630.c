@@ -2003,7 +2003,7 @@ done:
 static INT32 wmt_stp_wifi_lte_coex(VOID)
 {
 	INT32 iRet;
-	ULONG addr;
+	ULONG addr = 0;
 	WMT_GEN_CONF *pWmtGenConf;
 
 	/*Get wmt config */
