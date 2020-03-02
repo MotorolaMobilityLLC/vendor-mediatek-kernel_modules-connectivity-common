@@ -309,17 +309,17 @@ void wmt_step_do_actions(enum step_trigger_point_id tp_id);
 void wmt_step_func_crtl_do_actions(ENUM_WMTDRV_TYPE_T type, ENUM_WMT_OPID_T opId);
 void wmt_step_command_timeout_do_actions(char *reason);
 #ifdef CFG_WMT_STEP
-#define WMT_STEP_INIT_FUNC wmt_step_init
-#define WMT_STEP_DEINIT_FUNC wmt_step_deinit
-#define WMT_STEP_DO_ACTIONS_FUNC wmt_step_do_actions
-#define WMT_STEP_FUNC_CTRL_DO_ACTIONS_FUNC wmt_step_func_crtl_do_actions
-#define WMT_STEP_COMMAND_TIMEOUT_DO_ACTIONS_FUNC wmt_step_command_timeout_do_actions
+#define WMT_STEP_INIT_FUNC() wmt_step_init()
+#define WMT_STEP_DEINIT_FUNC() wmt_step_deinit()
+#define WMT_STEP_DO_ACTIONS_FUNC(tp) wmt_step_do_actions(tp)
+#define WMT_STEP_FUNC_CTRL_DO_ACTIONS_FUNC(type, id) wmt_step_func_crtl_do_actions(type, id)
+#define WMT_STEP_COMMAND_TIMEOUT_DO_ACTIONS_FUNC(reason) wmt_step_command_timeout_do_actions(reason)
 #else
-#define WMT_STEP_INIT_FUNC
-#define WMT_STEP_DEINIT_FUNC
-#define WMT_STEP_DO_ACTIONS_FUNC
-#define WMT_STEP_FUNC_CTRL_DO_ACTIONS_FUNC
-#define WMT_STEP_COMMAND_TIMEOUT_DO_ACTIONS_FUNC
+#define WMT_STEP_INIT_FUNC()
+#define WMT_STEP_DEINIT_FUNC()
+#define WMT_STEP_DO_ACTIONS_FUNC(tp)
+#define WMT_STEP_FUNC_CTRL_DO_ACTIONS_FUNC(type, id)
+#define WMT_STEP_COMMAND_TIMEOUT_DO_ACTIONS_FUNC(reason)
 #endif
 
 /********************************************************************************
