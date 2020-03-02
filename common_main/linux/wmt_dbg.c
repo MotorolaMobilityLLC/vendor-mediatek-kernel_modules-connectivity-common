@@ -1020,7 +1020,7 @@ INT32 wmt_dbg_ut_test(INT32 par1, INT32 par2, INT32 par3)
 
 #if CFG_CORE_INTERNAL_TXRX
 struct lpbk_package {
-	LONG payload_length;
+	UINT32 payload_length;
 	UINT8 out_payload[2048];
 	UINT8 in_payload[2048];
 };
