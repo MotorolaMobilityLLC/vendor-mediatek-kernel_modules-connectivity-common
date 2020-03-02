@@ -770,3 +770,9 @@ INT32 mtk_consys_is_connsys_reg(UINT32 addr)
 	else
 		return 0;
 }
+
+VOID mtk_consys_set_mcif_mpu_protection(MTK_WCN_BOOL enable)
+{
+	if (wmt_consys_ic_ops->consys_ic_set_mcif_emi_mpu_protection)
+		wmt_consys_ic_ops->consys_ic_set_mcif_emi_mpu_protection(enable);
+}
