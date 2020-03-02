@@ -78,7 +78,11 @@ endif
 #obj-y   +=  common_main/
 #obj-y   +=  common_detect/
 
-
+ifneq ($(filter MT6631,$(MTK_CONSYS_ADIE)),)
+    ccflags-y += -D CONSYS_PMIC_CTRL_6635=0
+else
+    ccflags-y += -D CONSYS_PMIC_CTRL_6635=1
+endif
 
 ###############################################################################
 MODULE_NAME := wmt_drv
