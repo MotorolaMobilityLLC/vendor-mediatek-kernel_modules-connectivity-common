@@ -1174,6 +1174,8 @@ pwr_on_rty:
 
 		/* deinit stp */
 		iRet = wmt_core_stp_deinit();
+		if (iRet)
+			WMT_ERR_FUNC("WMT-CORE: wmt_core_stp_deinit() failed.\n");
 		iRet = opfunc_pwr_off(pWmtOp);
 		if (iRet)
 			WMT_ERR_FUNC("WMT-CORE: opfunc_pwr_off fail during pwr_on retry\n");
