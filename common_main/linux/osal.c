@@ -1575,7 +1575,7 @@ VOID osal_op_history_init(struct osal_op_history *log_history, INT32 queue_size)
 		return;
 
 	/* queue_size must be power of 2 */
-	ring_cache_init(
+	ring_init(
 		&log_history->queue,
 		queue_size,
 		0,
@@ -1586,8 +1586,8 @@ VOID osal_op_history_init(struct osal_op_history *log_history, INT32 queue_size)
 VOID osal_op_history_print(struct osal_op_history *log_history, PINT8 name)
 {
 	struct osal_op_history_entry *entry;
-	struct ring_cache_segment seg;
-	struct ring_cache *ring_buffer;
+	struct ring_segment seg;
+	struct ring *ring_buffer;
 	INT32 index = 0;
 	ULONG flags;
 
@@ -1599,8 +1599,8 @@ VOID osal_op_history_print(struct osal_op_history *log_history, PINT8 name)
 	spin_lock_irqsave(&(log_history->lock), flags);
 	ring_buffer = &log_history->ring_buffer;
 
-	RING_CACHE_READ_FOR_EACH_ITEM(RING_CACHE_SIZE(ring_buffer), seg, ring_buffer) {
-		index = seg.ring_cache_pt - ring_buffer->base;
+	RING_READ_FOR_EACH_ITEM(RING_SIZE(ring_buffer), seg, ring_buffer) {
+		index = seg.ring_pt - ring_buffer->base;
 		entry = &log_history->queue[index];
 		pr_info("(%llu.%06lu) %s: pOp(%p):%u(%d)-%x-%zx,%zx,%zx,%zx\n",
 			entry->ts,
@@ -1621,7 +1621,7 @@ VOID osal_op_history_print(struct osal_op_history *log_history, PINT8 name)
 VOID osal_op_history_save(struct osal_op_history *log_history, P_OSAL_OP pOp)
 {
 	struct osal_op_history_entry *entry = NULL;
-	struct ring_cache_segment seg;
+	struct ring_segment seg;
 	INT32 index;
 	UINT64 sec = 0;
 	ULONG usec = 0;
@@ -1633,13 +1633,13 @@ VOID osal_op_history_save(struct osal_op_history *log_history, P_OSAL_OP pOp)
 	osal_get_local_time(&sec, &usec);
 
 	spin_lock_irqsave(&(log_history->lock), flags);
-	RING_CACHE_OVERWRITE_FOR_EACH(1, seg, &log_history->ring_buffer) {
-		index = seg.ring_cache_pt - log_history->ring_buffer.base;
+	RING_OVERWRITE_FOR_EACH(1, seg, &log_history->ring_buffer) {
+		index = seg.ring_pt - log_history->ring_buffer.base;
 		entry = &log_history->queue[index];
 	}
 
 	if (entry == NULL) {
-		pr_info("Entry is null, size %d\n", RING_CACHE_SIZE(&log_history->ring_buffer));
+		pr_info("Entry is null, size %d\n", RING_SIZE(&log_history->ring_buffer));
 		spin_unlock_irqrestore(&(log_history->lock), flags);
 		return;
 	}
