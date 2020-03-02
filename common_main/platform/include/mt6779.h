@@ -203,6 +203,10 @@
 /*CONSYS_MCU_CFG_DBG_LP_INFO*/
 #define CONN_CFG_ON_CONN_ON_HOST_MAILBOX_MCU_ADDR           (conn_reg.mcu_cfg_on_base + 0x104)
 #define CONN_CFG_ON_CONN_ON_MON_CTL_ADDR                    (conn_reg.mcu_top_misc_on_base + 0x320)
+#define CONN_CFG_ON_CONN_ON_MON_SEL0_ADDR                   (conn_reg.mcu_top_misc_on_base + 0x328)
+#define CONN_CFG_ON_CONN_ON_MON_SEL1_ADDR                   (conn_reg.mcu_top_misc_on_base + 0x32C)
+#define CONN_CFG_ON_CONN_ON_MON_SEL2_ADDR                   (conn_reg.mcu_top_misc_on_base + 0x330)
+#define CONN_CFG_ON_CONN_ON_MON_SEL3_ADDR                   (conn_reg.mcu_top_misc_on_base + 0x334)
 #define CONN_CFG_ON_CONN_ON_DBGSEL_ADDR                     (conn_reg.mcu_top_misc_on_base + 0x310)
 #define CONN_CFG_ON_CONN_ON_MON_FLAG_RECORD_ADDR            (conn_reg.mcu_top_misc_on_base + 0x340)
 #define CONN_CFG_ON_CONN_ON_MON_FLAG_RECORD_MAPPING_AP_ADDR (0x180c1340)
