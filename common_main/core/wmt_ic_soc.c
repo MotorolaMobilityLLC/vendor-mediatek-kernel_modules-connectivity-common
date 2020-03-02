@@ -2054,8 +2054,8 @@ static MTK_WCN_BOOL mtk_wcn_soc_trigger_assert(VOID)
 
 static INT32 mtk_wcn_soc_ver_check(VOID)
 {
-	UINT32 hw_ver;
-	UINT32 fw_ver;
+	UINT32 hw_ver = 0;
+	UINT32 fw_ver = 0;
 	INT32 iret;
 	const WMT_IC_INFO_S *p_info;
 	unsigned long ctrlPa1;
@@ -2150,7 +2150,7 @@ static const WMT_IC_INFO_S *mtk_wcn_soc_find_wmt_ic_info(const UINT32 hw_ver)
 static INT32 wmt_stp_wifi_lte_coex(VOID)
 {
 	INT32 iRet;
-	unsigned long addr;
+	unsigned long addr = 0;
 	WMT_GEN_CONF *pWmtGenConf;
 
 	/*Get wmt config */
@@ -2226,7 +2226,7 @@ static INT32 wmt_stp_wifi_lte_coex(VOID)
 static INT32 wmt_stp_init_coex(VOID)
 {
 	INT32 iRet;
-	unsigned long addr;
+	unsigned long addr = 0;
 	WMT_GEN_CONF *pWmtGenConf;
 
 #define COEX_WMT  0
@@ -2401,7 +2401,7 @@ static INT32 wmt_stp_init_coex(VOID)
 static INT32 wmt_stp_init_epa(VOID)
 {
 	INT32 iRet;
-	unsigned long addr;
+	unsigned long addr = 0;
 	WMT_GEN_CONF *pWmtGenConf;
 
 	/*Get wmt config */
@@ -2437,7 +2437,7 @@ static INT32 wmt_stp_init_epa(VOID)
 static INT32 wmt_stp_init_epa_elna(VOID)
 {
 	INT32 iRet;
-	unsigned long addr;
+	unsigned long addr = 0;
 	WMT_GEN_CONF *pWmtGenConf;
 	struct init_script script[1];
 	struct WMT_BYTE_ARRAY *ba;
@@ -2511,7 +2511,7 @@ static INT32 wmt_stp_init_epa_elna_invert_cr(VOID)
 {
 	INT32 iRet;
 	UINT32 uVal = 0;
-	unsigned long addr;
+	unsigned long addr = 0;
 	WMT_GEN_CONF *pWmtGenConf;
 	UINT32 default_invert_cr[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 	UINT32 default_invert_bit[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -2639,7 +2639,7 @@ static INT32 wmt_stp_init_epa_elna_invert_cr(VOID)
 static INT32 wmt_stp_init_wifi_ant_swap(VOID)
 {
 	INT32 iRet;
-	unsigned long addr;
+	unsigned long addr = 0;
 	WMT_GEN_CONF *pWmtGenConf;
 	UINT8 ant_swap_mode = 0;
 	/*Get wmt config */
@@ -2686,7 +2686,7 @@ static INT32 mtk_wcn_soc_set_sdio_driving(void)
 {
 	INT32 ret = 0;
 
-	unsigned long addr;
+	unsigned long addr = 0;
 	WMT_GEN_CONF *pWmtGenConf;
 	UINT32 drv_val = 0;
 
