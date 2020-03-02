@@ -47,6 +47,7 @@
 #include "mt6765.h"
 #include "mtk_wcn_consys_hw.h"
 #include "wmt_ic.h"
+#include "wmt_lib.h"
 
 #ifdef CONFIG_MTK_EMI
 #include <mt_emi_api.h>
@@ -737,16 +738,20 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 				WMT_PLAT_DBG_FUNC("enable VCN18 ok\n");
 		}
 
-		KERNEL_upmu_set_reg_value(MT6357_LDO_VCN33_OP_EN, 0x1);
-		if (reg_VCN33_BT) {
-			regulator_set_voltage(reg_VCN33_BT, 3300000, 3300000);
-			if (regulator_enable(reg_VCN33_BT))
-				WMT_PLAT_ERR_FUNC("WMT do BT PMIC on fail!\n");
-		}
-
+		if (!(wmt_lib_get_ext_ldo())) {
+			KERNEL_upmu_set_reg_value(MT6357_LDO_VCN33_OP_EN, 0x1);
+			if (reg_VCN33_BT) {
+				regulator_set_voltage(reg_VCN33_BT, 3300000, 3300000);
+				if (regulator_enable(reg_VCN33_BT))
+					WMT_PLAT_ERR_FUNC("WMT do BT PMIC on fail!\n");
+			}
+		} else
+			WMT_PLAT_INFO_FUNC("VCN33 uses external LDO!\n");
 	} else {
-		if (reg_VCN33_BT)
-			regulator_disable(reg_VCN33_BT);
+		if (!(wmt_lib_get_ext_ldo())) {
+			if (reg_VCN33_BT)
+				regulator_disable(reg_VCN33_BT);
+		}
 
 		/*AP power off MT6351L VCN_1V8 LDO */
 		if (reg_VCN18) {

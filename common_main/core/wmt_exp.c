@@ -743,6 +743,12 @@ UINT32 mtk_wmt_get_gps_lna_pin_num(VOID)
 }
 EXPORT_SYMBOL(mtk_wmt_get_gps_lna_pin_num);
 
+VOID mtk_wmt_set_ext_ldo(UINT32 flag)
+{
+	wmt_lib_set_ext_ldo(flag);
+}
+EXPORT_SYMBOL(mtk_wmt_set_ext_ldo);
+
 INT32 mtk_wmt_gps_mcu_ctrl(PUINT8 p_tx_data_buf, UINT32 tx_data_len, PUINT8 p_rx_data_buf,
 			   UINT32 rx_data_buf_len, PUINT32 p_rx_data_len)
 {

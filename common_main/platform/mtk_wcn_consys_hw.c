@@ -285,11 +285,11 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 
 	if (on) {
 		WMT_PLAT_DBG_FUNC("++\n");
-		if (wmt_consys_ic_ops->consys_ic_set_if_pinmux)
-			wmt_consys_ic_ops->consys_ic_set_if_pinmux(ENABLE);
-
 		if (wmt_consys_ic_ops->consys_ic_hw_vcn18_ctrl)
 			wmt_consys_ic_ops->consys_ic_hw_vcn18_ctrl(ENABLE);
+
+		if (wmt_consys_ic_ops->consys_ic_set_if_pinmux)
+			wmt_consys_ic_ops->consys_ic_set_if_pinmux(ENABLE);
 
 		udelay(150);
 
@@ -360,11 +360,12 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 			if (wmt_consys_ic_ops->consys_ic_hw_vcn28_ctrl)
 				wmt_consys_ic_ops->consys_ic_hw_vcn28_ctrl(DISABLE);
 		}
-		if (wmt_consys_ic_ops->consys_ic_hw_vcn18_ctrl)
-			wmt_consys_ic_ops->consys_ic_hw_vcn18_ctrl(DISABLE);
 
 		if (wmt_consys_ic_ops->consys_ic_set_if_pinmux)
 			wmt_consys_ic_ops->consys_ic_set_if_pinmux(DISABLE);
+
+		if (wmt_consys_ic_ops->consys_ic_hw_vcn18_ctrl)
+			wmt_consys_ic_ops->consys_ic_hw_vcn18_ctrl(DISABLE);
 	}
 	WMT_PLAT_WARN_FUNC("CONSYS-HW-REG-CTRL(0x%08x),finish\n", on);
 	return iRet;
