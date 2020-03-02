@@ -299,22 +299,8 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 				wmt_consys_ic_ops->consys_ic_clock_buffer_ctrl(ENABLE);
 		}
 
-		if (co_clock_type) {
-			/*if co-clock mode: */
-			/*2.set VCN28 to SW control mode (with PMIC_WRAP API) */
-			/*turn on VCN28 LDO only when FMSYS is activated"  */
-			if (wmt_consys_ic_ops->consys_ic_vcn28_hw_mode_ctrl)
-				wmt_consys_ic_ops->consys_ic_vcn28_hw_mode_ctrl(DISABLE);
-		} else {
-			/*if NOT co-clock: */
-			/*2.1.switch VCN28 to HW control mode (with PMIC_WRAP API) */
-			/*2.2.turn on VCN28 LDO (with PMIC_WRAP API)" */
-			/*fix vcn28 not balance warning */
-			if (wmt_consys_ic_ops->consys_ic_vcn28_hw_mode_ctrl)
-				wmt_consys_ic_ops->consys_ic_vcn28_hw_mode_ctrl(ENABLE);
-			if (wmt_consys_ic_ops->consys_ic_hw_vcn28_ctrl)
-				wmt_consys_ic_ops->consys_ic_hw_vcn28_ctrl(ENABLE);
-		}
+		if (wmt_consys_ic_ops->consys_ic_hw_vcn28_ctrl)
+			wmt_consys_ic_ops->consys_ic_hw_vcn28_ctrl(ENABLE);
 
 		if (wmt_consys_ic_ops->consys_ic_hw_reset_bit_set)
 			wmt_consys_ic_ops->consys_ic_hw_reset_bit_set(ENABLE);
