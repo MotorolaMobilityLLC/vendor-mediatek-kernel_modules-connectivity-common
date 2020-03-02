@@ -1165,7 +1165,9 @@ static INT32 wmt_ctrl_trg_assert(P_WMT_CTRL_DATA pWmtCtrlData)
 	keyword = (PUINT8) pWmtCtrlData->au4CtrlData[2];
 	WMT_INFO_FUNC("wmt-ctrl:drv_type(%d),reason(%d),keyword(%s)\n", drv_type, reason, keyword);
 
-	if (mtk_wcn_stp_get_wmt_trg_assert() == 0) {
+	if (wmt_dev_is_close())
+		WMT_INFO_FUNC("WMT is closing, don't trigger assert\n");
+	else if (mtk_wcn_stp_get_wmt_trg_assert() == 0) {
 		mtk_wcn_stp_dbg_dump_package();
 		mtk_wcn_stp_set_wmt_trg_assert(1);
 		mtk_wcn_stp_assert_flow_ctrl(1);
