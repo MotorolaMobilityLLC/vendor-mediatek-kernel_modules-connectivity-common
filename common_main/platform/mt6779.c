@@ -1354,6 +1354,15 @@ static UINT32 consys_emi_set_remapping_reg(VOID)
 	mtk_wcn_emi_addr_info.emi_direct_path_ap_phy_addr = mdPhy;
 	mtk_wcn_emi_addr_info.emi_direct_path_size = size;
 
+	mtk_wcn_emi_addr_info.emi_ram_bt_buildtime_offset =
+			CONSYS_EMI_RAM_BT_BUILDTIME_OFFSET;
+	mtk_wcn_emi_addr_info.emi_ram_wifi_buildtime_offset =
+			CONSYS_EMI_RAM_WIFI_BUILDTIME_OFFSET;
+	mtk_wcn_emi_addr_info.emi_ram_mcu_buildtime_offset =
+			CONSYS_EMI_RAM_MCU_BUILDTIME_OFFSET;
+	mtk_wcn_emi_addr_info.emi_patch_mcu_buildtime_offset =
+			CONSYS_EMI_PATCH_MCU_BUILDTIME_OFFSET;
+
 	return 0;
 }
 
