@@ -1152,6 +1152,8 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 		if (reg_VCN33_BT)
 			regulator_disable(reg_VCN33_BT);
 #endif
+		/* delay 300us */
+		udelay(300);
 		/*AP power off MT6351L VCN_1V8 LDO */
 		if (reg_VCN18) {
 			if (regulator_disable(reg_VCN18))
