@@ -492,7 +492,7 @@ static void connlog_clear_irq_reg(void)
 	if (gDev.irqRegBaseVirAddr) {
 		pr_debug("BF: CONSYS IRQ CR VALUE(0x%x)\n", EMI_READ32(gDev.irqRegBaseVirAddr));
 		/* 18002150[27:24] */
-		EMI_WRITE32(gDev.irqRegBaseVirAddr, EMI_READ32(gDev.irqRegBaseVirAddr) & (!0xF000000));
+		EMI_WRITE32(gDev.irqRegBaseVirAddr, EMI_READ32(gDev.irqRegBaseVirAddr) & (~0xF000000));
 		pr_debug("AF: CONSYS IRQ CR VALUE(0x%x)\n", EMI_READ32(gDev.irqRegBaseVirAddr));
 	} else
 		pr_err("irqRegBaseVirAddr is NULL!\n");
