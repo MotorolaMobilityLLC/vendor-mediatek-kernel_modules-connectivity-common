@@ -1403,7 +1403,7 @@ VOID osal_buffer_dump(const PUINT8 buf, const PUINT8 title, const UINT32 len, co
 {
 	INT32 k;
 	UINT32 dump_len;
-	char str[64] = {""};
+	char str[DBG_LOG_STR_SIZE] = {""};
 	INT32 strlen = 0;
 	char *p;
 
@@ -1432,7 +1432,7 @@ VOID osal_buffer_dump_data(const PUINT32 buf, const PUINT8 title, const UINT32 l
 {
 	INT32 k;
 	UINT32 dump_len;
-	char str[100] = {""};
+	char str[DBG_LOG_STR_SIZE] = {""};
 	INT32 strlen = 0;
 	char *p;
 
