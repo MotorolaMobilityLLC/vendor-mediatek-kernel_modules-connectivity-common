@@ -297,12 +297,14 @@ typedef INT32(*wmt_wlan_probe_cb) (VOID);
 typedef INT32(*wmt_wlan_remove_cb) (VOID);
 typedef INT32(*wmt_wlan_bus_cnt_get_cb) (VOID);
 typedef INT32(*wmt_wlan_bus_cnt_clr_cb) (VOID);
+typedef INT32(*wmt_wlan_emi_mpu_set_protection_cb) (bool);
 
 typedef struct _MTK_WCN_WMT_WLAN_CB_INFO {
 	wmt_wlan_probe_cb wlan_probe_cb;
 	wmt_wlan_remove_cb wlan_remove_cb;
 	wmt_wlan_bus_cnt_get_cb wlan_bus_cnt_get_cb;
 	wmt_wlan_bus_cnt_clr_cb wlan_bus_cnt_clr_cb;
+	wmt_wlan_emi_mpu_set_protection_cb wlan_emi_mpu_set_protection_cb;
 } MTK_WCN_WMT_WLAN_CB_INFO, *P_MTK_WCN_WMT_WLAN_CB_INFO;
 
 #ifdef CONFIG_MTK_COMBO_ANT
@@ -340,6 +342,7 @@ extern wmt_wlan_probe_cb mtk_wcn_wlan_probe;
 extern wmt_wlan_remove_cb mtk_wcn_wlan_remove;
 extern wmt_wlan_bus_cnt_get_cb mtk_wcn_wlan_bus_tx_cnt;
 extern wmt_wlan_bus_cnt_clr_cb mtk_wcn_wlan_bus_tx_cnt_clr;
+extern wmt_wlan_emi_mpu_set_protection_cb mtk_wcn_wlan_emi_mpu_set_protection;
 /*******************************************************************************
 *                           P R I V A T E   D A T A
 ********************************************************************************
