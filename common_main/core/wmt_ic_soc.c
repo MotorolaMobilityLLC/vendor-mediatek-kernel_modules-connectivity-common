@@ -3057,7 +3057,7 @@ patch_download:
 			iRet = -1;
 			break;
 		}
-		WMT_DBG_FUNC("wmt_core: write fragSeq(%d) size(%d, %d) ok\n",
+		WMT_DBG_FUNC("wmt_core: write fragSeq(%d) size(%lu, %d) ok\n",
 			     fragSeq, fragSize + sizeof(WMT_PATCH_CMD), u4Res);
 
 		osal_memset(evtBuf, 0, sizeof(evtBuf));
@@ -3079,7 +3079,7 @@ patch_download:
 				evtBuf[2],
 				evtBuf[3],
 				evtBuf[4]);
-			WMT_ERR_FUNC("wmt_core: exp(%d):[%02X,%02X,%02X,%02X,%02X]\n",
+			WMT_ERR_FUNC("wmt_core: exp(%lu):[%02X,%02X,%02X,%02X,%02X]\n",
 				sizeof(WMT_PATCH_EVT),
 				WMT_PATCH_EVT[0],
 				WMT_PATCH_EVT[1],
@@ -3090,7 +3090,7 @@ patch_download:
 			break;
 		}
 #endif
-		WMT_DBG_FUNC("wmt_core: read WMT_PATCH_EVT length(%d, %d) ok\n", sizeof(WMT_PATCH_EVT), u4Res);
+		WMT_DBG_FUNC("wmt_core: read WMT_PATCH_EVT length(%lu, %d) ok\n", sizeof(WMT_PATCH_EVT), u4Res);
 		offset += patchSizePerFrag;
 		++fragSeq;
 	}
@@ -3952,7 +3952,7 @@ get_calibration_fail:
 			emiInfo->emi_size,
 			emiInfo->emi_phy_addr);
 	}
-	WMT_ERR_FUNC("gBTCalResultSize=%d gWiFiCalResult=0x%x gWiFiCalSize=%d gWiFiCalAddrOffset=0x%x\n",
+	WMT_ERR_FUNC("gBTCalResultSize=%d gWiFiCalResult=0x%p gWiFiCalSize=%d gWiFiCalAddrOffset=0x%x\n",
 		gBTCalResultSize, gWiFiCalResult,
 		gWiFiCalSize, gWiFiCalAddrOffset);
 	if (gBTCalResult != NULL) {
