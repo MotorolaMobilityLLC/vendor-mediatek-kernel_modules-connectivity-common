@@ -1613,9 +1613,13 @@ ENUM_WMTHWVER_TYPE_T wmt_lib_get_hwver(VOID)
 
 UINT32 wmt_lib_get_icinfo(ENUM_WMT_CHIPINFO_TYPE_T index)
 {
-	if (index == WMTCHIN_CHIPID)
-		return gDevWmt.chip_id;
-	else if (index == WMTCHIN_HWVER)
+	UINT32 chip_id = 0;
+
+	if (index == WMTCHIN_CHIPID) {
+		chip_id = mtk_wcn_consys_soc_chipid();
+		WMT_INFO_FUNC("chip_id=[%x]", chip_id);
+		return chip_id;
+	} else if (index == WMTCHIN_HWVER)
 		return gDevWmt.hw_ver;
 	else if (index == WMTCHIN_MAPPINGHWVER)
 		return gDevWmt.eWmtHwVer;
