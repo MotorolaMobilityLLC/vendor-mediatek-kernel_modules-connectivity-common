@@ -55,8 +55,6 @@ struct connlog_buffer {
 #ifdef EMI_TO_CACHE_SUPPORT
 	struct ring_cache ring_cache;
 	void *cache_base;
-	unsigned cache_read;
-	unsigned cache_write;
 #endif
 };
 static struct connlog_buffer connlog_buffer_table[CONNLOG_TYPE_END];
@@ -193,13 +191,11 @@ static void connlog_buffer_init(int conn_type)
 	/* init ring cache */
 	connlog_buffer_table[conn_type].cache_base = connlog_cache_allocate(cache_size_table[conn_type]);
 	memset(connlog_buffer_table[conn_type].cache_base, 0, cache_size_table[conn_type]);
-	connlog_buffer_table[conn_type].cache_read = 0;
-	connlog_buffer_table[conn_type].cache_write = 0;
 	ring_cache_init(
 		connlog_buffer_table[conn_type].cache_base,
 		cache_size_table[conn_type],
-		&connlog_buffer_table[conn_type].cache_read,
-		&connlog_buffer_table[conn_type].cache_write,
+		0,
+		0,
 		&connlog_buffer_table[conn_type].ring_cache
 	);
 #endif
@@ -264,8 +260,7 @@ static void connlog_ring_emi_to_cache(int conn_type)
 		ring_dump(__func__, ring);
 		ring_dump_segment(__func__, &ring_seg);
 #endif
-		ring_cache_write_prepare(ring_seg.sz, &ring_cache_seg, &connlog_buffer_table[conn_type].ring_cache);
-		RING_CACHE_WRITE_FOR_EACH(emi_buf_size, ring_cache_seg, &connlog_buffer_table[conn_type].ring_cache) {
+		RING_CACHE_WRITE_FOR_EACH(ring_seg.sz, ring_cache_seg, &connlog_buffer_table[conn_type].ring_cache) {
 #ifdef DEBUG_RING
 			ring_cache_dump(__func__, &connlog_buffer_table[conn_type].ring_cache);
 			ring_cache_dump_segment(__func__, &ring_cache_seg);
@@ -877,7 +872,7 @@ ssize_t connsys_log_read(int conn_type, char *buf, size_t count)
 	}
 	cache_buf_size = ring_seg.remain;
 
-	RING_CACHE_READ_ALL_FOR_EACH(ring_seg, ring) {
+	RING_CACHE_READ_FOR_EACH(size, ring_seg, ring) {
 		memcpy(buf + written, ring_seg.ring_cache_pt, ring_seg.sz);
 		cache_buf_size -= ring_seg.sz;
 		written += ring_seg.sz;
@@ -933,7 +928,7 @@ ssize_t connsys_log_read_to_user(int conn_type, char __user *buf, size_t count)
 	}
 	cache_buf_size = ring_seg.remain;
 
-	RING_CACHE_READ_ALL_FOR_EACH(ring_seg, ring) {
+	RING_CACHE_READ_FOR_EACH(size, ring_seg, ring) {
 		retval = copy_to_user(buf + written, ring_seg.ring_cache_pt, ring_seg.sz);
 		if (retval) {
 			pr_err("copy to user buffer failed, ret:%d\n", retval);
