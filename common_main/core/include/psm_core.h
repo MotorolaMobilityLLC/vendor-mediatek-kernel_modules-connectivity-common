@@ -254,7 +254,7 @@ INT32 stp_psm_disable(MTKSTP_PSM_T *stp_psm);
 INT32 stp_psm_enable(MTKSTP_PSM_T *stp_psm, INT32 idle_time_to_sleep);
 struct mtk_stp_psm *stp_psm_init(void);
 INT32 stp_psm_deinit(MTKSTP_PSM_T *stp_psm);
-MTK_WCN_BOOL mtk_wcn_stp_psm_dbg_level(UINT32 dbglevel);
+MTK_WCN_BOOL mtk_wcn_stp_psm_dbg_level(INT32 dbglevel);
 INT32 stp_psm_sleep_for_thermal(MTKSTP_PSM_T *stp_psm);
 INT32 stp_psm_thread_lock_aquire(MTKSTP_PSM_T *stp_psm);
 INT32 stp_psm_thread_lock_release(MTKSTP_PSM_T *stp_psm);
