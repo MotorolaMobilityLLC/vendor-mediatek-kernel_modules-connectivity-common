@@ -321,6 +321,7 @@ INT32 osal_sleepable_lock_init(P_OSAL_SLEEPABLE_LOCK);
 #endif
 INT32 osal_lock_sleepable_lock(P_OSAL_SLEEPABLE_LOCK);
 INT32 osal_unlock_sleepable_lock(P_OSAL_SLEEPABLE_LOCK);
+INT32 osal_trylock_sleepable_lock(P_OSAL_SLEEPABLE_LOCK);
 INT32 osal_sleepable_lock_deinit(P_OSAL_SLEEPABLE_LOCK);
 
 INT32 osal_signal_init(P_OSAL_SIGNAL);
