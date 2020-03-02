@@ -99,8 +99,8 @@ static P_STP_DBG_CPUPCR_T g_stp_dbg_cpupcr;
 /* just show in log at present */
 static P_STP_DBG_DMAREGS_T g_stp_dbg_dmaregs;
 
-static VOID stp_dbg_core_dump_timeout_handler(ULONG data);
-static VOID stp_dbg_dump_emi_timeout_handler(ULONG data);
+static VOID stp_dbg_core_dump_timeout_handler(timer_handler_arg arg);
+static VOID stp_dbg_dump_emi_timeout_handler(timer_handler_arg arg);
 static _osal_inline_ P_WCN_CORE_DUMP_T stp_dbg_core_dump_init(UINT32 timeout);
 static _osal_inline_ INT32 stp_dbg_core_dump_deinit(P_WCN_CORE_DUMP_T dmp);
 static _osal_inline_ INT32 stp_dbg_core_dump_check_end(PUINT8 buf, INT32 len);
@@ -171,7 +171,7 @@ static struct genl_family stp_dbg_gnl_family = {
  *
  * No return value
  */
-static VOID stp_dbg_core_dump_timeout_handler(ULONG data)
+static VOID stp_dbg_core_dump_timeout_handler(timer_handler_arg arg)
 {
 	stp_dbg_set_coredump_timer_state(CORE_DUMP_TIMEOUT);
 	stp_btm_notify_coredump_timeout_wq(g_stp_dbg->btm);
@@ -183,7 +183,7 @@ static VOID stp_dbg_core_dump_timeout_handler(ULONG data)
  *
  * No return value
  */
-static VOID stp_dbg_dump_emi_timeout_handler(ULONG data)
+static VOID stp_dbg_dump_emi_timeout_handler(timer_handler_arg arg)
 {
 	STP_DBG_PR_ERR("dump emi timeout!\n");
 	mtk_stp_notify_emi_dump_end();
@@ -319,9 +319,6 @@ static _osal_inline_ INT32 stp_dbg_core_dump_in(P_WCN_CORE_DUMP_T dmp, PUINT8 bu
 		stp_dbg_core_dump_header_init(dmp);
 		/* show coredump start info on UI */
 		/* osal_dbg_assert_aee("MT662x f/w coredump start", "MT662x firmware coredump start"); */
-#if STP_DBG_AEE_EXP_API
-		aee_kernel_dal_show("CONSYS coredump start ....\n");
-#endif
 		/* parsing data, and check end srting */
 		ret = stp_dbg_core_dump_check_end(buf, len);
 		if (ret == 1) {
@@ -523,18 +520,12 @@ INT32 stp_dbg_core_dump_flush(INT32 rst, MTK_WCN_BOOL coredump_is_timeout)
 	/* show coredump end info on UI */
 	/* osal_dbg_assert_aee("MT662x f/w coredump end", "MT662x firmware coredump ends"); */
 #if STP_DBG_AEE_EXP_API
-	if (coredump_is_timeout)
-		aee_kernel_dal_show("++ CONSYS coredump tiemout or fail, pass received coredump to AEE ++\n");
-	else
-		aee_kernel_dal_show("++ CONSYS coredump get successfully ++\n");
-	/* call AEE driver API */
 #if ENABLE_F_TRACE
 	aed_combo_exception_api(NULL, 0, (const PINT32)pbuf, len, (const PINT8)g_core_dump->info,
 			DB_OPT_FTRACE);
 #else
 	aed_combo_exception(NULL, 0, (const PINT32)pbuf, len, (const PINT8)g_core_dump->info);
 #endif
-
 #endif
 
 	/* reset */
