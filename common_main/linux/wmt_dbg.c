@@ -110,6 +110,8 @@ static INT32 wmt_dbg_emi_dump(INT32 par1, INT32 offset, INT32 size);
 static INT32 wmt_dbg_fw_log_ctrl(INT32 par1, INT32 onoff, INT32 level);
 static INT32 wmt_dbg_pre_pwr_on_ctrl(INT32 par1, INT32 enable, INT32 par3);
 
+static INT32 wmt_dbg_thermal_query(INT32 par1, INT32 count, INT32 interval);
+
 static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x0] = wmt_dbg_psm_ctrl,
 	[0x1] = wmt_dbg_quick_sleep_ctrl,
@@ -159,6 +161,7 @@ static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x30] = wmt_dbg_show_thread_debug_info,
 	[0x27] = wmt_dbg_fw_log_ctrl,
 	[0x28] = wmt_dbg_pre_pwr_on_ctrl,
+	[0x29] = wmt_dbg_thermal_query,
 	[0x99] = wmt_dbg_emi_dump,
 };
 
@@ -818,6 +821,28 @@ INT32 wmt_dbg_pre_pwr_on_ctrl(INT32 par1, INT32 enable, INT32 par3)
 		wmt_dev_apo_ctrl(0);
 	}
 
+	return 0;
+}
+
+INT32 wmt_dbg_thermal_query(INT32 par1, INT32 count, INT32 interval)
+{
+	LONG tm;
+
+	if (count < 0)
+		count = 0;
+	if (interval < 0)
+		interval = 0;
+
+	WMT_INFO_FUNC("Performing thermal query for %d times with %dms interval\n", count, interval);
+	while (count--) {
+		mtk_wcn_wmt_therm_ctrl(WMTTHERM_ENABLE);
+		tm = mtk_wcn_wmt_therm_ctrl(WMTTHERM_READ);
+		mtk_wcn_wmt_therm_ctrl(WMTTHERM_DISABLE);
+
+		WMT_INFO_FUNC("Temperature: %ld\n", tm);
+		if (count > 0)
+			osal_sleep_ms(interval);
+	}
 	return 0;
 }
 
