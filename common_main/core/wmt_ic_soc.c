@@ -2197,6 +2197,14 @@ static INT32 wmt_stp_init_coex(VOID)
 		return 0;
 	}
 
+	if (wmt_ic_ops_soc.icId == 0x6765 ||
+		wmt_ic_ops_soc.icId == 0x6761 ||
+		wmt_ic_ops_soc.icId == 0x6768) {
+		WMT_INFO_FUNC("elna_gain_p1_support:0x%x\n", pWmtGenConf->coex_wmt_ext_elna_gain_p1_support);
+		if (pWmtGenConf->coex_wmt_ext_elna_gain_p1_support != 1)
+			return 0;
+	}
+
 	/*Dump the coex-related info */
 	WMT_DBG_FUNC("coex_wmt:0x%x\n", pWmtGenConf->coex_wmt_ant_mode);
 #if CFG_SUBSYS_COEX_NEED
