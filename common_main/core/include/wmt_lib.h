@@ -345,6 +345,7 @@ extern VOID wmt_lib_sdio_deep_sleep_flag_set_cb_reg(PF_WMT_SDIO_DEEP_SLEEP flag_
 #endif
 extern VOID wmt_lib_sdio_reg_rw_cb(PF_WMT_SDIO_DEBUG reg_rw_cb);
 extern INT32 wmt_lib_register_thermal_ctrl_cb(thermal_query_ctrl_cb thermal_ctrl);
+extern INT32 wmt_lib_register_trigger_assert_cb(trigger_assert_cb trigger_assert);
 
 /* LXOP functions: */
 extern P_OSAL_OP wmt_lib_get_free_op(VOID);
