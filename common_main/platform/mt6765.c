@@ -114,6 +114,7 @@ static VOID consys_dedicated_log_path_deinit(VOID);
 static INT32 consys_check_reg_readable(VOID);
 static INT32 consys_emi_coredump_remapping(UINT8 __iomem **addr, UINT32 enable);
 static INT32 consys_reset_emi_coredump(UINT8 __iomem *addr);
+static INT32 consys_is_connsys_reg(UINT32 addr);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -197,6 +198,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_check_reg_readable = consys_check_reg_readable,
 	.consys_ic_emi_coredump_remapping = consys_emi_coredump_remapping,
 	.consys_ic_reset_emi_coredump = consys_reset_emi_coredump,
+	.consys_ic_is_connsys_reg = consys_is_connsys_reg,
 };
 
 /*******************************************************************************
@@ -1174,3 +1176,16 @@ static INT32 consys_reset_emi_coredump(UINT8 __iomem *addr)
 	memset_io(addr + CONSYS_EMI_PAGED_DUMP_OFFSET, 0, 0x8000);
 	return 0;
 }
+
+static INT32 consys_is_connsys_reg(UINT32 addr)
+{
+	if (addr > 0x18000000 && addr < 0x180FFFFF) {
+		if (addr >= 0x18007000 && addr <= 0x18007FFF)
+			return 0;
+
+		return 1;
+	}
+
+	return 0;
+}
+
