@@ -35,11 +35,11 @@
 */
 
 /*tag start:new platform need to make sure these define */
-#if defined(CONFIG_ARCH_MT6735)
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_MACH_MT6735)
 #define PLATFORM_SOC_CHIP 0x0321
-#elif defined(CONFIG_ARCH_MT6735M)
+#elif defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_MACH_MT6735M)
 #define PLATFORM_SOC_CHIP 0x0335
-#elif defined(CONFIG_ARCH_MT6753)
+#elif defined(CONFIG_ARCH_MT6753) || defined(CONFIG_MACH_MT6753)
 #define PLATFORM_SOC_CHIP 0x0337
 #else
 #define PLATFORM_SOC_CHIP 0x6735
