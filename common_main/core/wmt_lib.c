@@ -2939,7 +2939,6 @@ INT32 wmt_lib_blank_status_ctrl(UINT32 on_off_flag)
 	return -1;
 }
 
-
 /**
  * Desinged for native service to get number of patches
  * resides in /vendor/firmware
@@ -3060,4 +3059,9 @@ INT32 wmt_lib_set_need_update_patch_version(INT32 need)
 {
 	gDevWmt.patch_table.need_update = need > 0 ? 1 : 0;
 	return 0;
+}
+
+VOID mtk_lib_set_mcif_mpu_protection(MTK_WCN_BOOL enable)
+{
+	mtk_consys_set_mcif_mpu_protection(enable);
 }
