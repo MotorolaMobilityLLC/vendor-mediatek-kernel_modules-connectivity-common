@@ -856,7 +856,7 @@ static int wmt_step_parse_register_address(struct step_reg_addr_info *p_reg_addr
 		}
 
 		if (offset >= g_step_env.reg_base[symbol].size) {
-			WMT_ERR_FUNC("STEP failed: symbol(%d), offset(%d) over max size(%llu) %s\n",
+			WMT_ERR_FUNC("STEP failed: symbol(%d), offset(%d) over max size(%llu)\n",
 				symbol, (int) offset, g_step_env.reg_base[symbol].size);
 			return -1;
 		}
