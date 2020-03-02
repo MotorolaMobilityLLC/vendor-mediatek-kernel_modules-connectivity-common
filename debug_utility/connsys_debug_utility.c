@@ -70,7 +70,7 @@ struct connlog_dev {
 	struct connlog_alarm log_alarm;
 	void *log_data;
 };
-static struct connlog_dev gDev;
+static struct connlog_dev gDev = { 0 };
 
 static CONNLOG_EVENT_CB event_callback_table[CONNLOG_TYPE_END] = { 0x0 };
 
@@ -568,6 +568,9 @@ static int connlog_cancel_alarm_timer(void)
 *****************************************************************************/
 int connsys_log_alarm_enable(unsigned int sec)
 {
+	if (!gDev.virAddrEmiLogBase)
+		return -1;
+
 	spin_lock_irqsave(&gDev.log_alarm.alarm_lock, gDev.log_alarm.flags);
 
 	gDev.log_alarm.alarm_sec = sec;
@@ -597,6 +600,9 @@ int connsys_log_alarm_disable(void)
 {
 	int ret = 0;
 
+	if (!gDev.virAddrEmiLogBase)
+		return -1;
+
 	spin_lock_irqsave(&gDev.log_alarm.alarm_lock, gDev.log_alarm.flags);
 	if (connlog_is_alarm_enable()) {
 		ret = connlog_cancel_alarm_timer();
@@ -622,6 +628,9 @@ EXPORT_SYMBOL(connsys_log_alarm_disable);
 int connsys_log_blank_state_changed(int blank_state)
 {
 	int ret = 0;
+
+	if (!gDev.virAddrEmiLogBase)
+		return -1;
 
 	spin_lock_irqsave(&gDev.log_alarm.alarm_lock, gDev.log_alarm.flags);
 	gDev.log_alarm.blank_state = blank_state;
