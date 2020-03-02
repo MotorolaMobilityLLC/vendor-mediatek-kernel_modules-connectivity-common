@@ -48,6 +48,7 @@
 #include "mtk_wcn_consys_hw.h"
 #include "wmt_ic.h"
 #include "wmt_lib.h"
+#include "wmt_plat.h"
 
 #ifdef CONFIG_MTK_EMI
 #include <mt_emi_api.h>
@@ -674,7 +675,7 @@ static INT32 polling_consys_chipid(VOID)
 	WMT_PLAT_INFO_FUNC("consys HW version id(0x%x)\n", consys_ver_id & 0xFFFF);
 	consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_FW_ID_OFFSET);
 	WMT_PLAT_INFO_FUNC("consys FW version id(0x%x)\n", consys_ver_id & 0xFFFF);
-	if (mtk_wcn_soc_co_clock_get()) {
+	if (wmt_plat_soc_co_clock_flag_get()) {
 		consys_reg_base = ioremap_nocache(CONSYS_COCLOCK_STABLE_TIME_BASE, 0x100);
 		if (consys_reg_base) {
 			value = CONSYS_REG_READ(consys_reg_base);
