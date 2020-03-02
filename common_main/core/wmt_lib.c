@@ -1427,7 +1427,14 @@ static P_OSAL_OP wmt_lib_get_op(P_OSAL_OP_Q pOpQ)
 	osal_unlock_sleepable_lock(&pOpQ->sLock);
 
 	if (pOp == NULL) {
+		P_OSAL_OP pCurOp = wmt_lib_get_current_op(&gDevWmt);
+
 		WMT_WARN_FUNC("RB_GET(%p) return NULL\n", pOpQ);
+		if (pCurOp != NULL)
+			WMT_WARN_FUNC("Current opId (%d)\n", pCurOp->op.opId);
+
+		wmt_lib_print_wmtd_op_history();
+		wmt_lib_print_worker_op_history();
 		osal_opq_dump("FreeOpQ", &gDevWmt.rFreeOpQ);
 		osal_opq_dump("ActiveOpQ", &gDevWmt.rActiveOpQ);
 		osal_assert(pOp);
