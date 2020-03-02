@@ -294,13 +294,10 @@ static unsigned char __iomem *wmt_step_get_emi_base_address(void)
 static void _wmt_step_init_register_base_size(struct device_node *node, int index, int step_index, unsigned long addr)
 {
 	int flag;
-	const unsigned int *p_phy_addr;
 
 	g_step_env.reg_base[step_index].vir_addr = addr;
-	if (addr != 0) {
-		p_phy_addr = of_get_address(node, index, &(g_step_env.reg_base[step_index].size), &flag);
-		g_step_env.reg_base[step_index].phy_addr = of_translate_address(node, p_phy_addr);
-	}
+	if (addr != 0)
+		of_get_address(node, index, &(g_step_env.reg_base[step_index].size), &flag);
 }
 
 static void wmt_step_init_register_base_size(void)
@@ -310,23 +307,23 @@ static void wmt_step_init_register_base_size(void)
 	/* If you need to change the register index, address. Please update STEP Config comment */
 	if (g_pdev != NULL) {
 		node = g_pdev->dev.of_node;
-		_wmt_step_init_register_base_size(node, MCU_BASE_INDEX,
+		_wmt_step_init_register_base_size(node, STEP_MCU_BASE_INDEX,
 			STEP_REGISTER_CONN_MCU_CONFIG_BASE, conn_reg.mcu_base);
-		_wmt_step_init_register_base_size(node, TOP_RGU_BASE_INDEX,
+		_wmt_step_init_register_base_size(node, STEP_TOP_RGU_BASE_INDEX,
 			STEP_REGISTER_AP_RGU_BASE, conn_reg.ap_rgu_base);
-		_wmt_step_init_register_base_size(node, INFRACFG_AO_BASE_INDEX,
+		_wmt_step_init_register_base_size(node, STEP_INFRACFG_AO_BASE_INDEX,
 			STEP_REGISTER_TOPCKGEN_BASE, conn_reg.topckgen_base);
-		_wmt_step_init_register_base_size(node, SPM_BASE_INDEX,
+		_wmt_step_init_register_base_size(node, STEP_SPM_BASE_INDEX,
 			STEP_REGISTER_SPM_BASE, conn_reg.spm_base);
-		_wmt_step_init_register_base_size(node, MCU_CONN_HIF_ON_BASE_INDEX,
+		_wmt_step_init_register_base_size(node, STEP_MCU_CONN_HIF_ON_BASE_INDEX,
 			STEP_REGISTER_HIF_ON_BASE, conn_reg.mcu_conn_hif_on_base);
-		_wmt_step_init_register_base_size(node, MCU_TOP_MISC_OFF_BASE_INDEX,
+		_wmt_step_init_register_base_size(node, STEP_MCU_TOP_MISC_OFF_BASE_INDEX,
 			STEP_REGISTER_MISC_OFF_BASE, conn_reg.mcu_top_misc_off_base);
-		_wmt_step_init_register_base_size(node, MCU_CFG_ON_BASE_INDEX,
+		_wmt_step_init_register_base_size(node, STEP_MCU_CFG_ON_BASE_INDEX,
 			STEP_REGISTER_CFG_ON_BASE, conn_reg.mcu_cfg_on_base);
-		_wmt_step_init_register_base_size(node, MCU_CIRQ_BASE_INDEX,
+		_wmt_step_init_register_base_size(node, STEP_MCU_CIRQ_BASE_INDEX,
 			STEP_CIRQ_BASE, conn_reg.mcu_cirq_base);
-		_wmt_step_init_register_base_size(node, MCU_TOP_MISC_ON_BASE_INDEX,
+		_wmt_step_init_register_base_size(node, STEP_MCU_TOP_MISC_ON_BASE_INDEX,
 			STEP_MCU_TOP_MISC_ON_BASE, conn_reg.mcu_top_misc_on_base);
 	}
 }
@@ -1648,9 +1645,8 @@ static int wmt_step_do_write_register_action(struct step_reigster_info *p_reg_in
 
 		CONSYS_REG_WRITE_MASK((unsigned int *)vir_addr, p_reg_info->value, p_reg_info->mask);
 		WMT_INFO_FUNC(
-			"STEP show: reg write (symbol, addr, offset)(%d, 0x%08x, 0x%08x): 0x%08x\n",
-			p_reg_info->address_type, g_step_env.reg_base[p_reg_info->address_type].phy_addr,
-			p_reg_info->offset,
+			"STEP show: reg write (symbol, offset)(%d, 0x%08x): 0x%08x\n",
+			p_reg_info->address_type, p_reg_info->offset,
 			CONSYS_REG_READ(vir_addr));
 		if (func_do_extra != NULL)
 			func_do_extra(1, CONSYS_REG_READ(vir_addr));
@@ -1711,9 +1707,8 @@ static int wmt_step_do_read_register_action(struct step_reigster_info *p_reg_inf
 			return -1;
 		}
 
-		sprintf(buf, "STEP show: reg read (symbol, addr, offset)(%d, 0x%08x, 0x%08x): 0x%08x\n",
-			p_reg_info->address_type, (unsigned int)g_step_env.reg_base[p_reg_info->address_type].phy_addr,
-			p_reg_info->offset,
+		sprintf(buf, "STEP show: reg read (symbol, offset)(%d, 0x%08x): 0x%08x\n",
+			p_reg_info->address_type, p_reg_info->offset,
 			CONSYS_REG_READ(vir_addr));
 		_wmt_step_do_read_register_action(p_reg_info, func_do_extra, buf,
 			CONSYS_REG_READ(vir_addr));
