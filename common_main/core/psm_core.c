@@ -428,14 +428,16 @@ static INT32 _stp_psm_put_op(MTKSTP_PSM_T *stp_psm, P_OSAL_OP_Q pOpQ, P_OSAL_OP 
 	if (pOpQ == &stp_psm->rActiveOpQ)
 		_stp_psm_dump_active_q(&stp_psm->rActiveOpQ);
 
-	osal_unlock_unsleepable_lock(&(stp_psm->wq_spinlock));
 
 	if (ret) {
 		STP_PSM_WARN_FUNC("RB_FULL, RB_COUNT=%d , RB_SIZE=%d\n", RB_COUNT(pOpQ),
 				  RB_SIZE(pOpQ));
-		return 0;
+		osal_opq_dump_locked("FreeOpQ", &stp_psm->rFreeOpQ);
+		osal_opq_dump_locked("ActiveOpQ", &stp_psm->rActiveOpQ);
 	}
-	return 1;
+
+	osal_unlock_unsleepable_lock(&(stp_psm->wq_spinlock));
+	return ret ? 0 : 1;
 }
 
 P_OSAL_OP _stp_psm_get_free_op(MTKSTP_PSM_T *stp_psm)
@@ -480,6 +482,7 @@ INT32 _stp_psm_put_act_op(MTKSTP_PSM_T *stp_psm, P_OSAL_OP pOp)
 
 		if (bRet == 0) {
 			STP_PSM_WARN_FUNC("+++++++++++ Put op Active queue Fail\n");
+			atomic_dec(&pOp->ref_count);
 			break;
 		}
 		_stp_psm_opid_dbg_dmp_in(g_stp_psm_opid_dbg, pOp->op.opId, __LINE__);
