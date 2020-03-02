@@ -1122,8 +1122,7 @@ static VOID consys_dedicated_log_path_deinit(VOID)
 
 static INT32 consys_check_reg_readable(VOID)
 {
-	INT32 b_flag = 0;
-	INT32 c_flag = 0;
+	INT32 flag = 0;
 	UINT32 value = 0;
 
 	/*check connsys clock and sleep status*/
@@ -1133,14 +1132,11 @@ static INT32 consys_check_reg_readable(VOID)
 	if ((value & CONSYS_HCLK_CHECK_BIT) &&
 	    (value & CONSYS_OSCCLK_CHECK_BIT) &&
 	    ((value & CONSYS_SLEEP_CHECK_BIT) == 0))
-		c_flag = 1;
-	if (!c_flag)
+		flag = 1;
+	if (!flag)
 		WMT_PLAT_ERR_FUNC("connsys clock check fail 0x18007000(0x%x)\n", value);
 
-	if (b_flag && c_flag)
-		return 1;
-	else
-		return 0;
+	return flag;
 }
 
 static INT32 consys_emi_coredump_remapping(UINT8 __iomem **addr, UINT32 enable)
