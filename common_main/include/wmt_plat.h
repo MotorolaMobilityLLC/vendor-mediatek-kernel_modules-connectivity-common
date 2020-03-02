@@ -263,6 +263,10 @@ typedef struct _CONSYS_EMI_ADDR_INFO_ {
 	UINT32 full_dump_off;
 	UINT32 emi_remap_offset;
 	P_EMI_CTRL_STATE_OFFSET p_ecso;
+	UINT32 emi_size;
+	UINT32 pda_dl_patch_flag;
+	UINT32 emi_met_size;
+	UINT32 emi_met_data_offset;
 } CONSYS_EMI_ADDR_INFO, *P_CONSYS_EMI_ADDR_INFO;
 
 typedef struct _GPIO_TDM_REQ_INFO_ {
@@ -343,6 +347,7 @@ INT32 wmt_plat_set_host_dump_state(ENUM_HOST_DUMP_STATE state);
 UINT32 wmt_plat_force_trigger_assert(ENUM_FORCE_TRG_ASSERT_T type);
 INT32 wmt_plat_update_host_sync_num(VOID);
 INT32 wmt_plat_get_dump_info(UINT32 offset);
+INT32 wmt_plat_write_emi_l(UINT32 offset, UINT32 value);
 UINT32 wmt_plat_get_soc_chipid(VOID);
 UINT32 wmt_plat_soc_co_clock_flag_get(VOID);
 INT32 wmt_plat_set_dbg_mode(UINT32 flag);
