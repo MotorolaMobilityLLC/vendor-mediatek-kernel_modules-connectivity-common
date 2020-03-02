@@ -1557,65 +1557,104 @@ static INT32 consys_check_reg_readable(VOID)
 
 static VOID consys_ic_clock_fail_dump(VOID)
 {
-	WMT_PLAT_PR_ERR("CONN_HIF_TOP_MISC=0x%08x CONN_HIF_BUSY_STATUS=0x%08x\n",
+	UINT8 *addr;
+	char *buffer, *temp;
+	INT32 size = 1024;
+
+	/* make sure buffer size is big enough */
+	buffer = osal_malloc(size);
+	if (!buffer)
+		return;
+
+	temp = buffer;
+	temp += sprintf(temp, "CONN_HIF_TOP_MISC=0x%08x CONN_HIF_BUSY_STATUS=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_HIF_TOP_MISC),
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_HIF_BUSY_STATUS));
 
 	CONSYS_REG_WRITE(conn_reg.mcu_base + CONSYS_HIF_DBG_IDX, 0x3333);
-	WMT_PLAT_PR_ERR("Write CONSYS_HIF_DBG_IDX to 0x3333\n");
+	temp += sprintf(temp, "Write CONSYS_HIF_DBG_IDX to 0x3333\n");
 
-	WMT_PLAT_PR_ERR("CONSYS_HIF_DBG_PROBE=0x%08x CONN_HIF_TOP_MISC=0x%08x\n",
+	temp += sprintf(temp, "CONSYS_HIF_DBG_PROBE=0x%08x CONN_HIF_TOP_MISC=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_HIF_DBG_PROBE),
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_HIF_TOP_MISC));
-	WMT_PLAT_PR_ERR("CONN_HIF_BUSY_STATUS=0x%08x CONN_HIF_PDMA_BUSY_STATUS=0x%08x\n",
+
+	temp += sprintf(temp, "CONN_HIF_BUSY_STATUS=0x%08x CONN_HIF_PDMA_BUSY_STATUS=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_HIF_BUSY_STATUS),
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_HIF_PDMA_BUSY_STATUS));
 
 	CONSYS_REG_WRITE(conn_reg.mcu_base + CONSYS_HIF_DBG_IDX, 0x2222);
-	WMT_PLAT_PR_ERR("Write CONSYS_HIF_DBG_IDX to 0x2222\n");
+	temp += sprintf(temp, "Write CONSYS_HIF_DBG_IDX to 0x2222\n");
 
-	WMT_PLAT_PR_ERR("CONSYS_HIF_DBG_PROBE=0x%08x\n",
+	temp += sprintf(temp, "CONSYS_HIF_DBG_PROBE=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_HIF_DBG_PROBE));
 
 	CONSYS_REG_WRITE(conn_reg.mcu_base + CONSYS_HIF_DBG_IDX, 0x3333);
-	WMT_PLAT_PR_ERR("Write CONSYS_HIF_DBG_IDX to 0x3333\n");
+	temp += sprintf(temp, "Write CONSYS_HIF_DBG_IDX to 0x3333\n");
 
-	WMT_PLAT_PR_ERR("CONSYS_HIF_DBG_PROBE=0x%08x\n",
+	temp += sprintf(temp, "CONSYS_HIF_DBG_PROBE=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_HIF_DBG_PROBE));
 
 	CONSYS_REG_WRITE(conn_reg.mcu_base + CONSYS_HIF_DBG_IDX, 0x4444);
-	WMT_PLAT_PR_ERR("Write CONSYS_HIF_DBG_IDX to 0x4444\n");
+	temp += sprintf(temp, "Write CONSYS_HIF_DBG_IDX to 0x4444\n");
 
-	WMT_PLAT_PR_ERR("CONSYS_HIF_DBG_PROBE=0x%08x CONN_MCU_EMI_CONTROL=0x%08x\n",
+	temp += sprintf(temp, "CONSYS_HIF_DBG_PROBE=0x%08x CONN_MCU_EMI_CONTROL=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_HIF_DBG_PROBE),
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_SW_IRQ_OFFSET));
-	WMT_PLAT_PR_ERR("CONN_MCU_CLOCK_CONTROL=0x%08x CONN_MCU_BUS_CONTROL=0x%08x\n",
+	temp += sprintf(temp, "CONN_MCU_CLOCK_CONTROL=0x%08x CONN_MCU_BUS_CONTROL=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_CLOCK_CONTROL),
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_BUS_CONTROL));
 
 	CONSYS_REG_WRITE(conn_reg.mcu_base + CONSYS_DEBUG_SELECT, 0x003e3d00);
-	WMT_PLAT_PR_ERR("Write CONSYS_DEBUG_SELECT to 0x003e3d00\n");
+	temp += sprintf(temp, "Write CONSYS_DEBUG_SELECT to 0x003e3d00\n");
 
-	WMT_PLAT_PR_ERR("CONN_MCU_DEBUG_STATUS=0x%08x\n",
+	temp += sprintf(temp, "CONN_MCU_DEBUG_STATUS=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_DEBUG_STATUS));
 
 	CONSYS_REG_WRITE(conn_reg.mcu_base + CONSYS_DEBUG_SELECT, 0x00403f00);
-	WMT_PLAT_PR_ERR("Write CONSYS_DEBUG_SELECT to 0x00403f00\n");
+	temp += sprintf(temp, "Write CONSYS_DEBUG_SELECT to 0x00403f00\n");
 
-	WMT_PLAT_PR_ERR("CONN_MCU_DEBUG_STATUS=0x%08x\n",
+	temp += sprintf(temp, "CONN_MCU_DEBUG_STATUS=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_DEBUG_STATUS));
 
 	CONSYS_REG_WRITE(conn_reg.mcu_base + CONSYS_DEBUG_SELECT, 0x00424100);
-	WMT_PLAT_PR_ERR("Write CONSYS_DEBUG_SELECT to 0x00424100\n");
+	temp += sprintf(temp, "Write CONSYS_DEBUG_SELECT to 0x00424100\n");
 
-	WMT_PLAT_PR_ERR("CONN_MCU_DEBUG_STATUS=0x%08x\n",
+	temp += sprintf(temp, "CONN_MCU_DEBUG_STATUS=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_DEBUG_STATUS));
 
 	CONSYS_REG_WRITE(conn_reg.mcu_base + CONSYS_DEBUG_SELECT, 0x00444300);
-	WMT_PLAT_PR_ERR("Write CONSYS_DEBUG_SELECT to 0x00444300\n");
+	temp += sprintf(temp, "Write CONSYS_DEBUG_SELECT to 0x00444300\n");
 
-	WMT_PLAT_PR_ERR("CONN_MCU_DEBUG_STATUS=0x%08x\n",
+	temp += sprintf(temp, "CONN_MCU_DEBUG_STATUS=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_DEBUG_STATUS));
+	WMT_PLAT_PR_ERR("%s length = %d", buffer, osal_strlen(buffer));
+
+	temp = buffer;
+	addr = ioremap_nocache(0x180bc000, 0x100);
+	/* conn2ap axi master sleep prot info */
+	temp += sprintf(temp, "0x180bc010=0x%08x\n", CONSYS_REG_READ(addr + 0x10));
+	/* conn_mcu2ap axi master sleep prot info */
+	temp += sprintf(temp, "0x180bc014=0x%08x\n", CONSYS_REG_READ(addr + 0x14));
+	/* conn2ap axi gals bus info */
+	temp += sprintf(temp, "0x180bc018=0x%08x\n", CONSYS_REG_READ(addr + 0x18));
+	/* conn2ap mux4to1 debug info */
+	temp += sprintf(temp, "0x180bc01c=0x%08x\n", CONSYS_REG_READ(addr + 0x1c));
+	/* conn_hif_off bus busy info */
+	temp += sprintf(temp, "0x180bc020=0x%08x\n", CONSYS_REG_READ(addr + 0x20));
+	iounmap(addr);
+
+	addr = ioremap_nocache(0x1807013c, 0x100);
+	/* conn_hif_on misc info */
+	temp += sprintf(temp, "0x1807013c=0x%08x\n", CONSYS_REG_READ(addr));
+	iounmap(addr);
+
+	addr = ioremap_nocache(0x180c1144, 0x100);
+	/* conn_on_host debug flag */
+	temp += sprintf(temp, "0x180c1144=0x%08x\n", CONSYS_REG_READ(addr));
+	iounmap(addr);
+
+	WMT_PLAT_PR_ERR("%s length = %d", buffer, osal_strlen(buffer));
+	osal_free(buffer);
 }
 
 static INT32 consys_is_connsys_reg(UINT32 addr)
