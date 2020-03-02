@@ -1047,6 +1047,8 @@ static MTK_WCN_BOOL mtk_wcn_soc_aee_dump_flag_get(VOID);
 #if CFG_WMT_SDIO_DRIVING_SET
 static INT32 mtk_wcn_soc_set_sdio_driving(void);
 #endif
+static UINT32 mtk_wcn_soc_update_patch_version(VOID);
+
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -1175,6 +1177,15 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		}
 	}
 
+	/* Check whether need to update property of patch version.
+	 * If yes, notify stp_launcher to update.
+	 */
+	if (wmt_lib_get_need_update_patch_version()) {
+		wmt_lib_set_need_update_patch_version(1);
+		mtk_wcn_soc_update_patch_version();
+		WMT_INFO_FUNC("wmt update patch version\n");
+	}
+
 #if CFG_WMT_POWER_ON_DLM
 	if (wmt_ic_ops_soc.icId != 0x6765 &&
 	    wmt_ic_ops_soc.icId != 0x3967 &&
@@ -1187,7 +1198,6 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		WMT_DBG_FUNC("wmt_power_on_dlm_table ok\n");
 	}
 #endif
-
 	/* 6. download patch */
 #if CFG_WMT_MULTI_PATCH
 	/* 6.1 Let launcher to search patch info */
@@ -2527,6 +2537,11 @@ static UINT32 mtk_wcn_soc_get_patch_num(VOID)
 	wmt_core_ctrl(WMT_CTRL_GET_PATCH_NUM, &ctrlPa1, &ctrlPa2);
 	WMT_DBG_FUNC("patch total num = [%d]\n", ctrlPa1);
 	return ctrlPa1;
+}
+
+static UINT32 mtk_wcn_soc_update_patch_version(VOID)
+{
+	return wmt_core_ctrl(WMT_CTRL_UPDATE_PATCH_VERSION, NULL, NULL);
 }
 
 static INT32 mtk_wcn_soc_normal_patch_dwn(PUINT8 pPatchBuf, UINT32 patchSize, PUINT8 addressByte)
