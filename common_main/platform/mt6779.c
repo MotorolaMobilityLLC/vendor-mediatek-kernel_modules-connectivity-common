@@ -71,7 +71,7 @@
 
 /* Direct path */
 #include <mtk_ccci_common.h>
-
+#include <linux/gpio.h>
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -1742,5 +1742,5 @@ static INT32 consys_calibration_backup_restore_support(VOID)
 
 static INT32 consys_is_ant_swap_enable_by_hwid(INT32 pin_num)
 {
-	return !gpio_get_value(pin);
+	return !gpio_get_value(pin_num);
 }
