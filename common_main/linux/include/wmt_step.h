@@ -88,6 +88,19 @@ enum step_trigger_point_id {
 	STEP_TRIGGER_POINT_MAX,
 };
 
+enum step_base_address_index {
+	STEP_MCU_BASE_INDEX = 0,
+	STEP_TOP_RGU_BASE_INDEX,
+	STEP_INFRACFG_AO_BASE_INDEX,
+	STEP_SPM_BASE_INDEX,
+	STEP_MCU_CONN_HIF_ON_BASE_INDEX,
+	STEP_MCU_TOP_MISC_OFF_BASE_INDEX,
+	STEP_MCU_CFG_ON_BASE_INDEX,
+	STEP_MCU_CIRQ_BASE_INDEX,
+	STEP_MCU_TOP_MISC_ON_BASE_INDEX,
+	STEP_BASE_ADDRESS_MAX,
+};
+
 enum step_register_base_id {
 	STEP_REGISTER_PHYSICAL_ADDRESS = 0,
 	STEP_REGISTER_CONN_MCU_CONFIG_BASE,
@@ -117,7 +130,6 @@ enum step_condition_operator_id {
 struct step_register_base_struct {
 	unsigned long vir_addr;
 	unsigned long long size;
-	unsigned long long phy_addr;
 };
 
 struct step_action_list {
