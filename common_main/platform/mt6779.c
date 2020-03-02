@@ -1055,11 +1055,20 @@ static INT32 polling_consys_chipid(VOID)
 	/* connsys bus time out configure,  enable AHB bus timeout */
 	consys_reg_base = ioremap_nocache(CONSYS_AHB_TIMEOUT_EN_ADDRESS, 0x100);
 	if (consys_reg_base) {
-		CONSYS_REG_WRITE(consys_reg_base, CONSYS_AHB_TIMEOUT_EN_ADDRESS);
+		CONSYS_REG_WRITE(consys_reg_base, CONSYS_AHB_TIMEOUT_EN_VALUE);
 		iounmap(consys_reg_base);
 	} else
 		WMT_PLAT_PR_ERR("CONSYS_AHB_TIMEOUT_EN_ADDRESS(0x%x) ioremap fail!\n",
 				  CONSYS_AHB_TIMEOUT_EN_ADDRESS);
+
+	/* update WPLL setting for WPLL issue@LT */
+	consys_reg_base = ioremap_nocache(CONSYS_WPLL_SETTING_ADDRESS, 0x100);
+	if (consys_reg_base) {
+		CONSYS_REG_WRITE(consys_reg_base,
+				(CONSYS_REG_READ(consys_reg_base) &
+				CONSYS_WPLL_SETTING_MASK) | CONSYS_WPLL_SETTING_VALUE);
+		iounmap(consys_reg_base);
+	}
 
 	return 0;
 }
