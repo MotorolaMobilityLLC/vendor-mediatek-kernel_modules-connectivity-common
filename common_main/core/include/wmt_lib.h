@@ -192,11 +192,11 @@ struct wmt_vendor_patch {
 };
 
 struct vendor_patch_table {
-	UINT32 capacity;
-	UINT32 num;
-	INT8   status;
-	INT8   need_update;
-	UINT8  active_version[WMT_FIRMWARE_VERSION_LENGTH + 1];
+	UINT32  capacity;
+	UINT32  num;
+	INT8    status;
+	INT8    need_update;
+	PUINT8 *active_version;
 	struct wmt_vendor_patch *patch;
 };
 
@@ -464,8 +464,8 @@ extern INT32 wmt_lib_set_vendor_patch_version(struct wmt_vendor_patch *p);
 extern INT32 wmt_lib_get_vendor_patch_version(struct wmt_vendor_patch *p);
 extern INT32 wmt_lib_set_check_patch_status(INT32 status);
 extern INT32 wmt_lib_get_check_patch_status(VOID);
-extern INT32 wmt_lib_set_active_patch_version(PUINT8 version);
-extern INT32 wmt_lib_get_active_patch_version(PUINT8 version);
+extern INT32 wmt_lib_set_active_patch_version(struct wmt_vendor_patch *p);
+extern INT32 wmt_lib_get_active_patch_version(struct wmt_vendor_patch *p);
 extern INT32 wmt_lib_get_need_update_patch_version(VOID);
 extern INT32 wmt_lib_set_need_update_patch_version(INT32 need);
 extern VOID wmt_lib_set_bt_link_status(INT32 type, INT32 value);
