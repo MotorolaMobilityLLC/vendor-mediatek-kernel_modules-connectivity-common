@@ -92,7 +92,7 @@ static UINT8 g_cpupcr_buf[WMT_STP_CPUPCR_BUF_SIZE] = { 0 };
 static UINT32 g_quick_sleep_ctrl = 1;
 
 #define CONSYS_MET_WAIT	(1000*10) /* ms */
-#define MET_DUMP_MAX_NUM (80)
+#define MET_DUMP_MAX_NUM (1)
 #define MET_DUMP_SIZE (4*MET_DUMP_MAX_NUM)
 #define EMI_MET_READ_OFFSET	0x0
 #define EMI_MET_WRITE_OFFSET	0x4

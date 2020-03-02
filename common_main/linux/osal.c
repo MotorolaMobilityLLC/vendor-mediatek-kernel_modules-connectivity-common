@@ -1421,7 +1421,7 @@ VOID osal_buffer_dump_data(const PUINT32 buf, const PUINT8 title, const UINT32 l
 	dump_len = ((limit != 0) && (len > limit)) ? limit : len;
 	p = str;
 	for (k = 0; k < dump_len; k++) {
-		if ((k+1) % 8 != 0) {
+		if (((k+1) % 8 != 0) && (k < (dump_len - 1))) {
 			strlen = osal_sprintf(p, "0x%08x,", buf[k]);
 			p += strlen;
 		} else {
