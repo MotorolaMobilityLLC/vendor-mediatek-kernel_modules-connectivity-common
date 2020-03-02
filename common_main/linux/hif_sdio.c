@@ -45,10 +45,19 @@
 /* #include "hif_sdio_chrdev.h" */
 #include <connectivity_build_in_adapter.h>
 #include <wmt_build_in_adapter.h>
+#include <linux/mmc/card.h>
 
 #define mmc_power_up_ext(x)
 #define mmc_power_off_ext(x)
 MTK_WCN_BOOL g_hif_deep_sleep_flag = MTK_WCN_BOOL_FALSE;
+
+#ifndef MMC_CARD_REMOVED
+#define MMC_CARD_REMOVED	(1<<4)
+#endif
+
+#ifndef mmc_card_removed
+#define mmc_card_removed(c)	((c) && ((c)->state & MMC_CARD_REMOVED))
+#endif
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
