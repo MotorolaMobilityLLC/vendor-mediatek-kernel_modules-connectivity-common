@@ -111,6 +111,7 @@ struct CONSYS_BASE_ADDRESS {
 	SIZE_T mcu_cirq_base;
 	SIZE_T da_xobuf_base;
 	SIZE_T mcu_top_misc_on_base;
+	SIZE_T mcu_conn_hif_pdma_base;
 };
 
 enum CONSYS_BASE_ADDRESS_INDEX {
@@ -123,6 +124,7 @@ enum CONSYS_BASE_ADDRESS_INDEX {
 	MCU_CFG_ON_BASE_INDEX,
 	MCU_CIRQ_BASE_INDEX,
 	MCU_TOP_MISC_ON_BASE_INDEX,
+	MCU_CONN_HIF_PDMA_BASE_INDEX,
 };
 
 typedef enum _ENUM_EMI_CTRL_STATE_OFFSET_ {
@@ -195,6 +197,7 @@ typedef INT32(*CONSYS_IC_RESET_EMI_COREDUMP) (UINT8 __iomem *addr);
 typedef VOID(*CONSYS_IC_CLOCK_FAIL_DUMP) (VOID);
 typedef INT32(*CONSYS_IC_IS_CONNSYS_REG) (UINT32 addr);
 typedef VOID(*CONSYS_IC_RESUME_DUMP_INFO) (VOID);
+typedef VOID(*CONSYS_IC_SET_PDMA_AXI_RREADY_FORCE_HIGH) (UINT32 enable);
 
 typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_CLOCK_BUFFER_CTRL consys_ic_clock_buffer_ctrl;
@@ -238,6 +241,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_CLOCK_FAIL_DUMP consys_ic_clock_fail_dump;
 	CONSYS_IC_IS_CONNSYS_REG consys_ic_is_connsys_reg;
 	CONSYS_IC_RESUME_DUMP_INFO consys_ic_resume_dump_info;
+	CONSYS_IC_SET_PDMA_AXI_RREADY_FORCE_HIGH consys_ic_set_pdma_axi_rready_force_high;
 } WMT_CONSYS_IC_OPS, *P_WMT_CONSYS_IC_OPS;
 /*******************************************************************************
 *                            P U B L I C   D A T A
