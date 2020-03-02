@@ -84,8 +84,10 @@ int _wmt_detect_read_gpio_input(unsigned int id)
 	if (gpio_ctrl_info.gpio_ctrl_state[id].gpio_num != INVALID_PIN_ID) {
 		retval = gpio_get_value(gpio_ctrl_info.gpio_ctrl_state[id].gpio_num);
 		WMT_DETECT_PR_DBG("WMT-DETECT: get GPIO%d val%d\n",
-				gpio_ctrl_info.gpio_ctrl_state[id].gpio_num, retval);
-	}
+				  gpio_ctrl_info.gpio_ctrl_state[id].gpio_num, retval);
+	} else
+		WMT_DETECT_PR_ERR("WMT-DETECT: GPIO%d invalid\n",
+				  gpio_ctrl_info.gpio_ctrl_state[id].gpio_num);
 
 	return retval;
 }
