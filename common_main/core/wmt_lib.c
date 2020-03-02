@@ -2492,8 +2492,7 @@ VOID wmt_lib_set_patch_info(P_WMT_PATCH_INFO pPatchinfo)
 {
 	P_DEV_WMT pWmtDev = &gDevWmt;
 
-	if (pPatchinfo)
-		pWmtDev->pWmtPatchInfo = pPatchinfo;
+	pWmtDev->pWmtPatchInfo = pPatchinfo;
 }
 
 VOID wmt_lib_set_rom_patch_info(struct wmt_rom_patch_info *PatchInfo, ENUM_WMTDRV_TYPE_T type)

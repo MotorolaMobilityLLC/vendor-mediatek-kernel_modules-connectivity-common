@@ -1251,7 +1251,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	/* 6.2 Read patch number */
 	/* If patch number is 0, it's first time connys power on */
 	patch_num = mtk_wcn_soc_get_patch_num();
-	if (patch_num == 0) {
+	if (patch_num == 0 || wmt_lib_get_patch_info() == NULL) {
 		iRet = mtk_wcn_soc_patch_info_prepare();
 		if (iRet) {
 			WMT_ERR_FUNC("patch info perpare fail(%d)\n", iRet);
@@ -3203,6 +3203,11 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 	ctrlData.au4CtrlData[2] = (SIZE_T)&addressByte;
 	iRet = wmt_ctrl(&ctrlData);
 	WMT_DBG_FUNC("the %d time valid patch found: (%s)\n", index + 1, gFullPatchName);
+
+	if (iRet) {
+		WMT_ERR_FUNC("wmt_core: WMT_CTRL_GET_PATCH_INFO fail:%d\n", iRet);
+		goto done;
+	}
 
 	/* <2.2> read patch content */
 	ctrlData.ctrlId = WMT_CTRL_GET_PATCH;
