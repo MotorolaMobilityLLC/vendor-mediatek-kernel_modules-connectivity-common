@@ -80,6 +80,6 @@
 INT32 wmt_conf_read_file(VOID);
 P_WMT_GEN_CONF wmt_conf_get_cfg(VOID);
 INT32 wmt_conf_set_cfg_file(const PINT8 name);
-
+INT32 wmt_conf_deinit(VOID);
 
 #endif				/* _WMT_CONF_H_ */
