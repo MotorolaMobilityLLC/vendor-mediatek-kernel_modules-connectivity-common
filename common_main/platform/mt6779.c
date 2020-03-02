@@ -1070,6 +1070,15 @@ static INT32 polling_consys_chipid(VOID)
 		iounmap(consys_reg_base);
 	}
 
+	/* toppose_restore_done rollabck */
+	consys_reg_base = ioremap_nocache(CONSYS_TOPPOSE_RESTORE_ADDRESS, 0x100);
+	if (consys_reg_base) {
+		CONSYS_REG_WRITE(consys_reg_base,
+				(CONSYS_REG_READ(consys_reg_base) &
+				CONSYS_TOPPOSE_RESTORE_MASK) | CONSYS_TOPPOSE_RESTORE_VALUE);
+		iounmap(consys_reg_base);
+	}
+
 	return 0;
 }
 
