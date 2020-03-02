@@ -1453,6 +1453,28 @@ static INT32 consys_read_reg_from_dts(struct platform_device *pdev)
 
 static VOID force_trigger_assert_debug_pin(VOID)
 {
+	UINT32 value = 0;
+
+	if (conn_reg.infra_ao_pericfg_base != 0) {
+		WMT_PLAT_PR_DBG("CON_STA_REG = %x\n",
+			CONSYS_REG_READ(
+				conn_reg.infra_ao_pericfg_base +
+				INFRASYS_COMMON_AP2MD_PCCIF4_AP_PERI_AP_CCU_CONFIG));
+
+		/* clear CON_PWR_ON & CON_SW_READY bit (CON_STA_REG[0], CON_STA_REG[1]) */
+		value = CONSYS_REG_READ(conn_reg.infra_ao_pericfg_base +
+			INFRASYS_COMMON_AP2MD_PCCIF4_AP_PERI_AP_CCU_CONFIG);
+		value = value & (~INFRASYS_COMMON_AP2MD_CON_PWR_ON_CON_SW_READY_MASK);
+		CONSYS_REG_WRITE(conn_reg.infra_ao_pericfg_base +
+			INFRASYS_COMMON_AP2MD_PCCIF4_AP_PERI_AP_CCU_CONFIG,
+			value);
+
+		WMT_PLAT_PR_DBG("CON_STA_REG = %x\n",
+			CONSYS_REG_READ(
+				conn_reg.infra_ao_pericfg_base +
+				INFRASYS_COMMON_AP2MD_PCCIF4_AP_PERI_AP_CCU_CONFIG));
+	}
+
 	CONSYS_REG_WRITE(conn_reg.topckgen_base + CONSYS_AP2CONN_OSC_EN_OFFSET,
 			CONSYS_REG_READ(conn_reg.topckgen_base +
 				CONSYS_AP2CONN_OSC_EN_OFFSET) & ~CONSYS_AP2CONN_WAKEUP_BIT);
