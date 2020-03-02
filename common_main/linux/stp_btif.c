@@ -213,7 +213,7 @@ INT32 mtk_wcn_consys_stp_btif_wakeup(VOID)
 	return iRet;
 }
 
-INT32 mtk_wcn_consys_stp_btif_dpidle_ctrl(enum _ENUM_BTIF_DPIDLE_ en_flag)
+INT32 mtk_wcn_consys_stp_btif_dpidle_ctrl(ENUM_BTIF_DPIDLE_CTRL en_flag)
 {
 	INT32 iRet = 0;
 
@@ -228,7 +228,7 @@ INT32 mtk_wcn_consys_stp_btif_dpidle_ctrl(enum _ENUM_BTIF_DPIDLE_ en_flag)
 	return iRet;
 }
 
-INT32 mtk_wcn_consys_stp_btif_lpbk_ctrl(enum _ENUM_BTIF_LPBK_MODE_ mode)
+INT32 mtk_wcn_consys_stp_btif_lpbk_ctrl(ENUM_BTIF_LPBK_MODE mode)
 {
 	INT32 iRet = 0;
 
@@ -247,7 +247,7 @@ INT32 mtk_wcn_consys_stp_btif_lpbk_ctrl(enum _ENUM_BTIF_LPBK_MODE_ mode)
 	return iRet;
 }
 
-INT32 mtk_wcn_consys_stp_btif_logger_ctrl(enum _ENUM_BTIF_DBG_ID_ flag)
+INT32 mtk_wcn_consys_stp_btif_logger_ctrl(ENUM_BTIF_DBG_ID flag)
 {
 	INT32 iRet = 0;
 
