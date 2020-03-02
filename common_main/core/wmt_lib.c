@@ -91,9 +91,12 @@ static PF_WMT_SDIO_DEEP_SLEEP sdio_deep_sleep_flag_set;
 static UINT8 g_cpupcr_buf[WMT_STP_CPUPCR_BUF_SIZE] = { 0 };
 static UINT32 g_quick_sleep_ctrl = 1;
 
-#define CONSYS_MET_CTRL_REG 0x81021400
 #define CONSYS_MET_WAIT	(1000*10) /* ms */
-
+#define MET_DUMP_MAX_NUM (80)
+#define MET_DUMP_SIZE (4*MET_DUMP_MAX_NUM)
+#define EMI_MET_READ_OFFSET	0x0
+#define EMI_MET_WRITE_OFFSET	0x4
+#define EMI_MET_DATA_OFFSET	0x8
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -1104,11 +1107,15 @@ static INT32 met_thread(void *pvData)
 {
 	P_DEV_WMT p_wmtdev = (P_DEV_WMT) pvData;
 	INT32 log_ctrl;
-	UINT32 read_ptr;
-	UINT32 write_ptr;
-	UINT32 emi_met_size;
-	UINT32 emi_met_offset;
+	UINT32 read_ptr = 0;
+	UINT32 write_ptr = 0;
+	UINT32 emi_met_size = 0;
+	UINT32 emi_met_offset = 0;
 	P_CONSYS_EMI_ADDR_INFO emi_info;
+	PUINT8 emi_met_base = NULL;
+	PINT32 met_dump_buf = 0;
+	UINT32 met_buf_offset = 0;
+	UINT32 value = 0;
 
 	if (p_wmtdev == NULL) {
 		WMT_ERR_FUNC("pWmtDev(NULL)\n");
@@ -1131,6 +1138,27 @@ static INT32 met_thread(void *pvData)
 		return -1;
 	}
 
+	met_dump_buf = osal_malloc(MET_DUMP_SIZE);
+	if (!met_dump_buf) {
+		WMT_ERR_FUNC("alloc dump buffer fail\n");
+		return -1;
+	}
+	osal_memset(met_dump_buf, 0, MET_DUMP_SIZE);
+
+	emi_met_base = ioremap_nocache(emi_info->emi_ap_phy_addr + emi_met_offset, emi_met_size);
+	if (!emi_met_base) {
+		osal_free(met_dump_buf);
+		WMT_ERR_FUNC("met emi ioremap fail\n");
+		return -1;
+	}
+
+	WMT_INFO_FUNC("emi phy base:%x, emi vir base:%x, met offset:%x, size:%x\n",
+			emi_info->emi_ap_phy_addr,
+			emi_met_base,
+			emi_met_offset,
+			emi_met_size);
+
+
 	log_ctrl = p_wmtdev->met_log_ctrl;
 	if (log_ctrl)
 		osal_ftrace_print_ctrl(1);
@@ -1138,54 +1166,54 @@ static INT32 met_thread(void *pvData)
 	for (;;) {
 		if (osal_thread_should_stop(&p_wmtdev->met_thread)) {
 			WMT_INFO_FUNC("met thread should stop now...\n");
-			break;
+			goto met_exit;
 		}
 
-		read_ptr = wmt_plat_get_dump_info(emi_met_offset);
-		write_ptr = wmt_plat_get_dump_info(emi_met_offset + 0x4);
+		read_ptr = CONSYS_REG_READ(emi_met_base + EMI_MET_READ_OFFSET);
+		write_ptr = CONSYS_REG_READ(emi_met_base + EMI_MET_WRITE_OFFSET);
 
 		if (read_ptr == write_ptr)
-			WMT_INFO_FUNC("read_ptr(0x%x) == write_ptr(0x%x) no met data need dump!!!\n",
+			WMT_DBG_FUNC("read_ptr(0x%x) == write_ptr(0x%x) no met data need dump!!!\n",
 					read_ptr, write_ptr);
-		else {
+		else if (write_ptr > (emi_met_size - EMI_MET_DATA_OFFSET)) {
+			WMT_ERR_FUNC("write_ptr(0x%x) overflow!!!\n", write_ptr);
+			wmt_lib_trigger_assert(WMTDRV_TYPE_WMT, 42);
+			goto met_exit;
+		} else {
 			if (read_ptr > write_ptr) {
-				for (; read_ptr < emi_met_size; read_ptr += 0x10) {
-					if (log_ctrl == 0)
-						WMT_INFO_FUNC("MCU MET data:0x%x,0x%x,0x%x,0x%x\n",
-						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr),
-						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0x4),
-						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0x8),
-						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0xc));
-					else
-						osal_ftrace_print("MCU MET data:0x%x,0x%x,0x%x,0x%x\n",
-						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr),
-						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0x4),
-						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0x8),
-						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0xc));
+				for (; read_ptr < emi_met_size; read_ptr += 0x4) {
+					value = CONSYS_REG_READ(emi_met_base + EMI_MET_DATA_OFFSET + read_ptr);
+					met_dump_buf[met_buf_offset] = value;
+					met_buf_offset++;
+					if (met_buf_offset >= MET_DUMP_MAX_NUM) {
+						met_buf_offset = 0;
+						osal_buffer_dump_data(met_dump_buf, "MCU_MET_DATA:",
+								      MET_DUMP_MAX_NUM, MET_DUMP_MAX_NUM,
+								      log_ctrl);
+					}
 				}
 				read_ptr = 0;
 			}
 
-			for (; read_ptr < write_ptr; read_ptr += 0x10) {
-				if (log_ctrl == 0)
-					WMT_INFO_FUNC("MCU MET data:0x%x,0x%x,0x%x,0x%x\n",
-						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr),
-						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0x4),
-						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0x8),
-						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0xc));
-				else
-					osal_ftrace_print("MCU MET data:0x%x,0x%x,0x%x,0x%x\n",
-						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr),
-						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0x4),
-						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0x8),
-						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0xc));
+			for (; read_ptr < write_ptr; read_ptr += 0x4) {
+				value = CONSYS_REG_READ(emi_met_base + EMI_MET_DATA_OFFSET + read_ptr);
+				met_dump_buf[met_buf_offset] = value;
+				met_buf_offset++;
+				if (met_buf_offset >= MET_DUMP_MAX_NUM) {
+					met_buf_offset = 0;
+					osal_buffer_dump_data(met_dump_buf, "MCU_MET_DATA:", MET_DUMP_MAX_NUM,
+							      MET_DUMP_MAX_NUM,
+							      log_ctrl);
+				}
 			}
-			wmt_plat_write_emi_l(emi_met_offset, read_ptr);
+			CONSYS_REG_WRITE(emi_met_base, read_ptr);
 		}
-
 		osal_usleep_range(CONSYS_MET_WAIT, CONSYS_MET_WAIT);
 	}
 
+met_exit:
+	osal_free(met_dump_buf);
+	iounmap(emi_met_base);
 	WMT_INFO_FUNC("met thread exits succeed\n");
 
 	return 0;
@@ -2570,6 +2598,38 @@ VOID wmt_lib_dump_wmtd_backtrace(VOID)
 	osal_thread_show_stack(&gDevWmt.thread);
 }
 
+INT32 wmt_lib_met_cmd(UINT32 value)
+{
+	P_OSAL_OP pOp;
+	MTK_WCN_BOOL bRet;
+	P_OSAL_SIGNAL pSignal;
+
+	pOp = wmt_lib_get_free_op();
+	if (!pOp) {
+		WMT_DBG_FUNC("get_free_lxop fail\n");
+		return -1;
+	}
+
+	pSignal = &pOp->signal;
+	pSignal->timeoutValue = MAX_EACH_WMT_CMD;
+	WMT_DBG_FUNC("met ctrl value(0x%x)\n", value);
+	pOp->op.opId = WMT_OPID_MET_CTRL;
+	pOp->op.au4OpData[0] = value;
+	if (DISABLE_PSM_MONITOR()) {
+		WMT_ERR_FUNC("wake up failed\n");
+		wmt_lib_put_op_to_free_queue(pOp);
+		return -1;
+	}
+
+	bRet = wmt_lib_put_act_op(pOp);
+	ENABLE_PSM_MONITOR();
+
+	if (bRet != MTK_WCN_BOOL_FALSE)
+		return 0;
+
+	return -1;
+}
+
 UINT32 wmt_lib_get_gps_lna_pin_num(VOID)
 {
 	return mtk_consys_get_gps_lna_pin_num();
@@ -2589,7 +2649,7 @@ INT32 wmt_lib_met_ctrl(INT32 met_ctrl, INT32 log_ctrl)
 		return -1;
 	}
 
-	ret = wmt_lib_reg_rw(1, CONSYS_MET_CTRL_REG, &met_ctrl, 0xffffffff);
+	ret = wmt_lib_met_cmd(met_ctrl);
 	if (ret) {
 		WMT_ERR_FUNC("send MET ctrl command fail(%d)\n", ret);
 		return -1;
