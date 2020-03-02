@@ -453,12 +453,22 @@ static INT32 consys_clock_buffer_ctrl(MTK_WCN_BOOL enable)
 static VOID consys_set_if_pinmux(MTK_WCN_BOOL enable)
 {
 	UINT8 *consys_if_pinmux_reg_base = NULL;
+	UINT8 *consys_if_pinmux_driving_base = NULL;
 
 	/* Switch D die pinmux for connecting A die */
 	consys_if_pinmux_reg_base = ioremap_nocache(CONSYS_IF_PINMUX_REG_BASE, 0x1000);
 	if (!consys_if_pinmux_reg_base) {
 		WMT_PLAT_PR_ERR("consys_if_pinmux_reg_base(%x) ioremap fail\n",
 				CONSYS_IF_PINMUX_REG_BASE);
+		return;
+	}
+
+	consys_if_pinmux_driving_base = ioremap_nocache(CONSYS_IF_PINMUX_DRIVING_BASE, 0x100);
+	if (!consys_if_pinmux_driving_base) {
+		WMT_PLAT_PR_ERR("consys_if_pinmux_driving_base(%x) ioremap fail\n",
+				CONSYS_IF_PINMUX_DRIVING_BASE);
+		if (consys_if_pinmux_reg_base)
+			iounmap(consys_if_pinmux_reg_base);
 		return;
 	}
 
@@ -471,6 +481,11 @@ static VOID consys_set_if_pinmux(MTK_WCN_BOOL enable)
 				(CONSYS_REG_READ(consys_if_pinmux_reg_base +
 				CONSYS_IF_PINMUX_02_OFFSET) &
 				CONSYS_IF_PINMUX_02_MASK) | CONSYS_IF_PINMUX_02_VALUE);
+		/* set pinmux driving to 2mA */
+		CONSYS_REG_WRITE(consys_if_pinmux_driving_base + CONSYS_IF_PINMUX_DRIVING_OFFSET,
+				(CONSYS_REG_READ(consys_if_pinmux_driving_base +
+				CONSYS_IF_PINMUX_DRIVING_OFFSET) &
+				CONSYS_IF_PINMUX_DRIVING_MASK) | CONSYS_IF_PINMUX_DRIVING_VALUE);
 	} else {
 		CONSYS_REG_WRITE(consys_if_pinmux_reg_base + CONSYS_IF_PINMUX_01_OFFSET,
 				CONSYS_REG_READ(consys_if_pinmux_reg_base +
@@ -482,6 +497,8 @@ static VOID consys_set_if_pinmux(MTK_WCN_BOOL enable)
 
 	if (consys_if_pinmux_reg_base)
 		iounmap(consys_if_pinmux_reg_base);
+	if (consys_if_pinmux_driving_base)
+		iounmap(consys_if_pinmux_driving_base);
 }
 
 static VOID consys_hw_reset_bit_set(MTK_WCN_BOOL enable)
