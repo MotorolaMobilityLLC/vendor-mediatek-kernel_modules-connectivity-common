@@ -283,7 +283,7 @@ static UINT8 WMT_FW_LOG_CTRL_CMD[] = { 0x01, 0xF0, 0x04, 0x00, 0x01
 	, 0x00 /* on/off */
 	, 0x00 /* level (subsys-specific) */
 };
-static UINT8 WMT_FW_LOG_CTRL_EVT[] = { 0x02, 0xF0, 0x01, 0x00, 0x01 };
+static UINT8 WMT_FW_LOG_CTRL_EVT[] = { 0x02, 0xF0, 0x02, 0x00, 0x01, 0x00 };
 
 /* GeorgeKuo: Use designated initializers described in
  * http://gcc.gnu.org/onlinedocs/gcc-4.0.4/gcc/Designated-Inits.html
