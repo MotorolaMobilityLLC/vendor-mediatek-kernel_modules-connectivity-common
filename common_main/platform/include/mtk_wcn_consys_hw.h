@@ -158,6 +158,7 @@ typedef VOID(*CONSYS_IC_SET_IF_PINMUX) (MTK_WCN_BOOL enable);
 typedef VOID(*CONSYS_IC_SET_DL_ROM_PATCH_FLAG) (INT32 flag);
 typedef INT32(*CONSYS_IC_DEDICATED_LOG_PATH_INIT) (struct platform_device *pdev);
 typedef VOID(*CONSYS_IC_DEDICATED_LOG_PATH_DEINIT) (VOID);
+typedef INT32(*CONSYS_ID_CHECK_REG_READABLE) (VOID);
 
 typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_CLOCK_BUFFER_CTRL consys_ic_clock_buffer_ctrl;
@@ -195,6 +196,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_SET_DL_ROM_PATCH_FLAG consys_ic_set_dl_rom_patch_flag;
 	CONSYS_IC_DEDICATED_LOG_PATH_INIT consys_ic_dedicated_log_path_init;
 	CONSYS_IC_DEDICATED_LOG_PATH_DEINIT consys_ic_dedicated_log_path_deinit;
+	CONSYS_ID_CHECK_REG_READABLE consys_ic_check_reg_readable;
 } WMT_CONSYS_IC_OPS, *P_WMT_CONSYS_IC_OPS;
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -261,5 +263,6 @@ INT32 mtk_wcn_consys_set_dynamic_dump(PUINT32 buf);
 INT32 mtk_wdt_swsysret_config(INT32 bit, INT32 set_value);
 VOID mtk_wcn_consys_hang_debug(VOID);
 UINT32 mtk_consys_get_gps_lna_pin_num(VOID);
+INT32 mtk_consys_check_reg_readable(VOID);
 #endif /* _MTK_WCN_CONSYS_HW_H_ */
 
