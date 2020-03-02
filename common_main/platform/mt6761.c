@@ -158,6 +158,7 @@ CONSYS_EMI_ADDR_INFO mtk_wcn_emi_addr_info = {
 	.paged_dump_off = CONSYS_EMI_PAGED_DUMP_OFFSET,
 	.full_dump_off = CONSYS_EMI_FULL_DUMP_OFFSET,
 	.emi_remap_offset = CONSYS_EMI_MAPPING_OFFSET,
+	.emi_core_dump_offset = CONSYS_EMI_COREDUMP_OFFSET,
 	.p_ecso = &mtk_wcn_emi_state_off,
 	.pda_dl_patch_flag = 0,
 	.emi_met_size = 0x50000,
@@ -1013,6 +1014,7 @@ static INT32 consys_read_reg_from_dts(struct platform_device *pdev)
 		conn_reg.mcu_top_misc_off_base = (SIZE_T) of_iomap(node, MCU_TOP_MISC_OFF_BASE_INDEX);
 		conn_reg.mcu_conn_hif_on_base = (SIZE_T) of_iomap(node, MCU_CONN_HIF_ON_BASE_INDEX);
 		conn_reg.mcu_cfg_on_base = (SIZE_T) of_iomap(node, MCU_CFG_ON_BASE_INDEX);
+		conn_reg.mcu_cirq_base = (SIZE_T) of_iomap(node, MCU_CIRQ_BASE_INDEX);
 		conn_reg.mcu_top_misc_on_base = (SIZE_T) of_iomap(node, MCU_TOP_MISC_ON_BASE_INDEX);
 
 		WMT_PLAT_PR_DBG("Get base mcu(0x%zx), rgu(0x%zx), topckgen(0x%zx), spm(0x%zx)\n",
