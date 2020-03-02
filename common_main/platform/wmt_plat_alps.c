@@ -273,6 +273,11 @@ static INT32 wmt_plat_deep_idle_ctrl(UINT32 dpilde_ctrl)
 	return iRet;
 }
 
+static VOID wmt_plat_clock_fail_dump(VOID)
+{
+	mtk_wcn_consys_clock_fail_dump();
+}
+
 #if CFG_WMT_PS_SUPPORT
 static VOID wmt_plat_bgf_eirq_cb(VOID)
 {
@@ -350,6 +355,7 @@ INT32 wmt_plat_init(P_PWR_SEQ_TIME pPwrSeqTime, UINT32 co_clock_type)
 	stub_cb.thermal_query_cb = wmt_plat_thermal_ctrl;
 	stub_cb.deep_idle_ctrl_cb = wmt_plat_deep_idle_ctrl;
 	stub_cb.wmt_do_reset_cb = NULL;
+	stub_cb.clock_fail_dump_cb = wmt_plat_clock_fail_dump;
 	stub_cb.size = sizeof(stub_cb);
 
 	/* register to cmb_stub */
