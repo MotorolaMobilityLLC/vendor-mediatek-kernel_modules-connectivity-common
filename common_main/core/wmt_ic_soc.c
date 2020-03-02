@@ -1067,6 +1067,57 @@ WMT_IC_OPS wmt_ic_ops_soc = {
 ********************************************************************************
 */
 
+static INT32 _wmt_soc_mode_ctrl(UINT32 mode)
+{
+	INT32 iRet = -1;
+	unsigned long ctrlPa1;
+	unsigned long ctrlPa2;
+
+	/* only consider full mode situation for the moment */
+	if (mode != MTKSTP_BTIF_FULL_MODE)
+		return -1;
+
+	/* 1. Query chip STP default options */
+	iRet = wmt_core_init_script(init_table_1_2, osal_array_size(init_table_1_2));
+	if (iRet) {
+		WMT_ERR_FUNC("init_table_1_2 fail(%d)\n", iRet);
+		osal_assert(0);
+		return -2;
+	}
+
+	/* 2. Set chip STP options */
+	iRet = wmt_core_init_script(init_table_4, osal_array_size(init_table_4));
+	if (iRet) {
+		WMT_ERR_FUNC("init_table_4 fail(%d)\n", iRet);
+		return -3;
+	}
+
+	/* 3. Enable host full mode */
+	ctrlPa1 = WMT_STP_CONF_MODE;
+	ctrlPa2 = MTKSTP_BTIF_FULL_MODE;
+	iRet = wmt_core_ctrl(WMT_CTRL_STP_CONF, &ctrlPa1, &ctrlPa2);
+	ctrlPa1 = WMT_STP_CONF_EN;
+	ctrlPa2 = 1;
+	iRet += wmt_core_ctrl(WMT_CTRL_STP_CONF, &ctrlPa1, &ctrlPa2);
+	if (iRet) {
+		WMT_ERR_FUNC("enable host STP-BTIF-FULL mode fail(%d)\n", iRet);
+		return -4;
+	}
+	WMT_DBG_FUNC("enable host STP-BTIF-FULL mode\n");
+
+	/*4. wait for 10ms, enough for chip do mechanism switch.(at least 2ms is needed) */
+	osal_sleep_ms(10);
+
+	/* 5. Query chip STP options */
+	iRet = wmt_core_init_script(init_table_5, osal_array_size(init_table_5));
+	if (iRet) {
+		WMT_ERR_FUNC("init_table_5 fail(%d)\n", iRet);
+		return -5;
+	}
+
+	return 0;
+}
+
 static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 {
 	INT32 iRet = -1;
@@ -1090,6 +1141,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	UINT32 pmicChipid = 0;
 #endif
 	P_WMT_GEN_CONF pWmtGenConf = NULL;
+	P_CONSYS_EMI_ADDR_INFO emiInfo = NULL;
 
 	WMT_DBG_FUNC(" start\n");
 
@@ -1105,43 +1157,20 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 
 	/* 4 <3.2> start init for BTIF */
 	if (pWmtHifConf->hifType == WMT_HIF_BTIF) {
-		/* 1. Query chip STP default options (TEST-ONLY) */
-		/* WMT_DBG_FUNC("WMT-CORE: init_table_1_2 set chip baud:%d", pWmtHifConf->au4HifConf[0]); */
-		iRet = wmt_core_init_script(init_table_1_2, osal_array_size(init_table_1_2));
-		if (iRet) {
-			WMT_ERR_FUNC("init_table_1_2 fail(%d)\n", iRet);
-			osal_assert(0);
-			return -2;
-		}
 
-		/* 2. Set chip STP options */
-		iRet = wmt_core_init_script(init_table_4, osal_array_size(init_table_4));
-		if (iRet) {
-			WMT_ERR_FUNC("init_table_4 fail(%d)\n", iRet);
-			return -3;
+		emiInfo = mtk_wcn_consys_soc_get_emi_phy_add();
+		if (!emiInfo) {
+			WMT_ERR_FUNC("get emi info fail!\n");
+			return -1;
 		}
-
-		/* 3. Enable host full mode */
-		ctrlPa1 = WMT_STP_CONF_MODE;
-		ctrlPa2 = MTKSTP_BTIF_FULL_MODE;
-		iRet = wmt_core_ctrl(WMT_CTRL_STP_CONF, &ctrlPa1, &ctrlPa2);
-		ctrlPa1 = WMT_STP_CONF_EN;
-		ctrlPa2 = 1;
-		iRet += wmt_core_ctrl(WMT_CTRL_STP_CONF, &ctrlPa1, &ctrlPa2);
-		if (iRet) {
-			WMT_ERR_FUNC("enable host STP-BTIF-FULL mode fail(%d)\n", iRet);
-			return -4;
-		}
-		WMT_DBG_FUNC("enable host STP-BTIF-FULL mode\n");
-		/*4. wait for 10ms, enough for chip do mechanism switch.(at least 2ms is needed) */
-		osal_sleep_ms(10);
-		/* 5. Query chip STP options (TEST-ONLY) */
-		iRet = wmt_core_init_script(init_table_5, osal_array_size(init_table_5));
-		if (iRet) {
-			WMT_ERR_FUNC("init_table_5 fail(%d)\n", iRet);
-			return -5;
+		/* non-PDA mode, enable full mode before patch download */
+		if (!emiInfo->pda_dl_patch_flag) {
+			iRet = _wmt_soc_mode_ctrl(MTKSTP_BTIF_FULL_MODE);
+			if (iRet)
+				return iRet;
 		}
 	}
+
 #if CFG_WMT_POWER_ON_DLM
 	if (wmt_ic_ops_soc.icId != 0x6765 &&
 	    wmt_ic_ops_soc.icId != 0x3967 &&
@@ -1241,6 +1270,15 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		return -8;
 	}
 #endif
+
+	/* PDA mode, enable full mode after patch download */
+	if (pWmtHifConf->hifType == WMT_HIF_BTIF &&
+	    emiInfo->pda_dl_patch_flag) {
+		iRet = _wmt_soc_mode_ctrl(MTKSTP_BTIF_FULL_MODE);
+		if (iRet)
+			return iRet;
+	}
+
 	chipid = wmt_plat_get_soc_chipid();
 	WMT_SET_CHIP_ID_CMD[5] = chipid & 0xff;
 	WMT_SET_CHIP_ID_CMD[6] = (chipid >> 8) & 0xff;
@@ -1374,7 +1412,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	if (iRet) {
 		/* pwrap_read(0x0210,&ctrlPa1); */
 		/* pwrap_read(0x0212,&ctrlPa2); */
-		WMT_ERR_FUNC("power status: 210:(%d),212:(%d)!\n", ctrlPa1, ctrlPa2);
+		/* WMT_ERR_FUNC("power status: 210:(%d),212:(%d)!\n", ctrlPa1, ctrlPa2); */
 		WMT_ERR_FUNC("calibration_table fail(%d)\n", iRet);
 		return -9;
 	}
@@ -2616,6 +2654,7 @@ patch_download:
 
 static INT32 mtk_wcn_soc_pda_patch_dwn(PUINT8 pPatchBuf, UINT32 patchSize, PUINT8 addressByte)
 {
+#define PDAHDRLEN 12
 	UINT32 u4Res;
 	UINT8 evtBuf[8];
 	INT32 iRet = -1;
@@ -2624,31 +2663,32 @@ static INT32 mtk_wcn_soc_pda_patch_dwn(PUINT8 pPatchBuf, UINT32 patchSize, PUINT
 	UINT16 fragSize = 0;
 	UINT32 patchSizePerFrag = 0;
 	UINT32 offset;
+	UINT8 pdaHdr[PDAHDRLEN];
 
-	/*PDA download address*/
-	WMT_PATCH_PDA_CFG_CMD[5] = addressByte[3];
-	WMT_PATCH_PDA_CFG_CMD[6] = addressByte[2];
-	WMT_PATCH_PDA_CFG_CMD[7] = addressByte[1];
-	WMT_PATCH_PDA_CFG_CMD[8] = addressByte[0];
+	/* PDA download address, LSB */
+	WMT_PATCH_PDA_CFG_CMD[5] = addressByte[0];
+	WMT_PATCH_PDA_CFG_CMD[6] = addressByte[1];
+	WMT_PATCH_PDA_CFG_CMD[7] = addressByte[2];
+	WMT_PATCH_PDA_CFG_CMD[8] = addressByte[3];
 
-	/*PDA download size*/
-	WMT_PATCH_PDA_CFG_CMD[9] = (patchSize & 0xFF000000) >> 24;
-	WMT_PATCH_PDA_CFG_CMD[10] = (patchSize & 0x00FF0000) >> 16;
-	WMT_PATCH_PDA_CFG_CMD[11] = (patchSize & 0x0000FF00) >> 8;
-	WMT_PATCH_PDA_CFG_CMD[12] = (patchSize & 0x000000FF);
+	/* PDA download size, LSB */
+	WMT_PATCH_PDA_CFG_CMD[9] = (patchSize & 0x000000FF);
+	WMT_PATCH_PDA_CFG_CMD[10] = (patchSize & 0x0000FF00) >> 8;
+	WMT_PATCH_PDA_CFG_CMD[11] = (patchSize & 0x00FF0000) >> 16;
+	WMT_PATCH_PDA_CFG_CMD[12] = (patchSize & 0xFF000000) >> 24;
 
 	iRet = wmt_core_tx((PUINT8) &WMT_PATCH_PDA_CFG_CMD[0], sizeof(WMT_PATCH_PDA_CFG_CMD), &u4Res,
-			MTK_WCN_BOOL_FALSE);
+			   MTK_WCN_BOOL_FALSE);
 	if (iRet || (u4Res != sizeof(WMT_PATCH_PDA_CFG_CMD))) {
 		WMT_ERR_FUNC("wmt_core:wmt part patch PDA config CMD fail(%d),size(%d)\n",
-				iRet, u4Res);
+			     iRet, u4Res);
 		return -1;
 	}
 	osal_memset(evtBuf, 0, sizeof(evtBuf));
 	iRet = wmt_core_rx(evtBuf, sizeof(WMT_PATCH_PDA_CFG_EVT), &u4Res);
 	if (iRet || (u4Res != sizeof(WMT_PATCH_PDA_CFG_EVT))) {
 		WMT_ERR_FUNC("wmt_core:wmt patch PDA config EVT fail(%d),size(%d)\n",
-				iRet, u4Res);
+			     iRet, u4Res);
 		WMT_INFO_FUNC("buf:[%2X,%2X,%2X,%2X,%2X] evt:[%2X,%2X,%2X,%2X,%2X]\n",
 				evtBuf[0], evtBuf[1], evtBuf[2], evtBuf[3], evtBuf[4],
 				WMT_PATCH_PDA_CFG_EVT[0], WMT_PATCH_PDA_CFG_EVT[1],
@@ -2662,7 +2702,18 @@ static INT32 mtk_wcn_soc_pda_patch_dwn(PUINT8 pPatchBuf, UINT32 patchSize, PUINT
 	fragNum = patchSize / patchSizePerFrag;
 	fragNum += ((fragNum * patchSizePerFrag) == patchSize) ? 0 : 1;
 
-	WMT_INFO_FUNC("PDA patch download patch size(%d) fragNum(%d)\n", patchSize, fragNum);
+	osal_memset(pdaHdr, 0, PDAHDRLEN);
+	pdaHdr[0] = (patchSize + PDAHDRLEN) & 0x000000FF;
+	pdaHdr[1] = ((patchSize + PDAHDRLEN) & 0x0000FF00) >> 8;
+	pdaHdr[2] = ((patchSize + PDAHDRLEN) & 0x00FF0000) >> 16;
+	pdaHdr[3] = ((patchSize + PDAHDRLEN) & 0xFF000000) >> 24;
+
+	iRet = wmt_core_tx(pdaHdr, PDAHDRLEN, &u4Res, MTK_WCN_BOOL_TRUE);
+	if (iRet || (u4Res != PDAHDRLEN)) {
+		WMT_ERR_FUNC("wmt_core: set length:%d fails, u4Res:%d\n", PDAHDRLEN, u4Res);
+		return -1;
+	}
+
 	/* send all fragments */
 	offset = 0;
 	fragSeq = 0;
@@ -2676,7 +2727,7 @@ static INT32 mtk_wcn_soc_pda_patch_dwn(PUINT8 pPatchBuf, UINT32 patchSize, PUINT
 		iRet = wmt_core_tx(pPatchBuf + offset, fragSize, &u4Res, MTK_WCN_BOOL_TRUE);
 		if (iRet || (u4Res != fragSize)) {
 			WMT_ERR_FUNC("wmt_core: write fragSeq(%d) size(%d, %d) fail(%d)\n",
-					fragSeq, fragSize, u4Res, iRet);
+				     fragSeq, fragSize, u4Res, iRet);
 			iRet = -1;
 			break;
 		}
@@ -2688,7 +2739,7 @@ static INT32 mtk_wcn_soc_pda_patch_dwn(PUINT8 pPatchBuf, UINT32 patchSize, PUINT
 		++fragSeq;
 	}
 
-	WMT_WARN_FUNC("wmt_core: patch dwn:%d frag(%d, %d) %s\n",
+	WMT_INFO_FUNC("wmt_core: patch dwn:%d frag(%d, %d) %s\n",
 		      iRet, fragSeq, fragSize, (!iRet && (fragSeq == fragNum)) ? "ok" : "fail");
 
 	if (fragSeq != fragNum)
