@@ -1559,7 +1559,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	    wmt_ic_ops_soc.icId != 0x6761 &&
 	    wmt_ic_ops_soc.icId != 0x6768 &&
 	    wmt_ic_ops_soc.icId != 0x6779) {
-		if (mtk_wcn_soc_co_clock_get() == WMT_CO_CLOCK_EN) {
+		if (wmt_plat_soc_co_clock_flag_get() == WMT_CO_CLOCK_EN) {
 			WMT_INFO_FUNC("co-clock enabled.\n");
 
 			iRet = wmt_core_init_script(osc_type_table, osal_array_size(osc_type_table));
@@ -1994,11 +1994,6 @@ static MTK_WCN_BOOL mtk_wcn_soc_trigger_assert(VOID)
 		ret = -1;
 	}
 	return (ret == 0);
-}
-
-WMT_CO_CLOCK mtk_wcn_soc_co_clock_get(VOID)
-{
-	return gCoClockEn;
 }
 
 static INT32 mtk_wcn_soc_ver_check(VOID)
