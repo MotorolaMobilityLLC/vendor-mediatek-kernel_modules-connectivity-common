@@ -177,8 +177,8 @@ int wmt_step_test_check_create_read_reg(struct step_reigster_info *p_reg_info,
 		if (p_reg_info->address != check_params[check_index + 1] ||
 			p_reg_info->offset != check_params[check_index + 2]) {
 			WMT_ERR_FUNC(
-				"%s, C1 reg params: %d, %p, %d\n",
-				err_result, p_reg_info->is_write, p_reg_info->address,
+				"%s, C1 reg params: %d, 0x%08x, %d\n",
+				err_result, p_reg_info->is_write, (unsigned int)p_reg_info->address,
 				p_reg_info->offset);
 			return TEST_FAIL;
 		}
@@ -186,8 +186,8 @@ int wmt_step_test_check_create_read_reg(struct step_reigster_info *p_reg_info,
 		if (p_reg_info->address_type != check_params[check_index + 1] ||
 			p_reg_info->offset != check_params[check_index + 2]) {
 			WMT_ERR_FUNC(
-				"%s, C2 reg params: %d, %p, %d\n",
-				err_result, p_reg_info->is_write, p_reg_info->address,
+				"%s, C2 reg params: %d, 0x%08x, %d\n",
+				err_result, p_reg_info->is_write, (unsigned int)p_reg_info->address,
 				p_reg_info->offset);
 			return TEST_FAIL;
 		}
@@ -197,8 +197,8 @@ int wmt_step_test_check_create_read_reg(struct step_reigster_info *p_reg_info,
 		if (p_reg_info->times != check_params[check_index + 3] ||
 			p_reg_info->delay_time != check_params[check_index + 4]) {
 			WMT_ERR_FUNC(
-				"%s, C3 reg params: %d, %p, %d, %d, %d\n",
-				err_result, p_reg_info->is_write, p_reg_info->address,
+				"%s, C3 reg params: %d, 0x%08x, %d, %d, %d\n",
+				err_result, p_reg_info->is_write, (unsigned int)p_reg_info->address,
 				p_reg_info->offset, p_reg_info->times, p_reg_info->delay_time);
 			result = TEST_FAIL;
 		} else {
@@ -208,8 +208,8 @@ int wmt_step_test_check_create_read_reg(struct step_reigster_info *p_reg_info,
 		if (p_reg_info->mask != check_params[check_index + 3] ||
 			p_reg_info->temp_reg_id != check_params[check_index + 4]) {
 			WMT_ERR_FUNC(
-				"%s, C4 reg params: %d, %p, %d, %d, %d\n",
-				err_result, p_reg_info->is_write, p_reg_info->address,
+				"%s, C4 reg params: %d, 0x%08x, %d, %d, %d\n",
+				err_result, p_reg_info->is_write, (unsigned int)p_reg_info->address,
 				p_reg_info->offset, p_reg_info->mask, p_reg_info->temp_reg_id);
 			result = TEST_FAIL;
 		} else {
@@ -232,8 +232,8 @@ int wmt_step_test_check_create_write_reg(struct step_reigster_info *p_reg_info,
 			p_reg_info->offset != check_params[check_index + 2] ||
 			p_reg_info->value != check_params[check_index + 3]) {
 			WMT_ERR_FUNC(
-				"%s, C1 reg params: %d, %p, %d, %d\n",
-				err_result, p_reg_info->is_write, p_reg_info->address,
+				"%s, C1 reg params: %d, 0x%08x, %d, %d\n",
+				err_result, p_reg_info->is_write, (unsigned int)p_reg_info->address,
 				p_reg_info->offset, p_reg_info->value);
 			result = TEST_FAIL;
 		} else {
@@ -560,7 +560,7 @@ void wmt_step_test_check_reg_read_act(unsigned int len, ...)
 		g_step_test_check.step_check_result = TEST_PASS;
 	} else {
 		WMT_ERR_FUNC("STEP test failed: Value is %d, expect %d(0x%08x)", value, check_result,
-			g_step_test_check.step_check_register_addr);
+			(unsigned int)g_step_test_check.step_check_register_addr);
 		g_step_test_check.step_check_result = TEST_FAIL;
 	}
 
@@ -593,20 +593,20 @@ void wmt_step_test_check_reg_write_act(unsigned int len, ...)
 		if (g_step_test_check.step_check_write_value == value) {
 			g_step_test_check.step_check_result = TEST_PASS;
 		} else {
-			WMT_ERR_FUNC("STEP test failed: Value is %d, expect %d", value,
+			WMT_ERR_FUNC("STEP test failed: Value is %d, expect %lu", value,
 				g_step_test_check.step_check_write_value);
 			g_step_test_check.step_check_result = TEST_FAIL;
 		}
 	} else {
 		if ((mask & value) != (mask & g_step_test_check.step_check_write_value)) {
-			WMT_ERR_FUNC("STEP test failed: Overrite value: %d, expect value %d origin %d mask %d",
+			WMT_ERR_FUNC("STEP test failed: Overrite:%d, expect:%lu origin %d mask %d",
 				value,
 				g_step_test_check.step_check_write_value,
 				g_step_test_check.step_recovery_value,
 				mask);
 			g_step_test_check.step_check_result = TEST_FAIL;
 		} else if ((~mask & value) != (~mask & g_step_test_check.step_recovery_value)) {
-			WMT_ERR_FUNC("STEP test failed: No change value: %d, expect value %d origin %d mask %d",
+			WMT_ERR_FUNC("STEP test failed: No change:%d, expect:%lu origin %d mask %d",
 				value,
 				g_step_test_check.step_check_write_value,
 				g_step_test_check.step_recovery_value,
