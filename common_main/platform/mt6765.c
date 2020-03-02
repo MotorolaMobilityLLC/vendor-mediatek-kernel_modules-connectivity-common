@@ -120,6 +120,8 @@ static PUINT32 consys_resume_dump_info(VOID);
 static VOID consys_set_pdma_axi_rready_force_high(UINT32 enable);
 static VOID consys_infra_reg_dump(VOID);
 static VOID consys_get_ant_sel_cr_addr(PUINT32 default_invert_cr, PUINT32 default_invert_bit);
+static INT32 consys_calibration_backup_restore_support(VOID);
+
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -208,6 +210,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_set_pdma_axi_rready_force_high = consys_set_pdma_axi_rready_force_high,
 	.consys_ic_infra_reg_dump = consys_infra_reg_dump,
 	.consys_ic_get_ant_sel_cr_addr = consys_get_ant_sel_cr_addr,
+	.consys_ic_calibration_backup_restore = consys_calibration_backup_restore_support,
 };
 
 /*******************************************************************************
@@ -1315,4 +1318,9 @@ static VOID consys_get_ant_sel_cr_addr(PUINT32 default_invert_cr, PUINT32 defaul
 		default_invert_bit[6] = DEFAULT_COEX_WMT_ANTSEL_6_POLARITY_BIT;
 		default_invert_bit[7] = DEFAULT_COEX_WMT_ANTSEL_7_POLARITY_BIT;
 	}
+}
+
+static INT32 consys_calibration_backup_restore_support(VOID)
+{
+	return 1;
 }
