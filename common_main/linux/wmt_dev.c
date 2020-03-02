@@ -142,7 +142,13 @@ static atomic_t gWmtRefCnt = ATOMIC_INIT(0);
 static UINT8 gLpbkBuf[WMT_LPBK_BUF_LEN] = { 0 };
 
 static UINT32 gLpbkBufLog;	/* George LPBK debug */
-static INT32 gWmtInitDone;
+
+enum wmt_init_status {
+	WMT_INIT_NOT_START,
+	WMT_INIT_START,
+	WMT_INIT_DONE,
+};
+static INT32 gWmtInitStatus = WMT_INIT_NOT_START;
 static wait_queue_head_t gWmtInitWq;
 #ifdef CONFIG_MTK_COMBO_COMM_APO
 UINT32 always_pwr_on_flag = 1;
@@ -1686,7 +1692,7 @@ static INT32 WMT_open(struct inode *inode, struct file *file)
 	LONG ret;
 
 	WMT_INFO_FUNC("major %d minor %d (pid %d)\n", imajor(inode), iminor(inode), current->pid);
-	ret = wait_event_timeout(gWmtInitWq, gWmtInitDone != 0, msecs_to_jiffies(WMT_DEV_INIT_TO_MS));
+	ret = wait_event_timeout(gWmtInitWq, gWmtInitStatus == WMT_INIT_DONE, msecs_to_jiffies(WMT_DEV_INIT_TO_MS));
 	if (!ret) {
 		WMT_WARN_FUNC("wait_event_timeout (%d)ms,(%d)jiffies,return -EIO\n",
 			      WMT_DEV_INIT_TO_MS, msecs_to_jiffies(WMT_DEV_INIT_TO_MS));
@@ -1788,9 +1794,11 @@ static INT32 WMT_init(VOID)
 	ENUM_WMT_CHIP_TYPE chip_type;
 
 	WMT_DBG_FUNC("WMT Version= %s DATE=%s\n", MTK_WMT_VERSION, MTK_WMT_DATE);
+	if (gWmtInitStatus != WMT_INIT_NOT_START)
+		return 0;
 	/* Prepare a UINT8 device */
 	/*static allocate chrdev */
-	gWmtInitDone = 0;
+	gWmtInitStatus = WMT_INIT_START;
 	init_waitqueue_head((wait_queue_head_t *) &gWmtInitWq);
 #if (MTK_WCN_REMOVE_KO)
 	/* called in do_common_drv_init() */
@@ -1802,6 +1810,7 @@ static INT32 WMT_init(VOID)
 	ret = register_chrdev_region(devID, WMT_DEV_NUM, WMT_DRIVER_NAME);
 	if (ret) {
 		WMT_ERR_FUNC("fail to register chrdev\n");
+		gWmtInitStatus = WMT_INIT_NOT_START;
 		return ret;
 	}
 
@@ -1879,7 +1888,7 @@ static INT32 WMT_init(VOID)
 	if (chip_type == WMT_CHIP_TYPE_SOC)
 		wmt_dev_bgw_desense_init();
 
-	gWmtInitDone = 1;
+	gWmtInitStatus = WMT_INIT_DONE;
 	wake_up(&gWmtInitWq);
 
 	INIT_WORK(&gPwrOnOffWork, wmt_pwr_on_off_handler);
@@ -1927,6 +1936,7 @@ error:
 		gWmtMajor = -1;
 	}
 
+	gWmtInitStatus = WMT_INIT_NOT_START;
 	WMT_ERR_FUNC("fail\n");
 
 	return -1;
@@ -1935,6 +1945,9 @@ error:
 static VOID WMT_exit(VOID)
 {
 	dev_t dev = MKDEV(gWmtMajor, 0);
+
+	if (gWmtInitStatus != WMT_INIT_DONE)
+		return;
 
 	osal_unsleepable_lock_deinit(&g_temp_query_spinlock);
 	osal_sleepable_lock_deinit(&g_aee_read_lock);
@@ -1984,6 +1997,7 @@ static VOID WMT_exit(VOID)
 
 	stp_drv_exit();
 	mtk_wcn_hif_sdio_driver_exit();
+	gWmtInitStatus = WMT_INIT_NOT_START;
 	WMT_INFO_FUNC("done\n");
 }
 
