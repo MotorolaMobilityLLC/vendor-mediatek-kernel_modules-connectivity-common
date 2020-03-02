@@ -23,6 +23,12 @@
 ********************************************************************************
 */
 
+
+/* kernel wmt_build_in_adapter.c already has these, so always ignored */
+#ifdef MTK_WCN_REMOVE_KERNEL_MODULE
+#undef MTK_WCN_REMOVE_KERNEL_MODULE
+#endif
+
 /*******************************************************************************
 *                                 M A C R O S
 ********************************************************************************
