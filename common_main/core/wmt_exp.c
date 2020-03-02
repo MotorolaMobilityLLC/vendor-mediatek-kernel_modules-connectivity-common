@@ -229,10 +229,14 @@ EXPORT_SYMBOL(mtk_wcn_wmt_func_on);
 */
 VOID mtk_wcn_wmt_func_ctrl_for_plat(UINT32 on, ENUM_WMTDRV_TYPE_T type)
 {
+	MTK_WCN_BOOL ret;
+
 	if (on)
-		mtk_wcn_wmt_func_on(type);
+		ret = mtk_wcn_wmt_func_on(type);
 	else
-		mtk_wcn_wmt_func_off(type);
+		ret = mtk_wcn_wmt_func_off(type);
+
+	WMT_INFO_FUNC("on=%d type=%d ret=%d\n", on, type, ret);
 }
 
 INT8 mtk_wcn_wmt_therm_ctrl(ENUM_WMTTHERM_TYPE_T eType)
