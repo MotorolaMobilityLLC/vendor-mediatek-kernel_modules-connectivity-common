@@ -1302,6 +1302,11 @@ INT32 osal_unlock_sleepable_lock(P_OSAL_SLEEPABLE_LOCK pSL)
 	return 0;
 }
 
+INT32 osal_trylock_sleepable_lock(P_OSAL_SLEEPABLE_LOCK pSL)
+{
+	return mutex_trylock(&pSL->lock);
+}
+
 INT32 osal_sleepable_lock_deinit(P_OSAL_SLEEPABLE_LOCK pSL)
 {
 	mutex_destroy(&pSL->lock);
