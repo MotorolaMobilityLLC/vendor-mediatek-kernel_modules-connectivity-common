@@ -74,6 +74,8 @@ struct platform_device *g_pdev;
 
 UINT32 gps_lna_pin_num = 0xffffffff;
 
+INT32 chip_reset_status = -1;
+
 #ifdef CONFIG_OF
 const struct of_device_id apwmt_of_ids[] = {
 	{.compatible = "mediatek,mt3967-consys",},
@@ -539,6 +541,8 @@ INT32 mtk_wcn_consys_hw_rst(UINT32 co_clock_type)
 
 	WMT_PLAT_PR_INFO("CONSYS-HW, hw_rst start, eirq should be disabled before this step\n");
 
+	mtk_consys_set_chip_reset_status(1);
+
 	if (wmt_consys_ic_ops->consys_ic_set_dl_rom_patch_flag)
 		wmt_consys_ic_ops->consys_ic_set_dl_rom_patch_flag(1);
 
@@ -558,6 +562,8 @@ INT32 mtk_wcn_consys_hw_rst(UINT32 co_clock_type)
 	/* Make sure pdma_axi_rready_force_high set to 0 after reset */
 	if (wmt_consys_ic_ops->consys_ic_set_pdma_axi_rready_force_high)
 		wmt_consys_ic_ops->consys_ic_set_pdma_axi_rready_force_high(0);
+
+	mtk_consys_set_chip_reset_status(0);
 
 	WMT_PLAT_PR_INFO("CONSYS-HW, hw_rst finish, eirq should be enabled after this step\n");
 	return iRet;
@@ -796,4 +802,14 @@ INT32 mtk_consys_is_calibration_backup_restore_support(VOID)
 	else
 		return 0;
 
+}
+
+VOID mtk_consys_set_chip_reset_status(INT32 status)
+{
+	chip_reset_status = status;
+}
+
+INT32 mtk_consys_chip_reset_status(VOID)
+{
+	return chip_reset_status;
 }
