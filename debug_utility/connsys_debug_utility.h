@@ -44,8 +44,7 @@ typedef void (*CONNLOG_EVENT_CB) (void);
 */
 void connlog_dump_emi(int offset, int size);
 /* Common Driver API */
-int connsys_dedicated_log_path_apsoc_init(phys_addr_t emiaddr, void *irq_reg_base,
-	unsigned int irq_num, unsigned int irq_flag);
+int connsys_dedicated_log_path_apsoc_init(phys_addr_t emiaddr, unsigned int irq_num, unsigned int irq_flag);
 void connsys_dedicated_log_path_apsoc_deinit(void);
 void __iomem *connsys_log_get_emi_log_base_vir_addr(void);
 void connsys_dedicated_log_get_utc_time(unsigned int *second, unsigned int *usecond);
