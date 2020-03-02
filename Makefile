@@ -208,6 +208,9 @@ $(MODULE_NAME)-objs += common_main/linux/wmt_idc.o
 $(MODULE_NAME)-objs += common_main/linux/stp_uart.o
 $(MODULE_NAME)-objs += common_main/linux/wmt_dbg.o
 $(MODULE_NAME)-objs += common_main/linux/stp_dbg.o
+ifneq ($(CONFIG_MTK_CONNSYS_DEDICATED_LOG_PATH),)
+$(MODULE_NAME)-objs += common_main/linux/fw_log_wmt.o
+endif
 ifeq ($(CONFIG_MTK_BTIF), y)
 $(MODULE_NAME)-objs += common_main/linux/stp_btif.o
 endif
