@@ -81,6 +81,7 @@
 #define CONSYS_HIF_DBG_IDX              0x0000212C
 #define CONSYS_HIF_DBG_PROBE            0x00002130
 #define CONSYS_HIF_BUSY_STATUS          0x00002138
+#define CONSYS_HIF_PDMA_AXI_RREADY	0x00002154
 #define CONSYS_HIF_PDMA_BUSY_STATUS     0x00002168
 #define CONSYS_CLOCK_CONTROL            0x00000100
 #define CONSYS_BUS_CONTROL              0x00000110
@@ -96,6 +97,12 @@
 #define CONSYS_OSCCLK_CHECK_BIT         (0x1 << 17)
 #define CONSYS_SLEEP_CHECK_BIT          (0x1 << 18)
 
+/*CONN_TOP_MISC_ON_BASE*/
+#define CONN_ON_HOST_CSR_MISC		0x14c
+#define CONN_ON_IRQ_CTL			0x170
+#define CONN_ON_IRQ_STATUS		0x174
+
+
 /*AXI bus*/
 #define CONSYS_AHBAXI_PROT_EN_OFFSET	0x220
 #define CONSYS_AHBAXI_PROT_STA_OFFSET	0x228
@@ -103,6 +110,7 @@
 #define CONSYS_AXI_TX_PROT_STA_OFFSET	0x258
 #define CONSYS_PROT_MASK		((0x1<<13) | (0x1<<14))	/* bit 13, 14 */
 #define CONSYS_TX_PROT_MASK		(0x1<<18)	/* bit 18 */
+#define CONSYS_PDMA_AXI_RREADY_MASK	(0x1 << 1)	/* bit 1 */
 
 /*SPM clock gating control register */
 #define CONSYS_PWRON_CONFG_EN_VALUE	(0x0b160001)
