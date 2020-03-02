@@ -125,8 +125,8 @@ static INT32 consys_is_connsys_reg(UINT32 addr);
 static PUINT32 consys_resume_dump_info(VOID);
 static VOID consys_set_pdma_axi_rready_force_high(UINT32 enable);
 static INT32 consys_calibration_backup_restore_support(VOID);
-static VOID consys_devapc_violation_cb(VOID);
 #ifdef WMT_DEVAPC_CALLBACK
+static VOID consys_devapc_violation_cb(VOID);
 static VOID consyc_register_devapc_cb(VOID);
 #endif
 static INT32 consys_is_ant_swap_enable_by_hwid(INT32 pin_num);
@@ -1198,6 +1198,7 @@ static INT32 consys_check_reg_readable(VOID)
 {
 	INT32 flag = 0;
 	UINT32 value = 0;
+	P_DEV_WMT pDev = &gDevWmt;
 
 	if ((wmt_lib_get_drv_status(WMTDRV_TYPE_WMT) == DRV_STS_FUNC_ON)
 			&& (osal_test_bit(WMT_STAT_PWR, &pDev->state))) {
