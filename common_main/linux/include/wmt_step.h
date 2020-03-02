@@ -20,6 +20,7 @@
 #include "wmt_core.h"
 
 #define STEP_CONFIG_NAME "WMT_STEP.cfg"
+#define STEP_VERSION 2
 
 #define STEP_PERIODIC_DUMP_WORK_QUEUE "wmt_step_pd_wq"
 #define STEP_PERIODIC_DUMP_THREAD "wmt_pd"
@@ -31,6 +32,12 @@
 #define STEP_ACTION_NAME_CHIP_RESET "_RST"
 #define STEP_ACTION_NAME_KEEP_WAKEUP "WAK+"
 #define STEP_ACTION_NAME_CANCEL_WAKEUP "WAK-"
+#define STEP_ACTION_NAME_SHOW_STRING "SHOW"
+#define STEP_ACTION_NAME_SLEEP "_SLP"
+#define STEP_ACTION_NAME_CONDITION "COND"
+#define STEP_ACTION_NAME_VALUE "_VAL"
+#define STEP_ACTION_NAME_CONDITION_EMI "CEMI"
+#define STEP_ACTION_NAME_CONDITION_REGISTER "CREG"
 
 extern struct platform_device *g_pdev;
 
@@ -44,6 +51,12 @@ enum step_action_id {
 	STEP_ACTION_INDEX_KEEP_WAKEUP,
 	STEP_ACTION_INDEX_CANCEL_WAKEUP,
 	STEP_ACTION_INDEX_PERIODIC_DUMP,
+	STEP_ACTION_INDEX_SHOW_STRING,
+	STEP_ACTION_INDEX_SLEEP,
+	STEP_ACTION_INDEX_CONDITION,
+	STEP_ACTION_INDEX_VALUE,
+	STEP_ACTION_INDEX_CONDITION_EMI,
+	STEP_ACTION_INDEX_CONDITION_REGISTER,
 	STEP_ACTION_INDEX_MAX,
 };
 
@@ -89,8 +102,20 @@ enum step_register_base_id {
 	STEP_REGISTER_MAX,
 };
 
+enum step_condition_operator_id {
+	STEP_OPERATOR_GREATER = 0,
+	STEP_OPERATOR_GREATER_EQUAL,
+	STEP_OPERATOR_LESS,
+	STEP_OPERATOR_LESS_EQUAL,
+	STEP_OPERATOR_EQUAL,
+	STEP_OPERATOR_NOT_EQUAL,
+	STEP_OPERATOR_AND,
+	STEP_OPERATOR_OR,
+	STEP_OPERATOR_MAX,
+};
+
 struct step_register_base_struct {
-	unsigned long address;
+	unsigned long vir_addr;
 	unsigned long long size;
 };
 
@@ -102,18 +127,8 @@ struct step_pd_entry {
 	bool is_enable;
 	unsigned int expires_ms;
 	struct step_action_list action_list;
-	OSAL_TIMER dump_timer;
 	struct delayed_work pd_work;
 	struct list_head list;
-};
-
-#define STP_STEP_PD_RECORD_SIZE 32
-struct step_pd_record {
-	OSAL_UNSLEEPABLE_LOCK mutex;
-	unsigned int write;
-	unsigned int read;
-	unsigned int size;
-	struct step_pd_entry *queue[STP_STEP_PD_RECORD_SIZE];
 };
 
 struct step_pd_struct {
@@ -127,18 +142,28 @@ struct step_action {
 	enum step_action_id action_id;
 };
 
-typedef int (*STEP_WRITE_ACT_TO_LIST) (struct step_action_list *, enum step_action_id, char **);
+typedef int (*STEP_WRITE_ACT_TO_LIST) (struct step_action_list *, enum step_action_id, int, char **);
 typedef void (*STEP_DO_EXTRA) (unsigned int, ...);
 
-struct step_emi_action {
+#define STEP_OUTPUT_LOG 0
+#define STEP_OUTPUT_REGISTER 1
+
+struct step_emi_info {
 	bool is_write;
 	unsigned int begin_offset;
 	unsigned int end_offset;
 	int value;
+	unsigned int temp_reg_id;
+	int output_mode;
+	int mask;
+};
+
+struct step_emi_action {
+	struct step_emi_info info;
 	struct step_action base;
 };
 
-struct step_register_action {
+struct step_reigster_info {
 	bool is_write;
 	enum step_register_base_id address_type;
 	unsigned long address;
@@ -146,6 +171,13 @@ struct step_register_action {
 	unsigned int times;
 	unsigned int delay_time;
 	int value;
+	int mask;
+	unsigned int temp_reg_id;
+	int output_mode;
+};
+
+struct step_register_action {
+	struct step_reigster_info info;
 	struct step_action base;
 };
 
@@ -176,22 +208,48 @@ struct step_periodic_dump_action {
 	struct step_action base;
 };
 
-#define list_entry_emi_action(ptr) \
-	container_of(ptr, struct step_emi_action, base)
-#define list_entry_register_action(ptr) \
-	container_of(ptr, struct step_register_action, base)
-#define list_entry_gpio_action(ptr) \
-	container_of(ptr, struct step_gpio_action, base)
-#define list_entry_drst_action(ptr) \
-	container_of(ptr, struct step_disable_reset_action, base)
-#define list_entry_crst_action(ptr) \
-	container_of(ptr, struct step_chip_reset_action, base)
-#define list_entry_kwak_action(ptr) \
-	container_of(ptr, struct step_keep_wakeup_action, base)
-#define list_entry_cwak_action(ptr) \
-	container_of(ptr, struct step_cancel_wakeup_action, base)
-#define list_entry_pd_action(ptr) \
-		container_of(ptr, struct step_periodic_dump_action, base)
+struct step_show_string_action {
+	char *content;
+	struct step_action base;
+};
+
+struct step_sleep_action {
+	unsigned int ms;
+	struct step_action base;
+};
+
+#define STEP_CONDITION_RIGHT_REGISTER 0
+#define STEP_CONDITION_RIGHT_VALUE 1
+struct step_condition_action {
+	unsigned int result_temp_reg_id;
+	unsigned int l_temp_reg_id;
+	unsigned int r_temp_reg_id;
+	int value;
+	int mode;
+	enum step_condition_operator_id operator_id;
+	struct step_action base;
+};
+
+struct step_value_action {
+	unsigned int temp_reg_id;
+	int value;
+	struct step_action base;
+};
+
+struct step_condition_emi_action {
+	unsigned int cond_reg_id;
+	struct step_emi_info info;
+	struct step_action base;
+};
+
+struct step_condition_register_action {
+	unsigned int cond_reg_id;
+	struct step_reigster_info info;
+	struct step_action base;
+};
+
+#define list_entry_action(act_struct, ptr) \
+	container_of(ptr, struct step_##act_struct##_action, base)
 
 struct step_reg_addr_info {
 	int address_type;
@@ -212,7 +270,7 @@ struct step_parse_line_data_param_info {
 	int param_index;
 };
 
-typedef struct step_action *(*STEP_CREATE_ACTION) (char *[]);
+typedef struct step_action *(*STEP_CREATE_ACTION) (int, char *[]);
 typedef int (*STEP_DO_ACTIONS) (struct step_action *, STEP_DO_EXTRA);
 typedef void (*STEP_REMOVE_ACTION) (struct step_action *);
 struct step_action_contrl {
@@ -221,6 +279,15 @@ struct step_action_contrl {
 	STEP_REMOVE_ACTION func_remove_action;
 };
 
+#define STEP_REGISTER_BASE_SYMBOL '#'
+#define STEP_TEMP_REGISTER_SYMBOL '$'
+
+#define STEP_VALUE_INFO_UNKNOWN -1
+#define STEP_VALUE_INFO_NUMBER 0
+#define STEP_VALUE_INFO_SYMBOL_REG_BASE 1
+#define STEP_VALUE_INFO_SYMBOL_TEMP_REG 2
+
+#define STEP_TEMP_REGISTER_SIZE 10
 struct step_env_struct {
 	bool is_enable;
 	bool is_keep_wakeup;
@@ -228,6 +295,9 @@ struct step_env_struct {
 	unsigned char __iomem *emi_base_addr;
 	struct step_register_base_struct reg_base[STEP_REGISTER_MAX];
 	struct step_pd_struct pd_struct;
+	int temp_register[STEP_TEMP_REGISTER_SIZE];
+	bool is_setup;
+	struct rw_semaphore init_rwsem;
 };
 
 /********************************************************************************
@@ -260,7 +330,7 @@ int wmt_step_parse_data(const char *in_buf, unsigned int size, STEP_WRITE_ACT_TO
 int wmt_step_init_pd_env(void);
 int wmt_step_deinit_pd_env(void);
 struct step_pd_entry *wmt_step_get_periodic_dump_entry(unsigned int expires);
-struct step_action *wmt_step_create_action(enum step_action_id act_id, char *params[]);
+struct step_action *wmt_step_create_action(enum step_action_id act_id, int param_num, char *params[]);
 int wmt_step_do_emi_action(struct step_action *p_act, STEP_DO_EXTRA func_do_extra);
 int wmt_step_do_register_action(struct step_action *p_act, STEP_DO_EXTRA func_do_extra);
 int wmt_step_do_gpio_action(struct step_action *p_act, STEP_DO_EXTRA func_do_extra);
@@ -269,7 +339,14 @@ int wmt_step_do_chip_reset_action(struct step_action *p_act, STEP_DO_EXTRA func_
 int wmt_step_do_keep_wakeup_action(struct step_action *p_act, STEP_DO_EXTRA func_do_extra);
 int wmt_step_do_cancel_wakeup_action(struct step_action *p_act, STEP_DO_EXTRA func_do_extra);
 int wmt_step_do_periodic_dump_action(struct step_action *p_act, STEP_DO_EXTRA func_do_extra);
+int wmt_step_do_show_string_action(struct step_action *p_act, STEP_DO_EXTRA func_do_extra);
+int wmt_step_do_sleep_action(struct step_action *p_act, STEP_DO_EXTRA func_do_extra);
+int wmt_step_do_condition_action(struct step_action *p_act, STEP_DO_EXTRA func_do_extra);
+int wmt_step_do_value_action(struct step_action *p_act, STEP_DO_EXTRA func_do_extra);
+int wmt_step_do_condition_emi_action(struct step_action *p_act, STEP_DO_EXTRA func_do_extra);
+int wmt_step_do_condition_register_action(struct step_action *p_act, STEP_DO_EXTRA func_do_extra);
 void wmt_step_remove_action(struct step_action *p_act);
+void wmt_step_print_version(void);
 
 #endif /* end of _WMT_STEP_H_ */
 
