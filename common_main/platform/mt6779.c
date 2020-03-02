@@ -1228,6 +1228,11 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6359)
 		KERNEL_pmic_ldo_vcn33_1_lp(SRCLKEN0, 1, 1, HW_OFF);
 #endif
+		/* request VS2 to 1.4V by VS2 VOTER (use bit 4) */
+		KERNEL_pmic_set_register_value(PMIC_RG_BUCK_VS2_VOTER_EN_SET, 0x10);
+		/* Set VCN13 to 1.32V */
+		KERNEL_pmic_set_register_value(PMIC_RG_VCN13_VOCAL, 0x2);
+
 #endif
 		WMT_PLAT_PR_DBG("WMT do BT PMIC on\n");
 	} else {
@@ -1238,6 +1243,11 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6359)
 		KERNEL_pmic_ldo_vcn33_1_lp(SRCLKEN0, 1, 0, HW_OFF);
 #endif
+		/* restore VCN13 to 1.3V */
+		KERNEL_pmic_set_register_value(PMIC_RG_VCN13_VOCAL, 0);
+		/* clear bit 4 of VS2 VOTER then VS2 can restore to 1.35V */
+		KERNEL_pmic_set_register_value(PMIC_RG_BUCK_VS2_VOTER_EN_CLR, 0x10);
+
 		if (reg_VCN33_1_BT)
 			regulator_disable(reg_VCN33_1_BT);
 #endif
