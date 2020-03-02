@@ -74,6 +74,9 @@ static INT32 wmt_conf_parse_byte_array(P_DEV_WMT pWmtDev, const struct parse_dat
 
 static PINT8 wmt_conf_write_byte_array(P_DEV_WMT pWmtDev, const struct parse_data *data);
 
+static INT32 wmt_conf_parse_string(P_DEV_WMT pWmtDev, const struct parse_data *data, const PINT8 pos);
+
+static PINT8 wmt_conf_write_string(P_DEV_WMT pWmtDev, const struct parse_data *data);
 
 static INT32 wmt_conf_parse_pair(P_DEV_WMT pWmtDev, const PINT8 pKey, const PINT8 pVal);
 
@@ -89,6 +92,8 @@ static INT32 wmt_conf_parse(P_DEV_WMT pWmtDev, const PINT8 pInBuf, UINT32 size);
 
 #define BYTE_ARRAY(f) {#f, wmt_conf_parse_byte_array, wmt_conf_write_byte_array, \
 		OFFSET(rWmtGenConf.f), NULL, NULL}
+
+#define STRING(f) {#f, wmt_conf_parse_string, wmt_conf_write_string, OFFSET(rWmtGenConf.f), NULL, NULL}
 
 /*******************************************************************************
 *                          F U N C T I O N S
@@ -149,6 +154,7 @@ static const struct parse_data wmtcfg_fields[] = {
 	INT(coex_wmt_ext_elna_gain_p1_D1),
 	INT(coex_wmt_ext_elna_gain_p1_D2),
 	INT(coex_wmt_ext_elna_gain_p1_D3),
+	STRING(coex_wmt_antsel_invert_support),
 
 	BYTE_ARRAY(coex_wmt_epa_elna),
 
@@ -295,6 +301,51 @@ static PINT8 wmt_conf_write_int(P_DEV_WMT pWmtDev, const struct parse_data *data
 		return NULL;
 	}
 	value[20 - 1] = '\0';
+	return value;
+}
+
+static INT32 wmt_conf_parse_string(P_DEV_WMT pWmtDev, const struct parse_data *data, const PINT8 pos)
+{
+	PUINT8 *dst;
+	PUINT8 buffer;
+
+	buffer = osal_malloc(osal_strlen(pos)+1);
+	if (buffer == NULL) {
+		WMT_ERR_FUNC("wmtcfg==> %s malloc fail, size %d\n", data->name, osal_strlen(pos)+1);
+		return -1;
+	}
+
+	osal_strcpy(buffer, pos);
+	dst = (PUINT8 *)(((PUINT8) pWmtDev) + (long)data->param1);
+	*dst = (PUINT8)buffer;
+	WMT_DBG_FUNC("wmtcfg==> %s=%s\n", data->name, *dst);
+
+	return 0;
+}
+
+static PINT8 wmt_conf_write_string(P_DEV_WMT pWmtDev, const struct parse_data *data)
+{
+	PUINT8 *src;
+	INT32 res;
+	PINT8 value;
+	UINT32 str_size;
+
+	src = (PUINT8 *)(((PUINT8) pWmtDev) + (long)data->param1);
+	if (*src == NULL)
+		return NULL;
+
+	str_size = osal_strlen(*src) + 1;
+	value = osal_malloc(str_size);
+	if (value == NULL)
+		return NULL;
+
+	res = osal_snprintf(value, str_size, "%s", *src);
+	if (res < 0 || res >= str_size) {
+		osal_free(value);
+		return NULL;
+	}
+
+	value[str_size - 1] = '\0';
 	return value;
 }
 
@@ -620,6 +671,12 @@ INT32 wmt_conf_deinit(VOID)
 		osal_free(pWmtGenConf->coex_wmt_epa_elna);
 		pWmtGenConf->coex_wmt_epa_elna = NULL;
 	}
+
+	if (pWmtGenConf->coex_wmt_antsel_invert_support != NULL) {
+		osal_free(pWmtGenConf->coex_wmt_antsel_invert_support);
+		pWmtGenConf->coex_wmt_antsel_invert_support = NULL;
+	}
+
 	return 0;
 }
 
