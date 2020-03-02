@@ -551,7 +551,7 @@ INT32 wmt_ctrl_stp_open(P_WMT_CTRL_DATA pWmtCtrlData)
 		}
 
 		/*register stp rx call back to btif */
-		iRet = mtk_wcn_stp_rxcb_register((MTK_WCN_BTIF_RX_CB) mtk_wcn_stp_parser_data);
+		iRet = mtk_wcn_stp_rxcb_register((MTK_WCN_BTIF_RX_CB)mtk_wcn_stp_parser_data);
 		if (iRet) {
 			WMT_WARN_FUNC("mtk_wcn_stp_rxcb_register fail(%d)\n", iRet);
 			return -2;
