@@ -682,12 +682,12 @@ MTK_WCN_BOOL wmt_lib_handle_idc_msg(conn_md_ipc_ilm_t *idc_infor)
 		WMT_ERR_FUNC("--->lock idc_lock failed, ret=%d\n", ret);
 		return MTK_WCN_BOOL_FALSE;
 	}
+	msg_len = idc_infor->local_para_ptr->msg_len - osal_sizeof(struct local_para);
 	if (msg_len > WMT_IDC_MSG_MAX_SIZE) {
 		wmt_lib_idc_lock_release();
 		WMT_ERR_FUNC("abnormal idc msg len:%d\n", msg_len);
 		return -2;
 	}
-	msg_len = idc_infor->local_para_ptr->msg_len - osal_sizeof(struct local_para);
 	osal_memcpy(&gDevWmt.msg_local_buffer[0], &msg_len, osal_sizeof(msg_len));
 	osal_memcpy(&gDevWmt.msg_local_buffer[osal_sizeof(msg_len)],
 			&(idc_infor->local_para_ptr->data[0]), msg_len - 1);
