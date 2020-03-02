@@ -332,5 +332,6 @@ INT32 mtk_consys_is_calibration_backup_restore_support(VOID);
 VOID mtk_consys_set_chip_reset_status(INT32 status);
 INT32 mtk_consys_chip_reset_status(VOID);
 INT32 mtk_consys_get_wifi_ant_swap_gpio_value(VOID);
+INT32 mtk_consys_resume_dump_info(VOID);
 #endif /* _MTK_WCN_CONSYS_HW_H_ */
 
