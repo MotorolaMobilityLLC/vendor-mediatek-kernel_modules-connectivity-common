@@ -1244,8 +1244,6 @@ static VOID consys_clock_fail_dump(VOID)
 
 	WMT_PLAT_PR_ERR("CONN_ON_IRQ_STATUS=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_top_misc_on_base + CONN_ON_IRQ_STATUS));
-
-	BUG_ON(1);
 }
 
 static VOID consys_resume_dump_info(VOID)
