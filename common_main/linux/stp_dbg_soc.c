@@ -23,6 +23,8 @@
 #define SUB_PKT_SIZE 1024
 #define SUB_PKT_HEADER 5
 #define EMI_SYNC_TIMEOUT 100 /* FW guarantee that MCU copy data time is ~20ms. We set 100ms for safety */
+#define IS_VISIBLE_CHAR(c) ((c) >= 32 && (c) <= 126)
+#define DUMP_LOG_BYTES_PER_LINE (128)
 
 ENUM_STP_FW_ISSUE_TYPE issue_type;
 UINT8 g_paged_trace_buffer[STP_DBG_PAGED_TRACE_SIZE] = { 0 };
@@ -60,6 +62,27 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink);
 static _osal_inline_ INT32 stp_dbg_soc_paged_trace(VOID);
 static _osal_inline_ INT32 stp_dbg_soc_put_emi_dump_to_nl(PUINT8 data_buf, INT32 dump_len);
 static _osal_inline_ VOID stp_dbg_soc_emi_dump_buffer(UINT8 *buffer, UINT32 len);
+
+static VOID stp_dbg_dump_log(PUINT8 buf, INT32 size)
+{
+	INT32 i = 0;
+	UINT8 line[DUMP_LOG_BYTES_PER_LINE + 1];
+
+	while (size--) {
+		if (IS_VISIBLE_CHAR(*buf))
+			line[i] = *buf;
+		else
+			line[i] = '.';
+		i++;
+		buf++;
+
+		if (i >= DUMP_LOG_BYTES_PER_LINE || !size) {
+			line[i] = 0;
+			pr_info("page_trace: %s\n", line);
+			i = 0;
+		}
+	}
+}
 
 static _osal_inline_ VOID stp_dbg_soc_emi_dump_buffer(UINT8 *buffer, UINT32 len)
 {
@@ -156,11 +179,13 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 
 	issue_type = STP_FW_ASSERT_ISSUE;
 	if (chip_reset_only) {
-		chip_reset_only = 0;
 		STP_DBG_WARN_FUNC("is chip reset only\n");
 		ret = -3;
 		return ret;
 	}
+
+	if (dump_sink == 0)
+		return 0;
 
 	/*packet number depend on dump_num get from register:0xf0080044 ,support jade*/
 	dump_num = wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_chip_page_dump_num);
@@ -287,6 +312,10 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 				wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_chip_sync_num));
 		page_counter++;
 		STP_DBG_INFO_FUNC("++ paged dump counter(%d) ++\n", page_counter);
+		/* dump 1st 512 bytes data to kernel log for fw requirement */
+		if (page_counter == 1)
+			stp_dbg_dump_log(&g_paged_dump_buffer[0], dump_len < 512 ? dump_len : 512);
+
 		osal_get_local_time(&start_ts, &start_nsec);
 		while (1) {
 			elapsed_time = stp_dbg_soc_elapsed_time(start_ts, start_nsec);
@@ -319,7 +348,13 @@ paged_dump_end:
 			ret = 0;
 			break;
 		} else if (abort || stp_dbg_get_coredump_timer_state() == CORE_DUMP_TIMEOUT) {
-			STP_DBG_ERR_FUNC("paged dump fail\n");
+			STP_DBG_ERR_FUNC("paged dump fail, generate fake coredump message\n");
+			stp_dbg_set_coredump_timer_state(CORE_DUMP_DOING);
+			if (dump_sink == 1)
+				stp_dbg_aee_send(FAKECOREDUMPEND, osal_sizeof(FAKECOREDUMPEND), 0);
+			else if (dump_sink == 2)
+				stp_dbg_nl_send_data(FAKECOREDUMPEND, osal_sizeof(FAKECOREDUMPEND));
+			stp_dbg_set_coredump_timer_state(CORE_DUMP_TIMEOUT);
 			stp_dbg_poll_cpupcr(5, 5, 0);
 			stp_dbg_poll_dmaregs(5, 1);
 			ret = -1;
@@ -339,10 +374,7 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_trace(VOID)
 	UINT32 buffer_idx = 0;
 	PUINT8 dump_vir_addr = NULL;
 	P_CONSYS_EMI_ADDR_INFO p_ecsi;
-	INT32 i = 0;
 	INT32 dump_len = 0;
-	UINT8 str[70];
-	PUINT8 p_str;
 
 	p_ecsi = wmt_plat_get_emi_phy_add();
 	do {
@@ -379,30 +411,13 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_trace(VOID)
 		osal_memcpy_fromio(&g_paged_trace_buffer[0], dump_vir_addr,
 				buffer_idx < STP_DBG_PAGED_TRACE_SIZE ? buffer_idx : STP_DBG_PAGED_TRACE_SIZE);
 		/*moving paged trace according to buffer_start & buffer_len */
-		do {
-			dump_len =
-				buffer_idx < STP_DBG_PAGED_TRACE_SIZE ? buffer_idx : STP_DBG_PAGED_TRACE_SIZE;
-			pr_warn("\n\n -- paged trace ascii output --\n\n");
-			p_str = &str[0];
-			for (i = 0; i < dump_len; i++) {
-				sprintf(p_str, "%c ", g_paged_trace_buffer[i]);
-				p_str++;
-				if (0 == (i % 64)) {
-					*p_str++ = '\n';
-					*p_str = '\0';
-					pr_warn("%s", str);
-					p_str = &str[0];
-				}
-			}
-			if (dump_len % 64) {
-				*p_str++ = '\n';
-				*p_str = '\0';
-				pr_warn("%s", str);
-			}
-		} while (0);
+
+		dump_len =
+			buffer_idx < STP_DBG_PAGED_TRACE_SIZE ? buffer_idx : STP_DBG_PAGED_TRACE_SIZE;
+		pr_info("-- paged trace ascii output --");
+		stp_dbg_dump_log(&g_paged_trace_buffer[0], dump_len);
 		ret = 0;
 	} while (0);
-	mtk_wcn_stp_ctx_restore();
 
 	return ret;
 }
@@ -411,16 +426,18 @@ INT32 stp_dbg_soc_core_dump(INT32 dump_sink)
 {
 	INT32 ret = 0;
 
-	ret = stp_dbg_soc_paged_dump(dump_sink);
-	if (ret && ret != -3) {
-		/* return -3 is chip reset only */
-		stp_dbg_core_dump_flush(0, MTK_WCN_BOOL_TRUE);
-		STP_DBG_ERR_FUNC("stp_dbg_soc_paged_dump fail: %d!\n", ret);
-	}
-
+	stp_dbg_soc_paged_dump(dump_sink);
 	ret = stp_dbg_soc_paged_trace();
 	if (ret)
 		STP_DBG_ERR_FUNC("stp_dbg_soc_paged_trace fail: %d!\n", ret);
+
+	if (dump_sink == 0 || chip_reset_only == 1) {
+		chip_reset_only = 0;
+		mtk_wcn_stp_ctx_restore();
+	} else if (dump_sink == 1 || dump_sink == 2) {
+		if (stp_dbg_start_emi_dump() < 0)
+			mtk_wcn_stp_ctx_restore();
+	}
 
 	return ret;
 }
