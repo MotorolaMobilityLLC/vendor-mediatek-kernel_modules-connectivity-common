@@ -197,6 +197,9 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 		} else {
 			WMT_PLAT_ERR_FUNC("EMI mapping fail\n");
 		}
+
+		if (wmt_consys_ic_ops->consys_ic_dedicated_log_path_init)
+			wmt_consys_ic_ops->consys_ic_dedicated_log_path_init(pdev);
 	} else {
 		WMT_PLAT_ERR_FUNC("consys emi memory address gConEmiPhyBase invalid\n");
 	}
@@ -245,6 +248,9 @@ static INT32 mtk_wmt_remove(struct platform_device *pdev)
 		if (wmt_consys_ic_ops->consys_ic_need_store_pdev() == MTK_WCN_BOOL_TRUE)
 			pm_runtime_disable(&pdev->dev);
 	}
+
+	if (wmt_consys_ic_ops->consys_ic_dedicated_log_path_deinit)
+		wmt_consys_ic_ops->consys_ic_dedicated_log_path_deinit();
 
 	if (g_pdev)
 		g_pdev = NULL;
