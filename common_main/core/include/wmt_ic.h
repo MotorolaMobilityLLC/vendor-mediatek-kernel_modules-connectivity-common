@@ -99,7 +99,6 @@ typedef struct _WMT_IC_INFO_S {
 	PUINT8 cPatchNameExt;
 	MTK_WCN_BOOL bPsmSupport;
 	MTK_WCN_BOOL bWorkWithoutPatch;
-	ENUM_WMTHWVER_TYPE_T eWmtHwVer;
 } WMT_IC_INFO_S, *P_WMT_IC_INFO_S;
 
 /*******************************************************************************
