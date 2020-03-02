@@ -666,7 +666,6 @@ MTK_WCN_BOOL wmt_lib_handle_idc_msg(conn_md_ipc_ilm_t *idc_infor)
 	P_OSAL_SIGNAL pSignal;
 	INT32 ret = 0;
 	UINT16 msg_len = 0;
-	static UINT8 msg_local_buffer[1300];
 
 #if	CFG_WMT_LTE_ENABLE_MSGID_MAPPING
 	MTK_WCN_BOOL unknown_msgid = MTK_WCN_BOOL_FALSE;
@@ -678,9 +677,14 @@ MTK_WCN_BOOL wmt_lib_handle_idc_msg(conn_md_ipc_ilm_t *idc_infor)
 		WMT_ERR_FUNC("--->lock idc_lock failed, ret=%d\n", ret);
 		return MTK_WCN_BOOL_FALSE;
 	}
+	if (msg_len > WMT_IDC_MSG_MAX_SIZE) {
+		wmt_lib_idc_lock_release();
+		WMT_ERR_FUNC("abnormal idc msg len:%d\n", msg_len);
+		return -2;
+	}
 	msg_len = idc_infor->local_para_ptr->msg_len - osal_sizeof(struct local_para);
-	osal_memcpy(&msg_local_buffer[0], &msg_len, osal_sizeof(msg_len));
-	osal_memcpy(&msg_local_buffer[osal_sizeof(msg_len)],
+	osal_memcpy(&gDevWmt.msg_local_buffer[0], &msg_len, osal_sizeof(msg_len));
+	osal_memcpy(&gDevWmt.msg_local_buffer[osal_sizeof(msg_len)],
 			&(idc_infor->local_para_ptr->data[0]), msg_len - 1);
 	wmt_lib_idc_lock_release();
 
@@ -692,7 +696,7 @@ MTK_WCN_BOOL wmt_lib_handle_idc_msg(conn_md_ipc_ilm_t *idc_infor)
 	pSignal = &lxop->signal;
 	pSignal->timeoutValue = MAX_EACH_WMT_CMD;
 	lxop->op.opId = WMT_OPID_IDC_MSG_HANDLING;
-	lxop->op.au4OpData[0] = (size_t) msg_local_buffer;
+	lxop->op.au4OpData[0] = (size_t) gDevWmt.msg_local_buffer;
 
 	/*msg opcode fill rule is still not clrear,need scott comment */
 	/***********************************************************/
