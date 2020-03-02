@@ -227,6 +227,8 @@ static const char * const STEP_TRIGGER_TIME_NAME[] = {
 		"[TP 22] When AP suspend",
 	[STEP_TRIGGER_POINT_WHEN_AP_RESUME] =
 		"[TP 23] When AP resume",
+	[STEP_TRIGGER_POINT_POWER_OFF_HANDSHAKE] =
+		"[TP 24] When power off handshake",
 };
 
 static const int wmt_step_func_ctrl_id[WMTDRV_TYPE_MAX][2] = {

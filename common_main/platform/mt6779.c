@@ -48,6 +48,7 @@
 #include "mtk_wcn_consys_hw.h"
 #include "wmt_ic.h"
 #include "wmt_lib.h"
+#include "wmt_step.h"
 #include "stp_dbg.h"
 
 #ifdef CONFIG_MTK_EMI
@@ -586,6 +587,7 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 {
 #if CONSYS_PWR_ON_OFF_API_AVAILABLE
 	INT32 iRet = 0;
+	UINT8 *check_coredump_reg = NULL;
 	UINT8 *check_sleep_reg = NULL;
 	UINT32 check_sleep = 0;
 	UINT32 retry = 100;
@@ -779,27 +781,34 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 		osal_assert(p_ecsi);
 		check_sleep_reg = wmt_plat_get_emi_virt_add
 				(p_ecsi->p_ecso->emi_apmem_ctrl_chip_check_sleep);
+		check_coredump_reg = wmt_plat_get_emi_virt_add
+				(p_ecsi->p_ecso->emi_apmem_ctrl_state);
 
 		/* Handshake flow: Notify MCU goto sleep before connsys power off */
-		if (check_sleep_reg) {
-			/* 1. write pattern EMI CR: F006804C = 0x5aa5 */
-			CONSYS_REG_WRITE(check_sleep_reg, MCU_GOTO_SLEEP);
+		if ((check_sleep_reg) && (check_coredump_reg)) {
+			/* check if chip reset flow */
+			if (CONSYS_REG_READ(check_coredump_reg) == 0) {
+				/* 1. write pattern EMI CR: F006804C = 0x5aa5 */
+				CONSYS_REG_WRITE(check_sleep_reg, MCU_GOTO_SLEEP);
 
-			/* 2. trigger EINT */
-			mtk_wcn_force_trigger_assert_debug_pin();
+				/* 2. trigger EINT */
+				mtk_wcn_force_trigger_assert_debug_pin();
 
-			/* 3. Polling EMI CR: F006804C == 0x7788 */
-			while (retry-- > 0) {
-				check_sleep = CONSYS_REG_READ(check_sleep_reg);
-				if (check_sleep == MCU_SLEEP_DONE) {
-					WMT_PLAT_PR_INFO("consys is ready to sleep\n");
-					break;
+				/* 3. Polling EMI CR: F006804C == 0x7788 */
+				while (retry-- > 0) {
+					check_sleep = CONSYS_REG_READ(check_sleep_reg);
+					if (check_sleep == MCU_SLEEP_DONE) {
+						WMT_PLAT_PR_INFO("consys is ready to sleep\n");
+						break;
+					}
+					WMT_STEP_DO_ACTIONS_FUNC
+							(STEP_TRIGGER_POINT_POWER_OFF_HANDSHAKE);
+					WMT_PLAT_PR_INFO("check_sleep_reg=(0x%x)\n", check_sleep);
+					msleep(20);
 				}
-				WMT_PLAT_PR_INFO("check_sleep_reg=(0x%x)\n", check_sleep);
-				msleep(20);
+				/* 4. Clear EMI CR: F006804C = 0 */
+				CONSYS_REG_WRITE(check_sleep_reg, 0x0);
 			}
-			/* 4. Clear EMI CR: F006804C = 0 */
-			CONSYS_REG_WRITE(check_sleep_reg, 0x0);
 		}
 
 		/* Clean AP_PCCIF4_SW_READY and AP_PCCIF4_PWR_ON
