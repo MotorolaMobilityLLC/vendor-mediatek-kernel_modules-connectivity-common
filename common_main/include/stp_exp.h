@@ -87,6 +87,9 @@ typedef VOID (*MTK_WCN_STP_EVENT_CB) (VOID);
 typedef INT32 (*MTK_WCN_STP_IF_TX) (const PUINT8 data, const UINT32 size, PUINT32 written_size);
 /* export for HIF driver */
 typedef VOID(*MTK_WCN_STP_IF_RX)(const PUINT8 data, INT32 size);
+typedef INT32 (*MTK_WCN_STP_RX_HAS_PENDING_DATA) (VOID);
+typedef INT32 (*MTK_WCN_STP_TX_HAS_PENDING_DATA) (VOID);
+typedef P_OSAL_THREAD (*MTK_WCN_STP_RX_THREAD_GET) (VOID);
 
 typedef enum {
 	STP_UART_IF_TX = 0,
@@ -247,6 +250,42 @@ extern INT32 mtk_wcn_stp_register_if_rx(MTK_WCN_STP_IF_RX func);
 *****************************************************************************/
 extern INT32 mtk_wcn_stp_coredump_start_get(VOID);
 
+/*****************************************************************************
+* FUNCTION
+*  mtk_wcn_stp_register_rx_has_pending_data
+* DESCRIPTION
+*  regiter rx has pending data call back function
+* PARAMETERS
+*  stp_if: SDIO or UART, fnnc: Call back function
+* RETURNS
+*  int: 0:successful , -1: fail
+*****************************************************************************/
+extern INT32 mtk_wcn_stp_register_rx_has_pending_data(ENUM_STP_TX_IF_TYPE stp_if, MTK_WCN_STP_RX_HAS_PENDING_DATA func);
+
+/*****************************************************************************
+* FUNCTION
+*  mtk_wcn_stp_register_tx_has_pending_data
+* DESCRIPTION
+*  regiter tx has pending data call back function
+* PARAMETERS
+*  stp_if: SDIO or UART, fnnc: Call back function
+* RETURNS
+*  int: 0:successful , -1: fail
+*****************************************************************************/
+extern INT32 mtk_wcn_stp_register_tx_has_pending_data(ENUM_STP_TX_IF_TYPE stp_if, MTK_WCN_STP_TX_HAS_PENDING_DATA func);
+
+/*****************************************************************************
+* FUNCTION
+*  mtk_wcn_stp_register_rx_thread_get
+* DESCRIPTION
+*  regiter rx thread call back function
+* PARAMETERS
+*  stp_if: SDIO or UART, fnnc: Call back function
+* RETURNS
+*  int: 0:successful , -1: fail
+*****************************************************************************/
+extern INT32 mtk_wcn_stp_register_rx_thread_get(ENUM_STP_TX_IF_TYPE stp_if, MTK_WCN_STP_RX_THREAD_GET func);
+
 extern INT32 mtk_stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd);
 /*******************************************************************************
 *                              F U N C T I O N S
@@ -266,6 +305,11 @@ extern INT32 _mtk_wcn_stp_register_event_cb(INT32 type, MTK_WCN_STP_EVENT_CB fun
 extern INT32 _mtk_wcn_stp_register_if_tx(ENUM_STP_TX_IF_TYPE stp_if, MTK_WCN_STP_IF_TX func);
 extern INT32 _mtk_wcn_stp_register_if_rx(MTK_WCN_STP_IF_RX func);
 extern INT32 _mtk_wcn_stp_coredump_start_get(VOID);
+extern INT32 _mtk_wcn_stp_register_rx_has_pending_data(ENUM_STP_TX_IF_TYPE stp_if,
+						       MTK_WCN_STP_RX_HAS_PENDING_DATA func);
+extern INT32 _mtk_wcn_stp_register_tx_has_pending_data(ENUM_STP_TX_IF_TYPE stp_if,
+						       MTK_WCN_STP_TX_HAS_PENDING_DATA func);
+extern INT32 _mtk_wcn_stp_register_rx_thread_get(ENUM_STP_TX_IF_TYPE stp_if, MTK_WCN_STP_RX_THREAD_GET func);
 
 #endif /* MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT */
 
