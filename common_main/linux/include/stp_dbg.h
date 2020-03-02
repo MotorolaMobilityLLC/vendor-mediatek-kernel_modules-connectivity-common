@@ -326,6 +326,7 @@ typedef enum _ENUM_DMA_ISSUE_TYPE_ {
 #define STP_DBG_ROM_VER_SIZE 4
 #define STP_ASSERT_TYPE_SIZE 64
 
+#define STP_DBG_KEYWORD_SIZE 256
 typedef struct stp_dbg_host_assert_t {
 	UINT32 drv_type;
 	UINT32 reason;
@@ -350,6 +351,7 @@ typedef struct stp_dbg_cpupcr_t {
 	STP_DBG_HOST_ASSERT_T host_assert_info;
 	UINT8 assert_type[STP_ASSERT_TYPE_SIZE];
 	ENUM_STP_FW_ISSUE_TYPE issue_type;
+	UINT8 keyword[STP_DBG_KEYWORD_SIZE];
 	OSAL_SLEEPABLE_LOCK lock;
 } STP_DBG_CPUPCR_T, *P_STP_DBG_CPUPCR_T;
 
@@ -400,6 +402,7 @@ INT32 stp_dbg_poll_cpupcr_ctrl(UINT32 en);
 INT32 stp_dbg_set_version_info(UINT32 chipid, PUINT8 pRomVer, PUINT8 pPatchVer, PUINT8 pPatchBrh);
 INT32 stp_dbg_set_wifiver(UINT32 wifiver);
 INT32 stp_dbg_set_host_assert_info(UINT32 drv_type, UINT32 reason, UINT32 en);
+VOID stp_dbg_set_keyword(PINT8 keyword);
 UINT32 stp_dbg_get_host_trigger_assert(VOID);
 INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE issue_type);
 INT32 stp_dbg_cpupcr_infor_format(PUINT8 buf, UINT32 max_len);
