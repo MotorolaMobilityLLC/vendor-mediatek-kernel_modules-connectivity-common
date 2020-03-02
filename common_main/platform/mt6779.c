@@ -129,6 +129,8 @@ static VOID consys_set_mcif_emi_mpu_protection(MTK_WCN_BOOL enable);
  * otherwise: 0
  */
 static INT32 consys_calibration_backup_restore_support(VOID);
+static INT32 consys_is_ant_swap_enable_by_hwid(INT32 pin_num);
+
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -218,6 +220,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_resume_dump_info = consys_resume_dump_info,
 	.consys_ic_set_mcif_emi_mpu_protection = consys_set_mcif_emi_mpu_protection,
 	.consys_ic_calibration_backup_restore = consys_calibration_backup_restore_support,
+	.consys_ic_is_ant_swap_enable_by_hwid = consys_is_ant_swap_enable_by_hwid,
 };
 
 /*******************************************************************************
@@ -1735,4 +1738,9 @@ static VOID consys_set_mcif_emi_mpu_protection(MTK_WCN_BOOL enable)
 static INT32 consys_calibration_backup_restore_support(VOID)
 {
 	return 1;
+}
+
+static INT32 consys_is_ant_swap_enable_by_hwid(INT32 pin_num)
+{
+	return !gpio_get_value(pin);
 }
