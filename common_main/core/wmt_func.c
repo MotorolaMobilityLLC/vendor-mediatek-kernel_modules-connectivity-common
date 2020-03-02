@@ -591,7 +591,7 @@ INT32 wmt_func_gps_off(P_WMT_IC_OPS pOps, P_WMT_GEN_CONF pConf)
 				wmt_core_ctrl(WMT_CTRL_SOC_PALDO_CTRL, &ctrlPa1, &ctrlPa2);
 			}
 			osal_clear_bit(WMT_GPS_ON, &gGpsFmState);
-			if (pConf != NULL && pConf->wmt_gps_suspend_ctrl == 1)
+			if (pConf->wmt_gps_suspend_ctrl == 1)
 				osal_set_bit(WMT_GPS_SUSPEND, &gGpsFmState);
 		}
 	}
