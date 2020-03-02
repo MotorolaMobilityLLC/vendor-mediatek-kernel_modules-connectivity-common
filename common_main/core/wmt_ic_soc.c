@@ -2516,7 +2516,7 @@ static INT32 wmt_stp_init_epa_elna_invert_cr(VOID)
 	UINT32 default_invert_cr[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 	UINT32 default_invert_bit[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 	PINT8 pbuf;
-	long res;
+	long res = 0;
 	PINT8 tok1, tok2;
 	UINT32 item1, item2, item_index;
 	UINT32 invert_cr, invert_bit;
