@@ -1436,22 +1436,12 @@ static INT32 opfunc_pwr_sv(P_WMT_OP pWmtOp)
 		evt_len = sizeof(WMT_SLEEP_EVT);
 		ret = wmt_core_rx(evt_buf, evt_len, &u4_result);
 		if (ret || (u4_result != evt_len)) {
-			ULONG reason = 33;
-
 			wmt_core_rx_flush(WMT_TASK_INDX);
 			WMT_ERR_FUNC
 				("wmt_core: read SLEEP_EVT fail(%d) len(%d, %d), host trigger firmware assert\n",
 				 ret, u4_result, evt_len);
-			if (mtk_wcn_stp_is_btif_fullset_mode()) {
-				ULONG ctrlpa = 1;
 
-				ret = wmt_core_ctrl(WMT_CTRL_EVT_PARSER, &ctrlpa, 0);
-				if (!ret) {	/* parser ok */
-					reason = 38;	/* host schedule issue reason code */
-					WMT_WARN_FUNC("This evt error may be caused by system schedule issue\n");
-				}
-			}
-			wmt_lib_trigger_assert(WMTDRV_TYPE_WMT, reason);
+			wmt_lib_trigger_assert(WMTDRV_TYPE_WMT, 33);
 			goto pwr_sv_done;
 		}
 
@@ -1489,21 +1479,11 @@ static INT32 opfunc_pwr_sv(P_WMT_OP pWmtOp)
 		evt_len = sizeof(WMT_WAKEUP_EVT);
 		ret = wmt_core_rx(evt_buf, evt_len, &u4_result);
 		if (ret || (u4_result != evt_len)) {
-			ULONG reason = 34;
-
 			WMT_ERR_FUNC
 				("wmt_core: read WAKEUP_EVT fail(%d) len(%d, %d), host grigger firmaware assert\n",
 					ret, u4_result, evt_len);
-			if (mtk_wcn_stp_is_btif_fullset_mode()) {
-				ULONG ctrlpa = 2;
 
-				ret = wmt_core_ctrl(WMT_CTRL_EVT_PARSER, &ctrlpa, 0);
-				if (!ret) {	/* parser ok */
-					reason = 39;	/* host schedule issue reason code */
-					WMT_WARN_FUNC("This evt error may be caused by system schedule issue\n");
-				}
-			}
-			wmt_lib_trigger_assert(WMTDRV_TYPE_WMT, reason);
+			wmt_lib_trigger_assert(WMTDRV_TYPE_WMT, 34);
 			goto pwr_sv_done;
 		}
 
@@ -1537,22 +1517,12 @@ static INT32 opfunc_pwr_sv(P_WMT_OP pWmtOp)
 		evt_len = sizeof(WMT_HOST_AWAKE_EVT);
 		ret = wmt_core_rx(evt_buf, evt_len, &u4_result);
 		if (ret || (u4_result != evt_len)) {
-			ULONG reason = 35;
-
 			wmt_core_rx_flush(WMT_TASK_INDX);
 			WMT_ERR_FUNC
 				("wmt_core:read HOST_AWAKE_EVT fail(%d) len(%d, %d), host trigger f/w assert\n",
 				 ret, u4_result, evt_len);
-			if (mtk_wcn_stp_is_btif_fullset_mode()) {
-				ULONG ctrlpa = 3;
 
-				ret = wmt_core_ctrl(WMT_CTRL_EVT_PARSER, &ctrlpa, 0);
-				if (!ret) {	/* parser ok */
-					reason = 40;	/* host schedule issue reason code */
-					WMT_WARN_FUNC("This evt error may be caused by system schedule issue\n");
-				}
-			}
-			wmt_lib_trigger_assert(WMTDRV_TYPE_WMT, reason);
+			wmt_lib_trigger_assert(WMTDRV_TYPE_WMT, 35);
 			goto pwr_sv_done;
 		}
 

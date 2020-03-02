@@ -210,6 +210,16 @@ INT32 wmt_ctrl_tx(P_WMT_CTRL_DATA pWmtCtrlData /*UINT8 *pData, UINT32 size, UINT
 	return wmt_ctrl_tx_ex(pData, size, writtenSize, bRawFlag);
 }
 
+static VOID wmt_ctrl_show_sched_stats_log(P_OSAL_THREAD pThread, P_OSAL_THREAD_SCHEDSTATS pSchedstats)
+{
+	WMT_ERR_FUNC("WMT rx_timeout, pid[%d/%s] stats duration:%llums, sched(x%llu/r%llu/i%llu)\n",
+		     pThread->pThread->pid,
+		     pThread->threadName,
+		     pSchedstats->time,
+		     pSchedstats->exec,
+		     pSchedstats->runnable,
+		     pSchedstats->iowait);
+}
 
 INT32 wmt_ctrl_rx(P_WMT_CTRL_DATA pWmtCtrlData /*UINT8 *pBuff, UINT32 buffLen, UINT32 *readSize */)
 {
@@ -221,6 +231,10 @@ INT32 wmt_ctrl_rx(P_WMT_CTRL_DATA pWmtCtrlData /*UINT8 *pBuff, UINT32 buffLen, U
 	PUINT8 pBuff = (PUINT8) pWmtCtrlData->au4CtrlData[0];
 	UINT32 buffLen = pWmtCtrlData->au4CtrlData[1];
 	PUINT32 readSize = (PUINT32) pWmtCtrlData->au4CtrlData[2];
+	INT32 stpRxState;
+	INT32 extended = 0;
+	P_OSAL_THREAD p_rx_thread = NULL;
+	OSAL_THREAD_SCHEDSTATS schedstats;
 
 	if (readSize)
 		*readSize = 0;
@@ -243,6 +257,8 @@ INT32 wmt_ctrl_rx(P_WMT_CTRL_DATA pWmtCtrlData /*UINT8 *pBuff, UINT32 buffLen, U
 
 	/* sanity ok, proceeding rx operation */
 	readLen = mtk_wcn_stp_receive_data(pBuff, buffLen, WMT_TASK_INDX);
+	p_rx_thread = mtk_stp_rx_thread_get();
+	osal_thread_sched_mark(p_rx_thread, &schedstats);
 
 	while (readLen == 0 && leftCnt > 0) {	/* got nothing, wait for STP's signal */
 		pDev->rWmtRxWq.timeoutValue = WMT_LIB_RX_TIMEOUT/loopCnt;
@@ -255,11 +271,37 @@ INT32 wmt_ctrl_rx(P_WMT_CTRL_DATA pWmtCtrlData /*UINT8 *pBuff, UINT32 buffLen, U
 				mtk_wcn_consys_stp_btif_logger_ctrl(BTIF_DUMP_BTIF_IRQ);
 
 			if (leftCnt <= 0) {
+				if (extended == 0) {
+					stpRxState = mtk_stp_check_rx_has_pending_data();
+					WMT_INFO_FUNC("check rx pending data(%d)\n", stpRxState);
+					readLen = mtk_wcn_stp_receive_data(pBuff, buffLen, WMT_TASK_INDX);
+					if (readLen > 0) {
+						WMT_INFO_FUNC("rx data received, rx done.\n");
+						break;
+					} else if (stpRxState > 0) {
+						osal_thread_sched_unmark(p_rx_thread, &schedstats);
+						wmt_ctrl_show_sched_stats_log(p_rx_thread, &schedstats);
+						WMT_INFO_FUNC("stp has pending data, extend ~4 seconds\n");
+						leftCnt = WMT_LIB_RX_EXTEND_TIMEOUT/pDev->rWmtRxWq.timeoutValue;
+						extended = 1;
+						osal_thread_sched_mark(p_rx_thread, &schedstats);
+						continue;
+					}
+				}
+
+				osal_thread_sched_unmark(p_rx_thread, &schedstats);
+				wmt_ctrl_show_sched_stats_log(p_rx_thread, &schedstats);
 				stp_dbg_poll_cpupcr(5, 1, 1);
 				WMT_STEP_COMMAND_TIMEOUT_DO_ACTIONS_FUNC("STP RX timeout");
 				WMT_ERR_FUNC("wmt_dev_rx_timeout: timeout,jiffies(%lu),timeoutvalue(%d)\n",
-				     jiffies, pDev->rWmtRxWq.timeoutValue);
+					     jiffies, pDev->rWmtRxWq.timeoutValue);
 				WMT_STEP_COMMAND_TIMEOUT_DO_ACTIONS_FUNC("STP RX timeout");
+
+				/* Reason number 44 means that stp data path still has data,
+				 * possibly a driver problem
+				 */
+				if (stpRxState != 0)
+					wmt_lib_trigger_assert(WMTDRV_TYPE_WMT, 44);
 				return -1;
 			}
 		} else if (waitRet < 0) {
