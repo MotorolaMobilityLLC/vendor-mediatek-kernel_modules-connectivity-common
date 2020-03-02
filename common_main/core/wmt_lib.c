@@ -1474,8 +1474,7 @@ MTK_WCN_BOOL wmt_lib_put_act_op(P_OSAL_OP pOp)
 		/* check result */
 		/* wait_ret = wait_for_completion_interruptible_timeout(&pOp->comp, msecs_to_jiffies(u4WaitMs)); */
 		/* wait_ret = wait_for_completion_timeout(&pOp->comp, msecs_to_jiffies(u4WaitMs)); */
-		if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC &&
-			pOp->op.opId == WMT_OPID_FUNC_ON &&
+		if (pOp->op.opId == WMT_OPID_FUNC_ON &&
 			pOp->op.au4OpData[0] == WMTDRV_TYPE_WIFI)
 			waitRet = osal_wait_for_signal_timeout(pSignal, &pWmtDev->worker_thread);
 		else
