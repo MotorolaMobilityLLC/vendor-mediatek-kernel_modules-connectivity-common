@@ -775,7 +775,8 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 	} else {
 #if CONSYS_PWR_ON_OFF_API_AVAILABLE
 		p_ecsi = wmt_plat_get_emi_phy_add();
-		osal_assert(p_ecsi);
+		if (!p_ecsi)
+			return iRet;
 		check_sleep_reg = wmt_plat_get_emi_virt_add
 				(p_ecsi->p_ecso->emi_apmem_ctrl_chip_check_sleep);
 		check_coredump_reg = wmt_plat_get_emi_virt_add
