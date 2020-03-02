@@ -112,7 +112,7 @@ struct sdio_ops mt_sdio_ops[4] = {
 static wmt_aif_ctrl_cb cmb_stub_aif_ctrl_cb;
 static wmt_func_ctrl_cb cmb_stub_func_ctrl_cb;
 static wmt_thermal_query_cb cmb_stub_thermal_ctrl_cb;
-static CMB_STUB_AIF_X cmb_stub_aif_stat = CMB_STUB_AIF_0;
+static enum CMB_STUB_AIF_X cmb_stub_aif_stat = CMB_STUB_AIF_0;
 static wmt_deep_idle_ctrl_cb cmb_stub_deep_idle_ctrl_cb;
 static wmt_func_do_reset cmb_stub_do_reset_cb;
 /* A temp translation table between COMBO_AUDIO_STATE_X and CMB_STUB_AIF_X.
@@ -121,7 +121,7 @@ static wmt_func_do_reset cmb_stub_do_reset_cb;
  * such as AUDIO. [FixMe][GeorgeKuo]
  */
 #if 0
-static CMB_STUB_AIF_X audio2aif[] = {
+static enum CMB_STUB_AIF_X audio2aif[] = {
 	[COMBO_AUDIO_STATE_0] = CMB_STUB_AIF_0,
 	[COMBO_AUDIO_STATE_1] = CMB_STUB_AIF_1,
 	[COMBO_AUDIO_STATE_2] = CMB_STUB_AIF_2,
@@ -163,14 +163,14 @@ static int _mtk_wcn_cmb_stub_query_ctrl(void);
  * \retval 0 operation success
  * \retval -1 invalid parameters
  */
-int mtk_wcn_cmb_stub_reg(P_CMB_STUB_CB p_stub_cb)
+int mtk_wcn_cmb_stub_reg(struct _CMB_STUB_CB_ *p_stub_cb)
 {
 #ifndef MTK_WCN_REMOVE_KERNEL_MODULE
 	struct wmt_platform_bridge pbridge;
 #endif
 
 	if ((!p_stub_cb)
-	    || (p_stub_cb->size != sizeof(CMB_STUB_CB))) {
+	    || (p_stub_cb->size != sizeof(struct _CMB_STUB_CB_))) {
 		CMB_STUB_LOG_WARN("[cmb_stub] invalid p_stub_cb:0x%p size(%d)\n",
 				  p_stub_cb, (p_stub_cb) ? p_stub_cb->size : 0);
 		return -1;
@@ -218,7 +218,7 @@ int mtk_wcn_cmb_stub_unreg(void)
 EXPORT_SYMBOL(mtk_wcn_cmb_stub_unreg);
 
 /* stub functions for kernel to control audio path pin mux */
-int mtk_wcn_cmb_stub_aif_ctrl(CMB_STUB_AIF_X state, CMB_STUB_AIF_CTRL ctrl)
+int mtk_wcn_cmb_stub_aif_ctrl(enum CMB_STUB_AIF_X state, enum CMB_STUB_AIF_CTRL ctrl)
 {
 	int ret;
 
@@ -279,7 +279,7 @@ static int _mtk_wcn_cmb_stub_query_ctrl(void)
 /* void clr_device_working_ability(UINT32 clockId, MT6573_STATE state); */
 /* void set_device_working_ability(UINT32 clockId, MT6573_STATE state); */
 
-static int _mt_combo_plt_do_deep_idle(COMBO_IF src, int enter)
+static int _mt_combo_plt_do_deep_idle(enum COMBO_IF src, int enter)
 {
 	int ret = -1;
 
@@ -351,7 +351,7 @@ static int _mt_combo_plt_do_deep_idle(COMBO_IF src, int enter)
 	return ret;
 }
 
-int mt_combo_plt_enter_deep_idle(COMBO_IF src)
+int mt_combo_plt_enter_deep_idle(enum COMBO_IF src)
 {
 	/* return 0; */
 	/* TODO: [FixMe][GeorgeKuo] handling this depends on common UART or common SDIO */
@@ -359,7 +359,7 @@ int mt_combo_plt_enter_deep_idle(COMBO_IF src)
 }
 EXPORT_SYMBOL(mt_combo_plt_enter_deep_idle);
 
-int mt_combo_plt_exit_deep_idle(COMBO_IF src)
+int mt_combo_plt_exit_deep_idle(enum COMBO_IF src)
 {
 	/* return 0; */
 	/* TODO: [FixMe][GeorgeKuo] handling this depends on common UART or common SDIO */
