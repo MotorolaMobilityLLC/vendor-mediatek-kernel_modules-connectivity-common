@@ -131,6 +131,11 @@
 #define CONSYS_WPLL_SETTING_MASK	0xFFE7FFFF	/* bit 19, bit 20 */
 #define CONSYS_WPLL_SETTING_VALUE	0x00080000	/* bit 19, bit 20 */
 
+/* toppose_restore_done rollback CR */
+#define CONSYS_TOPPOSE_RESTORE_ADDRESS	0x180c1130
+#define CONSYS_TOPPOSE_RESTORE_MASK	0xFBFFFFFF	/* bit 26 */
+#define CONSYS_TOPPOSE_RESTORE_VALUE	(0x1 << 26)
+
 /*SPM clock gating control register */
 #define CONSYS_PWRON_CONFG_EN_VALUE	(0x0b160001)
 #define CONSYS_PWRON_CONFG_DIS_VALUE	(0x0b160000)
