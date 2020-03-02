@@ -160,6 +160,7 @@ static INT32 opfunc_wlan_remove(P_WMT_OP pWmtOp);
 static INT32 opfunc_try_pwr_off(P_WMT_OP pWmtOp);
 static INT32 opfunc_gps_mcu_ctrl(P_WMT_OP pWmtOp);
 static INT32 opfunc_blank_status_ctrl(P_WMT_OP pWmtOp);
+static INT32 opfunc_met_ctrl(P_WMT_OP pWmtOp);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -326,7 +327,7 @@ static const WMT_OPID_FUNC wmt_core_opfunc[] = {
 	[WMT_OPID_GPS_MCU_CTRL] = opfunc_gps_mcu_ctrl,
 	[WMT_OPID_TRY_PWR_OFF] = opfunc_try_pwr_off,
 	[WMT_OPID_BLANK_STATUS_CTRL] = opfunc_blank_status_ctrl,
-
+	[WMT_OPID_MET_CTRL] = opfunc_met_ctrl,
 };
 
 /*******************************************************************************
@@ -3561,4 +3562,41 @@ static INT32 opfunc_blank_status_ctrl(P_WMT_OP pWmtOp)
 		wmt_lib_set_blank_status(WMT_BLANK_STATUS_CMD[5]);
 #endif
 	return iRet;
+}
+
+static INT32 opfunc_met_ctrl(P_WMT_OP pWmtOp)
+{
+	INT32 iRet;
+	UINT32 u4Res;
+	UINT32 evtLen;
+	UINT8 evtBuf[16] = { 0 };
+	UINT32 value;
+	UINT8 WMT_MET_CTRL_CMD[] = { 0x01, 0x31, 0x05, 0x00, 0x0b, 0x00, 0x00, 0x00, 0x00};
+	UINT8 WMT_MET_CTRL_EVT[] = { 0x02, 0x31, 0x01, 0x00, 0x00 };
+
+	value = pWmtOp->au4OpData[0];
+	WMT_MET_CTRL_CMD[5] = (value & 0x000000ff);
+	WMT_MET_CTRL_CMD[6] = (value & 0x0000ff00) >> 8;
+	WMT_MET_CTRL_CMD[7] = (value & 0x00ff0000) >> 16;
+	WMT_MET_CTRL_CMD[8] = (value & 0xff000000) >> 24;
+
+	/* send command */
+	iRet = wmt_core_tx(WMT_MET_CTRL_CMD, sizeof(WMT_MET_CTRL_CMD), &u4Res, MTK_WCN_BOOL_FALSE);
+	if ((iRet) || (u4Res != sizeof(WMT_MET_CTRL_CMD))) {
+		WMT_ERR_FUNC("Tx MET_CTRL_CMD fail!(%d) len (%d, %zu)\n", iRet, u4Res,
+			     sizeof(WMT_MET_CTRL_CMD));
+		return -2;
+	}
+
+	/* receive event */
+	evtLen = sizeof(WMT_MET_CTRL_EVT);
+	iRet = wmt_core_rx(evtBuf, evtLen, &u4Res);
+	if ((iRet) || (u4Res != evtLen)) {
+		WMT_ERR_FUNC("Rx MET_CTRL_EVT fail!(%d) len(%d, %d)\n", iRet, u4Res, evtLen);
+		mtk_wcn_stp_dbg_dump_package();
+		wmt_core_trigger_assert();
+		return -3;
+	}
+
+	return 0;
 }
