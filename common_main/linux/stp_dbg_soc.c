@@ -173,7 +173,9 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 		STP_DBG_ERR_FUNC("can not get consys dump num and default num is 35\n");
 	}
 
-	stp_dbg_start_coredump_timer();
+	if (dump_sink == 1 || dump_sink == 2)
+		stp_dbg_start_coredump_timer();
+
 	wmt_plat_set_host_dump_state(STP_HOST_DUMP_NOT_START);
 	page_counter = 0;
 	if (mtk_wcn_stp_get_wmt_trg_assert() == 0)
