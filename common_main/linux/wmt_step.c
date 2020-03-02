@@ -2239,7 +2239,7 @@ int wmt_step_parse_data(const char *in_buf, unsigned int size,
 	STEP_WRITE_ACT_TO_LIST func_act_to_list)
 {
 	struct step_target_act_list_info parse_info;
-	char *buf;
+	char *buf, *tmp_buf;
 	char *line;
 
 	buf = osal_malloc(size + 1);
@@ -2255,7 +2255,8 @@ int wmt_step_parse_data(const char *in_buf, unsigned int size,
 	parse_info.p_target_list = NULL;
 	parse_info.p_pd_entry = NULL;
 
-	while ((line = osal_strsep(&buf, "\r\n")) != NULL)
+	tmp_buf = buf;
+	while ((line = osal_strsep(&tmp_buf, "\r\n")) != NULL)
 		wmt_step_parse_line_data(line, &parse_info, func_act_to_list);
 
 	osal_free(buf);
