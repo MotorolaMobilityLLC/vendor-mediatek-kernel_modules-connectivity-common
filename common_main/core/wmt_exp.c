@@ -302,15 +302,6 @@ INT8 mtk_wcn_wmt_therm_ctrl(ENUM_WMTTHERM_TYPE_T eType)
 }
 EXPORT_SYMBOL(mtk_wcn_wmt_therm_ctrl);
 
-ENUM_WMTHWVER_TYPE_T mtk_wcn_wmt_hwver_get(VOID)
-{
-	/* TODO: [ChangeFeature][GeorgeKuo] Reconsider usage of this type */
-	/* TODO: how do we extend for new chip and newer revision? */
-	/* TODO: This way is hard to extend */
-	return wmt_lib_get_icinfo(WMTCHIN_MAPPINGHWVER);
-}
-EXPORT_SYMBOL(mtk_wcn_wmt_hwver_get);
-
 UINT32 mtk_wcn_wmt_ic_info_get(ENUM_WMT_CHIPINFO_TYPE_T type)
 {
 	return wmt_lib_get_icinfo(type);

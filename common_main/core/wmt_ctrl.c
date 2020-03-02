@@ -1067,9 +1067,6 @@ INT32 wmt_ctrl_hwidver_set(P_WMT_CTRL_DATA pWmtCtrlData)
 	pDev->chip_id = (pWmtCtrlData->au4CtrlData[0] & 0xFFFF0000) >> 16;
 	pDev->hw_ver = pWmtCtrlData->au4CtrlData[0] & 0x0000FFFF;
 	pDev->fw_ver = pWmtCtrlData->au4CtrlData[1] & 0x0000FFFF;
-	/* TODO: [FixMe][GeorgeKuo] remove translated ENUM_WMTHWVER_TYPE_T in the future!!! */
-	/* Only use hw_ver read from hw. */
-	pDev->eWmtHwVer = (ENUM_WMTHWVER_TYPE_T) (pWmtCtrlData->au4CtrlData[1] & 0xFFFF0000) >> 16;
 
 	return 0;
 }
