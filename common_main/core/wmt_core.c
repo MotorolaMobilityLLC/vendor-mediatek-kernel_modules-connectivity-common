@@ -655,52 +655,71 @@ INT32 wmt_core_reg_rw_raw(UINT32 isWrite, UINT32 offset, PUINT32 pVal, UINT32 ma
 	return 0;
 }
 
-INT32 wmt_core_init_script(struct init_script *script, INT32 count)
+INT32 wmt_core_init_script_retry(struct init_script *script, INT32 count, INT32 retry, INT32 dump_err_log)
 {
 	UINT8 evtBuf[256];
 	UINT32 u4Res;
 	INT32 i = 0;
 	INT32 iRet;
+	INT32 err = 0;
 
-	for (i = 0; i < count; i++) {
-		WMT_DBG_FUNC("WMT-CORE: init_script operation %s start\n", script[i].str);
-		/* CMD */
-		/* iRet = (*kal_stp_tx)(script[i].cmd, script[i].cmdSz, &u4Res); */
-		iRet = wmt_core_tx(script[i].cmd, script[i].cmdSz, &u4Res, MTK_WCN_BOOL_FALSE);
-		if (iRet || (u4Res != script[i].cmdSz)) {
-			WMT_ERR_FUNC("WMT-CORE: write (%s) iRet(%d) cmd len err(%d, %d)\n",
-				     script[i].str, iRet, u4Res, script[i].cmdSz);
-			break;
-		}
-		/* EVENT BUF */
+	do {
+		err = 0;
+		for (i = 0; i < count; i++) {
+			WMT_DBG_FUNC("WMT-CORE: init_script operation %s start\n", script[i].str);
+			/* CMD */
+			/* iRet = (*kal_stp_tx)(script[i].cmd, script[i].cmdSz, &u4Res); */
+			iRet = wmt_core_tx(script[i].cmd, script[i].cmdSz, &u4Res, MTK_WCN_BOOL_FALSE);
+			if (iRet || (u4Res != script[i].cmdSz)) {
+				WMT_ERR_FUNC("WMT-CORE: write (%s) iRet(%d) cmd len err(%d, %d)\n",
+					     script[i].str, iRet, u4Res, script[i].cmdSz);
 
-		osal_memset(evtBuf, 0, sizeof(evtBuf));
-		iRet = wmt_core_rx(evtBuf, script[i].evtSz, &u4Res);
-		if (iRet || (u4Res != script[i].evtSz)) {
-			WMT_ERR_FUNC("WMT-CORE: read (%s) iRet(%d) evt len err(rx:%d, exp:%d)\n",
-				     script[i].str, iRet, u4Res, script[i].evtSz);
-			mtk_wcn_stp_dbg_dump_package();
-			break;
-		}
-		/* RESULT */
-		if (evtBuf[1] != 0x14) { /*workaround RF calibration data EVT, do not care this EVT*/
-			if (osal_memcmp(evtBuf, script[i].evt, script[i].evtSz) != 0) {
-				WMT_ERR_FUNC("WMT-CORE:compare %s result error\n", script[i].str);
-				WMT_ERR_FUNC
-					("WMT-CORE:rx(%d):[%02X,%02X,%02X,%02X,%02X]\n",
-					 u4Res, evtBuf[0], evtBuf[1], evtBuf[2], evtBuf[3], evtBuf[4]);
-				WMT_ERR_FUNC
-					("WMT-CORE:exp(%d):[%02X,%02X,%02X,%02X,%02X]\n",
-					 script[i].evtSz, script[i].evt[0], script[i].evt[1], script[i].evt[2],
-					 script[i].evt[3], script[i].evt[4]);
-				mtk_wcn_stp_dbg_dump_package();
+				err = -1;
 				break;
 			}
+			/* EVENT BUF */
+
+			osal_memset(evtBuf, 0, sizeof(evtBuf));
+			iRet = wmt_core_rx(evtBuf, script[i].evtSz, &u4Res);
+			if (iRet || (u4Res != script[i].evtSz)) {
+				WMT_ERR_FUNC("WMT-CORE: read (%s) iRet(%d) evt len err(rx:%d, exp:%d)\n",
+					     script[i].str, iRet, u4Res, script[i].evtSz);
+				if (dump_err_log == 1)
+					mtk_wcn_stp_dbg_dump_package();
+
+				err = -1;
+				break;
+			}
+			/* RESULT */
+			if (evtBuf[1] != 0x14) { /*workaround RF calibration data EVT, do not care this EVT*/
+				if (osal_memcmp(evtBuf, script[i].evt, script[i].evtSz) != 0) {
+					WMT_ERR_FUNC("WMT-CORE:compare %s result error\n", script[i].str);
+					WMT_ERR_FUNC
+						("WMT-CORE:rx(%d):[%02X,%02X,%02X,%02X,%02X]\n",
+						 u4Res, evtBuf[0], evtBuf[1], evtBuf[2], evtBuf[3], evtBuf[4]);
+					WMT_ERR_FUNC
+						("WMT-CORE:exp(%d):[%02X,%02X,%02X,%02X,%02X]\n",
+						 script[i].evtSz, script[i].evt[0], script[i].evt[1], script[i].evt[2],
+						 script[i].evt[3], script[i].evt[4]);
+					if (dump_err_log == 1)
+						mtk_wcn_stp_dbg_dump_package();
+
+					err = -1;
+					break;
+				}
+			}
+			WMT_DBG_FUNC("init_script operation %s ok\n", script[i].str);
 		}
-		WMT_DBG_FUNC("init_script operation %s ok\n", script[i].str);
-	}
+		retry--;
+	} while (retry >= 0 && err < 0);
 
 	return (i == count) ? 0 : -1;
+}
+
+
+INT32 wmt_core_init_script(struct init_script *script, INT32 count)
+{
+	return wmt_core_init_script_retry(script, count, 0, 1);
 }
 
 static INT32 wmt_core_trigger_assert(VOID)
