@@ -820,7 +820,6 @@ static struct step_action *wmt_step_create_write_register(int write, char *param
 
 static struct step_action *wmt_step_create_register(char *params[])
 {
-	struct step_register_action *p_reg_act = NULL;
 	long write;
 
 	if (params[0] == NULL) {
@@ -838,8 +837,6 @@ static struct step_action *wmt_step_create_register(char *params[])
 		return wmt_step_create_read_register(write, params);
 	else
 		return wmt_step_create_write_register(write, params);
-
-	return &(p_reg_act->base);
 }
 
 static struct step_action *wmt_step_create_gpio(char *params[])
