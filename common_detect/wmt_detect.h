@@ -50,7 +50,7 @@
 #define WMT_DETECT_LOG_WARN    1
 #define WMT_DETECT_LOG_ERR     0
 
-extern unsigned int gWmtDetectDbgLvl;
+extern int gWmtDetectDbgLvl;
 
 #define WMT_DETECT_PR_LOUD(fmt, arg...) \
 do { \

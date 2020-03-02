@@ -1907,7 +1907,7 @@ static INT32 opfunc_cmd_test(P_WMT_OP pWmtOp)
 		cmdNoPa = pWmtOp->au4OpData[1];
 		pRes = (PUINT8) pWmtOp->au4OpData[2];
 		resBufRoom = pWmtOp->au4OpData[3];
-		if ((cmdNoPa >= 0x0) && (cmdNoPa <= 0xf)) {
+		if (cmdNoPa <= 0xf) {
 			WMT_INFO_FUNC("Send Coexistence Debug command [0x%x]!\n", cmdNoPa);
 			tstCmdSz = osal_sizeof(WMT_COEXDBG_CMD);
 			osal_memcpy(tstCmd, WMT_COEXDBG_CMD, tstCmdSz);
@@ -1915,7 +1915,7 @@ static INT32 opfunc_cmd_test(P_WMT_OP pWmtOp)
 				tstCmd[5] = cmdNoPa;
 
 			/*setup the expected event length */
-			if (cmdNoPa >= 0x0 && cmdNoPa <= 0x4) {
+			if (cmdNoPa <= 0x4) {
 				tstEvtSz = osal_sizeof(WMT_COEXDBG_1_EVT);
 				osal_memcpy(tstEvt, WMT_COEXDBG_1_EVT, tstEvtSz);
 			} else if (cmdNoPa == 0x5) {
