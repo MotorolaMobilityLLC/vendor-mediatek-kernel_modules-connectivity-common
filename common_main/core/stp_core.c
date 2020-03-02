@@ -397,6 +397,7 @@ static VOID stp_sdio_trace32_dump(VOID)
 			osal_err_print("[len=%d][type=%d]counter[%d]\n%s\n", stp_core_ctx.rx_counter,
 					stp_core_ctx.parser.type, stp_core_ctx.assert_info_cnt, stp_core_ctx.rx_buf);
 		if ((stp_core_ctx.rx_counter - osal_strlen("coredump end") - 2 >= 0) &&
+				(stp_core_ctx.rx_counter < MTKSTP_BUFFER_SIZE) &&
 				(osal_strncmp("coredump end", stp_core_ctx.rx_buf
 				+ stp_core_ctx.rx_counter - osal_strlen("coredump end") - 2,
 				osal_strlen("coredump end")) == 0)) {
