@@ -633,8 +633,7 @@ INT32 stp_dbg_trigger_collect_ftrace(PUINT8 pbuf, INT32 len)
 		return -1;
 	}
 
-	if (mtk_wcn_stp_get_wmt_trg_assert() ||
-	    mtk_wcn_stp_coredump_start_get()) {
+	if (mtk_wcn_stp_coredump_start_get()) {
 		STP_DBG_ERR_FUNC("assert has been triggered\n");
 		return -1;
 	}
