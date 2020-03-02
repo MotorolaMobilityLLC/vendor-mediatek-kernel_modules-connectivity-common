@@ -1206,7 +1206,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	if (wmt_ic_ops_soc.icId != 0x6765 &&
 	    wmt_ic_ops_soc.icId != 0x3967 &&
 	    wmt_ic_ops_soc.icId != 0x6761 &&
-	    wmt_ic_ops_soc.icId != 0x6769) {
+	    wmt_ic_ops_soc.icId != 0x6779) {
 		if (wmt_ic_ops_soc.icId == 0x0279 ||
 		    wmt_ic_ops_soc.icId == 0x0507 ||
 		    wmt_ic_ops_soc.icId == 0x0713 ||
