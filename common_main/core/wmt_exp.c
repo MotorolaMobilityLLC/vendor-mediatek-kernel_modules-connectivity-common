@@ -818,3 +818,16 @@ MTK_WCN_BOOL mtk_wmt_gps_suspend_ctrl(MTK_WCN_BOOL suspend)
 	return bRet;
 }
 EXPORT_SYMBOL(mtk_wmt_gps_suspend_ctrl);
+
+INT32 mtk_wcn_wmt_mpu_lock_aquire(VOID)
+{
+	return wmt_lib_mpu_lock_aquire();
+}
+EXPORT_SYMBOL(mtk_wcn_wmt_mpu_lock_aquire);
+
+VOID mtk_wcn_wmt_mpu_lock_release(VOID)
+{
+	wmt_lib_mpu_lock_release();
+}
+EXPORT_SYMBOL(mtk_wcn_wmt_mpu_lock_release);
+
