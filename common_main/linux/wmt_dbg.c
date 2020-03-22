@@ -31,6 +31,7 @@
 #include "stp_dbg.h"
 #include "connsys_debug_utility.h"
 #include "wmt_step.h"
+#include "wmt_alarm.h"
 #ifdef CONFIG_MTK_ENG_BUILD
 #include "wmt_step_test.h"
 #endif
@@ -129,6 +130,8 @@ static INT32 wmt_dbg_pre_pwr_on_ctrl(INT32 par1, INT32 enable, INT32 par3);
 static INT32 wmt_dbg_step_test(INT32 par1, INT32 address, INT32 value);
 #endif
 
+static INT32 wmt_dbg_alarm_ctrl(INT32 par1, INT32 offset, INT32 size);
+
 static INT32 wmt_dbg_thermal_query(INT32 par1, INT32 count, INT32 interval);
 static INT32 wmt_dbg_thermal_ctrl(INT32 par1, INT32 par2, INT32 par3);
 static INT32 wmt_dbg_step_ctrl(INT32 par1, INT32 par2, INT32 par3);
@@ -195,6 +198,7 @@ static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x2f] = wmt_dbg_set_bt_link_status,
 	[0x30] = wmt_dbg_show_thread_debug_info,
 	[0x31] = wmt_dbg_gps_suspend,
+	[0x32] = wmt_dbg_alarm_ctrl,
 #ifdef CONFIG_MTK_ENG_BUILD
 	[0xa0] = wmt_dbg_step_test,
 #endif
@@ -744,6 +748,15 @@ static INT32 wmt_dbg_suspend_debug(INT32 par1, INT32 par2, INT32 par3)
 		connsys_log_alarm_enable(par2);
 	else
 		connsys_log_alarm_disable();
+	return 0;
+}
+
+static INT32 wmt_dbg_alarm_ctrl(INT32 par1, INT32 par2, INT32 par3)
+{
+	if (par2 > 0)
+		wmt_alarm_start(par2);
+	else
+		wmt_alarm_cancel();
 	return 0;
 }
 
@@ -1534,8 +1547,10 @@ ssize_t wmt_dbg_write(struct file *filp, const char __user *buffer, size_t count
 	 * 0x15: assert control
 	 * 0x2e: enable catch connsys log
 	 * 0x2f: set bt link status
+	 * 0x32: alarm dump control
 	 */
-	if (0 == dbgEnabled && 0x15 != x && 0x2e != x && 0x2f != x && 0x7 != x) {
+	if (0 == dbgEnabled && 0x15 != x && 0x2e != x && 0x2f != x &&
+		0x7 != x && x != 0x32) {
 		WMT_INFO_FUNC("please enable WMT debug first\n\r");
 		return len;
 	}

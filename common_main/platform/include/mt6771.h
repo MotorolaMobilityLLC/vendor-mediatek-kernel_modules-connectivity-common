@@ -133,6 +133,11 @@
 #define CONSYS_EMI_PAGED_DUMP_OFFSET	(0x8400)
 #define CONSYS_EMI_FULL_DUMP_OFFSET	(0x10400)
 
+/*CONSYS_MCU_CFG_DBG_LP_INFO*/
+#define MCU_TOP_MISC_ON_BASE_ADDR                           (0x180c1000)
+#define CONN_CFG_ON_CONN_ON_MON_FLAG_RECORD_ADDR            (0x134)
+#define CONN_CFG_ON_CONN_ON_MON_FLAG_RECORD_MAPPING_AP_ADDR (0x180c1134)
+
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
