@@ -729,23 +729,6 @@ MTK_WCN_BOOL mtk_wcn_wmt_do_reset(ENUM_WMTDRV_TYPE_T type)
 }
 EXPORT_SYMBOL(mtk_wcn_wmt_do_reset);
 
-MTK_WCN_BOOL mtk_wcn_wmt_do_reset_only(ENUM_WMTDRV_TYPE_T type)
-{
-	INT32 iRet = -1;
-
-	WMT_INFO_FUNC("Whole chip reset without trigger assert\n");
-	if (mtk_wcn_stp_get_wmt_trg_assert() == 0) {
-		chip_reset_only = 1;
-		iRet = wmt_lib_trigger_reset();
-	} else {
-		WMT_INFO_FUNC("assert has been triggered already\n");
-		iRet = 0;
-	}
-
-	return iRet == 0 ? MTK_WCN_BOOL_TRUE : MTK_WCN_BOOL_FALSE;
-}
-EXPORT_SYMBOL(mtk_wcn_wmt_do_reset_only);
-
 VOID mtk_wcn_wmt_set_wifi_ver(UINT32 Value)
 {
 	wmt_lib_soc_set_wifiver(Value);
@@ -835,3 +818,16 @@ MTK_WCN_BOOL mtk_wmt_gps_suspend_ctrl(MTK_WCN_BOOL suspend)
 	return bRet;
 }
 EXPORT_SYMBOL(mtk_wmt_gps_suspend_ctrl);
+
+INT32 mtk_wcn_wmt_mpu_lock_aquire(VOID)
+{
+	return wmt_lib_mpu_lock_aquire();
+}
+EXPORT_SYMBOL(mtk_wcn_wmt_mpu_lock_aquire);
+
+VOID mtk_wcn_wmt_mpu_lock_release(VOID)
+{
+	wmt_lib_mpu_lock_release();
+}
+EXPORT_SYMBOL(mtk_wcn_wmt_mpu_lock_release);
+
