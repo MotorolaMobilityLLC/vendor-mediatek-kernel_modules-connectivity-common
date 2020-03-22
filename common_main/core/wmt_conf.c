@@ -177,6 +177,9 @@ static const struct parse_data wmtcfg_fields[] = {
 	CHAR(wifi_ant_swap_mode),
 	CHAR(wifi_main_ant_polarity),
 	CHAR(wifi_ant_swap_ant_sel_gpio),
+
+	/* This is an open config whose actual purpose is decided by WIFI. */
+	BYTE_ARRAY(wifi_config),
 };
 
 #define NUM_WMTCFG_FIELDS (osal_sizeof(wmtcfg_fields) / osal_sizeof(wmtcfg_fields[0]))
@@ -676,6 +679,15 @@ INT32 wmt_conf_deinit(VOID)
 	if (pWmtGenConf->coex_wmt_antsel_invert_support != NULL) {
 		osal_free(pWmtGenConf->coex_wmt_antsel_invert_support);
 		pWmtGenConf->coex_wmt_antsel_invert_support = NULL;
+	}
+
+	if (pWmtGenConf->wifi_config != NULL) {
+		if (pWmtGenConf->wifi_config->data != NULL) {
+			osal_free(pWmtGenConf->wifi_config->data);
+			pWmtGenConf->wifi_config->data = NULL;
+		}
+		osal_free(pWmtGenConf->wifi_config);
+		pWmtGenConf->wifi_config = NULL;
 	}
 
 	return 0;

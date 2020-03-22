@@ -103,6 +103,7 @@ static P_CONSYS_EMI_ADDR_INFO consys_soc_get_emi_phy_add(VOID);
 static VOID consys_set_if_pinmux(MTK_WCN_BOOL enable);
 static INT32 consys_emi_coredump_remapping(UINT8 __iomem **addr, UINT32 enable);
 static INT32 consys_reset_emi_coredump(UINT8 __iomem *addr);
+static INT32 consys_dump_osc_state(P_CONSYS_STATE state);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -182,6 +183,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_set_if_pinmux = consys_set_if_pinmux,
 	.consys_ic_emi_coredump_remapping = consys_emi_coredump_remapping,
 	.consys_ic_reset_emi_coredump = consys_reset_emi_coredump,
+	.consys_ic_dump_osc_state = consys_dump_osc_state,
 };
 
 /*******************************************************************************
@@ -1065,3 +1067,42 @@ static INT32 consys_reset_emi_coredump(UINT8 __iomem *addr)
 	memset_io(addr + CONSYS_EMI_PAGED_DUMP_OFFSET, 0, 0x8000);
 	return 0;
 }
+
+/*
+ * Before calling this function, should check consys state
+ *  ex: consys power on already and reg_readable
+ */
+static INT32 consys_dump_osc_state(P_CONSYS_STATE state)
+{
+	UINT8 __iomem *addr;
+	INT32 ret = MTK_WCN_BOOL_TRUE;
+	/* marked for 6771 first, util it can work find */
+#if 0
+	UINT8 *mcu_top_misc_on_base = NULL;
+
+	mcu_top_misc_on_base = ioremap_nocache(MCU_TOP_MISC_ON_BASE_ADDR, 0x200);
+
+	/* 6771 doesn't have reg_readable function, should check osc state from PMIC */
+	if (mcu_top_misc_on_base != 0) {
+		state->lp[0] = (UINT32)CONN_CFG_ON_CONN_ON_MON_FLAG_RECORD_MAPPING_AP_ADDR;
+		state->lp_buf[1] = CONSYS_REG_READ(mcu_top_misc_on_base + CONN_CFG_ON_CONN_ON_MON_FLAG_RECORD_ADDR);
+		WMT_PLAT_PR_INFO("0x%08x: 0x%x\n", state->lp_buf[0], state->lp[1]);
+
+	} else {
+		ret = MTK_WCN_BOOL_FALSE;
+	}
+	iounmap(mcu_top_misc_on_base);
+
+	addr = ioremap_nocache(gConEmiPhyBase + 0x66500, sizeof(struct consys_sw_state));
+	if (addr)
+		memcpy_fromio(&state->sw_state, addr, sizeof(struct consys_sw_state));
+	else
+		WMT_PLAT_PR_WARN("ioremap fail\n");
+	iounmap(addr);
+
+#endif
+
+	return ret;
+}
+
+
