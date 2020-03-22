@@ -43,6 +43,7 @@
 #include <linux/of_reserved_mem.h>
 #include <linux/pinctrl/consumer.h>
 #include <linux/of_gpio.h>
+#include <linux/syscore_ops.h>
 #include <connectivity_build_in_adapter.h>
 #include "wmt_lib.h"
 
@@ -71,8 +72,8 @@
 */
 static INT32 mtk_wmt_probe(struct platform_device *pdev);
 static INT32 mtk_wmt_remove(struct platform_device *pdev);
-static INT32 mtk_wmt_suspend(struct platform_device *pdev, pm_message_t state);
-static INT32 mtk_wmt_resume(struct platform_device *pdev);
+static INT32 mtk_wmt_suspend(VOID);
+static void mtk_wmt_resume(VOID);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -95,6 +96,9 @@ UINT32 gps_lna_pin_num = 0xffffffff;
 
 INT32 chip_reset_status = -1;
 static INT32 wifi_ant_swap_gpio_pin_num;
+
+static atomic64_t g_sleep_counter_enable = ATOMIC64_INIT(1);
+static OSAL_UNSLEEPABLE_LOCK g_sleep_counter_spinlock;
 
 #ifdef CONFIG_OF
 const struct of_device_id apwmt_of_ids[] = {
@@ -128,8 +132,6 @@ struct CONSYS_BASE_ADDRESS conn_reg;
 static struct platform_driver mtk_wmt_dev_drv = {
 	.probe = mtk_wmt_probe,
 	.remove = mtk_wmt_remove,
-	.suspend = mtk_wmt_suspend,
-	.resume = mtk_wmt_resume,
 	.driver = {
 		   .name = "mtk_wmt",
 		   .owner = THIS_MODULE,
@@ -139,8 +141,16 @@ static struct platform_driver mtk_wmt_dev_drv = {
 		   },
 };
 
+static struct syscore_ops wmt_dbg_syscore_ops = {
+	.suspend = mtk_wmt_suspend,
+	.resume = mtk_wmt_resume,
+};
+
 /* GPIO part */
 struct pinctrl *consys_pinctrl;
+
+struct work_struct plt_resume_worker;
+static void plat_resume_handler(struct work_struct *work);
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
 struct regmap *g_regmap;
@@ -348,6 +358,10 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 	if (wmt_consys_ic_ops->consys_ic_register_devapc_cb)
 		wmt_consys_ic_ops->consys_ic_register_devapc_cb();
 
+	osal_unsleepable_lock_init(&g_sleep_counter_spinlock);
+
+	INIT_WORK(&plt_resume_worker, plat_resume_handler);
+
 	return 0;
 }
 
@@ -366,29 +380,154 @@ static INT32 mtk_wmt_remove(struct platform_device *pdev)
 	if (g_pdev)
 		g_pdev = NULL;
 
+	osal_unsleepable_lock_deinit(&g_sleep_counter_spinlock);
+
 	return 0;
 }
 
-static INT32 mtk_wmt_suspend(struct platform_device *pdev, pm_message_t state)
+static INT32 mtk_wmt_suspend(VOID)
 {
+	WMT_PLAT_PR_INFO(" mtk_wmt_suspend !!");
 	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_WHEN_AP_SUSPEND);
 
+	mtk_wcn_consys_sleep_info_clear();
 	return 0;
 }
 
-static INT32 mtk_wmt_resume(struct platform_device *pdev)
-{
-	wmt_lib_resume_dump_info();
 
-	return 0;
+static void plat_resume_handler(struct work_struct *work)
+{
+	CONSYS_STATE_DMP_INFO dmp_info;
+	UINT8 dmp_info_buf[DBG_LOG_STR_SIZE];
+	int len = 0, i, dmp_cnt = 5;
+	P_DEV_WMT pDev = &gDevWmt;
+
+	if (wmt_lib_dmp_consys_state(&dmp_info, dmp_cnt, 0) == MTK_WCN_BOOL_TRUE) {
+		len += snprintf(dmp_info_buf + len,
+						DBG_LOG_STR_SIZE - len, "0x%08x", dmp_info.cpu_pcr[0]);
+
+		for (i = 1; i < dmp_cnt; i++)
+			len += snprintf(dmp_info_buf + len,
+					DBG_LOG_STR_SIZE - len, ";0x%08x", dmp_info.cpu_pcr[i]);
+
+		len += snprintf(dmp_info_buf + len,
+				DBG_LOG_STR_SIZE - len, ";0x%08x", dmp_info.state.lp[1]);
+
+		len += snprintf(dmp_info_buf + len,
+				DBG_LOG_STR_SIZE - len, ";0x%08x", dmp_info.state.gating[1]);
+
+		len += snprintf(dmp_info_buf + len,
+				DBG_LOG_STR_SIZE - len, ";%llu", dmp_info.state.sleep_counter[0]);
+		for (i = 1; i < WMT_SLEEP_COUNT_MAX; i++) {
+			len += snprintf(dmp_info_buf + len,
+					DBG_LOG_STR_SIZE - len, ",%llu", dmp_info.state.sleep_counter[i]);
+		}
+
+		len += snprintf(dmp_info_buf + len,
+				DBG_LOG_STR_SIZE - len, ";%llu", dmp_info.state.sleep_timer[0]);
+		for (i = 1; i < WMT_SLEEP_COUNT_MAX; i++) {
+			len += snprintf(dmp_info_buf + len,
+					DBG_LOG_STR_SIZE - len, ",%llu", dmp_info.state.sleep_timer[i]);
+		}
+
+		WMT_PLAT_PR_INFO("%s\n", dmp_info_buf);
+	} else {
+		if ((wmt_lib_get_drv_status(WMTDRV_TYPE_WMT) != DRV_STS_FUNC_ON)
+				|| (osal_test_bit(WMT_STAT_PWR, &pDev->state)) == 0) {
+			WMT_PLAT_PR_INFO("TOP:0,0;MCU:0,0;BT:0,0;WIFI:0,0;GPS:0,0\n");
+		}
+	}
 }
 
-PUINT32 mtk_wcn_consys_read_dump_info_reg(VOID)
+static void mtk_wmt_resume(VOID)
 {
-	if (wmt_consys_ic_ops->consys_ic_resume_dump_info)
-		return wmt_consys_ic_ops->consys_ic_resume_dump_info();
-	else
-		return NULL;
+	WMT_PLAT_PR_INFO(" mtk_wmt_resume !!");
+	schedule_work(&plt_resume_worker);
+}
+
+INT32 mtk_wcn_consys_sleep_info_read_all_ctrl(P_CONSYS_STATE state)
+{
+	INT32 ret = 0;
+	INT32 i = 0;
+	UINT64 sleep_counter = 0, sleep_timer = 0;
+	UINT8 strbuf[DBG_LOG_STR_SIZE] = {""};
+	UINT32 len = 0;
+
+	WMT_PLAT_PR_DBG("sleep count info read all ctrl start\n");
+
+	if (wmt_consys_ic_ops->consys_ic_sleep_info_enable_ctrl &&
+			wmt_consys_ic_ops->consys_ic_sleep_info_read_ctrl &&
+			wmt_consys_ic_ops->consys_ic_sleep_info_clear) {
+		osal_lock_unsleepable_lock(&g_sleep_counter_spinlock);
+		if (atomic64_read(&g_sleep_counter_enable) == 1) {
+			for (i = 0; i < WMT_SLEEP_COUNT_MAX; i++) {
+				sleep_counter = 0;
+				sleep_timer = 0;
+				wmt_consys_ic_ops->consys_ic_sleep_info_read_ctrl(i, &sleep_counter, &sleep_timer);
+				if (state) {
+					state->sleep_counter[i] = sleep_counter;
+					state->sleep_timer[i] = sleep_timer;
+				}
+				len += osal_sprintf(strbuf + len, "%s%s%s%s%s:%llu,%llu;",
+					((i == WMT_SLEEP_COUNT_TOP) ? "TOP" : ""),
+					((i == WMT_SLEEP_COUNT_MCU) ? "MCU" : ""),
+					((i == WMT_SLEEP_COUNT_BT) ? "BT" : ""),
+					((i == WMT_SLEEP_COUNT_WF) ? "WIFI" : ""),
+					((i == WMT_SLEEP_COUNT_GPS) ? "GPS" : ""),
+					sleep_counter, sleep_timer);
+			}
+			len += osal_sprintf(strbuf + len - 1, "");
+			WMT_PLAT_PR_INFO("%s\n", strbuf);
+		} else {
+			ret = -21;
+		}
+		osal_unlock_unsleepable_lock(&g_sleep_counter_spinlock);
+	}
+
+	return ret;
+}
+
+INT32 mtk_wcn_consys_sleep_info_clear(VOID)
+{
+	INT32 ret = 0;
+	P_DEV_WMT pDev = &gDevWmt;
+
+	WMT_PLAT_PR_DBG("sleep count info clear start\n");
+
+	if (wmt_consys_ic_ops->consys_ic_sleep_info_enable_ctrl &&
+			wmt_consys_ic_ops->consys_ic_sleep_info_read_ctrl &&
+			wmt_consys_ic_ops->consys_ic_sleep_info_clear) {
+
+		osal_lock_unsleepable_lock(&g_sleep_counter_spinlock);
+
+		if ((wmt_lib_get_drv_status(WMTDRV_TYPE_WMT) == DRV_STS_FUNC_ON)
+				&& (osal_test_bit(WMT_STAT_PWR, &pDev->state)))
+			ret = wmt_consys_ic_ops->consys_ic_sleep_info_clear();
+		osal_unlock_unsleepable_lock(&g_sleep_counter_spinlock);
+	}
+
+	return ret;
+}
+
+INT32 mtk_wcn_consys_sleep_info_restore(VOID)
+{
+	P_DEV_WMT pDev = &gDevWmt;
+
+	WMT_PLAT_PR_DBG("sleep count info restore start\n");
+
+	if (wmt_consys_ic_ops->consys_ic_sleep_info_enable_ctrl &&
+			wmt_consys_ic_ops->consys_ic_sleep_info_read_ctrl &&
+			wmt_consys_ic_ops->consys_ic_sleep_info_clear) {
+		if ((wmt_lib_get_drv_status(WMTDRV_TYPE_WMT) == DRV_STS_FUNC_ON)
+				&& (osal_test_bit(WMT_STAT_PWR, &pDev->state))) {
+			osal_lock_unsleepable_lock(&g_sleep_counter_spinlock);
+			if (atomic64_read(&g_sleep_counter_enable) == 1)
+				wmt_consys_ic_ops->consys_ic_sleep_info_enable_ctrl(1);
+			osal_unlock_unsleepable_lock(&g_sleep_counter_spinlock);
+		}
+	}
+
+	return 0;
 }
 
 INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
@@ -451,12 +590,24 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		if (wmt_consys_ic_ops->polling_consys_ic_chipid &&
 			wmt_consys_ic_ops->polling_consys_ic_chipid() < 0)
 			return -1;
+		if (wmt_consys_ic_ops->consys_ic_set_access_emi_hw_mode)
+			wmt_consys_ic_ops->consys_ic_set_access_emi_hw_mode();
 		if (wmt_consys_ic_ops->update_consys_rom_desel_value)
 			wmt_consys_ic_ops->update_consys_rom_desel_value();
 		if (wmt_consys_ic_ops->consys_ic_acr_reg_setting)
 			wmt_consys_ic_ops->consys_ic_acr_reg_setting();
 		if (wmt_consys_ic_ops->consys_ic_afe_reg_setting)
 			wmt_consys_ic_ops->consys_ic_afe_reg_setting();
+		if (wmt_consys_ic_ops->consys_ic_emi_entry_address)
+			wmt_consys_ic_ops->consys_ic_emi_entry_address();
+		if (wmt_consys_ic_ops->consys_ic_set_xo_osc_ctrl)
+			wmt_consys_ic_ops->consys_ic_set_xo_osc_ctrl();
+		if (wmt_consys_ic_ops->consys_ic_identify_adie)
+			wmt_consys_ic_ops->consys_ic_identify_adie();
+		if (wmt_consys_ic_ops->consys_ic_wifi_ctrl_setting)
+			wmt_consys_ic_ops->consys_ic_wifi_ctrl_setting();
+		if (wmt_consys_ic_ops->consys_ic_bus_timeout_config)
+			wmt_consys_ic_ops->consys_ic_bus_timeout_config();
 		if (wmt_consys_ic_ops->consys_ic_hw_reset_bit_set)
 			wmt_consys_ic_ops->consys_ic_hw_reset_bit_set(DISABLE);
 
@@ -703,6 +854,7 @@ INT32 mtk_wcn_consys_hw_init(VOID)
 	if (iRet)
 		WMT_PLAT_PR_ERR("WMT platform driver registered failed(%d)\n", iRet);
 
+	register_syscore_ops(&wmt_dbg_syscore_ops);
 
 	return iRet;
 
@@ -720,6 +872,7 @@ INT32 mtk_wcn_consys_hw_deinit(VOID)
 #endif
 
 	platform_driver_unregister(&mtk_wmt_dev_drv);
+	unregister_syscore_ops(&wmt_dbg_syscore_ops);
 
 	if (wmt_consys_ic_ops)
 		wmt_consys_ic_ops = NULL;
@@ -870,6 +1023,12 @@ INT32 mtk_wcn_consys_reg_ctrl(UINT32 is_write, enum CONSYS_BASE_ADDRESS_INDEX in
 	return 0;
 }
 
+
+/* Who call this?
+ *	- wmt_step
+ *	- stp_dbg.c stp_dbg_poll_cpupcr
+ *	- wmt_core
+ */
 INT32 mtk_consys_check_reg_readable(VOID)
 {
 	if (wmt_consys_ic_ops->consys_ic_check_reg_readable)
@@ -926,16 +1085,24 @@ INT32 mtk_consys_is_ant_swap_enable_by_hwid(VOID)
 		return 0;
 }
 
-INT32 mtk_consys_resume_dump_info(VOID)
+INT32 mtk_consys_dump_osc_state(P_CONSYS_STATE state)
 {
-	if (wmt_consys_ic_ops->consys_ic_resume_dump_info)
-		wmt_consys_ic_ops->consys_ic_resume_dump_info();
+	if (wmt_consys_ic_ops->consys_ic_dump_osc_state)
+		return wmt_consys_ic_ops->consys_ic_dump_osc_state(state);
 
-	return 0;
+	return MTK_WCN_BOOL_FALSE;
 }
 
 VOID mtk_wcn_consys_ic_get_ant_sel_cr_addr(PUINT32 default_invert_cr, PUINT32 default_invert_bit)
 {
 	if (wmt_consys_ic_ops->consys_ic_get_ant_sel_cr_addr)
 		wmt_consys_ic_ops->consys_ic_get_ant_sel_cr_addr(default_invert_cr, default_invert_bit);
+}
+
+INT32 mtk_wcn_consys_dump_gating_state(P_CONSYS_STATE state)
+{
+	if (wmt_consys_ic_ops->consys_ic_dump_gating_state)
+		return wmt_consys_ic_ops->consys_ic_dump_gating_state(state);
+
+	return MTK_WCN_BOOL_FALSE;
 }

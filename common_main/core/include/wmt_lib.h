@@ -205,6 +205,11 @@ enum wmt_cp_status {
 	WMT_CP_CHECK_DONE
 };
 
+#define WMT_LIB_DMP_SLOT 2
+struct consys_state_dmp_req {
+	struct consys_state_dmp_op consys_ops[WMT_LIB_DMP_SLOT];
+	atomic_t version;
+};
 
 /* OS independent wrapper for WMT_OP */
 typedef struct _DEV_WMT_ {
@@ -288,6 +293,8 @@ typedef struct _DEV_WMT_ {
 	struct osal_op_history worker_op_history;
 	UINT8 msg_local_buffer[WMT_IDC_MSG_BUFFER];
 	struct vendor_patch_table patch_table;
+
+	struct consys_state_dmp_req state_dmp_req;
 
 } DEV_WMT, *P_DEV_WMT;
 
@@ -462,7 +469,10 @@ extern INT32 wmt_lib_get_need_update_patch_version(VOID);
 extern INT32 wmt_lib_set_need_update_patch_version(INT32 need);
 extern VOID wmt_lib_set_bt_link_status(INT32 type, INT32 value);
 VOID mtk_lib_set_mcif_mpu_protection(MTK_WCN_BOOL enable);
-INT32 wmt_lib_resume_dump_info(VOID);
+INT32 wmt_lib_dmp_consys_state(P_CONSYS_STATE_DMP_INFO dmp_info,
+				UINT32 cpupcr_times, UINT32 slp_ms);
+
+extern INT32 wmt_lib_reg_readable(VOID);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
