@@ -229,9 +229,6 @@ static UINT8 WMT_COEX_EXT_ELAN_GAIN_P1_CMD[] = { 0x01, 0x10, 0x12, 0x00, 0x1B, 0
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 static UINT8 WMT_COEX_EXT_ELAN_GAIN_P1_EVT[] = { 0x02, 0x10, 0x01, 0x00, 0x00 };
-
-static UINT8 WMT_COEX_EXT_EPA_MODE_CMD[] = { 0x01, 0x10, 0x02, 0x00, 0x1D, 0x00 };
-static UINT8 WMT_COEX_EXT_EPA_MODE_EVT[] = { 0x02, 0x10, 0x01, 0x00, 0x00 };
 #endif
 
 static UINT8 WMT_EPA_SETTING_CONFIG_CMD[] = { 0x01, 0x02, 0x02, 0x00, 0x0E, 0x00 };
@@ -954,7 +951,6 @@ static struct init_script coex_table[] = {
 #else
 	INIT_CMD(WMT_COEX_WIFI_PATH_CMD, WMT_COEX_WIFI_PATH_EVT, "wifi path"),
 	INIT_CMD(WMT_COEX_EXT_ELAN_GAIN_P1_CMD, WMT_COEX_EXT_ELAN_GAIN_P1_EVT, "wifi elan gain p1"),
-	INIT_CMD(WMT_COEX_EXT_EPA_MODE_CMD, WMT_COEX_EXT_EPA_MODE_EVT, "wifi ext epa mode"),
 #endif
 };
 
@@ -1503,8 +1499,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	/* init coex before start RF calibration */
 	if (wmt_ic_ops_soc.icId == 0x6765 ||
 		wmt_ic_ops_soc.icId == 0x6761 ||
-		wmt_ic_ops_soc.icId == 0x6768 ||
-		wmt_ic_ops_soc.icId == 0x6785) {
+		wmt_ic_ops_soc.icId == 0x6768) {
 		iRet = wmt_stp_init_coex();
 		if (iRet) {
 			WMT_ERR_FUNC("init_coex fail(%d)\n", iRet);
@@ -2245,7 +2240,6 @@ static INT32 wmt_stp_init_coex(VOID)
 #else
 #define COEX_WIFI_PATH 1
 #define COEX_EXT_ELAN_GAIN_P1 2
-#define COEX_EXT_EPA_MODE 3
 #endif
 #define WMT_COXE_CONFIG_ADJUST_ANTENNA_OPCODE 6
 
@@ -2268,8 +2262,7 @@ static INT32 wmt_stp_init_coex(VOID)
 
 	if (wmt_ic_ops_soc.icId == 0x6765 ||
 		wmt_ic_ops_soc.icId == 0x6761 ||
-		wmt_ic_ops_soc.icId == 0x6768 ||
-		wmt_ic_ops_soc.icId == 0x6785) {
+		wmt_ic_ops_soc.icId == 0x6768) {
 		WMT_INFO_FUNC("elna_gain_p1_support:0x%x\n", pWmtGenConf->coex_wmt_ext_elna_gain_p1_support);
 		if (pWmtGenConf->coex_wmt_ext_elna_gain_p1_support != 1)
 			return 0;
@@ -2398,8 +2391,6 @@ static INT32 wmt_stp_init_coex(VOID)
 				   coex_table[COEX_EXT_ELAN_GAIN_P1].str,
 				   coex_table[COEX_EXT_ELAN_GAIN_P1].cmdSz);
 	}
-
-	coex_table[COEX_EXT_EPA_MODE].cmd[5] = pWmtGenConf->coex_wmt_ext_epa_mode;
 #endif
 
 	iRet = wmt_core_init_script(coex_table, ARRAY_SIZE(coex_table));
@@ -3653,8 +3644,11 @@ INT32 mtk_wcn_soc_rom_patch_dwn(UINT32 ip_ver, UINT32 fw_ver)
 			WMT_INFO_FUNC("[Rom Patch]Name=%s,EmiOffset=0x%x,Size=0x%x\n",
 					gFullPatchName, patchEmiOffset, patchSize);
 
-			if (type == WMTDRV_TYPE_WIFI && mtk_wcn_wlan_emi_mpu_set_protection)
-				(*mtk_wcn_wlan_emi_mpu_set_protection)(false);
+			if (type == WMTDRV_TYPE_WIFI) {
+				wmt_lib_mpu_lock_aquire();
+				if (mtk_wcn_wlan_emi_mpu_set_protection)
+					(*mtk_wcn_wlan_emi_mpu_set_protection)(false);
+			}
 
 			patchAddr = ioremap_nocache(emiInfo->emi_ap_phy_addr + patchEmiOffset, patchSize);
 			WMT_INFO_FUNC("physAddr=0x%x, size=%d virAddr=0x%p\n",
@@ -3683,8 +3677,11 @@ INT32 mtk_wcn_soc_rom_patch_dwn(UINT32 ip_ver, UINT32 fw_ver)
 					WMT_ERR_FUNC("ioremap_nocache fail\n");
 			}
 
-			if (type == WMTDRV_TYPE_WIFI && mtk_wcn_wlan_emi_mpu_set_protection)
-				(*mtk_wcn_wlan_emi_mpu_set_protection)(true);
+			if (type == WMTDRV_TYPE_WIFI) {
+				if (mtk_wcn_wlan_emi_mpu_set_protection)
+					(*mtk_wcn_wlan_emi_mpu_set_protection)(true);
+				wmt_lib_mpu_lock_release();
+			}
 		} else
 			WMT_ERR_FUNC("The rom patch is too big to overflow on EMI\n");
 

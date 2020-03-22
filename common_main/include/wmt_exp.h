@@ -375,8 +375,6 @@ extern MTK_WCN_BOOL mtk_wcn_wmt_assert_keyword(ENUM_WMTDRV_TYPE_T type, PUINT8 k
 
 extern MTK_WCN_BOOL mtk_wcn_wmt_do_reset(ENUM_WMTDRV_TYPE_T type);
 
-extern MTK_WCN_BOOL mtk_wcn_wmt_do_reset_only(ENUM_WMTDRV_TYPE_T type);
-
 extern INT32 mtk_wcn_wmt_msgcb_reg(ENUM_WMTDRV_TYPE_T eType, PF_WMT_CB pCb);
 
 extern INT32 mtk_wcn_wmt_msgcb_unreg(ENUM_WMTDRV_TYPE_T eType);
@@ -433,6 +431,9 @@ extern INT32 mtk_wmt_gps_mcu_ctrl(PUINT8 p_tx_data_buf, UINT32 tx_data_len, PUIN
 				  UINT32 rx_data_buf_len, PUINT32 p_rx_data_len);
 extern VOID mtk_wcn_wmt_set_mcif_mpu_protection(MTK_WCN_BOOL enable);
 extern MTK_WCN_BOOL mtk_wmt_gps_suspend_ctrl(MTK_WCN_BOOL suspend);
+
+extern INT32 mtk_wcn_wmt_mpu_lock_aquire(VOID);
+extern VOID mtk_wcn_wmt_mpu_lock_release(VOID);
 
 /*******************************************************************************
 *                              F U N C T I O N S
