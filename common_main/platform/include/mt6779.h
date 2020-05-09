@@ -30,6 +30,20 @@
 #define CONSYS_PWR_ON_OFF_API_AVAILABLE	1
 #define CONSYS_AFE_REG_SETTING		0
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#define COMMON_KERNEL_EMI_MPU_SUPPORT	1
+#define COMMON_KERNEL_PMIC_SUPPORT	1
+#else
+#define COMMON_KERNEL_EMI_MPU_SUPPORT	0
+#define COMMON_KERNEL_PMIC_SUPPORT	0
+#endif
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))
+#define COMMON_KERNEL_CLK_SUPPORT	1
+#else
+#define COMMON_KERNEL_CLK_SUPPORT	0
+#endif
+
 /*******************************************************************************
 *                                 M A C R O S
 ********************************************************************************
