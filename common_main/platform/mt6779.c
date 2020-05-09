@@ -1487,7 +1487,7 @@ static UINT32 consys_emi_set_remapping_reg(VOID)
 			CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_PERI_MAPPING_OFFSET));
 
 	/*Modem Configuration Registers remapping*/
-	/* mdPhy = get_smem_phy_start_addr(MD_SYS1, SMEM_USER_RAW_MD_CONSYS, &size); */
+	mdPhy = get_smem_phy_start_addr(MD_SYS1, SMEM_USER_RAW_MD_CONSYS, &size);
 	if (size == 0)
 		WMT_PLAT_PR_INFO("MD direct path is not supported\n");
 	else {
@@ -1899,7 +1899,7 @@ static INT32 consys_dump_osc_state(P_CONSYS_STATE state)
 static VOID consys_set_mcif_emi_mpu_protection(MTK_WCN_BOOL enable)
 {
 	WMT_PLAT_PR_INFO("Setup region 23 for domain 0 as %s\n", enable ? "FORBIDDEN" : "SEC_R_NSEC_R");
-	/* emi_mpu_set_single_permission(23, 0, enable ? FORBIDDEN : SEC_R_NSEC_R); */
+	emi_mpu_set_single_permission(23, 0, enable ? FORBIDDEN : SEC_R_NSEC_R);
 }
 
 static INT32 consys_calibration_backup_restore_support(VOID)
