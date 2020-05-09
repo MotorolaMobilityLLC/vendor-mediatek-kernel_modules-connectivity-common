@@ -103,6 +103,7 @@ static VOID force_trigger_assert_debug_pin(VOID);
 static P_CONSYS_EMI_ADDR_INFO consys_soc_get_emi_phy_add(VOID);
 static INT32 consys_emi_coredump_remapping(UINT8 __iomem **addr, UINT32 enable);
 static INT32 consys_reset_emi_coredump(UINT8 __iomem *addr);
+static UINT64 consys_get_options(VOID);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -183,6 +184,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_soc_get_emi_phy_add = consys_soc_get_emi_phy_add,
 	.consys_ic_emi_coredump_remapping = consys_emi_coredump_remapping,
 	.consys_ic_reset_emi_coredump = consys_reset_emi_coredump,
+	.consys_ic_get_options = consys_get_options,
 };
 
 /*******************************************************************************
@@ -1133,3 +1135,18 @@ static INT32 consys_reset_emi_coredump(UINT8 __iomem *addr)
 	memset_io(addr + CONSYS_EMI_PAGED_DUMP_OFFSET, 0, 0x8000);
 	return 0;
 }
+
+static UINT64 consys_get_options(VOID)
+{
+	UINT64 options = OPT_POWER_ON_DLM_TABLE |
+			OPT_SET_MCUCLK_TABLE_1_2 |
+			OPT_WIFI_LTE_COEX |
+			OPT_INIT_COEX_AFTER_RF_CALIBRATION |
+			OPT_SET_OSC_TYPE |
+			OPT_SET_COREDUMP_LEVEL |
+			OPT_GPS_SYNC |
+			OPT_WIFI_LTE_COEX_TABLE_1 |
+			OPT_NORMAL_PATCH_DWN_0;
+	return options;
+}
+

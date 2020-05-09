@@ -148,6 +148,7 @@ static UINT32 consys_store_pdev(struct platform_device *pdev);
  */
 static INT32 consys_calibration_backup_restore_support(VOID);
 static INT32 consys_is_ant_swap_enable_by_hwid(INT32 pin_num);
+static UINT64 consys_get_options(VOID);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -249,6 +250,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_need_store_pdev = consys_need_store_pdev,
 	.consys_ic_store_pdev = consys_store_pdev,
 #endif
+	.consys_ic_get_options = consys_get_options,
 };
 
 static const struct connlog_emi_config connsys_fw_log_parameter = {
@@ -1940,3 +1942,16 @@ static UINT32 consys_store_pdev(struct platform_device *pdev)
 	return 0;
 }
 #endif
+
+static UINT64 consys_get_options(VOID)
+{
+	UINT64 options = OPT_WIFI_LTE_COEX |
+			OPT_BT_TSSI_FROM_WIFI_CONFIG_NEW_OPID |
+			OPT_COEX_CONFIG_ADJUST |
+			OPT_COEX_CONFIG_ADJUST_NEW_FLAG |
+			OPT_WIFI_LTE_COEX_TABLE_3 |
+			OPT_NORMAL_PATCH_DWN_3 |
+			OPT_PATCH_CHECKSUM;
+	return options;
+}
+
