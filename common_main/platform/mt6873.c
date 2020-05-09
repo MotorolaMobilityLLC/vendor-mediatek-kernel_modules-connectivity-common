@@ -141,6 +141,7 @@ static INT32 consys_dump_gating_state(P_CONSYS_STATE state);
 static INT32 consys_sleep_info_enable_ctrl(UINT32 enable);
 static INT32 consys_sleep_info_read_ctrl(WMT_SLEEP_COUNT_TYPE type, PUINT64 sleep_counter, PUINT64 sleep_timer);
 static INT32 consys_sleep_info_clear(VOID);
+static UINT64 consys_get_options(VOID);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -243,6 +244,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_sleep_info_enable_ctrl = consys_sleep_info_enable_ctrl,
 	.consys_ic_sleep_info_read_ctrl = consys_sleep_info_read_ctrl,
 	.consys_ic_sleep_info_clear = consys_sleep_info_clear,
+	.consys_ic_get_options = consys_get_options,
 };
 
 static const struct connlog_emi_config connsys_fw_log_parameter = {
@@ -2274,4 +2276,17 @@ INT32 consys_sleep_info_read_ctrl(WMT_SLEEP_COUNT_TYPE type, PUINT64 sleep_count
 	}
 
 	return 0;
+}
+
+static UINT64 consys_get_options(VOID)
+{
+	UINT64 options = OPT_QUERY_ADIE |
+			OPT_WIFI_LTE_COEX |
+			OPT_BT_TSSI_FROM_WIFI_CONFIG_NEW_OPID |
+			OPT_COEX_CONFIG_ADJUST |
+			OPT_COEX_CONFIG_ADJUST_NEW_FLAG |
+			OPT_WIFI_LTE_COEX_TABLE_3 |
+			OPT_NORMAL_PATCH_DWN_3 |
+			OPT_PATCH_CHECKSUM;
+	return options;
 }

@@ -104,6 +104,7 @@ static VOID consys_set_if_pinmux(MTK_WCN_BOOL enable);
 static INT32 consys_emi_coredump_remapping(UINT8 __iomem **addr, UINT32 enable);
 static INT32 consys_reset_emi_coredump(UINT8 __iomem *addr);
 static INT32 consys_dump_osc_state(P_CONSYS_STATE state);
+static UINT64 consys_get_options(VOID);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -184,6 +185,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_emi_coredump_remapping = consys_emi_coredump_remapping,
 	.consys_ic_reset_emi_coredump = consys_reset_emi_coredump,
 	.consys_ic_dump_osc_state = consys_dump_osc_state,
+	.consys_ic_get_options = consys_get_options,
 };
 
 /*******************************************************************************
@@ -1105,4 +1107,18 @@ static INT32 consys_dump_osc_state(P_CONSYS_STATE state)
 	return ret;
 }
 
-
+static UINT64 consys_get_options(VOID)
+{
+	UINT64 options = OPT_POWER_ON_DLM_TABLE |
+			OPT_SET_MCUCLK_TABLE_3_4 |
+			OPT_SET_WIFI_EXT_COMPONENT |
+			OPT_WIFI_LTE_COEX |
+			OPT_BT_TSSI_FROM_WIFI_CONFIG_NEW_OPID |
+			OPT_INIT_COEX_AFTER_RF_CALIBRATION |
+			OPT_COEX_CONFIG_ADJUST |
+			OPT_SET_OSC_TYPE |
+			OPT_SET_COREDUMP_LEVEL |
+			OPT_WIFI_LTE_COEX_TABLE_2 |
+			OPT_NORMAL_PATCH_DWN_2;
+	return options;
+}
