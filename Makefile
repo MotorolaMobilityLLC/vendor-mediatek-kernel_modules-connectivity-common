@@ -53,6 +53,9 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/emi/$(MTK_PLATFORM)
 ifeq ($(CONFIG_MTK_PMIC_CHIP_MT6359),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6359
 endif
+ifeq ($(CONFIG_MTK_PMIC_CHIP_MT6359P),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6359p
+endif
 ccflags-y += -I$(srctree)/drivers/mmc/core
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/connectivity/common
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
