@@ -310,7 +310,7 @@ static PINT8 wmt_conf_write_int(P_DEV_WMT pWmtDev, const struct parse_data *data
 
 static INT32 wmt_conf_parse_string(P_DEV_WMT pWmtDev, const struct parse_data *data, const PINT8 pos)
 {
-	PUINT8 *dst;
+	PUINT8 *dst = NULL;
 	PUINT8 buffer;
 
 	buffer = osal_malloc(osal_strlen(pos)+1);
@@ -356,8 +356,8 @@ static PINT8 wmt_conf_write_string(P_DEV_WMT pWmtDev, const struct parse_data *d
 static INT32 wmt_conf_parse_byte_array(P_DEV_WMT pWmtDev,
 		const struct parse_data *data, const PINT8 pos)
 {
-	PUINT8 *dst;
-	struct WMT_BYTE_ARRAY *ba;
+	PUINT8 *dst = NULL;
+	struct WMT_BYTE_ARRAY *ba = NULL;
 	PUINT8 buffer;
 	INT32 size = osal_strlen(pos) / 2;
 	UINT8 temp[3];
@@ -408,9 +408,9 @@ static INT32 wmt_conf_parse_byte_array(P_DEV_WMT pWmtDev,
 
 static PINT8 wmt_conf_write_byte_array(P_DEV_WMT pWmtDev, const struct parse_data *data)
 {
-	PUINT8 *src;
+	PUINT8 *src = NULL;
 	PINT8 value;
-	struct WMT_BYTE_ARRAY *ba;
+	struct WMT_BYTE_ARRAY *ba = NULL;
 	INT32 i;
 
 	src = (PUINT8 *) (((PUINT8) pWmtDev) + (long)data->param1);
