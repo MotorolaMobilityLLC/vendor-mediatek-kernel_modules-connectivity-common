@@ -1426,7 +1426,7 @@ VOID osal_buffer_dump(const PUINT8 buf, const PUINT8 title, const UINT32 len, co
 	UINT32 dump_len;
 	char str[DBG_LOG_STR_SIZE] = {""};
 	INT32 strlen = 0;
-	char *p;
+	char *p = NULL;
 
 	pr_info("[%s] len=%d, limit=%d, start dump\n", title, len, limit);
 
@@ -1455,12 +1455,14 @@ VOID osal_buffer_dump_data(const PUINT32 buf, const PUINT8 title, const UINT32 l
 	UINT32 dump_len;
 	char str[DBG_LOG_STR_SIZE] = {""};
 	INT32 strlen = 0;
-	char *p;
+	char *p = NULL;
+	INT32 count = 0;
 
 	dump_len = ((limit != 0) && (len > limit)) ? limit : len;
 	p = str;
 	for (k = 0; k < dump_len; k++) {
-		if (((k+1) % 8 != 0) && (k < (dump_len - 1))) {
+		count++;
+		if (count % 8 != 0) {
 			strlen = osal_sprintf(p, "0x%08x,", buf[k]);
 			p += strlen;
 		} else {
@@ -1472,11 +1474,11 @@ VOID osal_buffer_dump_data(const PUINT32 buf, const PUINT8 title, const UINT32 l
 			p = str;
 		}
 	}
-	if (k % 8 != 0) {
+	if (count % 8 != 0) {
 		if (flag)
-			osal_ftrace_print("%s%s", title, str);
+			osal_ftrace_print("%s%s\n", title, str);
 		else
-			pr_info("%s%s", title, str);
+			pr_info("%s%s\n", title, str);
 	}
 }
 
@@ -1651,7 +1653,7 @@ static VOID osal_op_history_print_work(struct work_struct *work)
 	struct ring *ring_buffer = &log_history->dump_ring_buffer;
 	struct ring_segment seg;
 	struct osal_op_history_entry *queue = ring_buffer->base;
-	struct osal_op_history_entry *entry;
+	struct osal_op_history_entry *entry = NULL;
 	INT32 index = 0;
 
 	if (queue == NULL) {
@@ -1702,8 +1704,8 @@ VOID osal_op_history_init(struct osal_op_history *log_history, INT32 queue_size)
 
 VOID osal_op_history_print(struct osal_op_history *log_history, PINT8 name)
 {
-	struct osal_op_history_entry *queue;
-	struct ring *ring_buffer, *dump_ring_buffer;
+	struct osal_op_history_entry *queue = NULL;
+	struct ring *ring_buffer = NULL, *dump_ring_buffer = NULL;
 	INT32 queue_size;
 	ULONG flags;
 	struct work_struct *work = &log_history->dump_work;
