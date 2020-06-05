@@ -42,8 +42,8 @@ void bgw_destroy_netlink_kernel(void)
 
 void send_command_to_daemon(const int command /*struct sk_buff *skb */)
 {
-	struct nlmsghdr *nlh;
-	struct sk_buff *nl_skb;
+	struct nlmsghdr *nlh = NULL;
+	struct sk_buff *nl_skb = NULL;
 	int res;
 
 	MSG("here we will send command to native daemon\n");
@@ -85,8 +85,8 @@ void send_command_to_daemon(const int command /*struct sk_buff *skb */)
 
 static void nl_data_handler(struct sk_buff *__skb)
 {
-	struct sk_buff *skb;
-	struct nlmsghdr *nlh;
+	struct sk_buff *skb = NULL;
+	struct nlmsghdr *nlh = NULL;
 	int i;
 	int len;
 	char str[128];
