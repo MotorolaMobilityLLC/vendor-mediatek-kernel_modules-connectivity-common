@@ -243,6 +243,16 @@
 #define CONN_CFG_ON_CONN_ON_MON_FLAG_RECORD_ADDR            (conn_reg.mcu_top_misc_on_base + 0x340)
 #define CONN_CFG_ON_CONN_ON_MON_FLAG_RECORD_MAPPING_AP_ADDR (0x180c1340)
 
+#define CONN_ON_ADIE_CTL_OFFSET		(0x500)
+
+/**********************************************************************/
+/* Base: conn_rf_spi_base (0x180c_6000) */
+/**********************************************************************/
+#define CONN_RF_SPI_BASE		0x180c6000
+#define SPI_TOP_ADDR		0x50
+#define SPI_TOP_WDAT		0x54
+#define SPI_TOP_RDAT		0x58
+
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
