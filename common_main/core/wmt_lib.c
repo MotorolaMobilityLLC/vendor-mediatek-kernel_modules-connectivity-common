@@ -1778,6 +1778,8 @@ UINT32 wmt_lib_get_icinfo(ENUM_WMT_CHIPINFO_TYPE_T index)
 		return gDevWmt.fw_ver;
 	else if (index == WMTCHIN_IPVER)
 		return gDevWmt.ip_ver;
+	else if (index == WMTCHIN_ADIE)
+		return mtk_wcn_consys_get_adie_chipid();
 
 	return 0;
 
