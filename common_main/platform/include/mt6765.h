@@ -83,6 +83,7 @@
 #define CONSYS_HIF_PDMA_AXI_RREADY      0x00000154
 
 /*CONN_HIF_ON_BASE*/
+#define CONN_HIF_ON_BASE_ADDR           (0x18007000)
 #define CONSYS_BUSY_OFFSET              0x110
 #define CONSYS_BUSY_BIT                 (0x1 << 27)
 #define CONSYS_CLOCK_CHECK_VALUE        0x30000

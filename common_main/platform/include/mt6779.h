@@ -124,6 +124,7 @@
 #define CONSYS_EMI_CTRL_VALUE           (1 << 21)
 
 /*CONN_HIF_ON_BASE*/
+#define CONN_HIF_ON_BASE_ADDR           (0x18007000)
 #define CONSYS_CLOCK_CHECK_VALUE        0x30000
 #define CONSYS_HCLK_CHECK_BIT           (0x1 << 16)
 #define CONSYS_OSCCLK_CHECK_BIT         (0x1 << 17)

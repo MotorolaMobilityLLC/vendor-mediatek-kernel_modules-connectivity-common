@@ -1057,6 +1057,12 @@ static VOID force_trigger_assert_debug_pin(VOID)
 static UINT32 consys_read_cpupcr(VOID)
 {
 #ifdef CONFIG_OF		/*use DT */
+	if (conn_reg.mcu_base == 0)
+		return 0;
+
+	if (mtk_consys_check_reg_readable_by_addr(conn_reg.mcu_base + CONSYS_CPUPCR_OFFSET) == 0)
+		return 0;
+
 	return CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_CPUPCR_OFFSET);
 #endif
 }
