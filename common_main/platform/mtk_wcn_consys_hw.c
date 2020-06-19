@@ -992,8 +992,7 @@ P_CONSYS_EMI_ADDR_INFO mtk_wcn_consys_soc_get_emi_phy_add(VOID)
 
 UINT32 mtk_wcn_consys_read_cpupcr(VOID)
 {
-	if (wmt_consys_ic_ops->consys_ic_read_cpupcr &&
-		mtk_consys_check_reg_readable())
+	if (wmt_consys_ic_ops->consys_ic_read_cpupcr)
 		return wmt_consys_ic_ops->consys_ic_read_cpupcr();
 	else
 		return 0;
@@ -1074,7 +1073,17 @@ INT32 mtk_wcn_consys_reg_ctrl(UINT32 is_write, enum CONSYS_BASE_ADDRESS_INDEX in
  */
 INT32 mtk_consys_check_reg_readable(VOID)
 {
-	if (wmt_consys_ic_ops->consys_ic_check_reg_readable)
+	return mtk_consys_check_reg_readable_by_addr(0);
+}
+
+INT32 mtk_consys_check_reg_readable_by_addr(SIZE_T addr)
+{
+	INT32 is_host_csr = 0;
+
+	if (wmt_consys_ic_ops->consys_ic_is_host_csr)
+		is_host_csr = wmt_consys_ic_ops->consys_ic_is_host_csr(addr);
+
+	if (wmt_consys_ic_ops->consys_ic_check_reg_readable && is_host_csr == 0)
 		return wmt_consys_ic_ops->consys_ic_check_reg_readable();
 	else
 		return 1;

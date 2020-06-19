@@ -117,6 +117,7 @@ static INT32 consys_reset_emi_coredump(UINT8 __iomem *addr);
 static INT32 consys_check_reg_readable(VOID);
 static VOID consys_ic_clock_fail_dump(VOID);
 static INT32 consys_is_connsys_reg(UINT32 addr);
+static INT32 consys_is_host_csr(SIZE_T addr);
 static INT32 consys_dump_osc_state(P_CONSYS_STATE state);
 static VOID consys_set_pdma_axi_rready_force_high(UINT32 enable);
 static VOID consys_set_mcif_emi_mpu_protection(MTK_WCN_BOOL enable);
@@ -227,6 +228,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_check_reg_readable = consys_check_reg_readable,
 	.consys_ic_clock_fail_dump = consys_ic_clock_fail_dump,
 	.consys_ic_is_connsys_reg = consys_is_connsys_reg,
+	.consys_ic_is_host_csr = consys_is_host_csr,
 	.consys_ic_dump_osc_state = consys_dump_osc_state,
 	.consys_ic_set_pdma_axi_rready_force_high = consys_set_pdma_axi_rready_force_high,
 	.consys_ic_set_mcif_emi_mpu_protection = consys_set_mcif_emi_mpu_protection,
@@ -1910,6 +1912,23 @@ static INT32 consys_is_connsys_reg(UINT32 addr)
 
 		return 1;
 	}
+
+	return 0;
+}
+
+static INT32 consys_is_host_csr(SIZE_T addr)
+{
+	SIZE_T start_offset = 0x000;
+	SIZE_T end_offset = 0xFFF;
+
+	if (addr >= (CONN_HIF_ON_BASE_ADDR + start_offset) &&
+		addr <= (CONN_HIF_ON_BASE_ADDR + end_offset))
+		return 1;
+
+	if (conn_reg.mcu_conn_hif_on_base != 0 &&
+		addr >= (conn_reg.mcu_conn_hif_on_base + start_offset) &&
+		addr <= (conn_reg.mcu_conn_hif_on_base + end_offset))
+		return 1;
 
 	return 0;
 }

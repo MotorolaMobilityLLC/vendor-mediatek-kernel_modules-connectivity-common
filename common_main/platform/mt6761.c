@@ -133,6 +133,7 @@ static INT32 consys_dump_osc_state(P_CONSYS_STATE state);
 static VOID consys_clock_fail_dump(VOID);
 static VOID consys_set_pdma_axi_rready_force_high(UINT32 enable);
 static VOID consys_get_ant_sel_cr_addr(PUINT32 default_invert_cr, PUINT32 default_invert_bit);
+static INT32 consys_is_host_csr(SIZE_T addr);
 static INT32 consys_calibration_backup_restore_support(VOID);
 static UINT64 consys_get_options(VOID);
 
@@ -223,6 +224,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_clock_fail_dump = consys_clock_fail_dump,
 	.consys_ic_set_pdma_axi_rready_force_high = consys_set_pdma_axi_rready_force_high,
 	.consys_ic_get_ant_sel_cr_addr = consys_get_ant_sel_cr_addr,
+	.consys_ic_is_host_csr = consys_is_host_csr,
 	.consys_ic_calibration_backup_restore = consys_calibration_backup_restore_support,
 	.consys_ic_get_options = consys_get_options,
 };
@@ -1117,7 +1119,27 @@ static VOID force_trigger_assert_debug_pin(VOID)
 
 static UINT32 consys_read_cpupcr(VOID)
 {
+	if (conn_reg.mcu_conn_hif_on_base == 0)
+		return 0;
+
 	return CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base + CONSYS_CPUPCR_OFFSET);
+}
+
+static INT32 consys_is_host_csr(SIZE_T addr)
+{
+	SIZE_T start_offset = 0x000;
+	SIZE_T end_offset = 0xFFF;
+
+	if (addr >= (CONN_HIF_ON_BASE_ADDR + start_offset) &&
+		addr <= (CONN_HIF_ON_BASE_ADDR + end_offset))
+		return 1;
+
+	if (conn_reg.mcu_conn_hif_on_base != 0 &&
+		addr >= (conn_reg.mcu_conn_hif_on_base + start_offset) &&
+		addr <= (conn_reg.mcu_conn_hif_on_base + end_offset))
+		return 1;
+
+	return 0;
 }
 
 static UINT32 consys_soc_chipid_get(VOID)
