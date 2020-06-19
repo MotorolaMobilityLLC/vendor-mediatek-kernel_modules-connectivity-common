@@ -141,6 +141,7 @@ static INT32 consys_check_reg_readable(VOID);
 static VOID consys_ic_clock_fail_dump(VOID);
 static INT32 consys_is_connsys_reg(UINT32 addr);
 static INT32 consys_dump_osc_state(P_CONSYS_STATE state);
+static VOID consys_set_pdma_axi_rready_force_high(UINT32 enable);
 static VOID consys_set_mcif_emi_mpu_protection(MTK_WCN_BOOL enable);
 #if (COMMON_KERNEL_CLK_SUPPORT)
 static MTK_WCN_BOOL consys_need_store_pdev(VOID);
@@ -246,6 +247,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_clock_fail_dump = consys_ic_clock_fail_dump,
 	.consys_ic_is_connsys_reg = consys_is_connsys_reg,
 	.consys_ic_dump_osc_state = consys_dump_osc_state,
+	.consys_ic_set_pdma_axi_rready_force_high = consys_set_pdma_axi_rready_force_high,
 	.consys_ic_set_mcif_emi_mpu_protection = consys_set_mcif_emi_mpu_protection,
 	.consys_ic_calibration_backup_restore = consys_calibration_backup_restore_support,
 	.consys_ic_is_ant_swap_enable_by_hwid = consys_is_ant_swap_enable_by_hwid,
@@ -2005,6 +2007,22 @@ static INT32 consys_dump_osc_state(P_CONSYS_STATE state)
 	iounmap(addr);
 #endif
 	return MTK_WCN_BOOL_TRUE;
+}
+
+static VOID consys_set_pdma_axi_rready_force_high(UINT32 enable)
+{
+	UINT8 *consys_hif_pdma_axi_rready;
+
+	consys_hif_pdma_axi_rready = ioremap_nocache(CONSYS_HIF_PDMA_AXI_RREADY, 0x100);
+
+	if (consys_hif_pdma_axi_rready) {
+		if (enable)
+			CONSYS_SET_BIT(consys_hif_pdma_axi_rready, CONSYS_HIF_PDMA_AXI_RREADY_MASK);
+		else if ((CONSYS_REG_READ(consys_hif_pdma_axi_rready) &
+				CONSYS_HIF_PDMA_AXI_RREADY_MASK) != 0)
+			CONSYS_CLR_BIT(consys_hif_pdma_axi_rready, CONSYS_HIF_PDMA_AXI_RREADY_MASK);
+		iounmap(consys_hif_pdma_axi_rready);
+	}
 }
 
 static VOID consys_set_mcif_emi_mpu_protection(MTK_WCN_BOOL enable)
