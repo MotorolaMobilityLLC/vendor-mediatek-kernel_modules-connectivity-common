@@ -261,6 +261,8 @@ static const struct connlog_emi_config connsys_fw_log_parameter = {
 *                           P R I V A T E   D A T A
 ********************************************************************************
 */
+static OSAL_UNSLEEPABLE_LOCK g_pwr_off_lock;
+static atomic_t g_power_on = ATOMIC_INIT(0);
 
 /*******************************************************************************
 *                              F U N C T I O N S
@@ -837,8 +839,13 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 #endif /* CONSYS_PWR_ON_OFF_API_AVAILABLE */
 
 		/*wait 5ms*/
+		atomic_set(&g_power_on, 1);
 		mdelay(5);
 	} else {
+		osal_lock_unsleepable_lock(&g_pwr_off_lock);
+		atomic_set(&g_power_on, 0);
+		osal_unlock_unsleepable_lock(&g_pwr_off_lock);
+
 #if CONSYS_PWR_ON_OFF_API_AVAILABLE
 		if (conn_reg.infra_ao_pericfg_base != 0) {
 			WMT_PLAT_PR_DBG("CON_STA_REG = %x\n",
@@ -1689,6 +1696,32 @@ static VOID consys_set_dl_rom_patch_flag(INT32 flag)
 	rom_patch_dl_flag = flag;
 }
 
+static VOID consys_conn2ap_sw_irq_clear(VOID)
+{
+	UINT32 ret;
+
+	if (!conn_reg.mcu_base)
+		return;
+
+	if (osal_trylock_unsleepable_lock(&g_pwr_off_lock) == 0) {
+		WMT_PLAT_PR_INFO("fail to get pwr off lock\n");
+		return;
+	}
+
+	if (atomic_read(&g_power_on) == 1) {
+		/* clear 0x1800214c[27:24] */
+		CONSYS_REG_WRITE(conn_reg.mcu_base + CONN2AP_SW_IRQ_CLR_OFFSET,
+			CONSYS_REG_READ(conn_reg.mcu_base + CONN2AP_SW_IRQ_CLR_OFFSET)
+			| (0xf << 24));
+
+		ret = CONSYS_REG_READ(conn_reg.mcu_base + CONN2AP_SW_IRQ_OFFSET) & (0xf << 24);
+		if (ret > 0)
+			WMT_PLAT_PR_INFO("CONN2AP_SW_IRQ[27:24] = 0x%x\n", ret);
+	}
+
+	osal_unlock_unsleepable_lock(&g_pwr_off_lock);
+}
+
 static INT32 consys_dedicated_log_path_init(struct platform_device *pdev)
 {
 	struct device_node *node;
@@ -1711,7 +1744,7 @@ static INT32 consys_dedicated_log_path_init(struct platform_device *pdev)
 
 	irq_config.irq_num = irq_num;
 	irq_config.irq_flag = irq_flag;
-	irq_config.irq_callback = NULL;
+	irq_config.irq_callback = consys_conn2ap_sw_irq_clear;
 
 	connsys_dedicated_log_path_apsoc_init(
 		gConEmiPhyBase, &connsys_fw_log_parameter, &irq_config);
