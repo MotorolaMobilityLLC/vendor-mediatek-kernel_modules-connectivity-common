@@ -1956,7 +1956,6 @@ static INT32 consys_dump_osc_state(P_CONSYS_STATE state)
 	if (conn_reg.mcu_cfg_on_base != 0 &&
 	    conn_reg.mcu_top_misc_on_base != 0) {
 
-		CONSYS_REG_WRITE(conn_reg.mcu_cfg_on_base + CONN_CFG_ON_HOST_MAILBOX_MCU_ADDR_OFFSET, 0x1);
 		CONSYS_REG_WRITE(conn_reg.mcu_top_misc_on_base + CONN_CFG_ON_MON_CTL_ADDR_OFFSET, 0x80000001);
 		CONSYS_REG_WRITE(conn_reg.mcu_top_misc_on_base + CONN_CFG_ON_MON_SEL0_ADDR_OFFSET, 0x03020100);
 		CONSYS_REG_WRITE(conn_reg.mcu_top_misc_on_base + CONN_CFG_ON_MON_SEL1_ADDR_OFFSET, 0x07060504);
@@ -1964,7 +1963,6 @@ static INT32 consys_dump_osc_state(P_CONSYS_STATE state)
 		CONSYS_REG_WRITE(conn_reg.mcu_top_misc_on_base + CONN_CFG_ON_MON_SEL3_ADDR_OFFSET, 0x0f0e0d0c);
 		CONSYS_REG_WRITE(conn_reg.mcu_top_misc_on_base + CONN_CFG_ON_DBGSEL_ADDR_OFFSET, 0x3);
 		value = CONSYS_REG_READ(conn_reg.mcu_top_misc_on_base + CONN_CFG_ON_MON_FLAG_RECORD_ADDR_OFFSET);
-		CONSYS_REG_WRITE(conn_reg.mcu_cfg_on_base + CONN_CFG_ON_HOST_MAILBOX_MCU_ADDR_OFFSET, 0x0);
 
 		state->lp[0] = (UINT32)0x180c1340;
 		state->lp[1] = value;
