@@ -1237,7 +1237,8 @@ static INT32 wmtd_thread(void *pvData)
 			/* when whole chip reset, only HW RST and SW RST cmd can execute */
 			if ((pOp->op.opId == WMT_OPID_HW_RST)
 			    || (pOp->op.opId == WMT_OPID_SW_RST)
-			    || (pOp->op.opId == WMT_OPID_GPIO_STATE)) {
+			    || (pOp->op.opId == WMT_OPID_GPIO_STATE)
+			    || (pOp->op.opId == WMT_OPID_GET_CONSYS_STATE)) {
 				iResult = wmt_core_opid(&pOp->op);
 			} else {
 				iResult = -2;
