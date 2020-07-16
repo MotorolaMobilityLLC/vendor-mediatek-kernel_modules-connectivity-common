@@ -126,6 +126,7 @@ const struct of_device_id apwmt_of_ids[] = {
 	{.compatible = "mediatek,mt6779-consys",},
 	{.compatible = "mediatek,mt6768-consys",},
 	{.compatible = "mediatek,mt6785-consys",},
+	{.compatible = "mediatek,mt6853-consys",},
 	{.compatible = "mediatek,mt6873-consys",},
 	{.compatible = "mediatek,mt8168-consys",},
 	{}
@@ -600,6 +601,9 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		if (wmt_consys_ic_ops->polling_consys_ic_chipid &&
 			wmt_consys_ic_ops->polling_consys_ic_chipid() < 0)
 			return -1;
+
+		if (wmt_consys_ic_ops->consys_ic_hw_vcn_ctrl_after_idle)
+			wmt_consys_ic_ops->consys_ic_hw_vcn_ctrl_after_idle();
 		if (wmt_consys_ic_ops->consys_ic_set_access_emi_hw_mode)
 			wmt_consys_ic_ops->consys_ic_set_access_emi_hw_mode();
 		if (wmt_consys_ic_ops->update_consys_rom_desel_value)
