@@ -49,6 +49,7 @@
 UINT32 gStpDbgLogOut;
 UINT32 gStpDbgDumpType = STP_DBG_PKT;
 INT32 gStpDbgDbgLevel = STP_DBG_LOG_INFO;
+static CONSYS_STATE_DMP_INFO g_dmp_info;
 
 MTKSTP_DBG_T *g_stp_dbg;
 
@@ -2092,35 +2093,42 @@ INT32 stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
 	if (times > STP_DBG_CPUPCR_NUM)
 		times = STP_DBG_CPUPCR_NUM;
 
-	osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
-
-	for (i = 0; i < times; i++) {
-		switch (chip_type) {
-		case WMT_CHIP_TYPE_COMBO:
+	switch (chip_type) {
+	case WMT_CHIP_TYPE_COMBO:
+		osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
+		for (i = 0; i < times; i++) {
 			stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT,
 					g_stp_sdio_host_info.sdio_cltctx, SWPCDBGR, &value, 0);
 			g_stp_dbg_cpupcr->buffer[g_stp_dbg_cpupcr->count] = value;
 			osal_get_local_time(&(g_stp_dbg_cpupcr->sec_buffer[g_stp_dbg_cpupcr->count]),
 					&(g_stp_dbg_cpupcr->nsec_buffer[g_stp_dbg_cpupcr->count]));
-			break;
-		case WMT_CHIP_TYPE_SOC:
-			g_stp_dbg_cpupcr->buffer[g_stp_dbg_cpupcr->count] = wmt_plat_read_cpupcr();
-			osal_get_local_time(&(g_stp_dbg_cpupcr->sec_buffer[g_stp_dbg_cpupcr->count]),
-					&(g_stp_dbg_cpupcr->nsec_buffer[g_stp_dbg_cpupcr->count]));
-			break;
-		default:
-			STP_DBG_PR_ERR("error chip type(%d)\n", chip_type);
+			if (sleep > 0)
+				osal_sleep_ms(sleep);
+			g_stp_dbg_cpupcr->count++;
+			if (g_stp_dbg_cpupcr->count >= STP_DBG_CPUPCR_NUM)
+				g_stp_dbg_cpupcr->count = 0;
 		}
-
-		if (sleep > 0)
-			osal_sleep_ms(sleep);
-
-		g_stp_dbg_cpupcr->count++;
-		if (g_stp_dbg_cpupcr->count >= STP_DBG_CPUPCR_NUM)
-			g_stp_dbg_cpupcr->count = 0;
+		osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
+		break;
+	case WMT_CHIP_TYPE_SOC:
+		if (times > WMT_CORE_DMP_CPUPCR_NUM)
+			times = WMT_CORE_DMP_CPUPCR_NUM;
+		if (wmt_lib_dmp_consys_state(&g_dmp_info, times, sleep) == MTK_WCN_BOOL_TRUE) {
+			osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
+			for (i = 0; i < times; i++) {
+				g_stp_dbg_cpupcr->buffer[g_stp_dbg_cpupcr->count] = g_dmp_info.cpu_pcr[i];
+				osal_get_local_time(&(g_stp_dbg_cpupcr->sec_buffer[g_stp_dbg_cpupcr->count]),
+					&(g_stp_dbg_cpupcr->nsec_buffer[g_stp_dbg_cpupcr->count]));
+				g_stp_dbg_cpupcr->count++;
+				if (g_stp_dbg_cpupcr->count >= STP_DBG_CPUPCR_NUM)
+					g_stp_dbg_cpupcr->count = 0;
+			}
+			osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
+		}
+		break;
+	default:
+		STP_DBG_PR_INFO("error chip type(%d)\n", chip_type);
 	}
-
-	osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 
 	if (cmd) {
 		UINT8 str[DBG_LOG_STR_SIZE] = {""};
