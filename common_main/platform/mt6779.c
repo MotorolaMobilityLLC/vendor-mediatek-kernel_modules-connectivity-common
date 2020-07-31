@@ -2050,7 +2050,9 @@ static VOID consys_set_pdma_axi_rready_force_high(UINT32 enable)
 static VOID consys_set_mcif_emi_mpu_protection(MTK_WCN_BOOL enable)
 {
 	WMT_PLAT_PR_INFO("Setup region 23 for domain 0 as %s\n", enable ? "FORBIDDEN" : "SEC_R_NSEC_R");
+#ifdef CONFIG_MTK_EMI_LEGACY
 	emi_mpu_set_single_permission(23, 0, enable ? FORBIDDEN : SEC_R_NSEC_R);
+#endif
 }
 
 static INT32 consys_calibration_backup_restore_support(VOID)
