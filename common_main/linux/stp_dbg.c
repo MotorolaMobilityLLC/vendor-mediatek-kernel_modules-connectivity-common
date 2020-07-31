@@ -146,14 +146,18 @@ static struct genl_ops stp_dbg_gnl_ops_array[] = {
 	{
 		.cmd = STP_DBG_COMMAND_BIND,
 		.flags = 0,
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 2, 0))
 		.policy = stp_dbg_genl_policy,
+#endif
 		.doit = stp_dbg_nl_bind,
 		.dumpit = NULL,
 	},
 	{
 		.cmd = STP_DBG_COMMAND_RESET,
 		.flags = 0,
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 2, 0))
 		.policy = stp_dbg_genl_policy,
+#endif
 		.doit = stp_dbg_nl_reset,
 		.dumpit = NULL,
 	},
@@ -167,6 +171,9 @@ static struct genl_family stp_dbg_gnl_family = {
 	.maxattr = STP_DBG_ATTR_MAX,
 	.ops = stp_dbg_gnl_ops_array,
 	.n_ops = ARRAY_SIZE(stp_dbg_gnl_ops_array),
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 2, 0))
+	.policy = stp_dbg_genl_policy,
+#endif
 };
 /* stp_dbg_core_dump_timeout_handler - handler of coredump timeout
  * @ data - core dump object's pointer
@@ -519,6 +526,7 @@ INT32 stp_dbg_core_dump_flush(INT32 rst, MTK_WCN_BOOL coredump_is_timeout)
 	stp_dbg_core_dump_out(g_core_dump, &pbuf, &len);
 	STP_DBG_PR_INFO("buf 0x%zx, len %d\n", (SIZE_T) pbuf, len);
 
+#if IS_ENABLED(CONFIG_MTK_AEE_AED)
 	/* show coredump end info on UI */
 	/* osal_dbg_assert_aee("MT662x f/w coredump end", "MT662x firmware coredump ends"); */
 #if STP_DBG_AEE_EXP_API
@@ -530,6 +538,7 @@ INT32 stp_dbg_core_dump_flush(INT32 rst, MTK_WCN_BOOL coredump_is_timeout)
 #endif
 #endif
 
+#endif
 	/* reset */
 	g_core_dump->count = 0;
 	stp_dbg_compressor_deinit(g_core_dump->compressor);
@@ -663,10 +672,14 @@ INT32 stp_dbg_trigger_collect_ftrace(PUINT8 pbuf, INT32 len)
 
 	if (g_core_dump) {
 		osal_strncpy(&g_core_dump->info[0], pbuf, len);
+#if IS_ENABLED(CONFIG_MTK_AEE_AED)
 		aed_combo_exception(NULL, 0, (const PINT32)pbuf, len, (const PINT8)g_core_dump->info);
+#endif
 	} else {
 		STP_DBG_PR_INFO("g_core_dump is not initialized\n");
+#if IS_ENABLED(CONFIG_MTK_AEE_AED)
 		aed_combo_exception(NULL, 0, (const PINT32)pbuf, len, (const PINT8)pbuf);
+#endif
 	}
 
 	return 0;
@@ -1435,7 +1448,7 @@ static _osal_inline_ INT32 stp_dbg_fill_hdr(STP_DBG_HDR_T *hdr, INT32 type, INT3
 		return -EINVAL;
 	}
 
-	do_gettimeofday(&now);
+	osal_do_gettimeofday(&now);
 	osal_get_local_time(&ts, &nsec);
 	hdr->last_dbg_type = gStpDbgDumpType;
 	gStpDbgDumpType = dbg_type;
