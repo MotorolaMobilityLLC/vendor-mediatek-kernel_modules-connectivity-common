@@ -17,6 +17,26 @@
 #define CONSYS_AFE_REG_SETTING		0
 #define CONSYS_RC_MODE_ENABLE		1
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#define COMMON_KERNEL_EMI_MPU_SUPPORT	1
+#define COMMON_KERNEL_PMIC_SUPPORT	1
+#else
+#define COMMON_KERNEL_EMI_MPU_SUPPORT	0
+#define COMMON_KERNEL_PMIC_SUPPORT	0
+#endif
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))
+#define COMMON_KERNEL_CLK_SUPPORT	1
+#else
+#define COMMON_KERNEL_CLK_SUPPORT	0
+#endif
+
+#if CONSYS_PMIC_CTRL_ENABLE
+#if COMMON_KERNEL_PMIC_SUPPORT
+#include <linux/mfd/mt6359p/registers.h>
+#endif
+#endif
+
 /*******************************************************************************
 *                                 M A C R O S
 ********************************************************************************
@@ -281,6 +301,77 @@
 /**********************************************************************/
 /* Base: conn_mcu_cfg_on_base (0x180a_3000) */
 /**********************************************************************/
+
+
+/**********************************************************************/
+/* PMIC mt6359P define for Quark project only*/
+/**********************************************************************/
+#ifndef MT6359_PMIC_REG_BASE
+
+#define MT6359_PMIC_REG_BASE                 ((unsigned int)(0x0))
+
+#define MT6359_BUCK_VS2_VOTER_SET            (MT6359_PMIC_REG_BASE+0x18ac)
+#define MT6359_BUCK_VS2_VOTER_CLR            (MT6359_PMIC_REG_BASE+0x18ae)
+#define MT6359_LDO_VCN33_1_CON0              (MT6359_PMIC_REG_BASE+0x1be2)
+#define MT6359_LDO_VCN33_1_OP_EN_SET         (MT6359_PMIC_REG_BASE+0x1bea)
+#define MT6359_LDO_VCN33_1_OP_CFG_SET        (MT6359_PMIC_REG_BASE+0x1bf0)
+#define MT6359_LDO_VCN33_2_CON0              (MT6359_PMIC_REG_BASE+0x1c08)
+#define MT6359_LDO_VCN33_2_OP_EN_SET         (MT6359_PMIC_REG_BASE+0x1c10)
+#define MT6359_LDO_VCN33_2_OP_CFG_SET        (MT6359_PMIC_REG_BASE+0x1c16)
+#define MT6359_LDO_VCN13_CON0                (MT6359_PMIC_REG_BASE+0x1c1c)
+#define MT6359_LDO_VCN13_OP_EN_SET           (MT6359_PMIC_REG_BASE+0x1c24)
+#define MT6359_LDO_VCN13_OP_CFG_SET          (MT6359_PMIC_REG_BASE+0x1c2a)
+#define MT6359_LDO_VCN18_CON0                (MT6359_PMIC_REG_BASE+0x1c2e)
+#define MT6359_LDO_VCN18_OP_EN_SET           (MT6359_PMIC_REG_BASE+0x1c36)
+#define MT6359_LDO_VCN18_OP_CFG_SET          (MT6359_PMIC_REG_BASE+0x1c3c)
+#define MT6359_VCN13_ANA_CON0                (MT6359_PMIC_REG_BASE+0x202e)
+
+#define PMIC_RG_BUCK_VS2_VOTER_EN_SET_ADDR                  \
+	MT6359_BUCK_VS2_VOTER_SET
+#define PMIC_RG_BUCK_VS2_VOTER_EN_SET_MASK                  0xFFF
+#define PMIC_RG_BUCK_VS2_VOTER_EN_SET_SHIFT                 0
+#define PMIC_RG_BUCK_VS2_VOTER_EN_CLR_ADDR                  \
+	MT6359_BUCK_VS2_VOTER_CLR
+#define PMIC_RG_BUCK_VS2_VOTER_EN_CLR_MASK                  0xFFF
+#define PMIC_RG_BUCK_VS2_VOTER_EN_CLR_SHIFT                 0
+#define PMIC_RG_LDO_VCN33_1_LP_ADDR                         \
+	MT6359_LDO_VCN33_1_CON0
+#define PMIC_RG_LDO_VCN33_1_LP_MASK                         0x1
+#define PMIC_RG_LDO_VCN33_1_LP_SHIFT                        1
+#define PMIC_RG_LDO_VCN33_1_OP_EN_SET_ADDR                  \
+	MT6359_LDO_VCN33_1_OP_EN_SET
+#define PMIC_RG_LDO_VCN33_1_OP_CFG_SET_ADDR                 \
+	MT6359_LDO_VCN33_1_OP_CFG_SET
+#define PMIC_RG_LDO_VCN33_2_LP_ADDR                         \
+	MT6359_LDO_VCN33_2_CON0
+#define PMIC_RG_LDO_VCN33_2_LP_MASK                         0x1
+#define PMIC_RG_LDO_VCN33_2_LP_SHIFT                        1
+#define PMIC_RG_LDO_VCN33_2_OP_EN_SET_ADDR                  \
+	MT6359_LDO_VCN33_2_OP_EN_SET
+#define PMIC_RG_LDO_VCN33_2_OP_CFG_SET_ADDR                 \
+	MT6359_LDO_VCN33_2_OP_CFG_SET
+#define PMIC_RG_LDO_VCN13_LP_ADDR                           \
+	MT6359_LDO_VCN13_CON0
+#define PMIC_RG_LDO_VCN13_LP_MASK                           0x1
+#define PMIC_RG_LDO_VCN13_LP_SHIFT                          1
+#define PMIC_RG_LDO_VCN13_OP_EN_SET_ADDR                    \
+	MT6359_LDO_VCN13_OP_EN_SET
+#define PMIC_RG_LDO_VCN13_OP_CFG_SET_ADDR                   \
+	MT6359_LDO_VCN13_OP_CFG_SET
+#define PMIC_RG_LDO_VCN18_LP_ADDR                           \
+	MT6359_LDO_VCN18_CON0
+#define PMIC_RG_LDO_VCN18_LP_MASK                           0x1
+#define PMIC_RG_LDO_VCN18_LP_SHIFT                          1
+#define PMIC_RG_LDO_VCN18_OP_EN_SET_ADDR                    \
+	MT6359_LDO_VCN18_OP_EN_SET
+#define PMIC_RG_LDO_VCN18_OP_CFG_SET_ADDR                   \
+	MT6359_LDO_VCN18_OP_CFG_SET
+#define PMIC_RG_VCN13_VOCAL_ADDR                            \
+	MT6359_VCN13_ANA_CON0
+#define PMIC_RG_VCN13_VOCAL_MASK                            0xF
+#define PMIC_RG_VCN13_VOCAL_SHIFT                           0
+
+#endif
 
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
