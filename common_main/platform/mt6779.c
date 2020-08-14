@@ -1275,7 +1275,8 @@ static INT32 consys_hw_vcn28_ctrl(UINT32 enable)
 			/*Set VCN33_1_SW_EN as 1 and set votage as 2V8*/
 			if (reg_VCN33_2_WIFI) {
 				regulator_set_voltage(reg_VCN33_2_WIFI, 2800000, 2800000);
-				regulator_enable(reg_VCN33_2_WIFI);
+				if (regulator_enable(reg_VCN33_2_WIFI))
+					WMT_PLAT_PR_INFO("[%s::%d] WMT do VCN33_2 PMIC on fail!\n", __func__, __LINE__);
 			}
 #if (!COMMON_KERNEL_PMIC_SUPPORT)
 			/*Set VCN33_2 SW_LP as 0*/
