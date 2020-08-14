@@ -1985,7 +1985,7 @@ static INT32 consys_emi_coredump_remapping(UINT8 __iomem **addr, UINT32 enable)
 			WMT_PLAT_PR_INFO("COREDUMP EMI mapping OK virtual(0x%p) physical(0x%x)\n",
 					*addr, (UINT32) gConEmiPhyBase +
 					CONSYS_EMI_COREDUMP_OFFSET);
-			memset_io(*addr, 0, CONSYS_EMI_MEM_SIZE);
+			memset_io(*addr, 0, CONSYS_EMI_COREDUMP_MEM_SIZE);
 		} else {
 			WMT_PLAT_PR_ERR("EMI mapping fail\n");
 			return -1;
@@ -2005,11 +2005,8 @@ static INT32 consys_reset_emi_coredump(UINT8 __iomem *addr)
 		WMT_PLAT_PR_ERR("get virtual address fail\n");
 		return -1;
 	}
-	WMT_PLAT_PR_INFO("Reset EMI(0xF0068000 ~ 0xF0068400) and (0xF0070400 ~ 0xF0078400)\n");
-	/* reset 0xF0068000 ~ 0xF0068400 (1K) */
-	memset_io(addr, 0, 0x400);
-	/* reset 0xF0070400 ~ 0xF0078400 (32K)  */
-	memset_io(addr + CONSYS_EMI_PAGED_DUMP_OFFSET, 0, 0x8000);
+	WMT_PLAT_PR_INFO("Reset EMI(0xF0068000 ~ 0xF0107FFF)\n");
+	memset_io(addr, 0, CONSYS_EMI_COREDUMP_MEM_SIZE);
 	return 0;
 }
 
