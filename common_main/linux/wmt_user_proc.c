@@ -45,14 +45,17 @@ static const WMT_DEV_USER_PROC_FUNC wmt_dev_user_proc_func[] = {
 
 INT32 wmt_user_proc_func_ctrl(INT32 par1, INT32 par2, INT32 par3)
 {
+	MTK_WCN_BOOL ret = MTK_WCN_BOOL_FALSE;
+
 	if (par2 < WMTDRV_TYPE_WMT || par2 == WMTDRV_TYPE_LPBK) {
 		if (par3 == 0) {
 			WMT_INFO_FUNC("function off test, type(%d)\n", par2);
-			mtk_wcn_wmt_func_off(par2);
+			ret = mtk_wcn_wmt_func_off(par2);
 		} else {
 			WMT_INFO_FUNC("function on test, type(%d)\n", par2);
-			mtk_wcn_wmt_func_on(par2);
+			ret = mtk_wcn_wmt_func_on(par2);
 		}
+		WMT_INFO_FUNC("function test return %d\n", ret);
 	} else
 		WMT_INFO_FUNC("function ctrl test, invalid type(%d)\n", par2);
 
