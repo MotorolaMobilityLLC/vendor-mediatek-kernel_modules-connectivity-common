@@ -239,6 +239,10 @@ static const char * const STEP_TRIGGER_TIME_NAME[] = {
 		"[TP 28] After send calibration restore command",
 	[STEP_TRIGGER_POINT_WHEN_CLOCK_FAIL] =
 		"[TP 29] When clock fail",
+	[STEP_TRIGGER_POINT_BEFORE_GPSL5_FUNC_ON] =
+		"[TP 30] Before GPSL5 function on",
+	[STEP_TRIGGER_POINT_BEFORE_GPSL5_FUNC_OFF] =
+		"[TP 31] Before GPSL5 function off",
 };
 
 static const int wmt_step_func_ctrl_id[WMTDRV_TYPE_MAX][2] = {
@@ -257,6 +261,10 @@ static const int wmt_step_func_ctrl_id[WMTDRV_TYPE_MAX][2] = {
 	[WMTDRV_TYPE_WIFI] = {
 		STEP_TRIGGER_POINT_BEFORE_WIFI_FUNC_OFF,
 		STEP_TRIGGER_POINT_BEFORE_WIFI_FUNC_ON
+	},
+	[WMTDRV_TYPE_GPSL5] = {
+		STEP_TRIGGER_POINT_BEFORE_GPSL5_FUNC_OFF,
+		STEP_TRIGGER_POINT_BEFORE_GPSL5_FUNC_ON
 	},
 };
 

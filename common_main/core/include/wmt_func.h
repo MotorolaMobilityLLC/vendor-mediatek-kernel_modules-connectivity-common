@@ -48,8 +48,10 @@
 
 #if IS_ENABLED(CONFIG_MTK_COMBO_GPS)
 #define CFG_FUNC_GPS_SUPPORT 1
+#define CFG_FUNC_GPSL5_SUPPORT 1
 #else
 #define CFG_FUNC_GPS_SUPPORT 0
+#define CFG_FUNC_GPSL5_SUPPORT 0
 #endif
 
 #if 1				/* IS_ENABLED(CONFIG_MTK_COMBO_WIFI) */
@@ -139,6 +141,10 @@ extern WMT_FUNC_OPS wmt_func_fm_ops;
 
 #if CFG_FUNC_GPS_SUPPORT
 extern WMT_FUNC_OPS wmt_func_gps_ops;
+#endif
+
+#if CFG_FUNC_GPSL5_SUPPORT
+extern WMT_FUNC_OPS wmt_func_gpsl5_ops;
 #endif
 
 #if CFG_FUNC_WIFI_SUPPORT
