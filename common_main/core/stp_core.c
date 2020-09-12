@@ -108,6 +108,10 @@ static mtkstp_context_struct stp_core_ctx = { 0 };
 #define STP_ASSERT_IN_PROGRESS(x)           ((x).f_assert_in_progress)
 #define STP_SET_ASSERT_IN_PROGRESS(x, v)    ((x).f_assert_in_progress = (v))
 
+#define STP_IS_SUPPORT_GPSL5(x)         ((x).f_gpsl5_en != 0)
+#define STP_NOT_SUPPORT_GPSL5(x)        ((x).f_gpsl5_en == 0)
+#define STP_SET_SUPPORT_GPSL5(x, v)        ((x).f_gpsl5_en = (v))
+
 
 /*[PatchNeed]Need to calculate the timeout value*/
 static UINT32 mtkstp_tx_timeout = MTKSTP_TX_TIMEOUT;
@@ -144,6 +148,7 @@ static VOID stp_trace32_dump(VOID);
 static VOID stp_sdio_trace32_dump(VOID);
 static LONG stp_parser_dmp_num(PUINT8 str);
 static INT32 wmt_parser_data(PUINT8 buffer, UINT32 length, UINT8 type);
+static MTK_WCN_BOOL mtk_wcn_stp_is_info_task(VOID);
 
 INT32 __weak mtk_wcn_consys_stp_btif_logger_ctrl(enum _ENUM_BTIF_DBG_ID_ flag)
 {
@@ -294,6 +299,13 @@ static VOID stp_sdio_process_packet(VOID)
 	}
 }
 
+static MTK_WCN_BOOL mtk_wcn_stp_is_info_task(VOID)
+{
+	if (STP_NOT_SUPPORT_GPSL5(stp_core_ctx) && (stp_core_ctx.parser.type == INFO_TASK_INDX))
+		return MTK_WCN_BOOL_TRUE;
+	else
+		return MTK_WCN_BOOL_FALSE;
+}
 
 static VOID stp_trace32_dump(VOID)
 {
@@ -302,8 +314,7 @@ static VOID stp_trace32_dump(VOID)
 					stp_core_ctx.parser.type, stp_core_ctx.rx_buf);
 	}
 	/*Runtime FW Log */
-	else if (STP_IS_ENABLE_DBG(stp_core_ctx) &&
-		(stp_core_ctx.parser.type == INFO_TASK_INDX)) {
+	else if (STP_IS_ENABLE_DBG(stp_core_ctx) && mtk_wcn_stp_is_info_task()) {
 		stp_dbg_log_pkt(g_mtkstp_dbg, STP_DBG_FW_LOG, STP_TASK_INDX, 5, 0, 0, 0,
 			(stp_core_ctx.rx_counter + 1), stp_core_ctx.rx_buf);
 		mtk_wcn_stp_dbg_dump_package();
@@ -411,7 +422,7 @@ static VOID stp_sdio_trace32_dump(VOID)
 		}
 	}
 	/*Runtime FW Log */
-	else if (STP_IS_ENABLE_DBG(stp_core_ctx) && (stp_core_ctx.parser.type == INFO_TASK_INDX)) {
+	else if (STP_IS_ENABLE_DBG(stp_core_ctx) && mtk_wcn_stp_is_info_task()) {
 		stp_dbg_log_pkt(g_mtkstp_dbg, STP_DBG_FW_LOG, STP_TASK_INDX, 5, 0, 0, 0,
 				(stp_core_ctx.rx_counter + 1), stp_core_ctx.rx_buf);
 		mtk_wcn_stp_dbg_dump_package();
@@ -1537,6 +1548,7 @@ INT32 mtk_wcn_stp_init(const mtkstp_callback * const cb_func)
 	STP_SET_EMI_DUMP_FLAG(stp_core_ctx, 0);
 	STP_SET_ASSERT(stp_core_ctx, 0);
 	STP_SET_ASSERT_IN_PROGRESS(stp_core_ctx, 0);
+	STP_SET_SUPPORT_GPSL5(stp_core_ctx, 0);
 
 	if (!STP_PSM_CORE(stp_core_ctx)) {
 		ret = (-3);
@@ -1813,8 +1825,7 @@ static INT32 stp_parser_data_in_mand_mode(UINT32 length, UINT8 *p_data)
 			break;
 
 		case MTKSTP_CHECKSUM:
-			if ((stp_core_ctx.parser.type == STP_TASK_INDX) ||
-				(stp_core_ctx.parser.type == INFO_TASK_INDX)) {
+			if ((stp_core_ctx.parser.type == STP_TASK_INDX) || mtk_wcn_stp_is_info_task()) {
 				stp_change_rx_state(MTKSTP_FW_MSG);
 				stp_core_ctx.rx_counter = 0;
 				i -= 1;
@@ -2141,8 +2152,7 @@ static INT32 stp_parser_data_in_full_mode(UINT32 length, UINT8 *p_data)
 		case MTKSTP_CHECKSUM:
 			if (((stp_core_ctx.rx_buf[0] +
 					stp_core_ctx.rx_buf[1] + stp_core_ctx.rx_buf[2]) & 0xff) == *p_data) {
-				if ((stp_core_ctx.parser.type == STP_TASK_INDX) ||
-				    (stp_core_ctx.parser.type == INFO_TASK_INDX)) {
+				if ((stp_core_ctx.parser.type == STP_TASK_INDX) || mtk_wcn_stp_is_info_task()) {
 					stp_change_rx_state(MTKSTP_FW_MSG);
 					stp_core_ctx.rx_counter = 0;
 					i -= 1;
@@ -3565,4 +3575,14 @@ VOID mtk_wcn_stp_assert_flow_ctrl(UINT32 on)
 UINT32 mtk_wcn_stp_assert_flow_get(VOID)
 {
 	return STP_ASSERT_IN_PROGRESS(stp_core_ctx);
+}
+
+VOID mtk_wcn_stp_set_support_gpsl5(MTK_WCN_BOOL support_gpsl5)
+{
+	STP_SET_SUPPORT_GPSL5(stp_core_ctx, support_gpsl5);
+}
+
+INT32 mtk_wcn_stp_is_support_gpsl5(VOID)
+{
+	return STP_IS_SUPPORT_GPSL5(stp_core_ctx);
 }

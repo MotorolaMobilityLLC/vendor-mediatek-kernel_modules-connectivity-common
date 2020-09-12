@@ -1294,6 +1294,9 @@ static INT32 opfunc_func_on(P_WMT_OP pWmtOp)
 		return -2;
 	}
 
+	if (WMTDRV_TYPE_GPSL5 == drvType)
+		mtk_wcn_stp_set_support_gpsl5(1);
+
 	/* check if func already on */
 	if (gMtkWmtCtx.eDrvStatus[drvType] == DRV_STS_FUNC_ON) {
 		WMT_WARN_FUNC("func(%d) already on\n", drvType);
