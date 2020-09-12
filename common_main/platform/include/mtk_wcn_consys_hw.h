@@ -118,6 +118,7 @@
 #define OPT_NORMAL_PATCH_DWN_2			(0x1 << 23)
 #define OPT_NORMAL_PATCH_DWN_3			(0x1 << 24)
 #define OPT_PATCH_CHECKSUM			(0x1 << 25)
+#define OPT_DISABLE_ROM_PATCH_DWN		(0x1 << 26)
 
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
