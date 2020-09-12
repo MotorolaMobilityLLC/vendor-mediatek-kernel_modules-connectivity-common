@@ -1093,7 +1093,9 @@ static UINT32 consys_emi_set_remapping_reg(VOID)
 			CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_PERI_MAPPING_OFFSET));
 
 	/*Modem Configuration Registers remapping*/
+#ifdef CONFIG_MTK_ECCCI_DRIVER
 	mdPhy = get_smem_phy_start_addr(MD_SYS1, SMEM_USER_RAW_MD_CONSYS, &size);
+#endif
 	if (size == 0)
 		WMT_PLAT_PR_INFO("MD direct path is not supported\n");
 	else {
