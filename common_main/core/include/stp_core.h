@@ -278,6 +278,9 @@ typedef struct {
 	UINT32 f_evt_err_assert;
 	/* Flag to indicate assert process is ongoing or not */
 	UINT32 f_assert_in_progress;
+
+	/* Flag to identify support GPSL5 */
+	MTK_WCN_BOOL f_gpsl5_en;
 } mtkstp_context_struct;
 
 /*******************************************************************************
@@ -675,6 +678,9 @@ extern INT32 mtk_wcn_sys_if_rx(UINT8 *data, INT32 size);
  */
 extern VOID mtk_wcn_stp_assert_flow_ctrl(UINT32 on);
 extern UINT32 mtk_wcn_stp_assert_flow_get(VOID);
+
+extern VOID mtk_wcn_stp_set_support_gpsl5(MTK_WCN_BOOL support_gpsl5);
+extern INT32 mtk_wcn_stp_is_support_gpsl5(VOID);
 
 VOID mtk_stp_sdio_retry_flag_ctrl(INT32 flag);
 VOID mtk_stp_dbg_sdio_retry_flag_ctrl(INT32 flag);
