@@ -18,7 +18,7 @@
 #endif
 #define DFT_TAG "[WMT-CONSYS-HW]"
 
-#define CONSYS_ENABLE_EMI_MPU 0
+#define CONSYS_ENABLE_EMI_MPU 1
 #define	REGION_CONN	27
 
 #define	DOMAIN_AP	0
