@@ -3282,7 +3282,7 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 		iRet = mtk_wcn_soc_normal_patch_dwn(pPatchBuf, patchSize, addressByte);
 
 	/* Set FW patch buildtime into EMI for debugging */
-	if (emiInfo->emi_ram_mcu_buildtime_offset) {
+	if (emiInfo->emi_patch_mcu_buildtime_offset) {
 		patchBuildTimeAddr = ioremap_nocache(emiInfo->emi_ap_phy_addr +
 				emiInfo->emi_patch_mcu_buildtime_offset, PATCH_BUILD_TIME_SIZE);
 		if (patchBuildTimeAddr) {
