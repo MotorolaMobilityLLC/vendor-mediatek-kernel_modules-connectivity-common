@@ -1366,11 +1366,23 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 		/* 6631 not supported */
 		return 0;
 	if (enable) {
-		/* request VS2 to 1.4V by VS2 VOTER (use bit 4) */
+		if (consys_is_rc_mode_enable()) {
+			KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN18_LP, 0);
+			KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN13_LP, 0);
+			udelay(50);
+		}
+
+		/* Set VS2 to 1.4625V */
+		KERNEL_pmic_set_register_value(PMIC_RG_BUCK_VS2_VOSEL, 0x35);
+
+		/* request VS2 to 1.4625V by VS2 VOTER (use bit 4) */
 		KERNEL_pmic_set_register_value(PMIC_RG_BUCK_VS2_VOTER_EN_SET, 0x10);
 
-		/* Set VCN13 to 1.32V */
-		KERNEL_pmic_set_register_value(PMIC_RG_VCN13_VOCAL, 0x2);
+		/* Set VS2 sleep voltage to 1.375V */
+		KERNEL_pmic_set_register_value(PMIC_RG_BUCK_VS2_VOSEL_SLEEP, 0x2E);
+
+		/* Set VCN13 to 1.37V */
+		KERNEL_pmic_set_register_value(PMIC_RG_VCN13_VOCAL, 0x7);
 
 		if (consys_is_rc_mode_enable()) {
 			WMT_PLAT_PR_INFO("Turn on reg_VCN33_1_BT in RC mode\n");
@@ -1381,6 +1393,11 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 			KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_1_LP, 0);
 			if (reg_VCN33_1_BT)
 				regulator_set_voltage(reg_VCN33_1_BT, 3300000, 3300000);
+
+			udelay(50);
+			KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN18_LP, 1);
+			KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN13_LP, 1);
+
 			/* SW_EN=0 */
 			/* For RC mode, we don't have to control VCN33_1 & VCN33_2 */
 			/* regulator_disable(reg_VCN33_1_BT); */
@@ -1401,14 +1418,24 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 		WMT_PLAT_PR_DBG("WMT do BT PMIC on\n");
 	} else {
 		/*do BT PMIC off */
-		/*switch BT PALDO control from HW mode to SW mode:0x416[5]-->0x0 */
+		if (consys_is_rc_mode_enable()) {
+			KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN18_LP, 0);
+			KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN13_LP, 0);
+			udelay(50);
+		}
+
 		/* restore VCN13 to 1.3V */
 		KERNEL_pmic_set_register_value(PMIC_RG_VCN13_VOCAL, 0);
 		/* clear bit 4 of VS2 VOTER then VS2 can restore to 1.35V */
 		KERNEL_pmic_set_register_value(PMIC_RG_BUCK_VS2_VOTER_EN_CLR, 0x10);
 
+		/* Restore VS2 sleep voltage to 1.35V */
+		KERNEL_pmic_set_register_value(PMIC_RG_BUCK_VS2_VOSEL_SLEEP, 0x2C);
+
 		if (consys_is_rc_mode_enable()) {
-			WMT_PLAT_PR_INFO("Do nothing for reg_VCN33_1_BT under RC mode when disable\n");
+			udelay(50);
+			KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN18_LP, 1);
+			KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN13_LP, 1);
 		} else {
 			if (reg_VCN33_1_BT)
 				regulator_disable(reg_VCN33_1_BT);

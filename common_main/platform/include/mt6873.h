@@ -311,8 +311,10 @@
 
 #define MT6359_PMIC_REG_BASE                 ((unsigned int)(0x0))
 
+#define MT6359_BUCK_VS2_CON1                 (MT6359_PMIC_REG_BASE+0x188e)
 #define MT6359_BUCK_VS2_VOTER_SET            (MT6359_PMIC_REG_BASE+0x18ac)
 #define MT6359_BUCK_VS2_VOTER_CLR            (MT6359_PMIC_REG_BASE+0x18ae)
+#define MT6359_BUCK_VS2_ELR0                 (MT6359_PMIC_REG_BASE+0x18b4)
 #define MT6359_LDO_VCN33_1_CON0              (MT6359_PMIC_REG_BASE+0x1be2)
 #define MT6359_LDO_VCN33_1_OP_EN_SET         (MT6359_PMIC_REG_BASE+0x1bea)
 #define MT6359_LDO_VCN33_1_OP_CFG_SET        (MT6359_PMIC_REG_BASE+0x1bf0)
@@ -335,6 +337,14 @@
 	MT6359_BUCK_VS2_VOTER_CLR
 #define PMIC_RG_BUCK_VS2_VOTER_EN_CLR_MASK                  0xFFF
 #define PMIC_RG_BUCK_VS2_VOTER_EN_CLR_SHIFT                 0
+#define PMIC_RG_BUCK_VS2_VOSEL_ADDR                         \
+	MT6359_BUCK_VS2_ELR0
+#define PMIC_RG_BUCK_VS2_VOSEL_MASK                         0x7F
+#define PMIC_RG_BUCK_VS2_VOSEL_SHIFT                        0
+#define PMIC_RG_BUCK_VS2_VOSEL_SLEEP_ADDR                   \
+	MT6359_BUCK_VS2_CON1
+#define PMIC_RG_BUCK_VS2_VOSEL_SLEEP_MASK                   0x7F
+#define PMIC_RG_BUCK_VS2_VOSEL_SLEEP_SHIFT                  0
 #define PMIC_RG_LDO_VCN33_1_LP_ADDR                         \
 	MT6359_LDO_VCN33_1_CON0
 #define PMIC_RG_LDO_VCN33_1_LP_MASK                         0x1
