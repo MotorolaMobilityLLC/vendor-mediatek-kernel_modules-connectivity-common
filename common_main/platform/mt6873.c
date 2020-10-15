@@ -116,6 +116,7 @@ static INT32 consys_read_irq_info_from_dts(struct platform_device *pdev,
 		PINT32 irq_num, PUINT32 irq_flag);
 static INT32 consys_read_reg_from_dts(struct platform_device *pdev);
 static UINT32 consys_read_cpupcr(VOID);
+static INT32 consys_poll_cpupcr_dump(UINT32 times, UINT32 sleep_ms);
 static VOID force_trigger_assert_debug_pin(VOID);
 static INT32 consys_co_clock_type(VOID);
 static P_CONSYS_EMI_ADDR_INFO consys_soc_get_emi_phy_add(VOID);
@@ -159,6 +160,13 @@ static INT32 consys_sleep_info_enable_ctrl(UINT32 enable);
 static INT32 consys_sleep_info_read_ctrl(WMT_SLEEP_COUNT_TYPE type, PUINT64 sleep_counter, PUINT64 sleep_timer);
 static INT32 consys_sleep_info_clear(VOID);
 static UINT64 consys_get_options(VOID);
+
+static INT32 dump_conn_mcu_pc_log_wrapper(VOID);
+static INT32 consys_cmd_tx_timeout_dump(VOID);
+static INT32 consys_cmd_rx_timeout_dump(VOID);
+static INT32 consys_coredump_timeout_dump(VOID);
+static INT32 consys_assert_timeout_dump(VOID);
+static INT32 consys_before_chip_reset_dump(VOID);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -239,6 +247,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_read_irq_info_from_dts = consys_read_irq_info_from_dts,
 	.consys_ic_read_reg_from_dts = consys_read_reg_from_dts,
 	.consys_ic_read_cpupcr = consys_read_cpupcr,
+	.consys_ic_poll_cpupcr_dump = consys_poll_cpupcr_dump,
 	.ic_force_trigger_assert_debug_pin = force_trigger_assert_debug_pin,
 	.consys_ic_co_clock_type = consys_co_clock_type,
 	.consys_ic_soc_get_emi_phy_add = consys_soc_get_emi_phy_add,
@@ -273,6 +282,16 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_need_store_pdev = consys_need_store_pdev,
 	.consys_ic_store_pdev = consys_store_pdev,
 #endif
+
+	/* debug dump */
+	.consys_ic_cmd_tx_timeout_dump = consys_cmd_tx_timeout_dump,
+	.consys_ic_cmd_rx_timeout_dump = consys_cmd_rx_timeout_dump,
+	.consys_ic_coredump_timeout_dump = consys_coredump_timeout_dump,
+	.consys_ic_assert_timeout_dump = consys_assert_timeout_dump,
+	.consys_ic_before_chip_reset_dump = consys_before_chip_reset_dump,
+
+	.consys_ic_pc_log_dump = dump_conn_mcu_pc_log_wrapper,
+
 };
 
 static const struct connlog_emi_config connsys_fw_log_parameter = {
@@ -1941,6 +1960,28 @@ static UINT32 consys_read_cpupcr(VOID)
 	return CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base + CONSYS_CPUPCR_OFFSET);
 }
 
+static INT32 consys_poll_cpupcr_dump(UINT32 times, UINT32 sleep_ms)
+{
+	UINT64 ts;
+	ULONG nsec;
+	INT32 str_len = 0, i;
+	char str[DBG_LOG_STR_SIZE] = {""};
+	char *p = NULL;
+
+	p = str;
+	for (i = 0; i < times; i++) {
+		osal_get_local_time(&ts, &nsec);
+		str_len = osal_sprintf(p, "%llu.%06lu/0x%08x;", ts, nsec,
+								consys_read_cpupcr());
+		p += str_len;
+
+		if (sleep_ms > 0)
+			osal_sleep_ms(sleep_ms);
+	}
+	WMT_PLAT_PR_INFO("TIME/CPUPCR: %s", str);
+	return 0;
+}
+
 static UINT32 consys_soc_chipid_get(VOID)
 {
 	return PLATFORM_SOC_CHIP;
@@ -2637,4 +2678,81 @@ static UINT64 consys_get_options(VOID)
 			OPT_NORMAL_PATCH_DWN_3 |
 			OPT_PATCH_CHECKSUM;
 	return options;
+}
+
+INT32 dump_conn_mcu_pc_log_wrapper(VOID)
+{
+	return dump_conn_mcu_pc_log("");
+}
+
+static INT32 consys_common_dump(const char *trg_str)
+{
+	int ret = 0;
+
+	ret += dump_conn_mcu_pc_log(trg_str);
+
+	ret += dump_conn_debug_dump(trg_str);
+	ret += dump_conn_mcu_debug_flag(trg_str);
+	ret += dump_conn_mcu_ahb_bus_hang_layer1(trg_str);
+	ret += dump_conn_mcu_ahb_bus_hang_layer2(trg_str);
+	ret += dump_conn_mcu_ahb_bus_hang_layer3(trg_str);
+	ret += dump_conn_mcu_ahb_bus_hang_layer4(trg_str);
+	ret += dump_conn_mcu_ahb_timeout_info(trg_str);
+	ret += dump_conn_bus_hang_debug(trg_str);
+	ret += dump_conn_mcu_apb_timeout_info(trg_str);
+	ret += dump_conn_apb_bus0_hang(trg_str);
+	ret += dump_conn_apb_bus1_hang(trg_str);
+	ret += dump_conn_apb_bus2_hang(trg_str);
+	ret += dump_conn_emi_ctrl_host_csr(trg_str);
+	ret += dump_conn_mcu_confg_emi_ctrl(trg_str);
+	ret += dump_conn_mcu_cpu_probe(trg_str);
+	ret += dump_conn_mcu_ahb_probe(trg_str);
+	ret += dump_conn_mcu_idlm_prot_prob(trg_str);
+	ret += dump_conn_mcu_wf_cmdbt_ram_prob(trg_str);
+	ret += dump_conn_mcu_pda_dbg_flag(trg_str);
+	ret += dump_conn_mcu_sysram_prb(trg_str);
+	ret += dump_conn_mcu_confg(trg_str);
+	ret += dump_conn_mcu_i_eidlm(trg_str);
+	ret += dump_conn_mcu_dma(trg_str);
+	ret += dump_conn_mcu_tcm_prob(trg_str);
+	ret += dump_conn_mcu_met_prob(trg_str);
+	ret += dump_conn_mcusys_n9(trg_str);
+	ret += dump_conn_mcu_uart_dbg_loop(trg_str);
+	ret += dump_conn_cfg_on_Debug_Signal(trg_str);
+	ret += dump_conn_cfg_on_register(trg_str);
+	ret += dump_conn_cmdbt_debug_signal(trg_str);
+	ret += dump_conn_cmdbt_register(trg_str);
+	ret += dump_conn_emi_detect(trg_str);
+	ret += dump_conn_cmdbt_debug(trg_str);
+	ret += dump_conn_hif_reg_debug(trg_str);
+	ret += dump_conn_mcu_confg_bus_hang_reg(trg_str);
+	ret += dump_wf_pdma_reg_debug(trg_str);
+	ret += dump_conn_to_EMI_bus_path(trg_str);
+
+	return ret;
+}
+
+INT32 consys_cmd_tx_timeout_dump(VOID)
+{
+	return consys_common_dump("tx_timeout");
+}
+
+INT32 consys_cmd_rx_timeout_dump(VOID)
+{
+	return consys_common_dump("rx_timeout");
+}
+
+INT32 consys_coredump_timeout_dump(VOID)
+{
+	return consys_common_dump("coredump_timeout");
+}
+
+INT32 consys_assert_timeout_dump(VOID)
+{
+	return consys_common_dump("assert_timeout");
+}
+
+INT32 consys_before_chip_reset_dump(VOID)
+{
+	return consys_common_dump("before_chip_reset");
 }

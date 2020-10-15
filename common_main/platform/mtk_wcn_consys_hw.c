@@ -38,7 +38,6 @@
 */
 #include "osal_typedef.h"
 #include "mtk_wcn_consys_hw.h"
-#include "wmt_step.h"
 #include "wmt_ic.h"
 #include <linux/of_reserved_mem.h>
 #include <linux/pinctrl/consumer.h>
@@ -440,7 +439,6 @@ static INT32 mtk_wmt_remove(struct platform_device *pdev)
 static INT32 mtk_wmt_suspend(VOID)
 {
 	WMT_PLAT_PR_INFO(" mtk_wmt_suspend !!");
-	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_WHEN_AP_SUSPEND);
 
 	mtk_wcn_consys_sleep_info_clear();
 	return 0;
@@ -637,8 +635,6 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 
 		if (wmt_consys_ic_ops->consys_ic_ahb_clock_ctrl)
 			wmt_consys_ic_ops->consys_ic_ahb_clock_ctrl(ENABLE);
-
-		WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_BEFORE_GET_CONNSYS_ID);
 
 		if (wmt_consys_ic_ops->polling_consys_ic_chipid &&
 			wmt_consys_ic_ops->polling_consys_ic_chipid() < 0)
@@ -850,7 +846,6 @@ INT32 mtk_wcn_consys_hw_pwr_on(UINT32 co_clock_type)
 	INT32 iRet = 0;
 
 	WMT_PLAT_PR_INFO("CONSYS-HW-PWR-ON, start\n");
-	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_START);
 	if (!gConEmiPhyBase) {
 		WMT_PLAT_PR_ERR("EMI base address is invalid, CONNSYS can not be powered on!");
 		return -1;
@@ -868,7 +863,6 @@ INT32 mtk_wcn_consys_hw_pwr_off(UINT32 co_clock_type)
 	INT32 iRet = 0;
 
 	WMT_PLAT_PR_INFO("CONSYS-HW-PWR-OFF, start\n");
-	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_BEFORE_POWER_OFF);
 
 	iRet += mtk_wcn_consys_hw_reg_ctrl(0, co_clock_type);
 	iRet += mtk_wcn_consys_hw_gpio_ctrl(0);
@@ -969,6 +963,7 @@ INT32 mtk_wcn_consys_hw_deinit(VOID)
 #ifdef CONFIG_MTK_HIBERNATION
 	unregister_swsusp_restore_noirq_func(ID_M_CONNSYS);
 #endif
+	mtk_wcn_dump_util_destroy();
 
 	platform_driver_unregister(&mtk_wmt_dev_drv);
 	unregister_syscore_ops(&wmt_dbg_syscore_ops);
@@ -1050,8 +1045,14 @@ UINT32 mtk_wcn_consys_read_cpupcr(VOID)
 {
 	if (wmt_consys_ic_ops->consys_ic_read_cpupcr)
 		return wmt_consys_ic_ops->consys_ic_read_cpupcr();
-	else
-		return 0;
+	return 0;
+}
+
+INT32 mtk_wcn_consys_poll_cpucpr_dump(UINT32 times, UINT32 sleep_ms)
+{
+	if (wmt_consys_ic_ops->consys_ic_poll_cpupcr_dump)
+		return wmt_consys_ic_ops->consys_ic_poll_cpupcr_dump(times, sleep_ms);
+	return 0;
 }
 
 VOID mtk_wcn_force_trigger_assert_debug_pin(VOID)
@@ -1160,7 +1161,6 @@ VOID mtk_wcn_consys_clock_fail_dump(VOID)
 {
 	if (wmt_consys_ic_ops->consys_ic_clock_fail_dump)
 		wmt_consys_ic_ops->consys_ic_clock_fail_dump();
-	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_WHEN_CLOCK_FAIL);
 }
 
 INT32 mtk_consys_is_connsys_reg(UINT32 addr)
@@ -1233,5 +1233,47 @@ UINT64 mtk_wcn_consys_get_options(VOID)
 
 	WMT_PLAT_PR_INFO("Please implement consys_ic_get_options!");
 	wmt_lib_trigger_assert(WMTDRV_TYPE_WMT, 45);
+	return 0;
+}
+
+INT32 mtk_wcn_consys_cmd_tx_timeout_dump(VOID)
+{
+	if (wmt_consys_ic_ops->consys_ic_cmd_tx_timeout_dump)
+		return wmt_consys_ic_ops->consys_ic_cmd_tx_timeout_dump();
+	return 0;
+}
+
+INT32 mtk_wcn_consys_cmd_rx_timeout_dump(VOID)
+{
+	if (wmt_consys_ic_ops->consys_ic_cmd_rx_timeout_dump)
+		return wmt_consys_ic_ops->consys_ic_cmd_rx_timeout_dump();
+	return 0;
+}
+
+INT32 mtk_wcn_consys_coredump_timeout_dump(VOID)
+{
+	if (wmt_consys_ic_ops->consys_ic_coredump_timeout_dump)
+		return wmt_consys_ic_ops->consys_ic_coredump_timeout_dump();
+	return 0;
+}
+
+INT32 mtk_wcn_consys_assert_timeout_dump(VOID)
+{
+	if (wmt_consys_ic_ops->consys_ic_assert_timeout_dump)
+		return wmt_consys_ic_ops->consys_ic_assert_timeout_dump();
+	return 0;
+}
+
+INT32 mtk_wnc_consys_before_chip_reset_dump(VOID)
+{
+	if (wmt_consys_ic_ops->consys_ic_before_chip_reset_dump)
+		return wmt_consys_ic_ops->consys_ic_before_chip_reset_dump();
+	return 0;
+}
+
+INT32 mtk_wcn_consys_pc_log_dump(VOID)
+{
+	if (wmt_consys_ic_ops->consys_ic_pc_log_dump)
+		return wmt_consys_ic_ops->consys_ic_pc_log_dump();
 	return 0;
 }

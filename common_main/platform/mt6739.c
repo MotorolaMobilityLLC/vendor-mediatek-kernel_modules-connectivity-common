@@ -103,6 +103,7 @@ static INT32 consys_pmic_get_from_dts(struct platform_device *pdev);
 static INT32 consys_read_irq_info_from_dts(struct platform_device *pdev, PINT32 irq_num, PUINT32 irq_flag);
 static INT32 consys_read_reg_from_dts(struct platform_device *pdev);
 static UINT32 consys_read_cpupcr(VOID);
+static INT32 consys_poll_cpupcr_dump(UINT32 times, UINT32 sleep_ms);
 static VOID force_trigger_assert_debug_pin(VOID);
 static INT32 consys_co_clock_type(VOID);
 static P_CONSYS_EMI_ADDR_INFO consys_soc_get_emi_phy_add(VOID);
@@ -185,6 +186,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_read_irq_info_from_dts = consys_read_irq_info_from_dts,
 	.consys_ic_read_reg_from_dts = consys_read_reg_from_dts,
 	.consys_ic_read_cpupcr = consys_read_cpupcr,
+	.consys_ic_poll_cpupcr_dump = consys_poll_cpupcr_dump,
 	.ic_force_trigger_assert_debug_pin = force_trigger_assert_debug_pin,
 	.consys_ic_co_clock_type = consys_co_clock_type,
 	.consys_ic_soc_get_emi_phy_add = consys_soc_get_emi_phy_add,
@@ -1126,7 +1128,88 @@ static UINT32 consys_read_cpupcr(VOID)
 		return 0;
 
 	return CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_CPUPCR_OFFSET);
+#else
+	return 0;
 #endif
+}
+
+static UINT32 consys_read_debug_crs(ENUM_CONNSYS_DEBUG_CR cr)
+{
+#ifdef CONFIG_OF		/*use DT */
+	P_CONSYS_EMI_ADDR_INFO emi_phy_addr;
+
+	emi_phy_addr = consys_soc_get_emi_phy_add();
+
+	if (cr == CONNSYS_EMI_REMAP) {
+		if (emi_phy_addr != NULL && emi_phy_addr->emi_remap_offset)
+			return CONSYS_REG_READ(conn_reg.topckgen_base +
+					emi_phy_addr->emi_remap_offset);
+		else
+			WMT_PLAT_PR_INFO("EMI remap has no value\n");
+	}
+
+	if (mtk_consys_check_reg_readable_by_addr(conn_reg.mcu_base + CONSYS_CPUPCR_OFFSET) == 0)
+		return 0;
+
+	if (conn_reg.mcu_base) {
+
+		switch (cr) {
+		case CONNSYS_CPU_CLK:
+			if (mtk_consys_check_reg_readable_by_addr(
+					conn_reg.mcu_base + CONSYS_CPU_CLK_STATUS_OFFSET) == 0)
+				return 0;
+			return CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_CPU_CLK_STATUS_OFFSET);
+		case CONNSYS_BUS_CLK:
+			if (mtk_consys_check_reg_readable_by_addr(
+					conn_reg.mcu_base + CONSYS_BUS_CLK_STATUS_OFFSET) == 0)
+				return 0;
+			return CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_BUS_CLK_STATUS_OFFSET);
+		case CONNSYS_DEBUG_CR1:
+			if (mtk_consys_check_reg_readable_by_addr(
+					conn_reg.mcu_base + CONSYS_DBG_CR1_OFFSET) == 0)
+				return 0;
+			return CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_DBG_CR1_OFFSET);
+		case CONNSYS_DEBUG_CR2:
+			if (mtk_consys_check_reg_readable_by_addr(
+					conn_reg.mcu_base + CONSYS_DBG_CR2_OFFSET) == 0)
+				return 0;
+			return CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_DBG_CR2_OFFSET);
+		default:
+			return 0;
+		}
+	}
+#endif
+	return 0;
+}
+
+static INT32 consys_poll_cpupcr_dump(UINT32 times, UINT32 sleep_ms)
+{
+	UINT64 ts;
+	ULONG nsec;
+	INT32 str_len = 0, i;
+	char str[DBG_LOG_STR_SIZE] = {""};
+	char *p = NULL;
+
+	p = str;
+	for (i = 0; i < times; i++) {
+		osal_get_local_time(&ts, &nsec);
+		str_len = osal_sprintf(p, "%llu.%06lu/0x%08x;", ts, nsec,
+								consys_read_cpupcr());
+		p += str_len;
+
+		if (sleep_ms > 0)
+			osal_sleep_ms(sleep_ms);
+	}
+	WMT_PLAT_PR_INFO("TIME/CPUPCR: %s", str);
+	if (mtk_consys_check_reg_readable()) {
+		WMT_PLAT_PR_INFO("CONNSYS cpu:0x%x/bus:0x%x/dbg_cr1:0x%x/dbg_cr2:0x%x/EMIaddr:0x%x\n",
+					  consys_read_debug_crs(CONNSYS_CPU_CLK),
+					  consys_read_debug_crs(CONNSYS_BUS_CLK),
+					  consys_read_debug_crs(CONNSYS_DEBUG_CR1),
+					  consys_read_debug_crs(CONNSYS_DEBUG_CR2),
+					  consys_read_debug_crs(CONNSYS_EMI_REMAP));
+	}
+	return 0;
 }
 
 static UINT32 consys_soc_chipid_get(VOID)

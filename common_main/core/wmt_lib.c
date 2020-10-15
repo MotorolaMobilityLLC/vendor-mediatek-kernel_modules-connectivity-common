@@ -48,7 +48,6 @@
 #include "psm_core.h"
 #include "stp_sdio.h"
 #include "stp_dbg.h"
-#include "wmt_step.h"
 #include <linux/workqueue.h>
 #include <linux/rtc.h>
 
@@ -592,8 +591,6 @@ INT32 wmt_lib_deinit(VOID)
 		osal_free(table->active_version);
 		table->active_version = NULL;
 	}
-
-	WMT_STEP_DEINIT_FUNC();
 
 	return iResult;
 }
@@ -2395,6 +2392,7 @@ ENUM_WMTRSTRET_TYPE_T wmt_lib_cmb_rst(ENUM_WMTRSTSRC_TYPE_T src)
 		retval = WMTRSTRET_FAIL;
 		goto rstDone;
 	}
+
 	/* wakeup blocked opid */
 	pOp = wmt_lib_get_current_op(pDevWmt);
 	if (osal_op_is_wait_for_signal(pOp))
@@ -2446,6 +2444,7 @@ rstDone:
 	osal_clear_bit(WMT_STAT_RST_ON, &pDevWmt->state);
 	chip_reset_only = 0;
 	mtk_wcn_consys_sleep_info_restore();
+
 	return retval;
 }
 
@@ -2704,22 +2703,6 @@ PUINT8 wmt_lib_get_cpupcr_xml_format(PUINT32 pLen)
 	return &g_cpupcr_buf[0];
 }
 
-
-/**
- * called by wmt_dev wmt_dev_proc_for_dump_info_read
- */
-PUINT8 wmt_lib_get_cpupcr_reg_info(PUINT32 pLen, PUINT32 consys_reg)
-{
-	osal_memset(&g_cpupcr_buf[0], 0, WMT_STP_CPUPCR_BUF_SIZE);
-	if (consys_reg != NULL)
-		*pLen += stp_dbg_dump_cpupcr_reg_info(g_cpupcr_buf, consys_reg[1]);
-	else
-		*pLen += osal_sprintf(g_cpupcr_buf + *pLen, "0\n");
-	WMT_INFO_FUNC("print buffer,len(%d):\n\n", *pLen);
-	WMT_INFO_FUNC("%s", g_cpupcr_buf);
-	return &g_cpupcr_buf[0];
-}
-
 INT32 wmt_lib_tm_temp_query(VOID)
 {
 	return wmt_dev_tm_temp_query();
@@ -2775,7 +2758,6 @@ INT32 wmt_lib_trigger_assert_keyword(ENUM_WMTDRV_TYPE_T type, UINT32 reason, PUI
 		WMT_INFO_FUNC("Can't lock assert mutex which might be held by another trigger assert procedure.\n");
 		return iRet;
 	}
-
 	wmt_core_set_coredump_state(DRV_STS_FUNC_ON);
 
 	ctrlData.ctrlId = (SIZE_T) WMT_CTRL_TRG_ASSERT;
@@ -3380,3 +3362,159 @@ INT32 wmt_lib_reg_readable_by_addr(SIZE_T addr)
 	return mtk_consys_check_reg_readable_by_addr(addr);
 }
 
+INT32 wmt_lib_dump_cpupcr(UINT32 times, UINT32 sleep_ms)
+{
+	P_OSAL_OP pOp;
+	MTK_WCN_BOOL bRet = MTK_WCN_BOOL_TRUE;
+	P_OSAL_SIGNAL pSignal;
+
+	pOp = wmt_lib_get_free_op();
+	if (!pOp) {
+		WMT_DBG_FUNC("get_free_op fail\n");
+		bRet = MTK_WCN_BOOL_FALSE;
+		return -1;
+	}
+
+	pSignal = &pOp->signal;
+	pOp->op.opId = WMT_OPID_DUMP_CPUPCR;
+	pOp->op.au4OpData[0] = (SIZE_T)times;
+	pOp->op.au4OpData[1] = (SIZE_T)sleep_ms;
+	pSignal->timeoutValue = MAX_WMT_OP_TIMEOUT;
+
+	bRet = wmt_lib_put_act_op(pOp);
+
+	if (bRet == MTK_WCN_BOOL_FALSE)
+		WMT_WARN_FUNC("WMT_OPID_DUMP_CPUPCR failed\n");
+
+	return 0;
+
+}
+
+INT32 wmt_lib_dump_pc_log(VOID)
+{
+	P_OSAL_OP pOp;
+	MTK_WCN_BOOL bRet = MTK_WCN_BOOL_TRUE;
+	P_OSAL_SIGNAL pSignal;
+
+	pOp = wmt_lib_get_free_op();
+	if (!pOp) {
+		WMT_DBG_FUNC("get_free_op fail\n");
+		bRet = MTK_WCN_BOOL_FALSE;
+		return -1;
+	}
+
+	pSignal = &pOp->signal;
+	pOp->op.opId = WMT_OPID_DUMP_PC_LOG;
+	pSignal->timeoutValue = MAX_WMT_OP_TIMEOUT;
+
+	bRet = wmt_lib_put_act_op(pOp);
+
+	if (bRet == MTK_WCN_BOOL_FALSE)
+		WMT_WARN_FUNC("WMT_OPID_DUMP_PC_LOG failed\n");
+
+	return 0;
+}
+
+INT32 wmt_lib_cmd_tx_timeout_dump(VOID)
+{
+	int ret;
+
+	ret = wmt_lib_power_lock_aquire();
+	if (ret != 0) {
+		WMT_ERR_FUNC("aquire power lock fail ret=[%d]", ret);
+		return -1;
+	}
+
+	if (wmt_lib_get_drv_status(WMTDRV_TYPE_WMT) == DRV_STS_POWER_OFF) {
+		wmt_lib_power_lock_release();
+		return 0;
+	}
+	WMT_INFO_FUNC("======================== ");
+	ret = mtk_wcn_consys_cmd_tx_timeout_dump();
+	wmt_lib_power_lock_release();
+
+	return ret;
+}
+
+INT32 wmt_lib_cmd_rx_timeout_dump(VOID)
+{
+	int ret;
+
+	ret = wmt_lib_power_lock_aquire();
+	if (ret != 0) {
+		WMT_ERR_FUNC("aquire power lock fail ret=[%d]", ret);
+		return -1;
+	}
+	if (wmt_lib_get_drv_status(WMTDRV_TYPE_WMT) == DRV_STS_POWER_OFF) {
+		wmt_lib_power_lock_release();
+		return 0;
+	}
+	WMT_INFO_FUNC("======================== ");
+	ret = mtk_wcn_consys_cmd_rx_timeout_dump();
+	wmt_lib_power_lock_release();
+
+	return ret;
+
+}
+
+INT32 wmt_lib_coredump_timeout_dump(VOID)
+{
+	int ret;
+
+	ret = wmt_lib_power_lock_aquire();
+	if (ret != 0) {
+		WMT_ERR_FUNC("aquire power lock fail ret=[%d]", ret);
+		return -1;
+	}
+	if (wmt_lib_get_drv_status(WMTDRV_TYPE_WMT) == DRV_STS_POWER_OFF) {
+		wmt_lib_power_lock_release();
+		return 0;
+	}
+	WMT_INFO_FUNC("======================== ");
+	ret = mtk_wcn_consys_coredump_timeout_dump();
+	wmt_lib_power_lock_release();
+
+	return ret;
+}
+
+INT32 wmt_lib_assert_timeout_dump(VOID)
+{
+	int ret;
+
+	ret = wmt_lib_power_lock_aquire();
+	if (ret != 0) {
+		WMT_ERR_FUNC("aquire power lock fail ret=[%d]", ret);
+		return -1;
+	}
+	if (wmt_lib_get_drv_status(WMTDRV_TYPE_WMT) == DRV_STS_POWER_OFF) {
+		wmt_lib_power_lock_release();
+		return 0;
+	}
+	WMT_INFO_FUNC("======================== ");
+	ret = mtk_wcn_consys_assert_timeout_dump();
+	wmt_lib_power_lock_release();
+
+	return ret;
+
+}
+
+INT32 wmt_lib_before_chip_reset_dump(VOID)
+{
+	int ret;
+
+	ret = wmt_lib_power_lock_aquire();
+	if (ret != 0) {
+		WMT_ERR_FUNC("aquire power lock fail ret=[%d]", ret);
+		return -1;
+	}
+
+	if (wmt_lib_get_drv_status(WMTDRV_TYPE_WMT) == DRV_STS_POWER_OFF) {
+		wmt_lib_power_lock_release();
+		return 0;
+	}
+	WMT_INFO_FUNC("======================== ");
+	ret = mtk_wnc_consys_before_chip_reset_dump();
+	wmt_lib_power_lock_release();
+
+	return ret;
+}

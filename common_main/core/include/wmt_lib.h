@@ -485,6 +485,15 @@ INT32 wmt_lib_dmp_consys_state(P_CONSYS_STATE_DMP_INFO dmp_info,
 extern INT32 wmt_lib_reg_readable(VOID);
 extern INT32 wmt_lib_reg_readable_by_addr(SIZE_T addr);
 extern INT32 wmt_lib_utc_time_sync(VOID);
+
+extern INT32 wmt_lib_dump_cpupcr(UINT32 times, UINT32 sleep_ms);
+extern INT32 wmt_lib_dump_pc_log(VOID);
+extern INT32 wmt_lib_cmd_tx_timeout_dump(VOID);
+extern INT32 wmt_lib_cmd_rx_timeout_dump(VOID);
+extern INT32 wmt_lib_coredump_timeout_dump(VOID);
+extern INT32 wmt_lib_assert_timeout_dump(VOID);
+extern INT32 wmt_lib_before_chip_reset_dump(VOID);
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
