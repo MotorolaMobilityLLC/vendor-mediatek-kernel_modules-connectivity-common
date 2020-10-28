@@ -294,6 +294,7 @@ typedef INT32(*CONSYS_IC_ASSERT_TIMEOUT_DUMP) (VOID);
 
 typedef INT32(*CONSYS_IC_BEFORE_CHIP_RESET_DUMP) (VOID);
 typedef INT32(*CONSYS_IC_PC_LOG_DUMP) (VOID);
+typedef VOID(*CONSYS_IC_SET_VCN33_1_VOLTAGE) (UINT32 voltage);
 
 typedef struct _WMT_CONSYS_IC_OPS_ {
 
@@ -404,6 +405,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 
 	CONSYS_IC_GET_OPTIONS consys_ic_get_options;
 	CONSYS_IC_POLLING_GOTO_IDLE consys_ic_polling_goto_idle;
+	CONSYS_IC_SET_VCN33_1_VOLTAGE consys_ic_set_vcn33_1_voltage;
 } WMT_CONSYS_IC_OPS, *P_WMT_CONSYS_IC_OPS;
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -508,5 +510,6 @@ VOID mtk_wcn_dump_util_destroy(VOID);
 
 extern int g_mapped_reg_table_sz;
 extern struct reg_map_addr g_mapped_reg_table[];
+VOID mtk_wcn_consys_set_vcn33_1_voltage(UINT32 voltage);
 #endif /* _MTK_WCN_CONSYS_HW_H_ */
 

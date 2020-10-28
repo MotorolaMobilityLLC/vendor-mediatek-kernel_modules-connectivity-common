@@ -302,6 +302,7 @@ typedef struct _WMT_GEN_CONF {
 	UINT8 wifi_ant_swap_ant_sel_gpio;
 
 	struct WMT_BYTE_ARRAY *wifi_config;
+	UINT32 vcn33_1_voltage;
 } WMT_GEN_CONF, *P_WMT_GEN_CONF;
 
 typedef enum _ENUM_DRV_STS_ {

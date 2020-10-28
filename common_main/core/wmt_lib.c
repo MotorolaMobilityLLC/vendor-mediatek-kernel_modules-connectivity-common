@@ -410,6 +410,8 @@ INT32 wmt_lib_init(VOID)
 		WMT_INFO_FUNC("ldo(%d)rst(%d)on(%d)off(%d)rtc(%d)\n", pwrSeqTime.ldoStableTime,
 				pwrSeqTime.rstStableTime, pwrSeqTime.onStableTime,
 				pwrSeqTime.offStableTime, pwrSeqTime.rtcStableTime);
+		if (gDevWmt.rWmtGenConf.vcn33_1_voltage != 0)
+			mtk_wcn_consys_set_vcn33_1_voltage(gDevWmt.rWmtGenConf.vcn33_1_voltage);
 		iRet = wmt_plat_init(&pwrSeqTime, gDevWmt.rWmtGenConf.co_clock_flag & 0x0f);
 	} else {
 		WMT_ERR_FUNC("no pwr on seq and clk par found\n");

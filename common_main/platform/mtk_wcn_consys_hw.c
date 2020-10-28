@@ -1290,3 +1290,12 @@ INT32 mtk_wcn_consys_pc_log_dump(VOID)
 		return wmt_consys_ic_ops->consys_ic_pc_log_dump();
 	return 0;
 }
+
+VOID mtk_wcn_consys_set_vcn33_1_voltage(UINT32 voltage)
+{
+	if (wmt_consys_ic_ops == NULL)
+		wmt_consys_ic_ops = mtk_wcn_get_consys_ic_ops();
+
+	if (wmt_consys_ic_ops && wmt_consys_ic_ops->consys_ic_set_vcn33_1_voltage)
+		wmt_consys_ic_ops->consys_ic_set_vcn33_1_voltage(voltage);
+}
