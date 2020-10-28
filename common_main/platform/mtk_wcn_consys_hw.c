@@ -665,6 +665,8 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 			wmt_consys_ic_ops->consys_ic_polling_goto_idle())
 			return -WMT_ERRCODE_POLL_NOT_GOTO_IDLE;
 
+		if (wmt_consys_ic_ops->consys_ic_wifi_ctrl_switch_conn_mode)
+			wmt_consys_ic_ops->consys_ic_wifi_ctrl_switch_conn_mode();
 		if (wmt_consys_ic_ops->consys_ic_hw_vcn_ctrl_after_idle)
 			wmt_consys_ic_ops->consys_ic_hw_vcn_ctrl_after_idle();
 		msleep(20);

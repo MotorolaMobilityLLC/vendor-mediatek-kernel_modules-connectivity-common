@@ -276,6 +276,7 @@ typedef VOID(*CONSYS_IC_EMI_ENTRY_ADDRESS) (VOID);
 typedef VOID(*CONSYS_IC_SET_XO_OSC_CTRL) (VOID);
 typedef VOID(*CONSYS_IC_IDENTIFY_ADIE) (VOID);
 typedef VOID(*CONSYS_IC_WIFI_CTRL_SETTING) (VOID);
+typedef VOID(*CONSYS_IC_WIFI_CTRL_SWITCH_CONN_MODE) (VOID);
 typedef VOID(*CONSYS_IC_BUS_TIMEOUT_CONFIG) (VOID);
 typedef VOID(*CONSYS_IC_SET_ACCESS_EMI_HW_MODE) (VOID);
 typedef INT32(*CONSYS_IC_DUMP_GATING_STATE) (P_CONSYS_STATE state);
@@ -308,6 +309,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_SET_IF_PINMUX consys_ic_set_if_pinmux;
 	CONSYS_IC_SET_XO_OSC_CTRL consys_ic_set_xo_osc_ctrl;
 	CONSYS_IC_WIFI_CTRL_SETTING consys_ic_wifi_ctrl_setting;
+	CONSYS_IC_WIFI_CTRL_SWITCH_CONN_MODE consys_ic_wifi_ctrl_switch_conn_mode;
 	CONSYS_IC_BUS_TIMEOUT_CONFIG consys_ic_bus_timeout_config;
 
 	/* POS - AFE */

@@ -153,6 +153,7 @@ static VOID consys_emi_entry_address(VOID);
 static VOID consys_set_xo_osc_ctrl(VOID);
 static VOID consys_identify_adie(VOID);
 static VOID consys_wifi_ctrl_setting(VOID);
+static VOID consys_wifi_ctrl_switch_conn_mode(VOID);
 static VOID consys_bus_timeout_config(VOID);
 static VOID consys_set_access_emi_hw_mode(VOID);
 static INT32 consys_dump_gating_state(P_CONSYS_STATE state);
@@ -272,6 +273,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_set_xo_osc_ctrl = consys_set_xo_osc_ctrl,
 	.consys_ic_identify_adie = consys_identify_adie,
 	.consys_ic_wifi_ctrl_setting = consys_wifi_ctrl_setting,
+	.consys_ic_wifi_ctrl_switch_conn_mode = consys_wifi_ctrl_switch_conn_mode,
 	.consys_ic_bus_timeout_config = consys_bus_timeout_config,
 	.consys_ic_set_access_emi_hw_mode = consys_set_access_emi_hw_mode,
 	.consys_ic_dump_gating_state = consys_dump_gating_state,
@@ -617,10 +619,6 @@ static VOID consys_set_if_pinmux(MTK_WCN_BOOL enable)
 
 static VOID consys_hw_reset_bit_set(MTK_WCN_BOOL enable)
 {
-#if CONSYS_PMIC_CTRL_6635
-	UINT8 *consys_reg_base = NULL;
-#endif
-
 	if (enable) {
 		/*3.assert CONNSYS CPU SW reset  0x10007018 "[12]=1'b1  [31:24]=8'h88 (key)" */
 		CONSYS_REG_WRITE((conn_reg.ap_rgu_base + CONSYS_CPU_SW_RST_OFFSET),
@@ -631,23 +629,6 @@ static VOID consys_hw_reset_bit_set(MTK_WCN_BOOL enable)
 		CONSYS_REG_WRITE(conn_reg.ap_rgu_base + CONSYS_CPU_SW_RST_OFFSET,
 				(CONSYS_REG_READ(conn_reg.ap_rgu_base + CONSYS_CPU_SW_RST_OFFSET) &
 				 ~CONSYS_CPU_SW_RST_BIT) | CONSYS_CPU_SW_RST_CTRL_KEY);
-#if CONSYS_PMIC_CTRL_6635
-		/* if(MT6635) CONN_WF_CTRL2 swtich to CONN mode */
-		consys_reg_base = ioremap_nocache(CONSYS_IF_PINMUX_REG_BASE, 0x1000);
-		if (!consys_reg_base) {
-			WMT_PLAT_PR_ERR("consys_if_pinmux_reg_base(%x) ioremap fail\n",
-					CONSYS_IF_PINMUX_REG_BASE);
-			return;
-		}
-		CONSYS_REG_WRITE(consys_reg_base + CONSYS_WF_CTRL2_03_OFFSET,
-				(CONSYS_REG_READ(consys_reg_base + CONSYS_WF_CTRL2_03_OFFSET) &
-				CONSYS_WF_CTRL2_03_MASK) | CONSYS_WF_CTRL2_CONN_MODE);
-		if (consys_reg_base)
-			iounmap(consys_reg_base);
-		else
-			WMT_PLAT_PR_ERR("consys_if_pinmux_reg_base(0x%x) ioremap fail!\n",
-					  CONSYS_IF_PINMUX_REG_BASE);
-#endif
 	}
 }
 
@@ -1301,6 +1282,29 @@ static VOID consys_wifi_ctrl_setting(VOID)
 		WMT_PLAT_PR_ERR("consys_if_pinmux_reg_base(0x%x) ioremap fail!\n",
 			CONSYS_IF_PINMUX_REG_BASE);
 	}
+#endif
+}
+
+static VOID consys_wifi_ctrl_switch_conn_mode(VOID)
+{
+#if CONSYS_PMIC_CTRL_6635
+	UINT8 *consys_reg_base = NULL;
+
+	/* if(MT6635) CONN_WF_CTRL2 switch to CONN mode */
+	consys_reg_base = ioremap_nocache(CONSYS_IF_PINMUX_REG_BASE, 0x1000);
+	if (!consys_reg_base) {
+		WMT_PLAT_PR_ERR("consys_if_pinmux_reg_base(%x) ioremap fail\n",
+				CONSYS_IF_PINMUX_REG_BASE);
+		return;
+	}
+	CONSYS_REG_WRITE(consys_reg_base + CONSYS_WF_CTRL2_03_OFFSET,
+			(CONSYS_REG_READ(consys_reg_base + CONSYS_WF_CTRL2_03_OFFSET) &
+			CONSYS_WF_CTRL2_03_MASK) | CONSYS_WF_CTRL2_CONN_MODE);
+	if (consys_reg_base)
+		iounmap(consys_reg_base);
+	else
+		WMT_PLAT_PR_ERR("consys_if_pinmux_reg_base(0x%x) ioremap fail!\n",
+				CONSYS_IF_PINMUX_REG_BASE);
 #endif
 }
 
