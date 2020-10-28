@@ -157,7 +157,7 @@ static INT32 consys_cmd_rx_timeout_dump(VOID);
 static INT32 consys_coredump_timeout_dump(VOID);
 static INT32 consys_assert_timeout_dump(VOID);
 static INT32 consys_before_chip_reset_dump(VOID);
-
+static INT32 consys_polling_goto_idle(VOID);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -271,7 +271,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_before_chip_reset_dump = consys_before_chip_reset_dump,
 
 	.consys_ic_pc_log_dump = dump_conn_mcu_pc_log_wrapper,
-
+	.consys_ic_polling_goto_idle = consys_polling_goto_idle,
 };
 
 static const struct connlog_emi_config connsys_fw_log_parameter = {
@@ -540,8 +540,6 @@ static VOID consys_set_if_pinmux(MTK_WCN_BOOL enable)
 
 static VOID consys_hw_reset_bit_set(MTK_WCN_BOOL enable)
 {
-	UINT32 consys_ver_id = 0;
-	UINT32 cnt = 0;
 	UINT8 *consys_reg_base = NULL;
 
 	if (enable) {
@@ -554,24 +552,6 @@ static VOID consys_hw_reset_bit_set(MTK_WCN_BOOL enable)
 		CONSYS_REG_WRITE(conn_reg.ap_rgu_base + CONSYS_CPU_SW_RST_OFFSET,
 				(CONSYS_REG_READ(conn_reg.ap_rgu_base + CONSYS_CPU_SW_RST_OFFSET) &
 				 ~CONSYS_CPU_SW_RST_BIT) | CONSYS_CPU_SW_RST_CTRL_KEY);
-		/* check CONNSYS power-on completion
-		 * (polling "0x8000_0600[31:0]" == 0x1D1E and each polling interval is "1ms")
-		 * (apply this for guarantee that CONNSYS CPU goes to "cos_idle_loop")
-		 */
-		consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_COM_REG0);
-		while (consys_ver_id != 0x1D1E) {
-			if (cnt > 10)
-				break;
-			consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_COM_REG0);
-			WMT_PLAT_PR_INFO("0x18002600(0x%x)\n", consys_ver_id);
-			WMT_PLAT_PR_INFO("0x1800216c(0x%x)\n",
-					CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_SW_DBG_CTL));
-			WMT_PLAT_PR_INFO("0x18007104(0x%x)\n",
-					CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base +
-					CONSYS_CPUPCR_OFFSET));
-			msleep(20);
-			cnt++;
-		}
 
 		if (mtk_wcn_consys_get_adie_chipid() == SECONDARY_ADIE) {
 			/* if(MT6635) CONN_WF_CTRL2 swtich to CONN mode */
@@ -587,6 +567,34 @@ static VOID consys_hw_reset_bit_set(MTK_WCN_BOOL enable)
 			iounmap(consys_reg_base);
 		}
 	}
+}
+
+static INT32 consys_polling_goto_idle(VOID)
+{
+	UINT32 consys_ver_id = 0;
+	UINT32 cnt = 0;
+
+	/* check CONNSYS power-on completion
+	 * (polling "0x8000_0600[31:0]" == 0x1D1E and each polling interval is "1ms")
+	 * (apply this for guarantee that CONNSYS CPU goes to "cos_idle_loop")
+	 */
+	consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_base + 0x600);
+	while (consys_ver_id != 0x1D1E) {
+		if (cnt > 10) {
+			WMT_PLAT_PR_ERR("can not go into idle!\n");
+			return -WMT_ERRCODE_POLL_NOT_GOTO_IDLE;
+		}
+		consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_base + 0x600);
+		WMT_PLAT_PR_INFO("0x18002600(0x%x)\n", consys_ver_id);
+		WMT_PLAT_PR_INFO("0x1800216c(0x%x)\n",
+				CONSYS_REG_READ(conn_reg.mcu_base + 0x16c));
+		WMT_PLAT_PR_INFO("0x18007104(0x%x)\n",
+				CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base +
+				CONSYS_CPUPCR_OFFSET));
+		msleep(20);
+		cnt++;
+	}
+	return 0;
 }
 
 static VOID consys_hw_spm_clk_gating_enable(VOID)
@@ -2531,7 +2539,8 @@ static UINT64 consys_get_options(VOID)
 			OPT_COEX_CONFIG_ADJUST_NEW_FLAG |
 			OPT_WIFI_LTE_COEX_TABLE_3 |
 			OPT_NORMAL_PATCH_DWN_3 |
-			OPT_PATCH_CHECKSUM;
+			OPT_PATCH_CHECKSUM |
+			OPT_DISABLE_ROM_PATCH_DWN;
 	return options;
 }
 

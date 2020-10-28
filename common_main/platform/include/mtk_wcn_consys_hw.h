@@ -283,6 +283,7 @@ typedef INT32(*CONSYS_IC_SLEEP_INFO_ENABLE_CTRL) (UINT32 enable);
 typedef INT32(*CONSYS_IC_SLEEP_INFO_READ_CTRL) (WMT_SLEEP_COUNT_TYPE type, PUINT64 sleep_counter, PUINT64 sleep_timer);
 typedef INT32(*CONSYS_IC_SLEEP_INFO_CLEAR) (VOID);
 typedef UINT64(*CONSYS_IC_GET_OPTIONS) (VOID);
+typedef INT32(*CONSYS_IC_POLLING_GOTO_IDLE) (VOID);
 
 /* timeout debug dump */
 typedef INT32(*CONSYS_IC_CMD_TX_TIMEOUT_DUMP) (VOID);
@@ -400,7 +401,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_SLEEP_INFO_CLEAR consys_ic_sleep_info_clear;
 
 	CONSYS_IC_GET_OPTIONS consys_ic_get_options;
-
+	CONSYS_IC_POLLING_GOTO_IDLE consys_ic_polling_goto_idle;
 } WMT_CONSYS_IC_OPS, *P_WMT_CONSYS_IC_OPS;
 /*******************************************************************************
 *                            P U B L I C   D A T A
