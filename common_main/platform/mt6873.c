@@ -1979,14 +1979,20 @@ static INT32 consys_poll_cpupcr_dump(UINT32 times, UINT32 sleep_ms)
 	ULONG nsec;
 	INT32 str_len = 0, i;
 	char str[DBG_LOG_STR_SIZE] = {""};
+	unsigned int remain = DBG_LOG_STR_SIZE;
 	char *p = NULL;
 
 	p = str;
 	for (i = 0; i < times; i++) {
 		osal_get_local_time(&ts, &nsec);
-		str_len = osal_sprintf(p, "%llu.%06lu/0x%08x;", ts, nsec,
+		str_len = snprintf(p, remain, "%llu.%06lu/0x%08x;", ts, nsec,
 								consys_read_cpupcr());
+		if (str_len < 0) {
+			WMT_PLAT_PR_WARN("%s snprintf fail", __func__);
+			continue;
+		}
 		p += str_len;
+		remain -= str_len;
 
 		if (sleep_ms > 0)
 			osal_sleep_ms(sleep_ms);
