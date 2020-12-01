@@ -75,6 +75,7 @@ INT32 execute_dump_action(const char *trg_str, const char *dump_prefix, struct c
 	const char *p_trg_str = trg_str, *p_dump_prefix = dump_prefix;
 	const char *p_undefined_str = "undefined";
 	UINT8 *addr = NULL;
+	UINT32 mask_tmp = 0;
 
 	if (!dump_ary) {
 		WMT_PLAT_PR_WARN("[%s] dump_ary is null", __func__);
@@ -99,8 +100,11 @@ INT32 execute_dump_action(const char *trg_str, const char *dump_prefix, struct c
 		addr = reg_addr->vir_addr;
 		switch (dump_item->action) {
 		case DUMP_ACT_WRITE:
+			mask_tmp = dump_item->mask;
+			if (dump_item->mask == 0x0)
+				mask_tmp = 0xffffffff;
 			CONSYS_REG_WRITE_MASK(addr + dump_item->offset,
-									dump_item->value, dump_item->mask);
+									dump_item->value, mask_tmp);
 #if DUMP_ACTION_PRINT
 			WMT_PLAT_PR_INFO("[W] addr=[%x] offset=[%x] value=[%x] mask=[%x]", addr, dump_item->offset,
 								dump_item->value, dump_item->mask);
@@ -112,7 +116,7 @@ INT32 execute_dump_action(const char *trg_str, const char *dump_prefix, struct c
 					CONSYS_REG_READ(addr + dump_item->offset));
 
 #if DUMP_ACTION_PRINT
-			WMT_PLAT_PR_INFO("[R] addr=[%x] offset=[%x] value=[%x] ", addr, dump_item->offset,
+			WMT_PLAT_PR_INFO("[R] addr=[%x] offset=[%x] value=[%s] ", addr, dump_item->offset,
 								buf);
 #endif
 			if (len > 0) {
