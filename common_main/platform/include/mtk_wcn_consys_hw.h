@@ -20,7 +20,6 @@
 #ifndef _MTK_WCN_CONSYS_HW_H_
 #define _MTK_WCN_CONSYS_HW_H_
 
-#include <sync_write.h>
 /*#include <mt_reg_base.h>*/
 #include "wmt_plat.h"
 
@@ -33,6 +32,10 @@
 #endif
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#include <linux/regmap.h>
+#endif
 
 #define ENABLE MTK_WCN_BOOL_TRUE
 #define DISABLE MTK_WCN_BOOL_FALSE
@@ -50,7 +53,10 @@
 	(*(volatile UINT32 *)(REG)) = val;\
 }
 #define CONSYS_REG_READ(addr) (*((volatile UINT32 *)(addr)))
-#define CONSYS_REG_WRITE(addr, data)  mt_reg_sync_writel(data, addr)
+#define CONSYS_REG_WRITE(addr, data) do {\
+	writel(data, (volatile void *)addr); \
+	mb(); \
+} while (0)
 #define CONSYS_REG_WRITE_RANGE(reg, data, end, begin) {\
 	UINT32 val = CONSYS_REG_READ(reg); \
 	SET_BIT_RANGE(&val, data, end, begin); \
@@ -276,6 +282,11 @@ extern CONSYS_EMI_ADDR_INFO mtk_wcn_emi_addr_info;
 
 extern UINT64 gConEmiSize;
 extern phys_addr_t gConEmiPhyBase;
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+extern struct regmap *g_regmap;
+#endif
+
 
 /*******************************************************************************
 *                           P R I V A T E   D A T A

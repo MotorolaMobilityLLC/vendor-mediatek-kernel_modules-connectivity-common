@@ -46,6 +46,14 @@
 #include <connectivity_build_in_adapter.h>
 #include "wmt_lib.h"
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#include <linux/regulator/consumer.h>
+#include <linux/mfd/mt6397/core.h>
+#include <linux/of.h>
+#include <linux/of_platform.h>
+#include <linux/regmap.h>
+#endif
+
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -126,6 +134,10 @@ static struct platform_driver mtk_wmt_dev_drv = {
 /* GPIO part */
 struct pinctrl *consys_pinctrl;
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+struct regmap *g_regmap;
+#endif
+
 /*******************************************************************************
 *                           P R I V A T E   D A T A
 ********************************************************************************
@@ -162,6 +174,39 @@ P_WMT_CONSYS_IC_OPS __weak mtk_wcn_get_consys_ic_ops(VOID)
 	WMT_PLAT_PR_WARN("Does not support on combo\n");
 	return NULL;
 }
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+static VOID mtk_wcn_get_regmap(struct platform_device *pdev)
+{
+	struct device_node *pmic_node;
+	struct platform_device *pmic_pdev;
+	struct mt6397_chip *chip;
+
+	pmic_node = of_parse_phandle(pdev->dev.of_node, "pmic", 0);
+	if (!pmic_node) {
+		WMT_PLAT_PR_INFO("get pmic_node fail\n");
+		return;
+	}
+
+	pmic_pdev = of_find_device_by_node(pmic_node);
+	if (!pmic_pdev) {
+		WMT_PLAT_PR_INFO("get pmic_pdev fail\n");
+		return;
+	}
+
+	chip = dev_get_drvdata(&(pmic_pdev->dev));
+	if (!chip) {
+		WMT_PLAT_PR_INFO("get chip fail\n");
+		return;
+	}
+
+	g_regmap = chip->regmap;
+	if (IS_ERR_VALUE(g_regmap)) {
+		g_regmap = NULL;
+		WMT_PLAT_PR_INFO("get regmap fail\n");
+	}
+}
+#endif
 
 static INT32 mtk_wmt_probe(struct platform_device *pdev)
 {
@@ -230,7 +275,9 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 	if (wmt_consys_ic_ops->ic_bt_wifi_share_v33_spin_lock_init)
 		wmt_consys_ic_ops->ic_bt_wifi_share_v33_spin_lock_init();
 
-
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+	mtk_wcn_get_regmap(pdev);
+#endif
 	if (wmt_consys_ic_ops->consys_ic_pmic_get_from_dts)
 		wmt_consys_ic_ops->consys_ic_pmic_get_from_dts(pdev);
 
