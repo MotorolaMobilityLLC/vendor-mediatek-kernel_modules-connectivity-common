@@ -117,6 +117,7 @@ static INT32 consys_emi_coredump_remapping(UINT8 __iomem **addr, UINT32 enable);
 static INT32 consys_reset_emi_coredump(UINT8 __iomem *addr);
 static INT32 consys_is_connsys_reg(UINT32 addr);
 static VOID consys_resume_dump_info(VOID);
+static VOID consys_set_pdma_axi_rready_force_high(UINT32 enable);
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -202,6 +203,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_reset_emi_coredump = consys_reset_emi_coredump,
 	.consys_ic_is_connsys_reg = consys_is_connsys_reg,
 	.consys_ic_resume_dump_info = consys_resume_dump_info,
+	.consys_ic_set_pdma_axi_rready_force_high = consys_set_pdma_axi_rready_force_high,
 };
 
 /*******************************************************************************
@@ -1030,6 +1032,7 @@ static INT32 consys_read_reg_from_dts(struct platform_device *pdev)
 		conn_reg.mcu_cfg_on_base = (SIZE_T) of_iomap(node, MCU_CFG_ON_BASE_INDEX);
 		conn_reg.mcu_cirq_base = (SIZE_T) of_iomap(node, MCU_CIRQ_BASE_INDEX);
 		conn_reg.mcu_top_misc_on_base = (SIZE_T) of_iomap(node, MCU_TOP_MISC_ON_BASE_INDEX);
+		conn_reg.mcu_conn_hif_pdma_base = (SIZE_T) of_iomap(node, MCU_CONN_HIF_PDMA_BASE_INDEX);
 
 		WMT_PLAT_PR_DBG("Get base mcu(0x%zx), rgu(0x%zx), topckgen(0x%zx), spm(0x%zx)\n",
 				conn_reg.mcu_base, conn_reg.ap_rgu_base,
@@ -1039,6 +1042,8 @@ static INT32 consys_read_reg_from_dts(struct platform_device *pdev)
 				conn_reg.mcu_conn_hif_on_base,
 				conn_reg.mcu_cfg_on_base,
 				conn_reg.mcu_top_misc_on_base);
+		WMT_PLAT_PR_DBG("Get hif_pdma(0x%zx)\n",
+				conn_reg.mcu_conn_hif_pdma_base);
 	} else {
 		WMT_PLAT_PR_ERR("[%s] can't find CONSYS compatible node\n", __func__);
 		return iRet;
@@ -1209,4 +1214,15 @@ static VOID consys_resume_dump_info(VOID)
 		WMT_PLAT_PR_INFO("0x180c1340: 0x%x\n", CONSYS_REG_READ(conn_reg.mcu_top_misc_on_base + 0x340));
 		CONSYS_REG_WRITE(conn_reg.mcu_cfg_on_base + 0x104, 0x0);
 	}
+}
+
+static VOID consys_set_pdma_axi_rready_force_high(UINT32 enable)
+{
+	if (enable)
+		CONSYS_SET_BIT(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_PDMA_AXI_RREADY,
+			       CONSYS_PDMA_AXI_RREADY_MASK);
+	else if ((CONSYS_REG_READ(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_PDMA_AXI_RREADY) &
+		 CONSYS_PDMA_AXI_RREADY_MASK) != 0)
+		CONSYS_CLR_BIT(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_PDMA_AXI_RREADY,
+			       CONSYS_PDMA_AXI_RREADY_MASK);
 }
