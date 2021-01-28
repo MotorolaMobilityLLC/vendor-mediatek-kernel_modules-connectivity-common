@@ -101,6 +101,8 @@ static INT32 consys_read_reg_from_dts(struct platform_device *pdev);
 static UINT32 consys_read_cpupcr(VOID);
 static VOID force_trigger_assert_debug_pin(VOID);
 static P_CONSYS_EMI_ADDR_INFO consys_soc_get_emi_phy_add(VOID);
+static INT32 consys_emi_coredump_remapping(UINT8 __iomem **addr, UINT32 enable);
+static INT32 consys_reset_emi_coredump(UINT8 __iomem *addr);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -177,6 +179,8 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_read_cpupcr = consys_read_cpupcr,
 	.ic_force_trigger_assert_debug_pin = force_trigger_assert_debug_pin,
 	.consys_ic_soc_get_emi_phy_add = consys_soc_get_emi_phy_add,
+	.consys_ic_emi_coredump_remapping = consys_emi_coredump_remapping,
+	.consys_ic_reset_emi_coredump = consys_reset_emi_coredump,
 };
 
 /*******************************************************************************
@@ -1097,4 +1101,39 @@ static P_CONSYS_EMI_ADDR_INFO consys_soc_get_emi_phy_add(VOID)
 P_WMT_CONSYS_IC_OPS mtk_wcn_get_consys_ic_ops(VOID)
 {
 	return &consys_ic_ops;
+}
+
+static INT32 consys_emi_coredump_remapping(UINT8 __iomem **addr, UINT32 enable)
+{
+	if (enable) {
+		*addr = ioremap_nocache(gConEmiPhyBase + CONSYS_EMI_COREDUMP_OFFSET, CONSYS_EMI_MEM_SIZE);
+		if (*addr) {
+			WMT_PLAT_INFO_FUNC("COREDUMP EMI mapping OK virtual(0x%p) physical(0x%x)\n",
+					   *addr, (UINT32) gConEmiPhyBase + CONSYS_EMI_COREDUMP_OFFSET);
+			memset_io(*addr, 0, CONSYS_EMI_MEM_SIZE);
+		} else {
+			WMT_PLAT_ERR_FUNC("EMI mapping fail\n");
+			return -1;
+		}
+	} else {
+		if (*addr) {
+			iounmap(*addr);
+			*addr = NULL;
+		}
+	}
+	return 0;
+}
+
+static INT32 consys_reset_emi_coredump(UINT8 __iomem *addr)
+{
+	if (!addr) {
+		WMT_PLAT_ERR_FUNC("get virtual address fail\n");
+		return -1;
+	}
+	WMT_PLAT_INFO_FUNC("Reset EMI(0xF0080000 ~ 0xF0080400) and (0xF0088400 ~ 0xF0090400)\n");
+	/* reset 0xF0080000 ~ 0xF0080400 (1K) */
+	memset_io(addr, 0, 0x400);
+	/* reset 0xF0088400 ~ 0xF0090400 (32K)  */
+	memset_io(addr + CONSYS_EMI_PAGED_DUMP_OFFSET, 0, 0x8000);
+	return 0;
 }
