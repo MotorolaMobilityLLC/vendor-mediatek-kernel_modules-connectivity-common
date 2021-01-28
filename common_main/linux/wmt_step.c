@@ -1229,6 +1229,11 @@ void wmt_step_func_crtl_do_actions(ENUM_WMTDRV_TYPE_T type, ENUM_WMT_OPID_T opId
 {
 	enum step_trigger_point_id tp_id = STEP_TRIGGER_POINT_NO_DEFINE;
 
+	if (type < WMTDRV_TYPE_BT || type >= WMTDRV_TYPE_MAX) {
+		WMT_ERR_FUNC("STEP failed: Do actions from type: %d\n", type);
+		return;
+	}
+
 	switch (opId) {
 	case WMT_OPID_FUNC_OFF:
 		tp_id = wmt_step_func_ctrl_id[type][0];
