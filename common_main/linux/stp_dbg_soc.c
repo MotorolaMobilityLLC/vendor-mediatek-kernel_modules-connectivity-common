@@ -16,6 +16,7 @@
 #include "btm_core.h"
 #include "stp_core.h"
 #include "mtk_wcn_consys_hw.h"
+#include "wmt_step.h"
 
 #define STP_DBG_PAGED_DUMP_BUFFER_SIZE (32*1024*sizeof(char))
 #define STP_DBG_PAGED_TRACE_SIZE (2048*sizeof(char))
@@ -173,6 +174,9 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 
 	wmt_plat_set_host_dump_state(STP_HOST_DUMP_NOT_START);
 	page_counter = 0;
+	if (mtk_wcn_stp_get_wmt_trg_assert() == 0)
+		WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_FIRMWARE_TRIGGER_ASSERT);
+
 	do {
 		dump_phy_addr = 0;
 		dump_vir_addr = NULL;
