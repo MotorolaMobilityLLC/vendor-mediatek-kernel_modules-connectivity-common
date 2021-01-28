@@ -357,6 +357,7 @@ typedef MTK_WCN_BOOL(*DEEP_SLEEP_CONTROL) (INT32 value);
 
 typedef struct _WMT_IC_OPS_ {
 	UINT32 icId;
+	UINT64 options;
 	SW_INIT sw_init;
 	SW_DEINIT sw_deinit;
 	IC_PIN_CTRL ic_pin_ctrl;
