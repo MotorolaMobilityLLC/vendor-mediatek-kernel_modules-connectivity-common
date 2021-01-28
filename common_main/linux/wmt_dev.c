@@ -1197,7 +1197,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			pOp->op.opId = WMT_OPID_BGW_DS;
 			pOp->op.au4OpData[0] = effectiveLen;	/* packet length */
 			pOp->op.au4OpData[1] = (SIZE_T)&desense_buf[0];	/* packet buffer pointer */
-			pSignal->timeoutValue = MAX_EACH_WMT_CMD;
+			pSignal->timeoutValue = MAX_WMT_OP_TIMEOUT;
 			WMT_INFO_FUNC("OPID(%d) start\n", pOp->op.opId);
 			if (DISABLE_PSM_MONITOR()) {
 				WMT_ERR_FUNC("wake up failed,opid(%d) abort\n", pOp->op.opId);
