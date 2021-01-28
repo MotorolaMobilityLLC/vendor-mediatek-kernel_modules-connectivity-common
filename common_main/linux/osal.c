@@ -176,11 +176,12 @@ INT32 osal_snprintf(PINT8 buf, UINT32 len, const PINT8 fmt, ...)
 	INT32 iRet = 0;
 	va_list args;
 
-	/*va_start(args, fmt); */
 	va_start(args, fmt);
-	/*iRet = snprintf(buf, len, fmt, args); */
 	iRet = vsnprintf(buf, len, fmt, args);
 	va_end(args);
+
+	if (iRet < 0)
+		pr_info("vsnprintf error:%d\n", iRet);
 
 	return iRet;
 }
@@ -188,43 +189,49 @@ INT32 osal_snprintf(PINT8 buf, UINT32 len, const PINT8 fmt, ...)
 INT32 osal_err_print(const PINT8 str, ...)
 {
 	va_list args;
+	INT32 ret;
 	INT8 tempString[DBG_LOG_STR_SIZE];
 
 	va_start(args, str);
-	vsnprintf(tempString, DBG_LOG_STR_SIZE, str, args);
+	ret = vsnprintf(tempString, DBG_LOG_STR_SIZE, str, args);
 	va_end(args);
 
-	pr_err("%s", tempString);
+	if (ret > 0)
+		pr_err("%s", tempString);
 
-	return 0;
+	return ret;
 }
 
 INT32 osal_dbg_print(const PINT8 str, ...)
 {
 	va_list args;
+	INT32 ret;
 	INT8 tempString[DBG_LOG_STR_SIZE];
 
 	va_start(args, str);
-	vsnprintf(tempString, DBG_LOG_STR_SIZE, str, args);
+	ret = vsnprintf(tempString, DBG_LOG_STR_SIZE, str, args);
 	va_end(args);
 
-	pr_debug("%s", tempString);
+	if (ret > 0)
+		pr_debug("%s", tempString);
 
-	return 0;
+	return ret;
 }
 
 INT32 osal_warn_print(const PINT8 str, ...)
 {
 	va_list args;
+	INT32 ret;
 	INT8 tempString[DBG_LOG_STR_SIZE];
 
 	va_start(args, str);
-	vsnprintf(tempString, DBG_LOG_STR_SIZE, str, args);
+	ret = vsnprintf(tempString, DBG_LOG_STR_SIZE, str, args);
 	va_end(args);
 
-	pr_warn("%s", tempString);
+	if (ret > 0)
+		pr_warn("%s", tempString);
 
-	return 0;
+	return ret;
 }
 
 INT32 osal_dbg_assert(INT32 expr, const PINT8 file, INT32 line)
@@ -251,12 +258,16 @@ INT32 osal_dbg_assert_aee(const PINT8 module, const PINT8 detail_description, ..
 	va_list args;
 
 	va_start(args, detail_description);
-	vsnprintf(tempString, DBG_LOG_STR_SIZE, detail_description, args);
-	osal_err_print("[WMT-ASSERT][E][Module]:%s, [INFO]%s\n", module, tempString);
+	if (vsnprintf(tempString, DBG_LOG_STR_SIZE, detail_description, args) > 0) {
+		osal_err_print("[WMT-ASSERT][E][Module]:%s, [INFO]%s\n", module, tempString);
 #ifdef WMT_PLAT_ALPS
-	/* There exists Format-String vulnerability. For safety, we must use the %s format parameter to read data */
-	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_WCN_ISSUE_INFO, module, detail_description, "%s", tempString);
+		/* There exists Format-String vulnerability. For safety, we must use the %s
+		 * format parameter to read data.
+		 */
+		aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_WCN_ISSUE_INFO, module,
+			detail_description, "%s", tempString);
 #endif
+	}
 	va_end(args);
 	return 0;
 }
@@ -268,6 +279,8 @@ INT32 osal_sprintf(PINT8 str, const PINT8 format, ...)
 
 	va_start(args, format);
 	iRet = vsnprintf(str, DBG_LOG_STR_SIZE, format, args);
+	if (iRet < 0)
+		osal_err_print("vsnprintf error [%d]\n", iRet);
 	va_end(args);
 
 	return iRet;
@@ -1487,19 +1500,21 @@ VOID osal_op_raise_signal(P_OSAL_OP pOp, INT32 result)
 
 INT32 osal_ftrace_print(const PINT8 str, ...)
 {
+	int ret = 0;
 #ifdef CONFIG_TRACING
 	va_list args;
 	INT8 tempString[DBG_LOG_STR_SIZE];
 
 	if (ftrace_flag) {
 		va_start(args, str);
-		vsnprintf(tempString, DBG_LOG_STR_SIZE, str, args);
+		ret = vsnprintf(tempString, DBG_LOG_STR_SIZE, str, args);
 		va_end(args);
 
-		trace_printk("%s\n", tempString);
+		if (ret > 0)
+			trace_printk("%s\n", tempString);
 	}
 #endif
-	return 0;
+	return ret;
 }
 
 INT32 osal_ftrace_print_ctrl(INT32 flag)
@@ -1577,6 +1592,9 @@ static VOID _osal_opq_dump(const char *qName, P_OSAL_OP_Q pOpQ)
 			printed += snprintf(buf + printed, OPQ_DUMP_LINE_BUF_SIZE - printed,
 						"[%u(%u)]%p ", idx, (rd & RB_MASK(pOpQ)), op);
 		}
+		if (printed < 1 || printed >= (sizeof(buf) - 1))
+			return;
+
 		buf[printed++] = ' ';
 
 		if (idxInBuf == OPQ_DUMP_OP_PER_LINE - 1  || rd == wt - 1) {
