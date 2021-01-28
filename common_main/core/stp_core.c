@@ -396,8 +396,10 @@ static VOID stp_sdio_trace32_dump(VOID)
 		else if (stp_core_ctx.assert_info_cnt < 20)
 			osal_err_print("[len=%d][type=%d]counter[%d]\n%s\n", stp_core_ctx.rx_counter,
 					stp_core_ctx.parser.type, stp_core_ctx.assert_info_cnt, stp_core_ctx.rx_buf);
-		if (osal_strncmp("coredump end", stp_core_ctx.rx_buf + stp_core_ctx.rx_counter -
-				osal_strlen("coredump end") - 2, osal_strlen("coredump end")) == 0) {
+		if ((stp_core_ctx.rx_counter - osal_strlen("coredump end") - 2 >= 0) &&
+				(osal_strncmp("coredump end", stp_core_ctx.rx_buf
+				+ stp_core_ctx.rx_counter - osal_strlen("coredump end") - 2,
+				osal_strlen("coredump end")) == 0)) {
 			STP_INFO_FUNC("%d coredump packets received\n", stp_core_ctx.assert_info_cnt);
 			STP_ERR_FUNC("coredump end\n");
 			mtk_wcn_stp_ctx_restore();
