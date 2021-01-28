@@ -190,6 +190,10 @@
 #define CONSYS_EMI_FULL_DUMP_OFFSET	(0x10400)
 #define CONSYS_EMI_MET_DATA_OFFSET	(0x0)
 
+/* AP_PCCIF4_BASE Register */
+#define INFRASYS_COMMON_AP2MD_PCCIF4_AP_DUMMY1_OFFSET (0x20)
+#define INFRASYS_COMMON_AP2MD_PCCIF4_AP_PCCIF_ACK_OFFSET (0x14)
+
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
