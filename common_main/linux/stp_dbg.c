@@ -1307,7 +1307,7 @@ INT32 stp_dbg_dmp_append(MTKSTP_DBG_T *stp_dbg, PUINT8 pBuf, INT32 max_len)
 	STP_DBG_HDR_T *pHdr = NULL;
 	const PINT8 *pType = NULL;
 
-	if (!pBuf || max_len < 13) { /* 13: length of "<STP>\n</STP>\n" */
+	if (!pBuf || max_len < 8) { /* 8: length of "<!---->\n" */
 		STP_DBG_WARN_FUNC("invalid param, pBuf:%p, max_len:%d\n", pBuf, max_len);
 		return 0;
 	}
@@ -1319,8 +1319,8 @@ INT32 stp_dbg_dmp_append(MTKSTP_DBG_T *stp_dbg, PUINT8 pBuf, INT32 max_len)
 	dumpSize = stp_dbg->logsys->size;
 	j = stp_dbg->logsys->in;
 
-	/* format <STP> XXX </STP>*/
-	len += osal_sprintf(pBuf, "<STP>\n");
+	/* format <!-- XXX -->*/
+	len += osal_sprintf(pBuf, "<!--\n");
 
 	while (dumpSize > 0) {
 		j--;
@@ -1330,14 +1330,16 @@ INT32 stp_dbg_dmp_append(MTKSTP_DBG_T *stp_dbg, PUINT8 pBuf, INT32 max_len)
 		l = stp_dbg->logsys->queue[j].len - sizeof(STP_DBG_HDR_T);
 		l = l > STP_PKT_SZ ? STP_PKT_SZ : l;
 
-		/* format "\t9999999.999999s, Tx:<STP>n(999999)l(1024)s(7)a(7):xx yy zz\n" */
-		if ((len + 53 + 3 * l) > max_len)
+		/* format "\t9999999.999999s, Tx:<STP>n(999999)l(1024)s(7)a(7)	xx yy zz\n"
+		 * need to consider "-->\n"
+		*/
+		if ((len + 53 + 3 * l + 4) > max_len)
 			break;
 
 		pHdr = (STP_DBG_HDR_T *) &(stp_dbg->logsys->queue[j].buffer[0]);
 		p = (PUINT8)pHdr + sizeof(STP_DBG_HDR_T);
 
-		len += osal_sprintf(pBuf + len, "\t%llu.%06lus, %s:pT%sn(%d)l(%d)s(%d)a(%d) ",
+		len += osal_sprintf(pBuf + len, "\t%llu.%06lus, %s:pT%sn(%d)l(%4d)s(%d)a(%d)\t",
 				    pHdr->l_sec, pHdr->l_nsec,
 				    pHdr->dir == PKT_DIR_TX ? "Tx" : "Rx",
 				    pType[pHdr->type], pHdr->no, pHdr->len, pHdr->seq,
@@ -1352,7 +1354,7 @@ INT32 stp_dbg_dmp_append(MTKSTP_DBG_T *stp_dbg, PUINT8 pBuf, INT32 max_len)
 		dumpSize--;
 	}
 
-	len += osal_sprintf(pBuf + len, "</STP>\n");
+	len += osal_sprintf(pBuf + len, "-->\n");
 
 	spin_unlock_irqrestore(&(stp_dbg->logsys->lock), flags);
 
