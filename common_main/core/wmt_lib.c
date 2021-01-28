@@ -2515,8 +2515,11 @@ VOID wmt_lib_set_rom_patch_info(struct wmt_rom_patch_info *PatchInfo, ENUM_WMTDR
 {
 	P_DEV_WMT pWmtDev = &gDevWmt;
 
-	if (!pWmtDev->pWmtRomPatchInfo[type])
-		pWmtDev->pWmtRomPatchInfo[type] = kcalloc(1, sizeof(struct wmt_rom_patch_info),
+	/* Allow info of a type to be set only once, to avoid inproper usage */
+	if (pWmtDev->pWmtRomPatchInfo[type])
+		return;
+
+	pWmtDev->pWmtRomPatchInfo[type] = kcalloc(1, sizeof(struct wmt_rom_patch_info),
 							  GFP_ATOMIC);
 
 	if (pWmtDev->pWmtRomPatchInfo[type])
