@@ -519,7 +519,12 @@ INT32 wmt_func_gps_on(P_WMT_IC_OPS pOps, P_WMT_GEN_CONF pConf)
 	INT32 iRet = 0;
 	unsigned long ctrlPa1;
 	unsigned long ctrlPa2;
-	UINT8 co_clock_type = (pConf->co_clock_flag & 0x0f);
+	UINT8 co_clock_type = 0;
+
+	if (!pConf)
+		return -1;
+
+	co_clock_type = (pConf->co_clock_flag & 0x0f);
 
 	if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC) {
 		if ((co_clock_type) && (pConf->wmt_gps_lna_enable == 0)) {	/* use SOC external LNA */
@@ -560,7 +565,12 @@ INT32 wmt_func_gps_off(P_WMT_IC_OPS pOps, P_WMT_GEN_CONF pConf)
 	INT32 iRet = 0;
 	unsigned long ctrlPa1 = 0;
 	unsigned long ctrlPa2 = 0;
-	UINT8 co_clock_type = (pConf->co_clock_flag & 0x0f);
+	UINT8 co_clock_type = 0;
+
+	if (!pConf)
+		return -1;
+
+	co_clock_type = (pConf->co_clock_flag & 0x0f);
 
 	if (!osal_test_bit(WMT_GPS_SUSPEND, &gGpsFmState))
 		iRet = wmt_func_gps_pre_off(pOps, pConf);
