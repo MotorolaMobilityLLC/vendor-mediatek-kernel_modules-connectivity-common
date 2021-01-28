@@ -552,7 +552,8 @@ UINT32 stp_dbg_soc_read_debug_crs(ENUM_CONNSYS_DEBUG_CR cr)
 	}
 
 	if (chip_id == 0x6765 || chip_id == 0x3967 || chip_id == 0x6761
-			|| chip_id == 0x6779 || chip_id == 0x6768 || chip_id == 0x6785)
+			|| chip_id == 0x6779 || chip_id == 0x6768 || chip_id == 0x6785
+			|| chip_id == 0x8168)
 		return 0;
 
 	if (conn_reg.mcu_base) {
