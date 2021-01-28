@@ -77,6 +77,7 @@
 
 #include <linux/of_reserved_mem.h>
 
+#define CONSYS_ENABLE_EMI_MPU 1
 #define	REGION_CONN	25
 #define	DOMAIN_AP	0
 #define	DOMAIN_CONN	2
@@ -977,7 +978,7 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 
 static INT32 consys_emi_mpu_set_region_protection(VOID)
 {
-#ifdef CONFIG_MTK_EMI
+#if CONSYS_ENABLE_EMI_MPU
 	struct emi_region_info_t region_info;
 
 	/*set MPU for EMI share Memory */
