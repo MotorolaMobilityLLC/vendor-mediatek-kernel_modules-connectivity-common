@@ -2160,6 +2160,13 @@ VOID stp_dbg_set_coredump_timer_state(CORE_DUMP_STA state)
 		g_core_dump->sm = state;
 }
 
+INT32 stp_dbg_get_coredump_timer_state(VOID)
+{
+	if (g_core_dump)
+		return g_core_dump->sm;
+	return -1;
+}
+
 INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE issue_type)
 {
 	ENUM_ASSERT_INFO_PARSER_TYPE type_index;
