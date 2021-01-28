@@ -1074,10 +1074,10 @@ static INT32 consys_reset_emi_coredump(UINT8 __iomem *addr)
  */
 static INT32 consys_dump_osc_state(P_CONSYS_STATE state)
 {
-	UINT8 __iomem *addr;
 	INT32 ret = MTK_WCN_BOOL_TRUE;
 	/* marked for 6771 first, util it can work find */
 #if 0
+	UINT8 __iomem *addr;
 	UINT8 *mcu_top_misc_on_base = NULL;
 
 	mcu_top_misc_on_base = ioremap_nocache(MCU_TOP_MISC_ON_BASE_ADDR, 0x200);
