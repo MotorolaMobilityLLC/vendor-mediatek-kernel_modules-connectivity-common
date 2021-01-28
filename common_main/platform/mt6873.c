@@ -1742,6 +1742,8 @@ static INT32 consys_dedicated_log_path_init(struct platform_device *pdev)
 		return iret;
 	}
 
+	osal_unsleepable_lock_init(&g_pwr_off_lock);
+
 	irq_config.irq_num = irq_num;
 	irq_config.irq_flag = irq_flag;
 	irq_config.irq_callback = consys_conn2ap_sw_irq_clear;
@@ -1760,6 +1762,7 @@ static VOID consys_dedicated_log_path_deinit(VOID)
 	fw_log_wmt_deinit();
 #endif
 	connsys_dedicated_log_path_apsoc_deinit();
+	osal_unsleepable_lock_deinit(&g_pwr_off_lock);
 }
 
 static INT32 consys_emi_coredump_remapping(UINT8 __iomem **addr, UINT32 enable)
