@@ -330,6 +330,8 @@ static const WMT_OPID_FUNC wmt_core_opfunc[] = {
 	[WMT_OPID_MET_CTRL] = opfunc_met_ctrl,
 };
 
+atomic_t g_wifi_on_off_ready;
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
@@ -346,6 +348,8 @@ INT32 wmt_core_init(VOID)
 		/* WinMo is default to DRV_STS_UNREG; */
 		gMtkWmtCtx.eDrvStatus[i] = DRV_STS_POWER_OFF;
 	}
+
+	atomic_set(&g_wifi_on_off_ready, 0);
 
 	return 0;
 }
@@ -1284,10 +1288,12 @@ static INT32 opfunc_func_on(P_WMT_OP pWmtOp)
 			/* special handling for Wi-Fi */
 			if (drvType == WMTDRV_TYPE_WIFI) {
 				P_OSAL_OP pOp = wmt_lib_get_current_op(&gDevWmt);
+				atomic_set(&g_wifi_on_off_ready, 1);
 
 				pOp->op.opId = WMT_OPID_WLAN_PROBE;
 				if (wmt_lib_put_worker_op(pOp) == MTK_WCN_BOOL_FALSE) {
 					WMT_WARN_FUNC("put to activeWorker queue fail\n");
+					atomic_set(&g_wifi_on_off_ready, 0);
 					return -4;
 				}
 				return 0;
@@ -1354,10 +1360,12 @@ static INT32 opfunc_func_off(P_WMT_OP pWmtOp)
 			/* special handling for Wi-Fi */
 			if (drvType == WMTDRV_TYPE_WIFI) {
 				P_OSAL_OP pOp = wmt_lib_get_current_op(&gDevWmt);
+				atomic_set(&g_wifi_on_off_ready, 1);
 
 				pOp->op.opId = WMT_OPID_WLAN_REMOVE;
 				if (wmt_lib_put_worker_op(pOp) == MTK_WCN_BOOL_FALSE) {
 					WMT_WARN_FUNC("put to activeWorker queue fail\n");
+					atomic_set(&g_wifi_on_off_ready, 0);
 					return -4;
 				}
 				return 0;
@@ -3257,6 +3265,7 @@ static INT32 opfunc_wlan_probe(P_WMT_OP pWmtOp)
 
 
 	iRet = wmt_lib_wlan_lock_aquire();
+	atomic_set(&g_wifi_on_off_ready, 0);
 	if (iRet) {
 		WMT_ERR_FUNC("--->lock wlan_lock failed, iRet=%d\n", iRet);
 		return iRet;
@@ -3340,6 +3349,7 @@ static INT32 opfunc_wlan_remove(P_WMT_OP pWmtOp)
 	UINT32 drvType = pWmtOp->au4OpData[0];
 
 	iRet = wmt_lib_wlan_lock_aquire();
+	atomic_set(&g_wifi_on_off_ready, 0);
 	if (iRet) {
 		WMT_ERR_FUNC("--->lock wlan_lock failed, iRet=%d\n", iRet);
 		return iRet;
@@ -3396,6 +3406,11 @@ static INT32 opfunc_try_pwr_off(P_WMT_OP pWmtOp)
 	INT32 iRet = 0;
 	UINT32 drvType = pWmtOp->au4OpData[0];
 
+	if (atomic_read(&g_wifi_on_off_ready) == 1) {
+		WMT_INFO_FUNC("wlan on/off procedure will be started, do not power off now.\n");
+		return iRet;
+	}
+
 	/* Why it can use try lock?
 	 * Because only wmtd_worker_thread get wlan lock for wifi on/off in current design.
 	 * It means it can decide whether to do Connsys power off after Wifi function on/off complete.
@@ -3404,6 +3419,7 @@ static INT32 opfunc_try_pwr_off(P_WMT_OP pWmtOp)
 		WMT_INFO_FUNC("Can't lock wlan mutex which might be held by wlan on/off procedure.\n");
 		return iRet;
 	}
+
 	if ((gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_BT] == DRV_STS_POWER_OFF) &&
 	    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPS] == DRV_STS_POWER_OFF) &&
 	    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_FM] == DRV_STS_POWER_OFF) &&
