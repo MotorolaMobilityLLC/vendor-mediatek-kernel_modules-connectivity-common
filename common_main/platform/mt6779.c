@@ -51,7 +51,7 @@
 #include "wmt_step.h"
 #include "stp_dbg.h"
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#if (COMMON_KERNEL_EMI_MPU_SUPPORT)
 #ifdef CONFIG_MTK_EMI_LEGACY
 #define CONSYS_ENABLE_EMI_MPU
 #include <mt_emi_api.h>
@@ -65,7 +65,7 @@
 
 #if CONSYS_PMIC_CTRL_ENABLE
 #include <linux/regulator/consumer.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#if (COMMON_KERNEL_PMIC_SUPPORT)
 #include <linux/mfd/mt6359/registers.h>
 #include <linux/mfd/mt6397/core.h>
 #include <linux/regmap.h>
@@ -138,8 +138,10 @@ static VOID consys_ic_clock_fail_dump(VOID);
 static INT32 consys_is_connsys_reg(UINT32 addr);
 static INT32 consys_dump_osc_state(P_CONSYS_STATE state);
 static VOID consys_set_mcif_emi_mpu_protection(MTK_WCN_BOOL enable);
+#if (COMMON_KERNEL_CLK_SUPPORT)
 static MTK_WCN_BOOL consys_need_store_pdev(VOID);
 static UINT32 consys_store_pdev(struct platform_device *pdev);
+#endif
 /*
  * If 1: this platform supports calibration backup/restore.
  * otherwise: 0
@@ -152,12 +154,14 @@ static INT32 consys_is_ant_swap_enable_by_hwid(INT32 pin_num);
 ********************************************************************************
 */
 /* CCF part */
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
+#if (!COMMON_KERNEL_CLK_SUPPORT)
 struct clk *clk_scp_conn_main; /*ctrl conn_power_on/off */
 #endif
 static struct clk *clk_infracfg_ao_ccif4_ap_cg;       /* For direct path */
 
+#if (COMMON_KERNEL_CLK_SUPPORT)
 static struct platform_device *connsys_pdev;
+#endif
 
 /* PMIC part */
 #if CONSYS_PMIC_CTRL_ENABLE
@@ -241,7 +245,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_set_mcif_emi_mpu_protection = consys_set_mcif_emi_mpu_protection,
 	.consys_ic_calibration_backup_restore = consys_calibration_backup_restore_support,
 	.consys_ic_is_ant_swap_enable_by_hwid = consys_is_ant_swap_enable_by_hwid,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#if (COMMON_KERNEL_CLK_SUPPORT)
 	.consys_ic_need_store_pdev = consys_need_store_pdev,
 	.consys_ic_store_pdev = consys_store_pdev,
 #endif
@@ -431,7 +435,7 @@ UINT32 mtk_wcn_consys_jtag_flag_ctrl(UINT32 en)
 
 static INT32 consys_clk_get_from_dts(struct platform_device *pdev)
 {
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
+#if (!COMMON_KERNEL_CLK_SUPPORT)
 	clk_scp_conn_main = devm_clk_get(&pdev->dev, "conn");
 	if (IS_ERR(clk_scp_conn_main)) {
 		WMT_PLAT_PR_ERR("[CCF]cannot get clk_scp_conn_main clock.\n");
@@ -623,7 +627,7 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 			return iRet;
 		}
 		WMT_PLAT_PR_DBG("clk_prepare_enable(clk_infracfg_ao_ccif4_ap_cg) ok\n");
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#if (COMMON_KERNEL_CLK_SUPPORT)
 		iRet = pm_runtime_get_sync(&connsys_pdev->dev);
 		if (iRet)
 			WMT_PLAT_PR_INFO("pm_runtime_get_sync() fail(%d)\n", iRet);
@@ -864,7 +868,7 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 					conn_reg.infra_ao_pericfg_base +
 					INFRASYS_COMMON_AP2MD_PCCIF4_AP_PERI_AP_CCU_CONFIG));
 		}
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#if (COMMON_KERNEL_CLK_SUPPORT)
 		iRet = device_init_wakeup(&connsys_pdev->dev, false);
 		if (iRet)
 			WMT_PLAT_PR_INFO("device_init_wakeup(false) fail.\n");
@@ -1138,7 +1142,7 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 {
 #if CONSYS_PMIC_CTRL_ENABLE
 	if (enable) {
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 		/*Set VCN18_SW_OP_EN as 1*/
 		KERNEL_pmic_ldo_vcn18_lp(SW, 1, 1, SW_OFF);
 #endif
@@ -1150,7 +1154,7 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 			else
 				WMT_PLAT_PR_DBG("enable VCN18 ok\n");
 		}
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#if (COMMON_KERNEL_PMIC_SUPPORT)
 		/* Set VCN18 as low-power mode(1), HW0_OP_EN as 1,
 		 * HW0_OP_CFG as HW_LP(1)
 		 */
@@ -1167,7 +1171,7 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 #if CONSYS_PMIC_CTRL_6635
 		/* delay 300us (VCN18 stable time) */
 		udelay(300);
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 		/*Set VCN13_SW_OP_EN as 1*/
 		KERNEL_pmic_ldo_vcn13_lp(SW, 1, 1, SW_OFF);
 #endif
@@ -1179,7 +1183,7 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 			else
 				WMT_PLAT_PR_DBG("enable VCN13 ok\n");
 		}
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 		/*Set VCN13 SW_LP as 0*/
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN13_LP, 0);
 		/*Set VCN13 as low-power mode(1), HW0_OP_EN as 1, HW0_OP_CFG as HW_LP(1)*/
@@ -1230,7 +1234,7 @@ static VOID consys_vcn28_hw_mode_ctrl(UINT32 enable)
 #if CONSYS_PMIC_CTRL_6635
 	/* 6635 not supported */
 #else
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 	if (enable)
 		/*Set VCN33_2_SW_OP_EN as 1*/
 		KERNEL_pmic_ldo_vcn33_2_lp(SW, 1, 1, SW_OFF);
@@ -1253,7 +1257,7 @@ static INT32 consys_hw_vcn28_ctrl(UINT32 enable)
 #else
 	if (enable) {
 		/*in co-clock mode,need to turn on vcn33_2 when fm on */
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 		/*Set VCN33_2_SW_OP_EN as 1*/
 		KERNEL_pmic_ldo_vcn33_2_lp(SW, 1, 1, SW_OFF);
 #endif
@@ -1262,7 +1266,7 @@ static INT32 consys_hw_vcn28_ctrl(UINT32 enable)
 			regulator_set_voltage(reg_VCN33_2_WIFI, 2800000, 2800000);
 			regulator_enable(reg_VCN33_2_WIFI);
 		}
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 		/*Set VCN33_2 SW_LP as 0*/
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_2_LP, 0);
 		/*Set VCN33_2 as low-power mode(1), HW0_OP_EN as 1, HW0_OP_CFG as HW_OFF(0)*/
@@ -1276,7 +1280,7 @@ static INT32 consys_hw_vcn28_ctrl(UINT32 enable)
 		WMT_PLAT_PR_INFO("turn on vcn33_2 for fm/gps usage in co-clock mode\n");
 	} else {
 		/*in co-clock mode,need to turn off vcn33_2 when fm off */
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 		/*Set VCN33_2 as low-power mode(1), HW0_OP_EN as 0, HW0_OP_CFG as HW_OFF(0)*/
 		KERNEL_pmic_ldo_vcn33_2_lp(SRCLKEN0, 1, 0, HW_OFF);
 #else
@@ -1299,7 +1303,7 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 #if CONSYS_PMIC_CTRL_6635
 	if (enable) {
 #if CONSYS_PMIC_CTRL_ENABLE
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 		/*Set VCN33_1_SW_OP_EN as 1*/
 		KERNEL_pmic_ldo_vcn33_1_lp(SW, 1, 1, SW_OFF);
 #endif
@@ -1309,7 +1313,7 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 			if (regulator_enable(reg_VCN33_1_BT))
 				WMT_PLAT_PR_ERR("WMT do BT PMIC on fail!\n");
 		}
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 		/*Set VCN33_1 SW_LP as 0*/
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_1_LP, 0);
 		/*Set VCN33_1 as low-power mode(1), HW0_OP_EN as 1, HW0_OP_CFG as HW_OFF(0)*/
@@ -1335,7 +1339,7 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 		/*do BT PMIC off */
 		/*switch BT PALDO control from HW mode to SW mode:0x416[5]-->0x0 */
 #if CONSYS_PMIC_CTRL_ENABLE
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 		/*Set VCN33_1 as low-power mode(1), HW0_OP_EN as 0, HW0_OP_CFG as HW_OFF(0)*/
 		KERNEL_pmic_ldo_vcn33_1_lp(SRCLKEN0, 1, 0, HW_OFF);
 		/* restore VCN13 to 1.3V */
@@ -1368,7 +1372,7 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 #if CONSYS_PMIC_CTRL_6635
 	if (enable) {
 #if CONSYS_PMIC_CTRL_ENABLE
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 		/*Set VCN33_1_SW_OP_EN as 1*/
 		KERNEL_pmic_ldo_vcn33_1_lp(SW, 1, 1, SW_OFF);
 #endif
@@ -1378,7 +1382,7 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 			if (regulator_enable(reg_VCN33_1_WIFI))
 				WMT_PLAT_PR_ERR("WMT do WIFI PMIC on fail!\n");
 		}
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 		/*Set VCN33_1 SW_LP as 0*/
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_1_LP, 0);
 		/*Set VCN33_1 as low-power mode(1), HW0_OP_EN as 1, HW0_OP_CFG as HW_OFF(0)*/
@@ -1397,7 +1401,7 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 			if (regulator_enable(reg_VCN33_2_WIFI))
 				WMT_PLAT_PR_ERR("WMT do WIFI PMIC on fail!\n");
 		}
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 		/*Set VCN33_2 SW_LP as 0*/
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_2_LP, 0);
 		/*Set VCN33_2 as low-power mode(1), HW0_OP_EN as 1, HW0_OP_CFG as HW_OFF(0)*/
@@ -1413,7 +1417,7 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 		/*do WIFI PMIC off */
 		/*switch WIFI PALDO control from HW mode to SW mode:0x418[14]-->0x0 */
 #if CONSYS_PMIC_CTRL_ENABLE
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 		/*Set VCN33_1 as low-power mode(1), HW0_OP_EN as 0, HW0_OP_CFG as HW_OFF(0)*/
 		KERNEL_pmic_ldo_vcn33_1_lp(SRCLKEN0, 1, 0, HW_OFF);
 #else
@@ -1422,7 +1426,7 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 #endif
 		if (reg_VCN33_1_WIFI)
 			regulator_disable(reg_VCN33_1_WIFI);
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 		/*Set VCN33_2 as low-power mode(1), HW0_OP_EN as 0, HW0_OP_CFG as HW_OFF(0)*/
 		KERNEL_pmic_ldo_vcn33_2_lp(SRCLKEN0, 1, 0, HW_OFF);
 #else
@@ -1908,6 +1912,7 @@ static INT32 consys_is_ant_swap_enable_by_hwid(INT32 pin_num)
 	return !gpio_get_value(pin_num);
 }
 
+#if (COMMON_KERNEL_CLK_SUPPORT)
 static MTK_WCN_BOOL consys_need_store_pdev(VOID)
 {
 	return MTK_WCN_BOOL_TRUE;
@@ -1918,3 +1923,4 @@ static UINT32 consys_store_pdev(struct platform_device *pdev)
 	connsys_pdev = pdev;
 	return 0;
 }
+#endif
