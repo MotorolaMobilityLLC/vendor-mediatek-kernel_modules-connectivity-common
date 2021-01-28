@@ -1785,8 +1785,6 @@ UINT32 wmt_plat_get_soc_chipid(VOID)
 {
 	UINT32 chipId = mtk_wcn_consys_soc_chipid();
 
-	WMT_PLAT_PR_INFO("current SOC chip:0x%x\n", chipId);
-
 	return chipId;
 }
 EXPORT_SYMBOL(wmt_plat_get_soc_chipid);
