@@ -906,7 +906,7 @@ static INT32 consys_emi_mpu_set_region_protection(VOID)
 	/*set MPU for EMI share Memory */
 	WMT_PLAT_PR_INFO("setting MPU for EMI share memory\n");
 
-	region_info.start = gConEmiPhyBase + SZ_1M / 2;
+	region_info.start = gConEmiPhyBase + SZ_1M / 2 - SZ_64K;
 	region_info.end = gConEmiPhyBase + gConEmiSize - 1;
 	region_info.region = 26;
 	SET_ACCESS_PERMISSION(region_info.apc, LOCK,
