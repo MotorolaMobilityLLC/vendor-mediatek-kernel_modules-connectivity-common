@@ -1457,7 +1457,9 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		WMT_DBG_FUNC("init_coex ok\n");
 	}
 
-	if (wmt_ic_ops_soc.icId == 0x0788) {
+	if (wmt_ic_ops_soc.icId == 0x0788 ||
+	    wmt_ic_ops_soc.icId == 0x6765 ||
+	    wmt_ic_ops_soc.icId == 0x6779) {
 		WMT_INFO_FUNC("coex_config_bt_ctrl:0x%x\n", pWmtGenConf->coex_config_bt_ctrl);
 		coex_config_addjust_table[0].cmd[5] = pWmtGenConf->coex_config_bt_ctrl;
 		WMT_INFO_FUNC("coex_config_bt_ctrl_mode:0x%x\n", pWmtGenConf->coex_config_bt_ctrl_mode);
@@ -1489,6 +1491,14 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 				pWmtGenConf->coex_config_addjust_ble_scan_time_ratio_wifi_slot);
 		coex_config_addjust_table[2].cmd[7] =
 			pWmtGenConf->coex_config_addjust_ble_scan_time_ratio_wifi_slot;
+
+		/* COEX flag is different in these project. */
+		if (wmt_ic_ops_soc.icId == 0x6765 ||
+		    wmt_ic_ops_soc.icId == 0x6779) {
+			coex_config_addjust_table[0].cmd[4] = 0x1e;
+			coex_config_addjust_table[1].cmd[4] = 0x1f;
+			coex_config_addjust_table[2].cmd[4] = 0x20;
+		}
 
 		iRet = wmt_core_init_script(coex_config_addjust_table,
 				osal_array_size(coex_config_addjust_table));
