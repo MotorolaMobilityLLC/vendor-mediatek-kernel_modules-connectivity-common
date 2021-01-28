@@ -1168,6 +1168,7 @@ static INT32 wmt_ctrl_trg_assert(P_WMT_CTRL_DATA pWmtCtrlData)
 	if (mtk_wcn_stp_get_wmt_trg_assert() == 0) {
 		mtk_wcn_stp_dbg_dump_package();
 		mtk_wcn_stp_set_wmt_trg_assert(1);
+		mtk_wcn_stp_assert_flow_ctrl(1);
 
 		iRet = mtk_wcn_stp_wmt_trg_assert();
 		if (iRet == 0) {

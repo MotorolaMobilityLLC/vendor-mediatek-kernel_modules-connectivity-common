@@ -126,6 +126,11 @@ static VOID consys_ic_clock_fail_dump(VOID);
 static INT32 consys_is_connsys_reg(UINT32 addr);
 static PUINT32 consys_resume_dump_info(VOID);
 static VOID consys_set_mcif_emi_mpu_protection(MTK_WCN_BOOL enable);
+/*
+ * If 1: this platform supports calibration backup/restore.
+ * otherwise: 0
+ */
+static INT32 consys_calibration_backup_restore_support(VOID);
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -218,6 +223,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_is_connsys_reg = consys_is_connsys_reg,
 	.consys_ic_resume_dump_info = consys_resume_dump_info,
 	.consys_ic_set_mcif_emi_mpu_protection = consys_set_mcif_emi_mpu_protection,
+	.consys_ic_calibration_backup_restore = consys_calibration_backup_restore_support,
 };
 
 /*******************************************************************************
@@ -1646,4 +1652,9 @@ static VOID consys_set_mcif_emi_mpu_protection(MTK_WCN_BOOL enable)
 {
 	WMT_PLAT_PR_INFO("Setup region 23 for domain 0 as %s\n", enable ? "FORBIDDEN" : "SEC_R_NSEC_R");
 	emi_mpu_set_single_permission(23, 0, enable ? FORBIDDEN : SEC_R_NSEC_R);
+}
+
+static INT32 consys_calibration_backup_restore_support(VOID)
+{
+	return 1;
 }
