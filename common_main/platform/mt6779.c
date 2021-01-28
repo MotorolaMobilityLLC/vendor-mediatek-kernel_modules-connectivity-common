@@ -33,6 +33,11 @@
 #define	PRIMARY_ADIE	0x6635
 #define	SECONDARY_ADIE	0x6631
 
+#define	REGION_CONN	27
+
+#define	DOMAIN_AP	0
+#define	DOMAIN_CONN	2
+
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
@@ -65,6 +70,7 @@
 #include <mt_emi_api.h>
 #endif
 #endif
+#include <memory/mediatek/emi.h>
 
 #if CONSYS_PMIC_CTRL_ENABLE
 #include <linux/regulator/consumer.h>
@@ -1451,21 +1457,18 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 
 static INT32 consys_emi_mpu_set_region_protection(VOID)
 {
-#ifdef CONSYS_ENABLE_EMI_MPU
-	struct emi_region_info_t region_info;
+	struct emimpu_region_t region;
+	unsigned long long start = gConEmiPhyBase;
+	unsigned long long end = gConEmiPhyBase + gConEmiSize - 1;
 
-	/*set MPU for EMI share Memory */
+	mtk_emimpu_init_region(&region, REGION_CONN);
+	mtk_emimpu_set_addr(&region, start, end);
+	mtk_emimpu_set_apc(&region, DOMAIN_AP, MTK_EMIMPU_NO_PROTECTION);
+	mtk_emimpu_set_apc(&region, DOMAIN_CONN, MTK_EMIMPU_NO_PROTECTION);
+	mtk_emimpu_set_protection(&region);
+	mtk_emimpu_free_region(&region);
+
 	WMT_PLAT_PR_INFO("setting MPU for EMI share memory\n");
-
-	region_info.start = gConEmiPhyBase;
-	region_info.end = gConEmiPhyBase + gConEmiSize - 1;
-	region_info.region = 27;
-	SET_ACCESS_PERMISSION(region_info.apc, LOCK,
-			FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
-			FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
-			NO_PROTECTION, FORBIDDEN, NO_PROTECTION);
-	emi_mpu_set_protection(&region_info);
-#endif
 
 	return 0;
 }
