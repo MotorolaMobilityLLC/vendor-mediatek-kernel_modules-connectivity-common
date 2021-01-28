@@ -50,6 +50,7 @@
 #include "stp_dbg.h"
 #include "wmt_step.h"
 #include <linux/workqueue.h>
+#include <linux/rtc.h>
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -102,6 +103,9 @@ struct assert_work_st {
 };
 
 static struct assert_work_st wmt_assert_work;
+
+static INT32 g_bt_no_acl_link;
+static INT32 g_bt_no_br_acl_link;
 
 #define CONSYS_MET_WAIT	(1000*10) /* ms */
 #define MET_DUMP_MAX_NUM (1)
@@ -1001,6 +1005,40 @@ INT32 wmt_lib_ps_stp_cb(MTKSTP_PSM_ACTION_T action)
 #endif
 }
 
+VOID wmt_lib_set_bt_link_status(INT32 type, INT32 value)
+{
+	WMT_INFO_FUNC("t = %d, v = %d, no_acl = %d, no_br = %d\n",
+		type, value, g_bt_no_acl_link, g_bt_no_br_acl_link);
+
+	if (type == 0)
+		g_bt_no_acl_link = value;
+	else if (type == 1)
+		g_bt_no_br_acl_link = value;
+}
+
+/*
+ * Allow BT to reset as long as one of the conditions is true.
+ * 1. no ACL link
+ * 2. no BR ACL link at 2 AM
+ */
+static INT32 wmt_lib_is_bt_able_to_reset(VOID)
+{
+	if (g_bt_no_acl_link)
+		return 1;
+	else if (g_bt_no_br_acl_link) {
+		struct timeval time;
+		ULONG local_time;
+		struct rtc_time tm;
+
+		do_gettimeofday(&time);
+		local_time = (ULONG)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
+		rtc_time_to_tm(local_time, &tm);
+		if (tm.tm_hour == 2)
+			return 1;
+	}
+	return 0;
+}
+
 INT32 wmt_lib_update_fw_patch_chip_rst(VOID)
 {
 	MTK_WCN_BOOL wifiDrvOwn = MTK_WCN_BOOL_FALSE;
@@ -1020,6 +1058,10 @@ INT32 wmt_lib_update_fw_patch_chip_rst(VOID)
 
 		wmt_lib_wlan_lock_release();
 	}
+
+	if (wmt_lib_get_drv_status(WMTDRV_TYPE_BT) == DRV_STS_FUNC_ON &&
+		wmt_lib_is_bt_able_to_reset() == 0)
+		return 0;
 
 	if (wmt_dev_get_early_suspend_state() == MTK_WCN_BOOL_FALSE
 		|| wmt_lib_get_drv_status(WMTDRV_TYPE_FM) == DRV_STS_FUNC_ON
