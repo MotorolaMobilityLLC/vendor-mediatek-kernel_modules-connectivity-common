@@ -78,7 +78,7 @@ do { \
 ********************************************************************************
 */
 #if 1				/* moved from wmt_lib.h */
-extern UINT32 gWmtDbgLvl;
+extern INT32 gWmtDbgLvl;
 #endif
 extern OSAL_BIT_OP_VAR gBtWifiGpsState;
 extern OSAL_BIT_OP_VAR gGpsFmState;
