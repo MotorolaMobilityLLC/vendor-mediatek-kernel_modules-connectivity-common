@@ -1218,7 +1218,7 @@ static const WMT_IC_INFO_S *mt6630_find_wmt_ic_info(const UINT32 hw_ver)
 static INT32 wmt_stp_init_coex(VOID)
 {
 	INT32 iRet;
-	ULONG addr;
+	ULONG addr = 0;
 	WMT_GEN_CONF *pWmtGenConf;
 
 #define COEX_WMT  0
@@ -1343,7 +1343,7 @@ static INT32 mt6630_set_sdio_driving(void)
 {
 	INT32 ret = 0;
 
-	UINT32 addr;
+	UINT32 addr = 0;
 	WMT_GEN_CONF *pWmtGenConf;
 	UINT32 drv_val = 0;
 
