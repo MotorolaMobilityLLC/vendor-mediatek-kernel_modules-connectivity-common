@@ -198,6 +198,13 @@
 #define MCU_GOTO_SLEEP 0x5aa5
 #define MCU_SLEEP_DONE 0x7788
 
+/*CONSYS_MCU_CFG_DBG_LP_INFO*/
+#define CONN_CFG_ON_CONN_ON_HOST_MAILBOX_MCU_ADDR           (conn_reg.mcu_cfg_on_base + 0x104)
+#define CONN_CFG_ON_CONN_ON_MON_CTL_ADDR                    (conn_reg.mcu_top_misc_on_base + 0x320)
+#define CONN_CFG_ON_CONN_ON_DBGSEL_ADDR                     (conn_reg.mcu_top_misc_on_base + 0x310)
+#define CONN_CFG_ON_CONN_ON_MON_FLAG_RECORD_ADDR            (conn_reg.mcu_top_misc_on_base + 0x340)
+#define CONN_CFG_ON_CONN_ON_MON_FLAG_RECORD_MAPPING_AP_ADDR (0x180c1340)
+
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
