@@ -154,6 +154,9 @@ extern UINT32 gStpDbgLvl;
 ********************************************************************************
 */
 typedef INT32(*IF_TX) (const PUINT8 data, const UINT32 size, PUINT32 written_size);
+typedef INT32(*RX_HAS_PENDING_DATA) (VOID);
+typedef INT32(*TX_HAS_PENDING_DATA) (VOID);
+typedef P_OSAL_THREAD(*RX_THREAD_GET) (VOID);
 /* event/signal */
 typedef INT32(*EVENT_SET) (UINT8 function_type);
 typedef INT32(*EVENT_TX_RESUME) (UINT8 winspace);
@@ -170,6 +173,9 @@ typedef OSAL_SLEEPABLE_LOCK STP_CTX_LOCK, *PSTP_CTX_LOCK;
 typedef struct {
 	/* common interface */
 	IF_TX cb_if_tx;
+	RX_HAS_PENDING_DATA cb_rx_has_pending_data;
+	TX_HAS_PENDING_DATA cb_tx_has_pending_data;
+	RX_THREAD_GET cb_rx_thread_get;
 	/* event/signal */
 	EVENT_SET cb_event_set;
 	EVENT_TX_RESUME cb_event_tx_resume;
@@ -212,6 +218,7 @@ typedef struct {
 	UINT8 winspace;		/* current sliding window size */
 	UINT8 expected_rxseq;	/* last rx pkt's seq + 1 */
 	UINT8 retry_times;
+	UINT8 tx_timeout_loop;	/* for extend tx timeout */
 	UINT8 rx_resync;	/* num of 7f7f7f7f before expected_rxseq pkt, indicates if recv series of resync pkt */
 	UINT8 rx_resync_seq;	/* last resync pkg's seq (0xFF if not set), only valid if rx_resync != 0 */
 } mtkstp_sequence_context_struct;
@@ -662,8 +669,9 @@ VOID mtk_stp_dbg_sdio_retry_flag_ctrl(INT32 flag);
 INT32 mtk_stp_sdio_retry_flag_get(VOID);
 VOID mtk_stp_dump_sdio_register(VOID);
 VOID mtk_stp_notify_emi_dump_end(VOID);
-
+INT32 mtk_stp_check_rx_has_pending_data(VOID);
 INT32 mtk_stp_dbg_dmp_append(PUINT8 buf, INT32 max_len);
+P_OSAL_THREAD mtk_stp_rx_thread_get(VOID);
 
 /*******************************************************************************
 *                              F U N C T I O N S
