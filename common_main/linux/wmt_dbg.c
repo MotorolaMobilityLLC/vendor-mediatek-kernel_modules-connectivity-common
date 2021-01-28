@@ -1449,7 +1449,8 @@ static VOID delay_work_func(struct work_struct *work)
 		return;
 	}
 
-	(*wmt_dev_dbg_func[dbgWork->x]) (dbgWork->x, dbgWork->y, dbgWork->z);
+	if ((dbgWork->x >= 0) && (dbgWork->x < 0x33))
+		(*wmt_dev_dbg_func[dbgWork->x]) (dbgWork->x, dbgWork->y, dbgWork->z);
 
 	kvfree(dbgWork);
 }
