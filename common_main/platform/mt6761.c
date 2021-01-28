@@ -1047,10 +1047,6 @@ static VOID force_trigger_assert_debug_pin(VOID)
 
 static UINT32 consys_read_cpupcr(VOID)
 {
-	WMT_PLAT_PR_INFO("0x1800216c(0x%x)\n",
-			CONSYS_REG_READ(conn_reg.mcu_base + 0x16c));
-	WMT_PLAT_PR_INFO("0x18002600(0x%x)\n",
-			CONSYS_REG_READ(conn_reg.mcu_base + 0x600));
 	return CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base + CONSYS_CPUPCR_OFFSET);
 }
 
