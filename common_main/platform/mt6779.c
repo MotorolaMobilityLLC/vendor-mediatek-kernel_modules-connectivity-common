@@ -539,21 +539,21 @@ static VOID consys_hw_reset_bit_set(MTK_WCN_BOOL enable)
 		}
 
 #if CONSYS_PMIC_CTRL_6635
-	/* if(MT6635) CONN_WF_CTRL2 swtich to CONN mode */
-	consys_reg_base = ioremap_nocache(CONSYS_IF_PINMUX_REG_BASE, 0x1000);
-	if (!consys_reg_base) {
-		WMT_PLAT_PR_ERR("consys_if_pinmux_reg_base(%x) ioremap fail\n",
-				CONSYS_IF_PINMUX_REG_BASE);
-		return;
-	}
-	CONSYS_REG_WRITE(consys_reg_base + CONSYS_WF_CTRL2_03_OFFSET,
-			(CONSYS_REG_READ(consys_reg_base + CONSYS_WF_CTRL2_03_OFFSET) &
-			CONSYS_WF_CTRL2_03_MASK) | CONSYS_WF_CTRL2_CONN_MODE);
-	if (consys_reg_base)
-		iounmap(consys_reg_base);
-	else
-		WMT_PLAT_PR_ERR("consys_if_pinmux_reg_base(0x%x) ioremap fail!\n",
-				  CONSYS_IF_PINMUX_REG_BASE);
+		/* if(MT6635) CONN_WF_CTRL2 swtich to CONN mode */
+		consys_reg_base = ioremap_nocache(CONSYS_IF_PINMUX_REG_BASE, 0x1000);
+		if (!consys_reg_base) {
+			WMT_PLAT_PR_ERR("consys_if_pinmux_reg_base(%x) ioremap fail\n",
+					CONSYS_IF_PINMUX_REG_BASE);
+			return;
+		}
+		CONSYS_REG_WRITE(consys_reg_base + CONSYS_WF_CTRL2_03_OFFSET,
+				(CONSYS_REG_READ(consys_reg_base + CONSYS_WF_CTRL2_03_OFFSET) &
+				CONSYS_WF_CTRL2_03_MASK) | CONSYS_WF_CTRL2_CONN_MODE);
+		if (consys_reg_base)
+			iounmap(consys_reg_base);
+		else
+			WMT_PLAT_PR_ERR("consys_if_pinmux_reg_base(0x%x) ioremap fail!\n",
+					  CONSYS_IF_PINMUX_REG_BASE);
 #endif
 	}
 }
@@ -835,7 +835,7 @@ static INT32 polling_consys_chipid(VOID)
 	while (retry-- > 0) {
 		consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_top_misc_off_base +
 				CONSYS_IP_VER_OFFSET);
-		if (consys_ver_id == 0x10020300) {
+		if (consys_ver_id == CONSYS_IP_VER_ID) {
 			WMT_PLAT_PR_INFO("retry(%d)consys version id(0x%08x)\n",
 					retry, consys_ver_id);
 			consys_dl_rom_patch(consys_ver_id);
@@ -954,7 +954,9 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 				WMT_PLAT_PR_DBG("enable VCN18 ok\n");
 		}
 #if CONSYS_PMIC_CTRL_6635
-		KERNEL_upmu_set_reg_value(MT6359_LDO_VCN18_OP_EN, 0x1);
+		/* delay 300us (VCN18 stable time) */
+		udelay(300);
+		KERNEL_upmu_set_reg_value(MT6359_LDO_VCN13_OP_EN, 0x1);
 		if (reg_VCN13) {
 			regulator_set_voltage(reg_VCN13, 1300000, 1300000);
 			if (regulator_enable(reg_VCN13))
