@@ -1243,7 +1243,13 @@ static INT32 opfunc_pwr_off(P_WMT_OP pWmtOp)
 		}
 	}
 
-	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WMT] = DRV_STS_POWER_OFF;
+	if (wmt_lib_power_lock_aquire() == 0) {
+		gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WMT] = DRV_STS_POWER_OFF;
+		wmt_lib_power_lock_release();
+	} else {
+		gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WMT] = DRV_STS_POWER_OFF;
+		WMT_INFO_FUNC("wmt_lib_power_lock_aquire failed\n");
+	}
 
 	/* power off control */
 	ctrlPa1 = 0;
