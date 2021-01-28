@@ -1280,6 +1280,13 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			iRet = -1;
 			break;
 		}
+
+		if (pAtchNum != arg && pPatchInfo != NULL) {
+			kfree(pPatchInfo);
+			pPatchInfo = NULL;
+			wmt_lib_set_patch_info(NULL);
+		}
+
 		pAtchNum = arg;
 
 		if (pPatchInfo == NULL)
