@@ -95,6 +95,7 @@
 #define CFG_CALIBRATION_BACKUP_RESTORE (1)
 #define CALIBRATION_BACKUP_RESTORE_BUFFER_SIZE (640)
 
+#define PATCH_BUILD_TIME_SIZE (16)
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -3205,6 +3206,7 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 	P_WMT_PATCH patchHdr = NULL;
 	PUINT8 pBuf = NULL;
 	PUINT8 pPatchBuf = NULL;
+	PUINT8 patchBuildTimeAddr;
 	UINT32 patchSize;
 	PINT8 cDataTime = NULL;
 	UINT16 u2HwVer = 0;
@@ -3313,6 +3315,16 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 	else
 		iRet = mtk_wcn_soc_normal_patch_dwn(pPatchBuf, patchSize, addressByte);
 
+	/* Set FW patch buildtime into EMI for debugging */
+	if (emiInfo->emi_ram_mcu_buildtime_offset) {
+		patchBuildTimeAddr = ioremap_nocache(emiInfo->emi_ap_phy_addr +
+				emiInfo->emi_patch_mcu_buildtime_offset, PATCH_BUILD_TIME_SIZE);
+		if (patchBuildTimeAddr) {
+			osal_memcpy_toio(patchBuildTimeAddr, cDataTime, PATCH_BUILD_TIME_SIZE);
+			iounmap(patchBuildTimeAddr);
+		} else
+			WMT_ERR_FUNC("ioremap_nocache fail\n");
+	}
 done:
 	if (patchHdr != NULL) {
 		osal_free(patchHdr);
@@ -3532,6 +3544,8 @@ INT32 mtk_wcn_soc_rom_patch_dwn(UINT32 ip_ver, UINT32 fw_ver)
 	UINT32 type;
 	UINT32 patchEmiOffset;
 	PUINT8 patchAddr;
+	UINT32 patchBuildTimeOffset = 0;
+	PUINT8 patchBuildTimeAddr;
 	WMT_CTRL_DATA ctrlData;
 	P_CONSYS_EMI_ADDR_INFO emiInfo;
 
@@ -3628,6 +3642,24 @@ INT32 mtk_wcn_soc_rom_patch_dwn(UINT32 ip_ver, UINT32 fw_ver)
 				iounmap(patchAddr);
 			} else
 				WMT_ERR_FUNC("ioremap_nocache fail\n");
+
+			if (type == WMTDRV_TYPE_BT)
+				patchBuildTimeOffset = emiInfo->emi_ram_bt_buildtime_offset;
+			else if (type == WMTDRV_TYPE_WIFI)
+				patchBuildTimeOffset = emiInfo->emi_ram_wifi_buildtime_offset;
+			else if (type == WMTDRV_TYPE_WMT)
+				patchBuildTimeOffset = emiInfo->emi_ram_mcu_buildtime_offset;
+			/* Set ROM patch buildtime into EMI for debugging */
+			if (patchBuildTimeOffset) {
+				patchBuildTimeAddr = ioremap_nocache(emiInfo->emi_ap_phy_addr +
+						patchBuildTimeOffset, PATCH_BUILD_TIME_SIZE);
+				if (patchBuildTimeAddr) {
+					osal_memcpy_toio(patchBuildTimeAddr, cDataTime,
+							PATCH_BUILD_TIME_SIZE);
+					iounmap(patchBuildTimeAddr);
+				} else
+					WMT_ERR_FUNC("ioremap_nocache fail\n");
+			}
 		} else
 			WMT_ERR_FUNC("The rom patch is too big to overflow on EMI\n");
 
