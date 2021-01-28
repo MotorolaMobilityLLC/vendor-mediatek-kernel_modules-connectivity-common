@@ -428,6 +428,8 @@ extern UINT32 mtk_wmt_get_gps_lna_pin_num(VOID);
 extern VOID mtk_wmt_set_ext_ldo(UINT32 flag);
 extern INT32 mtk_wmt_gps_mcu_ctrl(PUINT8 p_tx_data_buf, UINT32 tx_data_len, PUINT8 p_rx_data_buf,
 				  UINT32 rx_data_buf_len, PUINT32 p_rx_data_len);
+extern VOID mtk_wcn_wmt_set_mcif_mpu_protection(MTK_WCN_BOOL enable);
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
