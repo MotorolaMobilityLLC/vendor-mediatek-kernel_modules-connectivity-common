@@ -2524,6 +2524,11 @@ INT32 mtk_wcn_stp_set_wmt_last_close(UINT32 value)
 	return 0;
 }
 
+INT32 mtk_wcn_stp_is_wmt_last_close(VOID)
+{
+	return STP_WMT_LAST_CLOSE(stp_core_ctx);
+}
+
 
 /*****************************************************************************
 * FUNCTION
