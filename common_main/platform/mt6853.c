@@ -27,6 +27,9 @@
 #define	PRIMARY_ADIE	0x6631
 #define	SECONDARY_ADIE	0x6635
 
+/* if clock of TCXO is controlled by GPIO, CLK_CTRL_TCXOENA_REQ should be 1. */
+#define CLK_CTRL_TCXOENA_REQ 0
+
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
@@ -489,11 +492,14 @@ static VOID consys_set_if_pinmux(MTK_WCN_BOOL enable)
 				(CONSYS_REG_READ(consys_if_pinmux_driving_base +
 				CONSYS_IF_PINMUX_DRIVING_OFFSET_2) &
 				CONSYS_IF_PINMUX_DRIVING_MASK_2) | CONSYS_IF_PINMUX_DRIVING_VALUE_2);
+#if CLK_CTRL_TCXOENA_REQ
 		if (wmt_plat_soc_co_clock_flag_get() == 0) {
 			CONSYS_REG_WRITE(consys_if_pinmux_reg_base + CONSYS_CLOCK_TCXO_MODE_OFFSET,
 					(CONSYS_REG_READ(consys_if_pinmux_reg_base + CONSYS_CLOCK_TCXO_MODE_OFFSET) &
 					CONSYS_CLOCK_TCXO_MODE_MASK) | CONSYS_CLOCK_TCXO_MODE_VALUE);
+			WMT_PLAT_PR_INFO("set GPIO137 pinmux for TCXO mode (Aux5)\n");
 		}
+#endif
 	} else {
 		CONSYS_REG_WRITE(consys_if_pinmux_reg_base + CONSYS_IF_PINMUX_01_OFFSET,
 				CONSYS_REG_READ(consys_if_pinmux_reg_base +
@@ -501,11 +507,13 @@ static VOID consys_set_if_pinmux(MTK_WCN_BOOL enable)
 		CONSYS_REG_WRITE(consys_if_pinmux_reg_base + CONSYS_IF_PINMUX_02_OFFSET,
 				CONSYS_REG_READ(consys_if_pinmux_reg_base +
 				CONSYS_IF_PINMUX_02_OFFSET) & CONSYS_IF_PINMUX_02_MASK);
+#if CLK_CTRL_TCXOENA_REQ
 		if (wmt_plat_soc_co_clock_flag_get() == 0) {
 			CONSYS_REG_WRITE(consys_if_pinmux_reg_base + CONSYS_CLOCK_TCXO_MODE_OFFSET,
 					CONSYS_REG_READ(consys_if_pinmux_reg_base + CONSYS_CLOCK_TCXO_MODE_OFFSET) &
 					CONSYS_CLOCK_TCXO_MODE_MASK);
 		}
+#endif
 	}
 
 	iounmap(consys_if_pinmux_reg_base);
