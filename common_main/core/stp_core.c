@@ -123,7 +123,7 @@ static MTK_WCN_BOOL stp_check_crc(PUINT8 buffer, UINT32 length, UINT16 crc);
 static VOID stp_update_tx_queue(UINT32 txseq);
 static VOID stp_rest_ctx_state(VOID);
 static VOID stp_change_rx_state(mtkstp_parser_state next);
-static void stp_tx_timeout_handler(ULONG data);
+static void stp_tx_timeout_handler(timer_handler_arg arg);
 static VOID stp_dump_data(const PUINT8 buf, const PUINT8 title, const UINT32 len);
 static VOID stp_dump_tx_queue(UINT32 txseq);
 static INT32 stp_is_apply_powersaving(VOID);
@@ -641,7 +641,7 @@ static VOID stp_change_rx_state(mtkstp_parser_state next)
 }
 
 /* static void stp_tx_timeout_handler(void){ */
-static void stp_tx_timeout_handler(ULONG data)
+static void stp_tx_timeout_handler(timer_handler_arg arg)
 {
 	if (mtk_wcn_stp_coredump_start_get() == 1) {
 		STP_WARN_FUNC("Starting coredump, skip tx retry.\n");
