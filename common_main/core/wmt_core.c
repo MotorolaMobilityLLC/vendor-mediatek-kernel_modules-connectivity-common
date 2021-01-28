@@ -106,7 +106,7 @@ static UINT32 g_open_wmt_lte_flag;
 #endif
 static UINT8 gFlashBuf[1024] = { 0 };
 #if CFG_WMT_LTE_COEX_HANDLING
-static UINT8 msg_local_buffer[1300] = { 0 };
+static UINT8 msg_local_buffer[WMT_IDC_MSG_BUFFER] = { 0 };
 #endif
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S
@@ -3105,7 +3105,7 @@ static INT32 opfunc_idc_msg_handling(P_WMT_OP pWmtOp)
 		return iRet;
 	}
 	osal_memcpy(&msg_len, &pTxBuf[0], osal_sizeof(msg_len));
-	if (msg_len > 1200) {
+	if (msg_len > WMT_IDC_MSG_MAX_SIZE) {
 		wmt_lib_idc_lock_release();
 		WMT_ERR_FUNC("abnormal idc msg len:%d\n", msg_len);
 		return -2;
