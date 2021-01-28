@@ -44,6 +44,7 @@
 #include <linux/pinctrl/consumer.h>
 #include <linux/of_gpio.h>
 #include <connectivity_build_in_adapter.h>
+#include "wmt_lib.h"
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -292,10 +293,7 @@ static INT32 mtk_wmt_suspend(struct platform_device *pdev, pm_message_t state)
 
 static INT32 mtk_wmt_resume(struct platform_device *pdev)
 {
-	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_WHEN_AP_RESUME);
-
-	if (wmt_consys_ic_ops->consys_ic_resume_dump_info)
-		wmt_consys_ic_ops->consys_ic_resume_dump_info();
+	wmt_lib_resume_dump_info();
 
 	return 0;
 }
@@ -842,3 +840,10 @@ INT32 mtk_consys_get_wifi_ant_swap_gpio_value(VOID)
 	return value;
 }
 
+INT32 mtk_consys_resume_dump_info(VOID)
+{
+	if (wmt_consys_ic_ops->consys_ic_resume_dump_info)
+		wmt_consys_ic_ops->consys_ic_resume_dump_info();
+
+	return 0;
+}
