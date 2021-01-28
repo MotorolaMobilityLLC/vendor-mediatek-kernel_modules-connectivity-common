@@ -67,6 +67,7 @@
 #include <linux/of_reserved_mem.h>
 
 #include <mtk_clkbuf_ctl.h>
+#include <devapc_public.h>
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -120,6 +121,9 @@ static INT32 consys_is_connsys_reg(UINT32 addr);
 static PUINT32 consys_resume_dump_info(VOID);
 static VOID consys_set_pdma_axi_rready_force_high(UINT32 enable);
 static INT32 consys_calibration_backup_restore_support(VOID);
+static VOID consys_devapc_violation_cb(VOID);
+static VOID consyc_register_devapc_cb(VOID);
+
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -208,6 +212,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_resume_dump_info = consys_resume_dump_info,
 	.consys_ic_set_pdma_axi_rready_force_high = consys_set_pdma_axi_rready_force_high,
 	.consys_ic_calibration_backup_restore = consys_calibration_backup_restore_support,
+	.consys_ic_register_devapc_cb = consyc_register_devapc_cb,
 };
 
 /*******************************************************************************
@@ -222,6 +227,11 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 INT32 rom_patch_dl_flag = 1;
 UINT32 gJtagCtrl;
 UINT32 g_connsys_lp_dump_info[2];
+
+static struct devapc_vio_callbacks devapc_handle = {
+	.id = SUBSYS_CONN,
+	.debug_dump = consys_devapc_violation_cb,
+};
 
 #if CONSYS_ENALBE_SET_JTAG
 #define JTAG_ADDR1_BASE 0x10005000
@@ -1347,4 +1357,18 @@ static VOID consys_set_pdma_axi_rready_force_high(UINT32 enable)
 static INT32 consys_calibration_backup_restore_support(VOID)
 {
 	return 0;
+}
+
+static VOID consys_devapc_violation_cb(VOID)
+{
+	/**
+	 * Don't use wmt_lib_trigger_assert() because it will invoke vmalloc and then cause KE since
+	 * this callback is supposed to be invoked in DEVAPC exception hanlder.
+	 */
+	wmt_core_trigger_stp_assert();
+}
+
+static VOID consyc_register_devapc_cb(VOID)
+{
+	register_devapc_vio_callback(&devapc_handle);
 }
