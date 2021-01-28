@@ -248,7 +248,9 @@ typedef struct _DEV_WMT_ {
 	/* Timer to sync UTC time with connsys */
 	OSAL_TIMER utc_sync_timer;
 	struct work_struct utcSyncWorker;
+	/* Timer for wmt_worker_thread */
 	OSAL_TIMER worker_timer;
+	struct work_struct wmtd_worker_thread_work;
 } DEV_WMT, *P_DEV_WMT;
 
 
