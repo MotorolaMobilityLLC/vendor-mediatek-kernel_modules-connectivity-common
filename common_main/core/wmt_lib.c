@@ -2782,7 +2782,7 @@ UINT32 wmt_lib_co_clock_flag_get(VOID)
 INT32 wmt_lib_wifi_fem_cfg_report(PVOID pvInfoBuf)
 {
 	INT32 iRet = 0;
-	ULONG addr;
+	ULONG addr = 0;
 	WMT_GEN_CONF *pWmtGenConf;
 
 	/* sanity check */
