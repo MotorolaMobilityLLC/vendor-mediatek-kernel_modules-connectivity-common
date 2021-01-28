@@ -50,15 +50,17 @@
 #include <linux/delay.h>
 
 /* ALPS header files */
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0))
 #ifndef CONFIG_RTC_DRV_MT6397
 #include <mtk_rtc.h>
-#elif (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
+#else
 #include <linux/mfd/mt6397/rtc_misc.h>
 #endif
+#endif
+
 #ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
 #include <mtk_6306_gpio.h>
 #endif
-
 /* ALPS and COMBO header files */
 #include <mtk_wcn_cmb_stub.h>
 /* MTK_WCN_COMBO header files */
