@@ -1515,7 +1515,7 @@ static INT32 opfunc_pwr_sv(P_WMT_OP pWmtOp)
 	ULONG ctrlPa1 = 0;
 	ULONG ctrlPa2 = 0;
 
-	typedef INT32(*STP_PSM_CB) (INT32);
+	typedef INT32(*STP_PSM_CB) (const MTKSTP_PSM_ACTION_T);
 	STP_PSM_CB psm_cb = NULL;
 
 	if (pWmtOp->au4OpData[0] == SLEEP) {
