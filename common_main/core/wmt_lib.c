@@ -233,6 +233,9 @@ INT32 wmt_lib_init(VOID)
 			return -1;
 		}
 	}
+	osal_op_history_init(&pDevWmt->wmtd_op_history, 16);
+	osal_op_history_init(&pDevWmt->worker_op_history, 8);
+
 	pThread = &gDevWmt.thread;
 
 	/* Create mtk_wmtd thread */
@@ -1007,7 +1010,6 @@ static INT32 wmtd_thread(void *pvData)
 	P_OSAL_EVENT pEvent = NULL;
 	P_OSAL_OP pOp;
 	INT32 iResult;
-	static DEFINE_RATELIMIT_STATE(_rs, HZ, 10);
 
 	if (pWmtDev == NULL) {
 		WMT_ERR_FUNC("pWmtDev(NULL)\n");
@@ -1035,14 +1037,8 @@ static INT32 wmtd_thread(void *pvData)
 			WMT_WARN_FUNC("get_lxop activeQ fail\n");
 			continue;
 		}
-		if (__ratelimit(&_rs))
-			WMT_INFO_FUNC("pOp(%p):%u(%d)-%x-%zx,%zx,%zx,%zx\n", pOp, pOp->op.opId,
-					atomic_read(&pOp->ref_count),
-					pOp->op.u4InfoBit,
-					pOp->op.au4OpData[0],
-					pOp->op.au4OpData[1],
-					pOp->op.au4OpData[2],
-					pOp->op.au4OpData[3]);
+
+		osal_op_history_save(&pWmtDev->wmtd_op_history, pOp);
 
 #if 0				/* wmt_core_opid_handler will do sanity check on opId, so no usage here */
 		id = lxop_get_opid(pLxOp);
@@ -1235,7 +1231,7 @@ static INT32 wmtd_worker_thread(void *pvData)
 			WMT_WARN_FUNC("get activeWorkerQ fail\n");
 			continue;
 		}
-		WMT_INFO_FUNC("pOp(%p):%u(%d)\n", pOp, pOp->op.opId, atomic_read(&pOp->ref_count));
+		osal_op_history_save(&pWmtDev->worker_op_history, pOp);
 
 		if (osal_test_bit(WMT_STAT_RST_ON, &pWmtDev->state)) {
 			iResult = -2;
@@ -2709,4 +2705,14 @@ INT32 wmt_lib_gps_mcu_ctrl(PUINT8 p_tx_data_buf, UINT32 tx_data_len, PUINT8 p_rx
 	}
 
 	return 0;
+}
+
+VOID wmt_lib_print_wmtd_op_history(VOID)
+{
+	osal_op_history_print(&gDevWmt.wmtd_op_history, "wmtd_thread");
+}
+
+VOID wmt_lib_print_worker_op_history(VOID)
+{
+	osal_op_history_print(&gDevWmt.worker_op_history, "wmtd_worker_thread");
 }
