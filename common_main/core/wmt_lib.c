@@ -1234,19 +1234,19 @@ static VOID wmt_lib_wmtd_worker_thread_work_handler(struct work_struct *work)
 	if (pOp) {
 		switch (pOp->op.opId) {
 		case WMT_OPID_WLAN_PROBE:
-			pbuf = "turn on wifi fail, just collect SYS_FTRACE to DB";
+			pbuf = "DrvWMT turn on wifi fail, just collect SYS_FTRACE to DB";
 			len = osal_strlen(pbuf);
 		break;
 		case WMT_OPID_WLAN_REMOVE:
-			pbuf = "turn off wifi fail, just collect SYS_FTRACE to DB";
+			pbuf = "DrvWMT turn off wifi fail, just collect SYS_FTRACE to DB";
 			len = osal_strlen(pbuf);
 		break;
 		default:
-			pbuf = "unknown op fail, just collect SYS_FTRACE to DB";
+			pbuf = "DrvWMT unknown op fail, just collect SYS_FTRACE to DB";
 			len = osal_strlen(pbuf);
 		break;
 		}
-		wmt_lib_trigger_assert(WMTDRV_TYPE_WIFI, 30);
+		wmt_lib_trigger_assert_keyword(WMTDRV_TYPE_WIFI, 0, pbuf);
 	}
 }
 
@@ -2520,8 +2520,31 @@ INT32 wmt_lib_trigger_reset(VOID)
 
 INT32 wmt_lib_trigger_assert(ENUM_WMTDRV_TYPE_T type, UINT32 reason)
 {
+	return wmt_lib_trigger_assert_keyword(type, reason, NULL);
+}
+
+INT32 wmt_lib_trigger_assert_keyword(ENUM_WMTDRV_TYPE_T type, UINT32 reason, PUINT8 keyword)
+{
+	INT32 iRet = -1;
+	WMT_CTRL_DATA ctrlData;
+
 	wmt_core_set_coredump_state(DRV_STS_FUNC_ON);
-	return wmt_core_ctrl(WMT_CTRL_TRG_ASSERT, (PULONG)&type, (PULONG)&reason);
+
+	ctrlData.ctrlId = (SIZE_T) WMT_CTRL_TRG_ASSERT;
+	ctrlData.au4CtrlData[0] = (SIZE_T) type;
+	ctrlData.au4CtrlData[1] = (SIZE_T) reason;
+	ctrlData.au4CtrlData[2] = (SIZE_T) keyword;
+
+	iRet = wmt_ctrl(&ctrlData);
+	if (iRet) {
+		/* ERROR */
+		WMT_ERR_FUNC
+		    ("WMT-CORE: wmt_core_ctrl failed: type(%d), reason(%d), keyword(%s), iRet(%d)\n",
+		     type, reason, keyword, iRet);
+		osal_assert(0);
+	}
+
+	return iRet;
 }
 
 #if CFG_WMT_PS_SUPPORT
