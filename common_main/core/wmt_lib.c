@@ -2236,6 +2236,7 @@ ENUM_WMTRSTRET_TYPE_T wmt_lib_cmb_rst(ENUM_WMTRSTSRC_TYPE_T src)
 			retval = WMTRSTRET_RETRY;
 			goto rstDone;
 		}
+		mtk_wcn_stp_enable(0);
 	} else {
 		mtk_wcn_stp_enable(0);
 		wmt_lib_psm_lock_release();
