@@ -1065,11 +1065,10 @@ static INT32 wmtd_thread(void *pvData)
 			(pOp->op.opId == WMT_OPID_WLAN_PROBE || pOp->op.opId == WMT_OPID_WLAN_REMOVE))
 			continue;
 
-		if (osal_op_is_wait_for_signal(pOp)) {
-			osal_op_raise_signal(pOp, iResult);
-		} else {
-			/* put Op back to freeQ */
+		if (atomic_dec_and_test(&pOp->ref_count)) {
 			wmt_lib_put_op(&pWmtDev->rFreeOpQ, pOp);
+		} else if (osal_op_is_wait_for_signal(pOp)) {
+			osal_op_raise_signal(pOp, iResult);
 		}
 
 		if (pOp->op.opId == WMT_OPID_EXIT) {
@@ -1234,12 +1233,10 @@ static INT32 wmtd_worker_thread(void *pvData)
 		if (iResult)
 			WMT_WARN_FUNC("opid (0x%x) failed, iRet(%d)\n", pOp->op.opId, iResult);
 
-		if (osal_op_is_wait_for_signal(pOp)) {
-			osal_op_raise_signal(pOp, iResult);
-		} else {
-			/* put Op back to freeQ */
+		if (atomic_dec_and_test(&pOp->ref_count))
 			wmt_lib_put_op(&pWmtDev->rFreeOpQ, pOp);
-		}
+		else if (osal_op_is_wait_for_signal(pOp))
+			osal_op_raise_signal(pOp, iResult);
 	}
 
 	return 0;
@@ -1262,16 +1259,24 @@ static MTK_WCN_BOOL wmt_lib_put_op(P_OSAL_OP_Q pOpQ, P_OSAL_OP pOp)
 		return MTK_WCN_BOOL_FALSE;
 	}
 
+#if defined(CONFIG_MTK_ENG_BUILD) || defined(CONFIG_MT_ENG_BUILD)
+	if (osal_opq_has_op(pOpQ, pOp)) {
+		WMT_ERR_FUNC("Op(%p) already exists in queue(%p)\n", pOp, pOpQ);
+		iRet = -2;
+	}
+#endif
+
 	/* acquire lock success */
 	if (!RB_FULL(pOpQ))
 		RB_PUT(pOpQ, pOp);
-	else
+	else {
+		WMT_WARN_FUNC("RB_FULL(%p -> %p)\n", pOp, pOpQ);
 		iRet = -1;
+	}
 
 	osal_unlock_sleepable_lock(&pOpQ->sLock);
 
 	if (iRet) {
-		WMT_WARN_FUNC("RB_FULL(0x%p)\n", pOpQ);
 		osal_opq_dump("FreeOpQ", &gDevWmt.rFreeOpQ);
 		osal_opq_dump("ActiveOpQ", &gDevWmt.rActiveOpQ);
 		return MTK_WCN_BOOL_FALSE;
@@ -1303,7 +1308,7 @@ static P_OSAL_OP wmt_lib_get_op(P_OSAL_OP_Q pOpQ)
 	osal_unlock_sleepable_lock(&pOpQ->sLock);
 
 	if (pOp == NULL) {
-		WMT_WARN_FUNC("RB_GET(0x%p) return NULL\n", pOpQ);
+		WMT_WARN_FUNC("RB_GET(%p) return NULL\n", pOpQ);
 		osal_opq_dump("FreeOpQ", &gDevWmt.rFreeOpQ);
 		osal_opq_dump("ActiveOpQ", &gDevWmt.rActiveOpQ);
 		osal_assert(pOp);
@@ -1332,13 +1337,7 @@ P_OSAL_OP wmt_lib_get_free_op(VOID)
 	osal_assert(pDevWmt);
 	pOp = wmt_lib_get_op(&pDevWmt->rFreeOpQ);
 	if (pOp) {
-		osal_memset(&pOp->op, 0, osal_sizeof(pOp->op));
-
-		/* at the moment the signal's timeoutValue is initialized by caller of wmt_lib_get_free_op(),
-		 * and the signal's comp is initialized in wmt_lib_put_act_op(),
-		 * leaving us with no choice but to initialize timeoutExtension here.
-		 */
-		pOp->signal.timeoutExtension = 0;
+		osal_memset(pOp, 0, osal_sizeof(OSAL_OP));
 	}
 	return pOp;
 }
@@ -1347,7 +1346,6 @@ MTK_WCN_BOOL wmt_lib_put_act_op(P_OSAL_OP pOp)
 {
 	P_DEV_WMT pWmtDev = &gDevWmt;
 	MTK_WCN_BOOL bRet = MTK_WCN_BOOL_FALSE;
-	MTK_WCN_BOOL bCleanup = MTK_WCN_BOOL_FALSE;
 	P_OSAL_SIGNAL pSignal = NULL;
 	INT32 waitRet = -1;
 
@@ -1359,10 +1357,13 @@ MTK_WCN_BOOL wmt_lib_put_act_op(P_OSAL_OP pOp)
 			WMT_ERR_FUNC("pWmtDev(0x%p), pOp(0x%p)\n", pWmtDev, pOp);
 			break;
 		}
+
+		/* Init ref_count to 1 indicating that current thread holds a ref to it */
+		atomic_set(&pOp->ref_count, 1);
+
 		if ((mtk_wcn_stp_coredump_start_get() != 0) &&
 		    (pOp->op.opId != WMT_OPID_HW_RST) &&
 		    (pOp->op.opId != WMT_OPID_SW_RST) && (pOp->op.opId != WMT_OPID_GPIO_STATE)) {
-			bCleanup = MTK_WCN_BOOL_TRUE;
 			WMT_WARN_FUNC("block tx flag is set\n");
 			break;
 		}
@@ -1373,11 +1374,18 @@ MTK_WCN_BOOL wmt_lib_put_act_op(P_OSAL_OP pOp)
 			osal_signal_init(pSignal);
 		}
 
+		/* Increment ref_count by 1 as wmtd thread will hold a reference also,
+		 * this must be done here instead of on target thread, because
+		 * target thread might not be scheduled until a much later time,
+		 * allowing current thread to decrement ref_count at the end of function,
+		 * putting op back to free queue before target thread has a chance to process.
+		 */
+		atomic_inc(&pOp->ref_count);
+
 		/* put to active Q */
 		bRet = wmt_lib_put_op(&pWmtDev->rActiveOpQ, pOp);
 		if (bRet == MTK_WCN_BOOL_FALSE) {
 			WMT_WARN_FUNC("put to active queue fail\n");
-			bCleanup = MTK_WCN_BOOL_TRUE;
 			break;
 		}
 
@@ -1390,8 +1398,6 @@ MTK_WCN_BOOL wmt_lib_put_act_op(P_OSAL_OP pOp)
 			/* clean it in wmtd */
 			break;
 		}
-		/* wait result, clean it here */
-		bCleanup = MTK_WCN_BOOL_TRUE;
 
 		/* check result */
 		/* wait_ret = wait_for_completion_interruptible_timeout(&pOp->comp, msecs_to_jiffies(u4WaitMs)); */
@@ -1414,7 +1420,7 @@ MTK_WCN_BOOL wmt_lib_put_act_op(P_OSAL_OP pOp)
 		bRet = (pOp->result) ? MTK_WCN_BOOL_FALSE : MTK_WCN_BOOL_TRUE;
 	} while (0);
 
-	if (bCleanup) {
+	if (pOp && atomic_dec_and_test(&pOp->ref_count)) {
 		/* put Op back to freeQ */
 		wmt_lib_put_op(&pWmtDev->rFreeOpQ, pOp);
 	}
