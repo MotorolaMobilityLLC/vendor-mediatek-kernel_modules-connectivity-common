@@ -30,12 +30,6 @@
 */
 
 
-#ifdef CONFIG_PM_WAKELOCKS
-#else
-#include <linux/wakelock.h>
-#endif
-#define CFG_WMT_WAKELOCK_SUPPORT 1
-
 #ifdef DFT_TAG
 #undef DFT_TAG
 #endif
@@ -132,10 +126,8 @@ INT32 wmtPlatLogLvl = WMT_PLAT_LOG_INFO;
 */
 
 static ENUM_STP_TX_IF_TYPE gCommIfType = STP_MAX_IF_TX;
-#if CFG_WMT_WAKELOCK_SUPPORT
 static OSAL_SLEEPABLE_LOCK gOsSLock;
 static OSAL_WAKE_LOCK wmt_wake_lock;
-#endif
 
 irq_cb wmt_plat_bgf_irq_cb;
 device_audio_if_cb wmt_plat_audio_if_cb;
@@ -380,12 +372,11 @@ INT32 wmt_plat_init(P_PWR_SEQ_TIME pPwrSeqTime, UINT32 co_clock_type)
 	iret = mtk_wcn_cmb_stub_reg(&stub_cb);
 
 	/*init wmt function ctrl wakelock if wake lock is supported by host platform */
-#ifdef CFG_WMT_WAKELOCK_SUPPORT
 	osal_strcpy(wmt_wake_lock.name, "wmtFuncCtrl");
 	wmt_wake_lock.init_flag = 0;
 	osal_wake_lock_init(&wmt_wake_lock);
 	osal_sleepable_lock_init(&gOsSLock);
-#endif
+
 	/* init hw */
 	if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC)
 		iret += mtk_wcn_consys_hw_init();
@@ -411,11 +402,9 @@ INT32 wmt_plat_deinit(VOID)
 	/* 2. unreg to cmb_stub */
 	iret += mtk_wcn_cmb_stub_unreg();
 	/*3. wmt wakelock deinit */
-#ifdef CFG_WMT_WAKELOCK_SUPPORT
 	osal_wake_lock_deinit(&wmt_wake_lock);
 	osal_sleepable_lock_deinit(&gOsSLock);
 	WMT_DBG_FUNC("destroy wmt_wake_lock\n");
-#endif
 	WMT_DBG_FUNC("WMT-PLAT: ALPS platform init (%d)\n", iret);
 
 	return 0;
@@ -1548,7 +1537,6 @@ static INT32 wmt_plat_tdm_req_ctrl(ENUM_PIN_STATE state)
 
 INT32 wmt_plat_wake_lock_ctrl(ENUM_WL_OP opId)
 {
-#ifdef CFG_WMT_WAKELOCK_SUPPORT
 	static INT32 counter;
 	INT32 ret = 0;
 
@@ -1579,11 +1567,6 @@ INT32 wmt_plat_wake_lock_ctrl(ENUM_WL_OP opId)
 	}
 
 	return 0;
-#else
-	WMT_WARN_FUNC("WMT-PLAT: host awake function is not supported.");
-
-	return 0;
-#endif
 }
 
 
