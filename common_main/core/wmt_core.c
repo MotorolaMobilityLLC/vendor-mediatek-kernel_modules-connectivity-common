@@ -104,7 +104,9 @@ static UINT8 gAntBuf[1024] = { 0 };
 static UINT32 g_open_wmt_lte_flag;
 #endif
 static UINT8 gFlashBuf[1024] = { 0 };
+#if CFG_WMT_LTE_COEX_HANDLING
 static UINT8 msg_local_buffer[1300] = { 0 };
+#endif
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
