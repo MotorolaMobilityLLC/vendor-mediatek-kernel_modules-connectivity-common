@@ -45,12 +45,21 @@
 #include "wmt_plat.h"
 #include "stp_dbg.h"
 
+#if (COMMON_KERNEL_CLK_SUPPORT)
+#include <soc/mediatek/emi.h>
+#else
 #include <memory/mediatek/emi.h>
+#endif
 
 #if CONSYS_PMIC_CTRL_ENABLE
+#include <linux/regulator/consumer.h>
+#if (COMMON_KERNEL_PMIC_SUPPORT)
+#include <linux/mfd/mt6397/core.h>
+#include <linux/regmap.h>
+#else
 #include <mtk_pmic_api_buck.h>
 #include <upmu_common.h>
-#include <linux/regulator/consumer.h>
+#endif
 #endif
 
 #ifdef CONFIG_MTK_HIBERNATION
@@ -59,7 +68,9 @@
 
 #include <linux/of_reserved_mem.h>
 
+#if (!COMMON_KERNEL_CLK_SUPPORT)
 #include <mtk_clkbuf_ctl.h>
+#endif
 
 /* Direct path */
 #include <mtk_ccci_common.h>
@@ -121,6 +132,10 @@ static INT32 consys_is_host_csr(SIZE_T addr);
 static INT32 consys_dump_osc_state(P_CONSYS_STATE state);
 static VOID consys_set_pdma_axi_rready_force_high(UINT32 enable);
 static VOID consys_set_mcif_emi_mpu_protection(MTK_WCN_BOOL enable);
+#if (COMMON_KERNEL_CLK_SUPPORT)
+static MTK_WCN_BOOL consys_need_store_pdev(VOID);
+static UINT32 consys_store_pdev(struct platform_device *pdev);
+#endif
 /*
  * If 1: this platform supports calibration backup/restore.
  * otherwise: 0
@@ -149,8 +164,14 @@ static UINT64 consys_get_options(VOID);
 ********************************************************************************
 */
 /* CCF part */
+#if (!COMMON_KERNEL_CLK_SUPPORT)
 struct clk *clk_scp_conn_main;	/*ctrl conn_power_on/off */
-struct clk *clk_infracfg_ao_ccif4_ap_cg;       /* For direct path */
+#endif
+static struct clk *clk_infracfg_ao_ccif4_ap_cg;       /* For direct path */
+
+#if (COMMON_KERNEL_CLK_SUPPORT)
+static struct platform_device *connsys_pdev;
+#endif
 
 /* PMIC part */
 #if CONSYS_PMIC_CTRL_ENABLE
@@ -246,6 +267,10 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_sleep_info_read_ctrl = consys_sleep_info_read_ctrl,
 	.consys_ic_sleep_info_clear = consys_sleep_info_clear,
 	.consys_ic_get_options = consys_get_options,
+#if (COMMON_KERNEL_CLK_SUPPORT)
+	.consys_ic_need_store_pdev = consys_need_store_pdev,
+	.consys_ic_store_pdev = consys_store_pdev,
+#endif
 };
 
 static const struct connlog_emi_config connsys_fw_log_parameter = {
@@ -450,13 +475,14 @@ UINT32 mtk_wcn_consys_jtag_flag_ctrl(UINT32 en)
 
 static INT32 consys_clk_get_from_dts(struct platform_device *pdev)
 {
+#if (!COMMON_KERNEL_CLK_SUPPORT)
 	clk_scp_conn_main = devm_clk_get(&pdev->dev, "conn");
 	if (IS_ERR(clk_scp_conn_main)) {
 		WMT_PLAT_PR_ERR("[CCF]cannot get clk_scp_conn_main clock.\n");
 		return PTR_ERR(clk_scp_conn_main);
 	}
 	WMT_PLAT_PR_DBG("[CCF]clk_scp_conn_main=%p\n", clk_scp_conn_main);
-
+#endif
 	clk_infracfg_ao_ccif4_ap_cg = devm_clk_get(&pdev->dev, "ccif");
 	if (IS_ERR(clk_infracfg_ao_ccif4_ap_cg)) {
 		WMT_PLAT_PR_ERR("[CCF]cannot get clk_infracfg_ao_ccif4_ap_cg clock.\n");
@@ -497,11 +523,12 @@ static INT32 consys_co_clock_type(VOID)
 
 static INT32 consys_clock_buffer_ctrl(MTK_WCN_BOOL enable)
 {
+#if (!COMMON_KERNEL_CLK_SUPPORT)
 	if (enable)
-		KERNEL_clk_buf_ctrl(CLK_BUF_CONN, true);	/*open XO_WCN*/
+		clk_buf_ctrl(CLK_BUF_CONN, true);	/*open XO_WCN*/
 	else
-		KERNEL_clk_buf_ctrl(CLK_BUF_CONN, false);	/*close XO_WCN*/
-
+		clk_buf_ctrl(CLK_BUF_CONN, false);	/*close XO_WCN*/
+#endif
 	return 0;
 }
 
@@ -647,14 +674,26 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 			return iRet;
 		}
 		WMT_PLAT_PR_DBG("clk_prepare_enable(clk_infracfg_ao_ccif4_ap_cg) ok\n");
+#if (COMMON_KERNEL_CLK_SUPPORT)
+		iRet = pm_runtime_get_sync(&connsys_pdev->dev);
+		if (iRet)
+			WMT_PLAT_PR_INFO("pm_runtime_get_sync() fail(%d)\n", iRet);
+		else
+			WMT_PLAT_PR_INFO("pm_runtime_get_sync() CONSYS ok\n");
 
+		iRet = device_init_wakeup(&connsys_pdev->dev, true);
+		if (iRet)
+			WMT_PLAT_PR_INFO("device_init_wakeup(true) fail.\n");
+		else
+			WMT_PLAT_PR_INFO("device_init_wakeup(true) CONSYS ok\n");
+#else
 		iRet = clk_prepare_enable(clk_scp_conn_main);
 		if (iRet) {
 			WMT_PLAT_PR_ERR("clk_prepare_enable(clk_scp_conn_main) fail(%d)\n", iRet);
 			return iRet;
 		}
 		WMT_PLAT_PR_DBG("clk_prepare_enable(clk_scp_conn_main) ok\n");
-
+#endif
 		if (conn_reg.infra_ao_pericfg_base != 0) {
 			WMT_PLAT_PR_DBG("CON_STA_REG = %x\n",
 				CONSYS_REG_READ(
@@ -864,10 +903,22 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 					conn_reg.infra_ao_pericfg_base +
 					INFRASYS_COMMON_AP2MD_PCCIF4_AP_PERI_AP_CCU_CONFIG));
 		}
+#if (COMMON_KERNEL_CLK_SUPPORT)
+		iRet = device_init_wakeup(&connsys_pdev->dev, false);
+		if (iRet)
+			WMT_PLAT_PR_INFO("device_init_wakeup(false) fail.\n");
+		else
+			WMT_PLAT_PR_INFO("device_init_wakeup(false) CONSYS ok\n");
 
+		iRet = pm_runtime_put_sync(&connsys_pdev->dev);
+		if (iRet)
+			WMT_PLAT_PR_INFO("pm_runtime_put_sync() fail.\n");
+		else
+			WMT_PLAT_PR_INFO("pm_runtime_put_sync() CONSYS ok\n");
+#else
 		clk_disable_unprepare(clk_scp_conn_main);
 		WMT_PLAT_PR_DBG("clk_disable_unprepare(clk_scp_conn_main) calling\n");
-
+#endif
 		/* Clean CCIF4 ACK status */
 		/* Wait 100us to make sure all ongoing tx interrupt could be
 		 * reset.
@@ -1246,6 +1297,7 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 			/* RC mode */
 			WMT_PLAT_PR_INFO("Turn on VCN18, VCN13 in RC mode\n");
 			/* VCN18 */
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 			/*  PMRC_EN[7][6][5][4] HW_OP_EN = 1, HW_OP_CFG = 0 */
 			KERNEL_pmic_ldo_vcn18_lp(SRCLKEN7, 0, 1, HW_OFF);
 			KERNEL_pmic_ldo_vcn18_lp(SRCLKEN6, 0, 1, HW_OFF);
@@ -1253,7 +1305,22 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 			KERNEL_pmic_ldo_vcn18_lp(SRCLKEN4, 0, 1, HW_OFF);
 			/* SW_LP =1 */
 			KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN18_LP, 1);
-
+#else
+			if (g_regmap) {
+				regmap_write(g_regmap, PMIC_RG_LDO_VCN18_OP_EN_SET_ADDR, 1 << 7);
+				regmap_write(g_regmap, PMIC_RG_LDO_VCN18_OP_CFG_SET_ADDR, 0 << 7);
+				regmap_write(g_regmap, PMIC_RG_LDO_VCN18_OP_EN_SET_ADDR, 1 << 6);
+				regmap_write(g_regmap, PMIC_RG_LDO_VCN18_OP_CFG_SET_ADDR, 0 << 6);
+				regmap_write(g_regmap, PMIC_RG_LDO_VCN18_OP_EN_SET_ADDR, 1 << 5);
+				regmap_write(g_regmap, PMIC_RG_LDO_VCN18_OP_CFG_SET_ADDR, 0 << 5);
+				regmap_write(g_regmap, PMIC_RG_LDO_VCN18_OP_EN_SET_ADDR, 1 << 4);
+				regmap_write(g_regmap, PMIC_RG_LDO_VCN18_OP_CFG_SET_ADDR, 0 << 4);
+				regmap_update_bits(g_regmap,
+					PMIC_RG_LDO_VCN18_LP_ADDR,
+					PMIC_RG_LDO_VCN18_LP_MASK << PMIC_RG_LDO_VCN18_LP_SHIFT,
+					1 << PMIC_RG_LDO_VCN18_LP_SHIFT);
+			}
+#endif
 			/*Set VCN18_SW_EN as 1 and set votage as 1V8*/
 			if (reg_VCN18) {
 				regulator_set_voltage(reg_VCN18, 1800000, 1800000);
@@ -1264,6 +1331,7 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 			}
 
 			/* VCN13 */
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 			/*  PMRC_EN[7][6][5][4] HW_OP_EN = 1, HW_OP_CFG = 0 */
 			KERNEL_pmic_ldo_vcn13_lp(SRCLKEN7, 0, 1, HW_OFF);
 			KERNEL_pmic_ldo_vcn13_lp(SRCLKEN6, 0, 1, HW_OFF);
@@ -1271,7 +1339,22 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 			KERNEL_pmic_ldo_vcn13_lp(SRCLKEN4, 0, 1, HW_OFF);
 			/* SW_LP =1 */
 			KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN13_LP, 1);
-
+#else
+			if (g_regmap) {
+				regmap_write(g_regmap, PMIC_RG_LDO_VCN13_OP_EN_SET_ADDR, 1 << 7);
+				regmap_write(g_regmap, PMIC_RG_LDO_VCN13_OP_CFG_SET_ADDR, 0 << 7);
+				regmap_write(g_regmap, PMIC_RG_LDO_VCN13_OP_EN_SET_ADDR, 1 << 6);
+				regmap_write(g_regmap, PMIC_RG_LDO_VCN13_OP_CFG_SET_ADDR, 0 << 6);
+				regmap_write(g_regmap, PMIC_RG_LDO_VCN13_OP_EN_SET_ADDR, 1 << 5);
+				regmap_write(g_regmap, PMIC_RG_LDO_VCN13_OP_CFG_SET_ADDR, 0 << 5);
+				regmap_write(g_regmap, PMIC_RG_LDO_VCN13_OP_EN_SET_ADDR, 1 << 4);
+				regmap_write(g_regmap, PMIC_RG_LDO_VCN13_OP_CFG_SET_ADDR, 0 << 4);
+				regmap_update_bits(g_regmap,
+					PMIC_RG_LDO_VCN13_LP_ADDR,
+					PMIC_RG_LDO_VCN13_LP_MASK << PMIC_RG_LDO_VCN13_LP_SHIFT,
+					1 << PMIC_RG_LDO_VCN13_LP_SHIFT);
+			}
+#endif
 			if (reg_VCN13) {
 				regulator_set_voltage(reg_VCN13, 1300000, 1300000);
 				if (regulator_enable(reg_VCN13))
@@ -1282,11 +1365,21 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 		} else {
 			/* Legacy mode */
 			WMT_PLAT_PR_INFO("Turn on VCN18, VCN13 in legacy mode\n");
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 			/* HW_OP_EN = 1, HW_OP_CFG = 1 */
 			KERNEL_pmic_ldo_vcn18_lp(SRCLKEN0, 1, 1, HW_LP);
 			/* SW_LP=0 */
 			KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN18_LP, 0);
-
+#else
+			if (g_regmap) {
+				regmap_write(g_regmap, PMIC_RG_LDO_VCN18_OP_EN_SET_ADDR, 1 << 0);
+				regmap_write(g_regmap, PMIC_RG_LDO_VCN18_OP_CFG_SET_ADDR, 1 << 0);
+				regmap_update_bits(g_regmap,
+					PMIC_RG_LDO_VCN18_LP_ADDR,
+					PMIC_RG_LDO_VCN18_LP_MASK << PMIC_RG_LDO_VCN18_LP_SHIFT,
+					0 << PMIC_RG_LDO_VCN18_LP_SHIFT);
+			}
+#endif
 			/*Set VCN18_SW_EN as 1 and set votage as 1V8*/
 			if (reg_VCN18) {
 				regulator_set_voltage(reg_VCN18, 1800000, 1800000);
@@ -1295,12 +1388,21 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 				else
 					WMT_PLAT_PR_DBG("enable VCN18 ok\n");
 			}
-
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 			/* HW_OP_EN = 1, HW_OP_CFG = 1 */
 			KERNEL_pmic_ldo_vcn13_lp(SRCLKEN0, 1, 1, HW_LP);
 			/* SW_LP=0 */
 			KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN13_LP, 0);
-
+#else
+			if (g_regmap) {
+				regmap_write(g_regmap, PMIC_RG_LDO_VCN13_OP_EN_SET_ADDR, 1 << 0);
+				regmap_write(g_regmap, PMIC_RG_LDO_VCN13_OP_CFG_SET_ADDR, 1 << 0);
+				regmap_update_bits(g_regmap,
+					PMIC_RG_LDO_VCN13_LP_ADDR,
+					PMIC_RG_LDO_VCN13_LP_MASK << PMIC_RG_LDO_VCN13_LP_SHIFT,
+					0 << PMIC_RG_LDO_VCN13_LP_SHIFT);
+			}
+#endif
 			if (reg_VCN13) {
 				regulator_set_voltage(reg_VCN13, 1300000, 1300000);
 				if (regulator_enable(reg_VCN13))
@@ -1343,29 +1445,64 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 {
 	if (enable) {
 #if CONSYS_PMIC_CTRL_ENABLE
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 		/* request VS2 to 1.4V by VS2 VOTER (use bit 4) */
 		KERNEL_pmic_set_register_value(PMIC_RG_BUCK_VS2_VOTER_EN_SET, 0x10);
 		/* Set VCN13 to 1.32V */
 		KERNEL_pmic_set_register_value(PMIC_RG_VCN13_VOCAL, 0x2);
-
+#else
+		if (g_regmap) {
+			regmap_update_bits(g_regmap,
+				PMIC_RG_BUCK_VS2_VOTER_EN_SET_ADDR,
+				PMIC_RG_BUCK_VS2_VOTER_EN_SET_MASK << PMIC_RG_BUCK_VS2_VOTER_EN_SET_SHIFT,
+				0x10 << PMIC_RG_BUCK_VS2_VOTER_EN_SET_SHIFT);
+			regmap_update_bits(g_regmap,
+				PMIC_RG_VCN13_VOCAL_ADDR,
+				PMIC_RG_VCN13_VOCAL_MASK << PMIC_RG_VCN13_VOCAL_SHIFT,
+				0x2 << PMIC_RG_VCN13_VOCAL_SHIFT);
+		}
+#endif
 		if (consys_is_rc_mode_enable()) {
 			WMT_PLAT_PR_INFO("Turn on reg_VCN33_1_BT in RC mode\n");
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 			/*  PMRC_EN[6][5]  HW_OP_EN = 1, HW_OP_CFG = 0  */
 			KERNEL_pmic_ldo_vcn33_1_lp(SRCLKEN6, 0, 1, HW_OFF);
 			KERNEL_pmic_ldo_vcn33_1_lp(SRCLKEN5, 0, 1, HW_OFF);
 			/* SW_LP =0 */
 			KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_1_LP, 0);
+#else
+		if (g_regmap) {
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_1_OP_EN_SET_ADDR, 1 << 6);
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_1_OP_CFG_SET_ADDR, 0 << 6);
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_1_OP_EN_SET_ADDR, 1 << 5);
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_1_OP_CFG_SET_ADDR, 0 << 5);
+			regmap_update_bits(g_regmap,
+				PMIC_RG_LDO_VCN33_1_LP_ADDR,
+				PMIC_RG_LDO_VCN33_1_LP_MASK << PMIC_RG_LDO_VCN33_1_LP_SHIFT,
+				0 << PMIC_RG_LDO_VCN33_1_LP_SHIFT);
+		}
+#endif
 			regulator_set_voltage(reg_VCN33_1_BT, 3300000, 3300000);
 			/* SW_EN=0 */
 			/* For RC mode, we don't have to control VCN33_1 & VCN33_2 */
 			/* regulator_disable(reg_VCN33_1_BT); */
 		} else {
 			WMT_PLAT_PR_INFO("Turn on reg_VCN33_1_BT in legacy mode\n");
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 			/* HW_OP_EN = 1, HW_OP_CFG = 0 */
 			KERNEL_pmic_ldo_vcn33_1_lp(SRCLKEN0, 1, 1, HW_OFF);
 			/* SW_LP =0 */
 			KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_1_LP, 0);
-
+#else
+		if (g_regmap) {
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_1_OP_EN_SET_ADDR, 1 << 0);
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_1_OP_CFG_SET_ADDR, 0 << 0);
+			regmap_update_bits(g_regmap,
+				PMIC_RG_LDO_VCN33_1_LP_ADDR,
+				PMIC_RG_LDO_VCN33_1_LP_MASK << PMIC_RG_LDO_VCN33_1_LP_SHIFT,
+				0 << PMIC_RG_LDO_VCN33_1_LP_SHIFT);
+		}
+#endif
 			/*Set VCN33_1_SW_EN as 1 and set votage as 3V3*/
 			if (reg_VCN33_1_WIFI) {
 				regulator_set_voltage(reg_VCN33_1_BT, 3300000, 3300000);
@@ -1379,17 +1516,35 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 		/*do BT PMIC off */
 		/*switch BT PALDO control from HW mode to SW mode:0x416[5]-->0x0 */
 #if CONSYS_PMIC_CTRL_ENABLE
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 		/* restore VCN13 to 1.3V */
 		KERNEL_pmic_set_register_value(PMIC_RG_VCN13_VOCAL, 0);
 		/* clear bit 4 of VS2 VOTER then VS2 can restore to 1.35V */
 		KERNEL_pmic_set_register_value(PMIC_RG_BUCK_VS2_VOTER_EN_CLR, 0x10);
-
+#else
+		if (g_regmap) {
+			regmap_update_bits(g_regmap,
+				PMIC_RG_VCN13_VOCAL_ADDR,
+				PMIC_RG_VCN13_VOCAL_MASK << PMIC_RG_VCN13_VOCAL_SHIFT,
+				0 << PMIC_RG_VCN13_VOCAL_SHIFT);
+			regmap_update_bits(g_regmap,
+				PMIC_RG_BUCK_VS2_VOTER_EN_CLR_ADDR,
+				PMIC_RG_BUCK_VS2_VOTER_EN_CLR_MASK << PMIC_RG_BUCK_VS2_VOTER_EN_CLR_SHIFT,
+				0x10 << PMIC_RG_BUCK_VS2_VOTER_EN_CLR_SHIFT);
+		}
+#endif
 		if (consys_is_rc_mode_enable()) {
 			WMT_PLAT_PR_INFO("Do nothing for reg_VCN33_1_BT under RC mode when disable\n");
 		} else {
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 			/*Set VCN33_1 as low-power mode(1), HW0_OP_EN as 0, HW0_OP_CFG as HW_OFF(0)*/
 			KERNEL_pmic_ldo_vcn33_1_lp(SRCLKEN0, 1, 0, HW_OFF);
-
+#else
+		if (g_regmap) {
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_1_OP_EN_SET_ADDR, 0 << 0);
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_1_OP_CFG_SET_ADDR, 0 << 0);
+		}
+#endif
 			if (reg_VCN33_1_BT)
 				regulator_disable(reg_VCN33_1_BT);
 		}
@@ -1406,32 +1561,66 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 #if CONSYS_PMIC_CTRL_ENABLE
 		if (consys_is_rc_mode_enable()) {
 			WMT_PLAT_PR_INFO("Turn on reg_VCN33_1_WIFI in RC mode\n");
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 			/*  PMRC_EN[6][5]  HW_OP_EN = 1, HW_OP_CFG = 0  */
 			KERNEL_pmic_ldo_vcn33_1_lp(SRCLKEN6, 0, 1, HW_OFF);
 			KERNEL_pmic_ldo_vcn33_1_lp(SRCLKEN5, 0, 1, HW_OFF);
 			/* SW_LP =0 */
 			KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_1_LP, 0);
+#else
+		if (g_regmap) {
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_1_OP_EN_SET_ADDR, 1 << 6);
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_1_OP_CFG_SET_ADDR, 0 << 6);
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_1_OP_EN_SET_ADDR, 1 << 5);
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_1_OP_CFG_SET_ADDR, 0 << 5);
+			regmap_update_bits(g_regmap,
+				PMIC_RG_LDO_VCN33_1_LP_ADDR,
+				PMIC_RG_LDO_VCN33_1_LP_MASK << PMIC_RG_LDO_VCN33_1_LP_SHIFT,
+				0 << PMIC_RG_LDO_VCN33_1_LP_SHIFT);
+		}
+#endif
 			regulator_set_voltage(reg_VCN33_1_WIFI, 3300000, 3300000);
 			/* SW_EN=0 */
 			/* For RC mode, we don't have to control VCN33_1 & VCN33_2 */
 			/* regulator_disable(reg_VCN33_1_WIFI); */
 
 			WMT_PLAT_PR_INFO("Turn on reg_VCN33_2_WIFI in RC mode\n");
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 			/*  PMRC_EN[6]  HW_OP_EN = 1, HW_OP_CFG = 0  */
 			KERNEL_pmic_ldo_vcn33_2_lp(SRCLKEN6, 0, 1, HW_OFF);
 			/* SW_LP =0 */
 			KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_2_LP, 0);
+#else
+		if (g_regmap) {
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_EN_SET_ADDR, 1 << 6);
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_CFG_SET_ADDR, 0 << 6);
+			regmap_update_bits(g_regmap,
+				PMIC_RG_LDO_VCN33_2_LP_ADDR,
+				PMIC_RG_LDO_VCN33_2_LP_MASK << PMIC_RG_LDO_VCN33_2_LP_SHIFT,
+				0 << PMIC_RG_LDO_VCN33_2_LP_SHIFT);
+		}
+#endif
 			regulator_set_voltage(reg_VCN33_2_WIFI, 3300000, 3300000);
 			/* SW_EN=0 */
 			/* For RC mode, we don't have to control VCN33_1 & VCN33_2 */
 			/* regulator_disable(reg_VCN33_2_WIFI); */
 		} else {
 			WMT_PLAT_PR_INFO("Turn on reg_VCN33_1_WIFI in legacy mode\n");
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 			/* HW_OP_EN = 1, HW_OP_CFG = 0 */
 			KERNEL_pmic_ldo_vcn33_1_lp(SRCLKEN0, 1, 1, HW_OFF);
 			/* SW_LP =0 */
 			KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_1_LP, 0);
-
+#else
+		if (g_regmap) {
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_1_OP_EN_SET_ADDR, 1 << 0);
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_1_OP_CFG_SET_ADDR, 0 << 0);
+			regmap_update_bits(g_regmap,
+				PMIC_RG_LDO_VCN33_1_LP_ADDR,
+				PMIC_RG_LDO_VCN33_1_LP_MASK << PMIC_RG_LDO_VCN33_1_LP_SHIFT,
+				0 << PMIC_RG_LDO_VCN33_1_LP_SHIFT);
+		}
+#endif
 			/*Set VCN33_1_SW_EN as 1 and set votage as 3V3*/
 			if (reg_VCN33_1_WIFI) {
 				regulator_set_voltage(reg_VCN33_1_WIFI, 3300000, 3300000);
@@ -1440,11 +1629,21 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 			}
 
 			WMT_PLAT_PR_INFO("Turn on reg_VCN33_2_WIFI in legacy mode\n");
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 			/* HW_OP_EN = 1, HW_OP_CFG = 0 */
 			KERNEL_pmic_ldo_vcn33_2_lp(SRCLKEN0, 1, 1, HW_OFF);
 			/* SW_LP =0 */
 			KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_2_LP, 0);
-
+#else
+		if (g_regmap) {
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_EN_SET_ADDR, 1 << 0);
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_CFG_SET_ADDR, 0 << 0);
+			regmap_update_bits(g_regmap,
+				PMIC_RG_LDO_VCN33_2_LP_ADDR,
+				PMIC_RG_LDO_VCN33_2_LP_MASK << PMIC_RG_LDO_VCN33_2_LP_SHIFT,
+				0 << PMIC_RG_LDO_VCN33_2_LP_SHIFT);
+		}
+#endif
 			/*Set VCN33_1_SW_EN as 1 and set votage as 3V3*/
 			if (reg_VCN33_2_WIFI) {
 				regulator_set_voltage(reg_VCN33_2_WIFI, 3300000, 3300000);
@@ -1461,13 +1660,26 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 		if (consys_is_rc_mode_enable()) {
 			WMT_PLAT_PR_INFO("Do nothing for VCN33_1 under RC mode when disable\n");
 		} else {
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 			/*Set VCN33_1 as low-power mode(1), HW0_OP_EN as 0, HW0_OP_CFG as HW_OFF(0)*/
 			KERNEL_pmic_ldo_vcn33_1_lp(SRCLKEN0, 1, 0, HW_OFF);
+#else
+		if (g_regmap) {
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_1_OP_EN_SET_ADDR, 0 << 0);
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_1_OP_CFG_SET_ADDR, 0 << 0);
+		}
+#endif
 			if (reg_VCN33_1_WIFI)
 				regulator_disable(reg_VCN33_1_WIFI);
-
+#if (!COMMON_KERNEL_PMIC_SUPPORT)
 			/*Set VCN33_2 as low-power mode(1), HW0_OP_EN as 0, HW0_OP_CFG as HW_OFF(0)*/
 			KERNEL_pmic_ldo_vcn33_2_lp(SRCLKEN0, 1, 0, HW_OFF);
+#else
+		if (g_regmap) {
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_EN_SET_ADDR, 0 << 0);
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_CFG_SET_ADDR, 0 << 0);
+		}
+#endif
 			if (reg_VCN33_2_WIFI)
 				regulator_disable(reg_VCN33_2_WIFI);
 		}
@@ -1492,7 +1704,6 @@ static INT32 consys_emi_mpu_set_region_protection(VOID)
 	mtk_emimpu_free_region(&region);
 
 	WMT_PLAT_PR_INFO("setting MPU for EMI share memory\n");
-
 	return 0;
 }
 
@@ -2338,6 +2549,19 @@ INT32 consys_sleep_info_read_ctrl(WMT_SLEEP_COUNT_TYPE type, PUINT64 sleep_count
 
 	return 0;
 }
+
+#if (COMMON_KERNEL_CLK_SUPPORT)
+static MTK_WCN_BOOL consys_need_store_pdev(VOID)
+{
+	return MTK_WCN_BOOL_TRUE;
+}
+
+static UINT32 consys_store_pdev(struct platform_device *pdev)
+{
+	connsys_pdev = pdev;
+	return 0;
+}
+#endif
 
 static UINT64 consys_get_options(VOID)
 {
