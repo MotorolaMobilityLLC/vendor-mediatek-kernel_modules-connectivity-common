@@ -564,7 +564,7 @@ static INT32 _stp_psm_proc(PVOID pvData)
 			continue;
 		}
 		if (__ratelimit(&_rs))
-			STP_PSM_INFO_FUNC("pOp(%p):%u\n", pOp, pOp->op.opId);
+			STP_PSM_INFO_FUNC("pOp(%p):%u(%d)\n", pOp, pOp->op.opId, atomic_read(&pOp->ref_count));
 
 		id = osal_op_get_id(pOp);
 
