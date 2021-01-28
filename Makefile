@@ -9,6 +9,18 @@ ifneq ($(CONFIG_MTK_PLATFORM),)
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 endif
 endif
+
+CONNSYS_PLATFORM := $(TARGET_BOARD_PLATFORM_WMT)
+PRIORITY_TABLE_MTK_PLATFORM := mt6735
+
+ifeq ($(CONNSYS_PLATFORM),)
+CONNSYS_PLATFORM := $(MTK_PLATFORM)
+else
+ifneq ($(filter $(PRIORITY_TABLE_MTK_PLATFORM), $(MTK_PLATFORM)),)
+CONNSYS_PLATFORM := $(MTK_PLATFORM)
+endif
+endif
+
 ###############################################################################
 # Necessary Check
 
@@ -225,7 +237,7 @@ ccflags-y += -D CFG_WMT_EVB
 endif
 
 ifneq ($(filter "CONSYS_%",$(CONFIG_MTK_COMBO_CHIP)),)
-$(MODULE_NAME)-objs += common_main/platform/$(MTK_PLATFORM).o
+$(MODULE_NAME)-objs += common_main/platform/$(CONNSYS_PLATFORM).o
 endif
 
 #$(MODULE_NAME)-objs += common_main/platform/wmt_plat_stub.o
