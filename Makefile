@@ -43,8 +43,13 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/clkbuf_v1
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/clkbuf_v1/$(MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/btif/common/inc
+ifeq ($(strip $(MTK_PLATFORM)), mt6735)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci1
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci1/$(MTK_PLATFORM)
+else
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/$(MTK_PLATFORM)
+endif
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/eemcs
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/conn_md/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include/mach
