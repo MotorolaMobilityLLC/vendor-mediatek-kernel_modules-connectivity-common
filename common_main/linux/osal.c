@@ -1307,6 +1307,11 @@ INT32 osal_unlock_unsleepable_lock(P_OSAL_UNSLEEPABLE_LOCK pUSL)
 	return 0;
 }
 
+INT32 osal_trylock_unsleepable_lock(P_OSAL_UNSLEEPABLE_LOCK pUSL)
+{
+	return spin_trylock_irqsave(&(pUSL->lock), pUSL->flag);
+}
+
 INT32 osal_unsleepable_lock_deinit(P_OSAL_UNSLEEPABLE_LOCK pUSL)
 {
 	return 0;
