@@ -3418,20 +3418,29 @@ INT32 mtk_wcn_stp_wmt_trg_assert(VOID)
 INT32 mtk_wcn_stp_assert_timeout_handle(VOID)
 {
 	INT32 ret = -1;
+#if 0
 	PUINT8 pbuf;
 	INT32 len;
+#endif
 
 	/*host trigger assert but no coredump data will polling fw cpupcr*/
 	STP_INFO_FUNC("host trigger fw assert timeout!\n");
 	stp_dbg_poll_cpupcr(5, 1, 1);
+#if 0
 	pbuf = "Trigger assert timeout ,just collect SYS_FTRACE to DB";
 	len = osal_strlen(pbuf);
 	stp_dbg_trigger_collect_ftrace(pbuf, len);
+
 
 	if (STP_IS_ENABLE_RST(stp_core_ctx))
 		ret = stp_btm_notify_wmt_rst_wq(STP_BTM_CORE(stp_core_ctx));
 	else
 		STP_INFO_FUNC("No to launch whole chip reset! for debugging purpose\n");
+#else
+	/* workaround for firmware can not send assert message*/
+	ret = stp_btm_notify_wmt_dmp_wq(stp_core_ctx.btm);
+#endif
+
 	return ret;
 }
 
