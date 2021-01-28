@@ -181,6 +181,7 @@ typedef enum _ENUM_WMT_OPID_T {
 	WMT_OPID_TRY_PWR_OFF = 35,
 	WMT_OPID_BLANK_STATUS_CTRL = 36,
 	WMT_OPID_MET_CTRL = 37,
+	WMT_OPID_GPS_SUSPEND = 38,
 	WMT_OPID_MAX
 } ENUM_WMT_OPID_T, *P_ENUM_WMT_OPID_T;
 
@@ -248,6 +249,8 @@ typedef struct _WMT_GEN_CONF {
 	/*GPS LNA setting */
 	UINT8 wmt_gps_lna_pin;
 	UINT8 wmt_gps_lna_enable;
+	/*GPS HW suspend setting */
+	UINT8 wmt_gps_suspend_ctrl;
 	/*Power on sequence */
 	UINT8 pwr_on_rtc_slot;
 	UINT8 pwr_on_ldo_slot;
