@@ -233,6 +233,15 @@ typedef enum _ENUM_CONNSYS_DEBUG_CR {
 	CONNSYS_CR_MAX
 } ENUM_CONNSYS_DEBUG_CR, *P_ENUM_CONNSYS_DEBUG_CR;
 
+typedef enum {
+	WMT_SLEEP_COUNT_TOP = 0,
+	WMT_SLEEP_COUNT_MCU = 1,
+	WMT_SLEEP_COUNT_BT = 2,
+	WMT_SLEEP_COUNT_WF = 3,
+	WMT_SLEEP_COUNT_GPS = 4,
+	WMT_SLEEP_COUNT_MAX
+} WMT_SLEEP_COUNT_TYPE;
+
 typedef struct _EMI_CTRL_STATE_OFFSET_ {
 	UINT32 emi_apmem_ctrl_state;
 	UINT32 emi_apmem_ctrl_host_sync_state;
@@ -284,6 +293,25 @@ typedef struct _GPIO_TDM_REQ_INFO_ {
 	UINT32 gpio_number;
 	UINT32 cr_address;
 } GPIO_TDM_REQ_INFO, *P_GPIO_TDM_REQ_INFO;
+
+struct consys_sw_state {
+	UINT16 clock_hif_ctrl;
+	UINT16 clock_umac_ctrl;
+	UINT32 resource_disable_sleep;
+	UINT32 clock_mcu;
+	UINT32 info_time;
+	UINT8 is_gating;
+	UINT8 sub_system;
+};
+
+typedef struct consys_state {
+	UINT32 lp[2];
+	UINT32 gating[2];
+	UINT64 sleep_counter[WMT_SLEEP_COUNT_MAX];
+	UINT64 sleep_timer[WMT_SLEEP_COUNT_MAX];
+	struct consys_sw_state sw_state;
+} CONSYS_STATE, *P_CONSYS_STATE;
+
 
 typedef VOID(*irq_cb) (VOID);
 typedef INT32(*device_audio_if_cb) (enum CMB_STUB_AIF_X aif, MTK_WCN_BOOL share);
