@@ -2706,8 +2706,10 @@ INT32 stp_dbg_start_emi_dump(VOID)
 		return -1;
 	}
 
+#if 0
 	if (mtk_wcn_wlan_emi_mpu_set_protection)
 		(*mtk_wcn_wlan_emi_mpu_set_protection)(false);
+#endif
 	stp_dbg_set_coredump_timer_state(CORE_DUMP_DOING);
 	osal_timer_modify(&g_core_dump->dmp_emi_timer, STP_EMI_DUMP_TIMEOUT);
 	ret = stp_dbg_nl_send_data(EMICOREDUMP_CMD, sizeof(EMICOREDUMP_CMD));
@@ -2731,8 +2733,10 @@ INT32 stp_dbg_stop_emi_dump(VOID)
 	}
 
 	mtk_wcn_stp_emi_dump_flag_ctrl(1);
+#if 0
 	if (mtk_wcn_wlan_emi_mpu_set_protection)
 		(*mtk_wcn_wlan_emi_mpu_set_protection)(true);
+#endif
 	osal_timer_stop(&g_core_dump->dmp_emi_timer);
 	return 0;
 }
