@@ -152,6 +152,9 @@ static INT32 consys_is_ant_swap_enable_by_hwid(INT32 pin_num);
 ********************************************************************************
 */
 /* CCF part */
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
+struct clk *clk_scp_conn_main; /*ctrl conn_power_on/off */
+#endif
 static struct clk *clk_infracfg_ao_ccif4_ap_cg;       /* For direct path */
 
 static struct platform_device *connsys_pdev;
