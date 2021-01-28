@@ -49,6 +49,7 @@
 #include <linux/pm_wakeup.h>
 #include <linux/log2.h>
 #include <linux/atomic.h>
+#include <linux/ratelimit.h>
 
 #ifndef _TYPEDEFS_H		/*fix redifine */
 typedef char INT8, *PINT8, **PPINT8;
