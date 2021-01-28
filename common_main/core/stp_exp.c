@@ -71,6 +71,9 @@
 static MTK_WCN_STP_IF_TX stp_uart_if_tx;
 static MTK_WCN_STP_IF_TX stp_sdio_if_tx;
 static MTK_WCN_STP_IF_TX stp_btif_if_tx;
+static MTK_WCN_STP_RX_HAS_PENDING_DATA stp_btif_rx_has_pending_data;
+static MTK_WCN_STP_TX_HAS_PENDING_DATA stp_btif_tx_has_pending_data;
+static MTK_WCN_STP_RX_THREAD_GET stp_btif_rx_thread_get;
 static ENUM_STP_TX_IF_TYPE g_stp_if_type = STP_MAX_IF_TX;
 static MTK_WCN_STP_IF_RX stp_if_rx;
 static MTK_WCN_STP_EVENT_CB event_callback_tbl[MTKSTP_MAX_TASK_NUM] = { 0x0 };
@@ -104,6 +107,27 @@ static INT32 mtk_wcn_sys_if_tx(const PUINT8 data, const UINT32 size, PUINT32 wri
 		return stp_btif_if_tx != NULL ? (*stp_btif_if_tx) (data, size, written_size) : -1;
 	/*if (g_stp_if_type >= STP_MAX_IF_TX) *//* George: remove ALWAYS TRUE condition */
 	return -1;
+}
+
+static INT32 mtk_wcn_sys_rx_has_pending_data(VOID)
+{
+	if (g_stp_if_type == STP_BTIF_IF_TX)
+		return stp_btif_rx_has_pending_data != NULL ? (*stp_btif_rx_has_pending_data) () : -1;
+	return -1;
+}
+
+static INT32 mtk_wcn_sys_tx_has_pending_data(VOID)
+{
+	if (g_stp_if_type == STP_BTIF_IF_TX)
+		return stp_btif_tx_has_pending_data != NULL ? (*stp_btif_tx_has_pending_data) () : -1;
+	return -1;
+}
+
+static P_OSAL_THREAD mtk_wcn_sys_rx_thread_get(VOID)
+{
+	if (g_stp_if_type == STP_BTIF_IF_TX)
+		return stp_btif_rx_thread_get != NULL ? (*stp_btif_rx_thread_get) () : NULL;
+	return NULL;
 }
 
 static INT32 mtk_wcn_sys_event_set(UINT8 function_type)
@@ -231,12 +255,72 @@ INT32 mtk_wcn_stp_register_tx_event_cb(INT32 type, MTK_WCN_STP_EVENT_CB func)
 EXPORT_SYMBOL(mtk_wcn_stp_register_tx_event_cb);
 #endif
 
+#if STP_EXP_HID_API_EXPORT
+INT32 _mtk_wcn_stp_register_rx_has_pending_data(ENUM_STP_TX_IF_TYPE stp_if, MTK_WCN_STP_RX_HAS_PENDING_DATA func)
+#else
+INT32 mtk_wcn_stp_register_rx_has_pending_data(ENUM_STP_TX_IF_TYPE stp_if, MTK_WCN_STP_RX_HAS_PENDING_DATA func)
+#endif
+{
+	if (stp_if == STP_BTIF_IF_TX)
+		stp_btif_rx_has_pending_data = func;
+	else {
+		osal_dbg_print("[%s] STP_IF_TX(%d) out of boundary.\n", __func__, stp_if);
+		return -1;
+	}
+
+	return 0;
+}
+#if !STP_EXP_HID_API_EXPORT
+EXPORT_SYMBOL(mtk_wcn_stp_register_rx_has_pending_data);
+#endif
+
+#if STP_EXP_HID_API_EXPORT
+INT32 _mtk_wcn_stp_register_tx_has_pending_data(ENUM_STP_TX_IF_TYPE stp_if, MTK_WCN_STP_TX_HAS_PENDING_DATA func)
+#else
+INT32 mtk_wcn_stp_register_tx_has_pending_data(ENUM_STP_TX_IF_TYPE stp_if, MTK_WCN_STP_TX_HAS_PENDING_DATA func)
+#endif
+{
+	if (stp_if == STP_BTIF_IF_TX)
+		stp_btif_tx_has_pending_data = func;
+	else {
+		osal_dbg_print("[%s] STP_IF_TX(%d) out of boundary.\n", __func__, stp_if);
+		return -1;
+	}
+
+	return 0;
+}
+#if !STP_EXP_HID_API_EXPORT
+EXPORT_SYMBOL(mtk_wcn_stp_register_tx_has_pending_data);
+#endif
+
+#if STP_EXP_HID_API_EXPORT
+INT32 _mtk_wcn_stp_register_rx_thread_get(ENUM_STP_TX_IF_TYPE stp_if, MTK_WCN_STP_RX_THREAD_GET func)
+#else
+INT32 mtk_wcn_stp_register_rx_thread_get(ENUM_STP_TX_IF_TYPE stp_if, MTK_WCN_STP_RX_THREAD_GET func)
+#endif
+{
+	if (stp_if == STP_BTIF_IF_TX)
+		stp_btif_rx_thread_get = func;
+	else {
+		osal_dbg_print("[%s] STP_IF_TX(%d) out of boundary.\n", __func__, stp_if);
+		return -1;
+	}
+
+	return 0;
+}
+#if !STP_EXP_HID_API_EXPORT
+EXPORT_SYMBOL(mtk_wcn_stp_register_rx_thread_get);
+#endif
+
 INT32 stp_drv_init(VOID)
 {
 	INT32 ret = 0;
 
 	mtkstp_callback cb = {
 		.cb_if_tx = mtk_wcn_sys_if_tx,
+		.cb_rx_has_pending_data = mtk_wcn_sys_rx_has_pending_data,
+		.cb_tx_has_pending_data = mtk_wcn_sys_tx_has_pending_data,
+		.cb_rx_thread_get = mtk_wcn_sys_rx_thread_get,
 		.cb_event_set = mtk_wcn_sys_event_set,
 		.cb_event_tx_resume = mtk_wcn_sys_event_tx_resume,
 		.cb_check_funciton_status = mtk_wcn_sys_check_function_status
