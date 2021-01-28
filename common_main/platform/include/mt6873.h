@@ -256,6 +256,7 @@
 /**********************************************************************/
 /* Base: conn_hif_on_base (0x1800_7000) */
 /**********************************************************************/
+#define CONN_HIF_ON_BASE_ADDR				(0x18007000)
 #define CONN_HOST_CR_SLEEP_CNT_OFFSET			(0x58)
 #define CONN_SLEEP_INFO_CTRL_OFFSET			(0x5c)
 #define CONN_SLEEP_INFO_READ_CTRL_TIMER_OFFSET		(0x60)
