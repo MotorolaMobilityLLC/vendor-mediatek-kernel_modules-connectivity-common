@@ -106,6 +106,7 @@ static INT32 wmt_dbg_stp_sdio_reg_write(INT32 par1, INT32 address, INT32 value);
 static INT32 wmt_dbg_show_thread_debug_info(INT32 par1, INT32 address, INT32 value);
 static INT32 wmt_dbg_met_ctrl(INT32 par1, INT32 met_ctrl, INT32 log_ctrl);
 static INT32 wmt_dbg_emi_dump(INT32 par1, INT32 offset, INT32 size);
+static INT32 wmt_dbg_fw_log_ctrl(INT32 par1, INT32 onoff, INT32 level);
 
 static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x0] = wmt_dbg_psm_ctrl,
@@ -154,6 +155,7 @@ static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x25] = wmt_dbg_stp_sdio_reg_write,
 	[0x26] = wmt_dbg_met_ctrl,
 	[0x30] = wmt_dbg_show_thread_debug_info,
+	[0x27] = wmt_dbg_fw_log_ctrl,
 	[0x99] = wmt_dbg_emi_dump,
 };
 
@@ -769,6 +771,33 @@ INT32 wmt_dbg_met_ctrl(INT32 par1, INT32 met_ctrl, INT32 log_ctrl)
 		      ret != 0 ? "failed" : "succeed");
 
 	return ret;
+}
+
+static INT32 wmt_dbg_fw_log_ctrl(INT32 par1, INT32 onoff, INT32 level)
+{
+	/* Parameter format
+	 *	onoff:
+	 *		- bit 24~31: unused
+	 *		- bit 16~23: subsys type
+	 *		- bit 8~15 : unused
+	 *		- bit 0~7  : on/off setting
+	 *	level: only lowest 8 bites will be used.
+	 *		- bit 8~31 : unused
+	 *		- bit 0~7  : log level setting
+	 * Example:
+	 *	1. To turn on MCU log
+	 *		onoff = 0x0001
+	 *	2. To turn on Subsys Z log
+	 *		onoff = 0x0z01 (z = subsys)
+	 *	3. To turn off Subsys Z log
+	 *		onoff = 0x0z00 (z = subsys)
+	 */
+	UINT8 type = (unsigned char)(onoff >> 16);
+
+	WMT_INFO_FUNC("Configuring firmware log: type:%d, on/off:%d, level:%d\n",
+			type, (unsigned char)onoff, (unsigned char)level);
+	wmt_lib_fw_log_ctrl(type, (unsigned char)onoff, (unsigned char)level);
+	return 0;
 }
 
 INT32 wmt_dbg_ut_test(INT32 par1, INT32 par2, INT32 par3)
