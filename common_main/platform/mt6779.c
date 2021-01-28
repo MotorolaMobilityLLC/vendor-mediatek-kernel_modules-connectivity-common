@@ -67,6 +67,9 @@
 
 #include <mtk_clkbuf_ctl.h>
 
+/* Direct path */
+#include <mtk_ccci_common.h>
+
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -128,6 +131,7 @@ struct bt_wifi_v33_status gBtWifiV33;
 
 /* CCF part */
 struct clk *clk_scp_conn_main;	/*ctrl conn_power_on/off */
+struct clk *clk_infracfg_ao_ccif4_ap_cg;       /* For direct path */
 
 /* PMIC part */
 #if CONSYS_PMIC_CTRL_ENABLE
@@ -400,6 +404,13 @@ static INT32 consys_clk_get_from_dts(struct platform_device *pdev)
 	}
 	WMT_PLAT_PR_DBG("[CCF]clk_scp_conn_main=%p\n", clk_scp_conn_main);
 
+	clk_infracfg_ao_ccif4_ap_cg = devm_clk_get(&pdev->dev, "ccif");
+	if (IS_ERR(clk_infracfg_ao_ccif4_ap_cg)) {
+		WMT_PLAT_PR_ERR("[CCF]cannot get clk_infracfg_ao_ccif4_ap_cg clock.\n");
+		return PTR_ERR(clk_infracfg_ao_ccif4_ap_cg);
+	}
+	WMT_PLAT_PR_DBG("[CCF]clk_infracfg_ao_ccif4_ap_cg=%p\n", clk_infracfg_ao_ccif4_ap_cg);
+
 	return 0;
 }
 
@@ -574,9 +585,18 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 	if (enable) {
 #if CONSYS_PWR_ON_OFF_API_AVAILABLE
 		iRet = clk_prepare_enable(clk_scp_conn_main);
-		if (iRet)
+		if (iRet) {
 			WMT_PLAT_PR_ERR("clk_prepare_enable(clk_scp_conn_main) fail(%d)\n", iRet);
+			return iRet;
+		}
 		WMT_PLAT_PR_DBG("clk_prepare_enable(clk_scp_conn_main) ok\n");
+
+		iRet = clk_prepare_enable(clk_infracfg_ao_ccif4_ap_cg);
+		if (iRet) {
+			WMT_PLAT_PR_ERR("clk_prepare_enable(clk_infracfg_ao_ccif4_ap_cg) fail(%d)\n", iRet);
+			return iRet;
+		}
+		WMT_PLAT_PR_DBG("clk_prepare_enable(clk_infracfg_ao_ccif4_ap_cg) ok\n");
 #else
 		/* turn on SPM clock gating enable PWRON_CONFG_EN 0x10006000 32'h0b160001 */
 		CONSYS_REG_WRITE((conn_reg.spm_base + CONSYS_PWRON_CONFG_EN_OFFSET),
@@ -729,6 +749,9 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 #endif /* CONSYS_PWR_ON_OFF_API_AVAILABLE */
 	} else {
 #if CONSYS_PWR_ON_OFF_API_AVAILABLE
+		clk_disable_unprepare(clk_infracfg_ao_ccif4_ap_cg);
+		WMT_PLAT_PR_DBG("clk_disable_unprepare(clk_infracfg_ao_ccif4_ap_cg) calling\n");
+
 		clk_disable_unprepare(clk_scp_conn_main);
 		WMT_PLAT_PR_DBG("clk_disable_unprepare(clk_scp_conn_main) calling\n");
 #else
@@ -1170,6 +1193,10 @@ static INT32 consys_emi_mpu_set_region_protection(VOID)
 
 static UINT32 consys_emi_set_remapping_reg(VOID)
 {
+	/* For direct path */
+	phys_addr_t mdPhy = 0;
+	INT32 size = 0;
+
 	mtk_wcn_emi_addr_info.emi_ap_phy_addr = gConEmiPhyBase;
 	mtk_wcn_emi_addr_info.emi_size = gConEmiSize;
 
@@ -1184,6 +1211,18 @@ static UINT32 consys_emi_set_remapping_reg(VOID)
 					  0x10003000, 0, 16, 20);
 	WMT_PLAT_PR_INFO("PERISYS_MAPPING dump in restore cb(0x%08x)\n",
 			CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_PERI_MAPPING_OFFSET));
+
+	/*Modem Configuration Registers remapping*/
+	mdPhy = get_smem_phy_start_addr(MD_SYS1, SMEM_USER_RAW_MD_CONSYS, &size);
+	if (size == 0)
+		WMT_PLAT_PR_INFO("MD direct path is not supported\n");
+	else {
+		CONSYS_REG_WRITE_OFFSET_RANGE(
+			conn_reg.topckgen_base + CONSYS_EMI_AP_MD_OFFSET,
+			mdPhy, 0, 16, 20);
+		WMT_PLAT_PR_INFO("MD_MAPPING dump in restore cb(0x%08x)\n",
+			CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_AP_MD_OFFSET));
+	}
 
 	return 0;
 }
