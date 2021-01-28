@@ -445,6 +445,11 @@ INT32 wmt_lib_deinit(VOID)
 	osal_event_deinit(&pDevWmt->rWmtdWq);
 	osal_event_deinit(&pDevWmt->rWmtdWorkerWq);
 
+	for (i = 0; i < WMTDRV_TYPE_ANT; i++) {
+		kfree(pDevWmt->pWmtRomPatchInfo[i]);
+		pDevWmt->pWmtRomPatchInfo[i] = NULL;
+	}
+
 	iRet = wmt_core_deinit();
 	if (iRet) {
 		WMT_ERR_FUNC("wmt_core_deinit fail(%d)\n", iRet);
@@ -2296,12 +2301,17 @@ VOID wmt_lib_set_patch_info(P_WMT_PATCH_INFO pPatchinfo)
 		pWmtDev->pWmtPatchInfo = pPatchinfo;
 }
 
-VOID wmt_lib_set_rom_patch_info(struct wmt_rom_patch_info *pPatchinfo)
+VOID wmt_lib_set_rom_patch_info(struct wmt_rom_patch_info *PatchInfo, ENUM_WMTDRV_TYPE_T type)
 {
 	P_DEV_WMT pWmtDev = &gDevWmt;
 
-	if (pPatchinfo)
-		pWmtDev->pWmtRomPatchInfo[pPatchinfo->type] = pPatchinfo;
+	if (!pWmtDev->pWmtRomPatchInfo[type])
+		pWmtDev->pWmtRomPatchInfo[type] = kcalloc(1, sizeof(struct wmt_rom_patch_info),
+							  GFP_ATOMIC);
+
+	if (pWmtDev->pWmtRomPatchInfo[type])
+		osal_memcpy(pWmtDev->pWmtRomPatchInfo[type], PatchInfo,
+			    sizeof(struct wmt_rom_patch_info));
 }
 
 INT32 wmt_lib_set_current_op(P_DEV_WMT pWmtDev, P_OSAL_OP pOp)
