@@ -628,7 +628,8 @@ INT32 wmt_ctrl_get_rom_patch_info(P_WMT_CTRL_DATA pWmtCtrlData)
 	type = pWmtCtrlData->au4CtrlData[0];
 	WMT_DBG_FUNC("rom patch type is %d\n", type);
 	pDev->ip_ver = pWmtCtrlData->au4CtrlData[3];
-	WMT_DBG_FUNC("ip version is %x\n", pDev->ip_ver);
+	pDev->fw_ver = pWmtCtrlData->au4CtrlData[4];
+	WMT_DBG_FUNC("ip version is [%x] [%x]\n", pDev->ip_ver, pDev->fw_ver);
 
 	if (!pDev->pWmtRomPatchInfo[WMTDRV_TYPE_WMT]) {
 		osal_snprintf(cmdStr, NAME_MAX, "srh_rom_patch");
