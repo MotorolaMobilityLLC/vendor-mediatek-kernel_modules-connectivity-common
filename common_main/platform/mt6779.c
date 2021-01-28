@@ -125,10 +125,6 @@ static VOID consys_resume_dump_info(VOID);
 *                            P U B L I C   D A T A
 ********************************************************************************
 */
-#if CONSYS_BT_WIFI_SHARE_V33
-struct bt_wifi_v33_status gBtWifiV33;
-#endif
-
 /* CCF part */
 struct clk *clk_scp_conn_main;	/*ctrl conn_power_on/off */
 struct clk *clk_infracfg_ao_ccif4_ap_cg;       /* For direct path */
@@ -980,8 +976,7 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 	if (enable) {
 		/*need PMIC driver provide new API protocol */
 		/*1.AP power on VCN_1V8 LDO (with PMIC_WRAP API) VCN_1V8  */
-		/*set vcn18 SW mode*/
-		KERNEL_upmu_set_reg_value(MT6359_LDO_VCN18_OP_EN, 0x1);
+		/*default vcn18 SW mode*/
 		if (reg_VCN18) {
 			regulator_set_voltage(reg_VCN18, 1800000, 1800000);
 			if (regulator_enable(reg_VCN18))
@@ -989,10 +984,16 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 			else
 				WMT_PLAT_PR_DBG("enable VCN18 ok\n");
 		}
+
+		/*set vcn18 HW mode*/
+		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN18_HW0_OP_EN, 1);
+		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN18_HW0_OP_EN, 0);
+
 #if CONSYS_PMIC_CTRL_6635
 		/* delay 300us (VCN18 stable time) */
 		udelay(300);
-		KERNEL_upmu_set_reg_value(MT6359_LDO_VCN13_OP_EN, 0x1);
+		/*1.AP power on VCN_1V3 LDO (with PMIC_WRAP API) VCN_1V3  */
+		/*default vcn13 SW mode*/
 		if (reg_VCN13) {
 			regulator_set_voltage(reg_VCN13, 1300000, 1300000);
 			if (regulator_enable(reg_VCN13))
@@ -1000,8 +1001,13 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 			else
 				WMT_PLAT_PR_DBG("enable VCN13 ok\n");
 		}
+
+		/*set vcn13 HW mode*/
+		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN13_HW0_OP_EN, 1);
+		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN13_HW0_OP_EN, 0);
 #else
-		KERNEL_upmu_set_reg_value(MT6359_LDO_VCN33_OP_EN, 0x1);
+		/*1.AP power on VCN_3V3 LDO (with PMIC_WRAP API) VCN_3V3  */
+		/*default vcn33_1 SW mode*/
 		if (reg_VCN33_BT) {
 			regulator_set_voltage(reg_VCN33_BT, 3300000, 3300000);
 			if (regulator_enable(reg_VCN33_BT))
@@ -1074,58 +1080,19 @@ static INT32 consys_hw_vcn28_ctrl(UINT32 enable)
 static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 {
 #if CONSYS_PMIC_CTRL_6635
-#if CONSYS_BT_WIFI_SHARE_V33
-	/* spin_lock_irqsave(&gBtWifiV33.lock,gBtWifiV33.flags); */
-	if (enable) {
-		if (gBtWifiV33.counter == 1) {
-			gBtWifiV33.counter++;
-			WMT_PLAT_PR_DBG("V33 has been enabled,counter(%d)\n", gBtWifiV33.counter);
-		} else if (gBtWifiV33.counter == 2) {
-			WMT_PLAT_PR_DBG("V33 has been enabled,counter(%d)\n", gBtWifiV33.counter);
-		} else {
-#if CONSYS_PMIC_CTRL_ENABLE
-			/*do BT PMIC on,depenency PMIC API ready */
-			/*switch BT PALDO control from SW mode to HW mode:0x416[5]-->0x1 */
-			/* VOL_DEFAULT, VOL_3300, VOL_3400, VOL_3500, VOL_3600 */
-			hwPowerOn(MT6351_POWER_LDO_VCN33_BT, VOL_3300 * 1000, "wcn_drv");
-			mt6351_upmu_set_rg_vcn33_on_ctrl(1);
-#endif
-			WMT_PLAT_PR_INFO("WMT do BT/WIFI v3.3 on\n");
-			gBtWifiV33.counter++;
-		}
-
-	} else {
-		if (gBtWifiV33.counter == 1) {
-			/*do BT PMIC off */
-			/*switch BT PALDO control from HW mode to SW mode:0x416[5]-->0x0 */
-#if CONSYS_PMIC_CTRL_ENABLE
-			mt6351_upmu_set_rg_vcn33_on_ctrl(0);
-			hwPowerDown(MT6351_POWER_LDO_VCN33_BT, "wcn_drv");
-#endif
-			WMT_PLAT_PR_INFO("WMT do BT/WIFI v3.3 off\n");
-			gBtWifiV33.counter--;
-		} else if (gBtWifiV33.counter == 2) {
-			gBtWifiV33.counter--;
-			WMT_PLAT_PR_DBG("V33 no need disabled,counter(%d)\n", gBtWifiV33.counter);
-		} else {
-			WMT_PLAT_PR_DBG("V33 has been disabled,counter(%d)\n", gBtWifiV33.counter);
-		}
-
-	}
-	/* spin_unlock_irqrestore(&gBtWifiV33.lock,gBtWifiV33.flags); */
-#else
 	if (enable) {
 		/*do BT PMIC on,depenency PMIC API ready */
 		/*switch BT PALDO control from SW mode to HW mode:0x416[5]-->0x1 */
 #if CONSYS_PMIC_CTRL_ENABLE
 		/* VOL_DEFAULT, VOL_3300, VOL_3400, VOL_3500, VOL_3600 */
-		KERNEL_upmu_set_reg_value(MT6359_LDO_VCN33_1_OP_EN, 0x1);
+		/*default vcn33_1 SW mode*/
 		if (reg_VCN33_1_BT) {
 			regulator_set_voltage(reg_VCN33_1_BT, 3300000, 3300000);
 			if (regulator_enable(reg_VCN33_1_BT))
 				WMT_PLAT_PR_ERR("WMT do BT PMIC on fail!\n");
 		}
 
+		/*set vcn33_1 HW mode*/
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_1_HW0_OP_EN, 1);
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_1_HW0_OP_CFG, 0);
 #endif
@@ -1143,34 +1110,37 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 	}
 #endif
 
-#endif
 	return 0;
 }
 
 static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 {
 #if CONSYS_PMIC_CTRL_6635
-#if CONSYS_BT_WIFI_SHARE_V33
-	mtk_wcn_consys_hw_bt_paldo_ctrl(enable);
-#else
 	if (enable) {
 		/*do WIFI PMIC on,depenency PMIC API ready */
 		/*switch WIFI PALDO control from SW mode to HW mode:0x418[14]-->0x1 */
 #if CONSYS_PMIC_CTRL_ENABLE
-		KERNEL_upmu_set_reg_value(MT6359_LDO_VCN33_1_OP_EN, 0x1);
+		/*default vcn33_1 SW mode*/
 		if (reg_VCN33_1_WIFI) {
 			regulator_set_voltage(reg_VCN33_1_WIFI, 3300000, 3300000);
 			if (regulator_enable(reg_VCN33_1_WIFI))
 				WMT_PLAT_PR_ERR("WMT do WIFI PMIC on fail!\n");
 		}
-		KERNEL_upmu_set_reg_value(MT6359_LDO_VCN33_2_OP_EN, 0x1);
+
+		/*set vcn33_1 HW mode*/
+		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_1_HW0_OP_EN, 1);
+		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_1_HW0_OP_CFG, 0);
+
+		/*default vcn33_3 SW mode*/
 		if (reg_VCN33_2_WIFI) {
 			regulator_set_voltage(reg_VCN33_2_WIFI, 3300000, 3300000);
 			if (regulator_enable(reg_VCN33_2_WIFI))
 				WMT_PLAT_PR_ERR("WMT do WIFI PMIC on fail!\n");
 		}
-		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_1_HW0_OP_EN, 1);
-		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_1_HW0_OP_CFG, 0);
+
+		/*set vcn33_2 HW mode*/
+		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_2_HW0_OP_EN, 1);
+		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_2_HW0_OP_CFG, 0);
 #endif
 		WMT_PLAT_PR_DBG("WMT do WIFI PMIC on\n");
 	} else {
@@ -1181,6 +1151,9 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_1_HW0_OP_CFG, 0);
 		if (reg_VCN33_1_WIFI)
 			regulator_disable(reg_VCN33_1_WIFI);
+
+		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_2_HW0_OP_EN, 0);
+		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_2_HW0_OP_CFG, 0);
 		if (reg_VCN33_2_WIFI)
 			regulator_disable(reg_VCN33_2_WIFI);
 #endif
@@ -1189,7 +1162,6 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 
 #endif
 
-#endif
 	return 0;
 }
 
@@ -1252,11 +1224,6 @@ static UINT32 consys_emi_set_remapping_reg(VOID)
 
 static INT32 bt_wifi_share_v33_spin_lock_init(VOID)
 {
-#if CONSYS_BT_WIFI_SHARE_V33
-	gBtWifiV33.counter = 0;
-	spin_lock_init(&gBtWifiV33.lock);
-#endif
-
 	return 0;
 }
 
