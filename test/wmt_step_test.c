@@ -2784,6 +2784,10 @@ void wmt_step_test_check_register_symbol(struct step_test_report *p_report)
 	if (symbol_num < 0) {
 		temp_report.fail++;
 	} else {
+		if (symbol_num >= STEP_REGISTER_MAX) {
+			symbol_num = STEP_REGISTER_MAX - 1;
+		}
+
 		for (i = 1; i <= symbol_num; i++) {
 			wmt_step_test_clear_parameter(params);
 			params[0] = "0";
