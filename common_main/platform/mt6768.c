@@ -1351,5 +1351,5 @@ static VOID consys_set_pdma_axi_rready_force_high(UINT32 enable)
 
 static INT32 consys_calibration_backup_restore_support(VOID)
 {
-	return 1;
+	return 0;
 }
