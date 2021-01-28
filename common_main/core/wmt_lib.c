@@ -48,6 +48,7 @@
 #include "psm_core.h"
 #include "stp_sdio.h"
 #include "stp_dbg.h"
+#include "wmt_step.h"
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -456,6 +457,9 @@ INT32 wmt_lib_deinit(VOID)
 #if CFG_WMT_LTE_COEX_HANDLING
 	wmt_idc_deinit();
 #endif
+
+	WMT_STEP_DEINIT_FUNC();
+
 	return iResult;
 }
 
