@@ -1789,8 +1789,8 @@ static INT32 consys_check_reg_readable(VOID)
 
 static VOID consys_ic_clock_fail_dump(VOID)
 {
-	UINT8 *addr;
-	char *buffer, *temp;
+	UINT8 *addr = NULL;
+	char *buffer = NULL, *temp = NULL;
 	INT32 size = 1024;
 
 	if (conn_reg.mcu_base == 0)
