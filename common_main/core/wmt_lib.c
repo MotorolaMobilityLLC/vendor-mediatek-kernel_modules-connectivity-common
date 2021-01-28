@@ -151,6 +151,11 @@ VOID wmt_lib_wlan_lock_release(VOID)
 	osal_unlock_sleepable_lock(&gDevWmt.wlan_lock);
 }
 
+INT32 wmt_lib_wlan_lock_trylock(VOID)
+{
+	return osal_trylock_sleepable_lock(&gDevWmt.wlan_lock);
+}
+
 INT32 wmt_lib_idc_lock_aquire(VOID)
 {
 	return osal_lock_sleepable_lock(&gDevWmt.idc_lock);
