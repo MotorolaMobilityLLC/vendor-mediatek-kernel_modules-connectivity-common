@@ -1627,19 +1627,6 @@ static VOID wmt_lib_clear_chip_id(VOID)
 }
 #endif
 
-/* TODO: [FixMe][GeorgeKuo]: change this API to report real chip id, hw_ver, and */
-/* fw_ver instead of WMT-translated WMTHWVER */
-ENUM_WMTHWVER_TYPE_T wmt_lib_get_hwver(VOID)
-{
-/*
-*    P_WMT_CMB_CHIP_INFO_S pChipInfo;
-*    P_DEV_WMT pWmtDev = gpDevWmt;
-*       pChipInfo = wmt_lib_get_chip_info(pWmtDev);
-*    return pChipInfo != NULL ? pChipInfo->eHwVersion : WMTHWVER_INVALID;
-*/
-	return gDevWmt.eWmtHwVer;
-}
-
 UINT32 wmt_lib_get_icinfo(ENUM_WMT_CHIPINFO_TYPE_T index)
 {
 	UINT32 chip_id = 0;
@@ -1650,8 +1637,6 @@ UINT32 wmt_lib_get_icinfo(ENUM_WMT_CHIPINFO_TYPE_T index)
 		return chip_id;
 	} else if (index == WMTCHIN_HWVER)
 		return gDevWmt.hw_ver;
-	else if (index == WMTCHIN_MAPPINGHWVER)
-		return gDevWmt.eWmtHwVer;
 	else if (index == WMTCHIN_FWVER)
 		return gDevWmt.fw_ver;
 	else if (index == WMTCHIN_IPVER)
@@ -1673,10 +1658,9 @@ MTK_WCN_BOOL wmt_lib_is_therm_ctrl_support(ENUM_WMTTHERM_TYPE_T eType)
 {
 	MTK_WCN_BOOL bIsSupportTherm = MTK_WCN_BOOL_TRUE;
 	/* TODO:[FixMe][GeorgeKuo]: move IC-dependent checking to ic-implementation file */
-	if (((gDevWmt.chip_id == 0x6620) && (gDevWmt.eWmtHwVer < WMTHWVER_E3))
-	    || (gDevWmt.eWmtHwVer == WMTHWVER_INVALID)) {
-		WMT_ERR_FUNC("thermal command fail: chip version(WMTHWVER_TYPE:%d) is not valid\n",
-			     gDevWmt.eWmtHwVer);
+	if ((gDevWmt.chip_id == 0x6620) && (gDevWmt.hw_ver == 0x8A00 /*E1*/ || gDevWmt.hw_ver == 0x8A01 /*E2*/)) {
+		WMT_ERR_FUNC("thermal command fail: chip version(HWVER:0x%04x) is not valid\n",
+			     gDevWmt.hw_ver);
 		bIsSupportTherm = MTK_WCN_BOOL_FALSE;
 	}
 	if ((!osal_test_bit(WMT_STAT_STP_EN, &gDevWmt.state))
@@ -1695,10 +1679,9 @@ MTK_WCN_BOOL wmt_lib_is_therm_ctrl_support(ENUM_WMTTHERM_TYPE_T eType)
 MTK_WCN_BOOL wmt_lib_is_dsns_ctrl_support(VOID)
 {
 	/* TODO:[FixMe][GeorgeKuo]: move IC-dependent checking to ic-implementation file */
-	if (((gDevWmt.chip_id == 0x6620) && (gDevWmt.eWmtHwVer < WMTHWVER_E3))
-	    || (gDevWmt.eWmtHwVer == WMTHWVER_INVALID)) {
-		WMT_ERR_FUNC("thermal command fail: chip version(WMTHWVER_TYPE:%d) is not valid\n",
-			     gDevWmt.eWmtHwVer);
+	if ((gDevWmt.chip_id == 0x6620) && (gDevWmt.hw_ver == 0x8A00 /*E1*/ || gDevWmt.hw_ver == 0x8A01 /*E2*/)) {
+		WMT_ERR_FUNC("thermal command fail: chip version(HWVER:0x%04x) is not valid\n",
+			     gDevWmt.hw_ver);
 		return MTK_WCN_BOOL_FALSE;
 	}
 
