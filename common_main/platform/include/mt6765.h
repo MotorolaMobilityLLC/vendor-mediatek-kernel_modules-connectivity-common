@@ -77,6 +77,14 @@
 #define CONSYS_CPUPCR_OFFSET		0x00000104
 #define CONSYS_SW_IRQ_OFFSET		0x00000150
 
+/*CONN_HIF_ON_BASE*/
+#define CONSYS_BUSY_OFFSET              0x110
+#define CONSYS_BUSY_BIT                 (0x1 << 27)
+#define CONSYS_CLOCK_CHECK_VALUE        0x30000
+#define CONSYS_HCLK_CHECK_BIT           (0x1 << 16)
+#define CONSYS_OSCCLK_CHECK_BIT         (0x1 << 17)
+#define CONSYS_SLEEP_CHECK_BIT          (0x1 << 18)
+
 /*AXI bus*/
 #define CONSYS_AHBAXI_PROT_EN_OFFSET	0x220
 #define CONSYS_AHBAXI_PROT_STA_OFFSET	0x228
