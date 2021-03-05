@@ -111,6 +111,7 @@ static INT32 consys_read_irq_info_from_dts(struct platform_device *pdev,
 		PINT32 irq_num, PUINT32 irq_flag);
 static INT32 consys_read_reg_from_dts(struct platform_device *pdev);
 static UINT32 consys_read_cpupcr(VOID);
+static INT32 consys_poll_cpupcr_dump(UINT32 times, UINT32 sleep_ms);
 static VOID force_trigger_assert_debug_pin(VOID);
 static INT32 consys_co_clock_type(VOID);
 static P_CONSYS_EMI_ADDR_INFO consys_soc_get_emi_phy_add(VOID);
@@ -138,6 +139,13 @@ static VOID consys_devapc_violation_cb(VOID);
 #endif
 static VOID consyc_register_devapc_cb(VOID);
 static UINT64 consys_get_options(VOID);
+
+static INT32 dump_conn_mcu_pc_log_wrapper(VOID);
+static INT32 consys_cmd_tx_timeout_dump(VOID);
+static INT32 consys_cmd_rx_timeout_dump(VOID);
+static INT32 consys_coredump_timeout_dump(VOID);
+static INT32 consys_assert_timeout_dump(VOID);
+static INT32 consys_before_chip_reset_dump(VOID);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -208,6 +216,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_read_irq_info_from_dts = consys_read_irq_info_from_dts,
 	.consys_ic_read_reg_from_dts = consys_read_reg_from_dts,
 	.consys_ic_read_cpupcr = consys_read_cpupcr,
+	.consys_ic_poll_cpupcr_dump = consys_poll_cpupcr_dump,
 	.ic_force_trigger_assert_debug_pin = force_trigger_assert_debug_pin,
 	.consys_ic_co_clock_type = consys_co_clock_type,
 	.consys_ic_soc_get_emi_phy_add = consys_soc_get_emi_phy_add,
@@ -227,6 +236,16 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_calibration_backup_restore = consys_calibration_backup_restore_support,
 	.consys_ic_register_devapc_cb = consyc_register_devapc_cb,
 	.consys_ic_get_options = consys_get_options,
+
+	/* debug dump */
+	.consys_ic_cmd_tx_timeout_dump = consys_cmd_tx_timeout_dump,
+	.consys_ic_cmd_rx_timeout_dump = consys_cmd_rx_timeout_dump,
+	.consys_ic_coredump_timeout_dump = consys_coredump_timeout_dump,
+	.consys_ic_assert_timeout_dump = consys_assert_timeout_dump,
+	.consys_ic_before_chip_reset_dump = consys_before_chip_reset_dump,
+
+	.consys_ic_pc_log_dump = dump_conn_mcu_pc_log_wrapper,
+
 };
 
 static const struct connlog_emi_config connsys_fw_log_parameter = {
@@ -1238,6 +1257,34 @@ static UINT32 consys_read_cpupcr(VOID)
 	return CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base + CONSYS_CPUPCR_OFFSET);
 }
 
+static INT32 consys_poll_cpupcr_dump(UINT32 times, UINT32 sleep_ms)
+{
+	UINT64 ts;
+	ULONG nsec;
+	INT32 str_len = 0, i;
+	char str[DBG_LOG_STR_SIZE] = {""};
+	unsigned int remain = DBG_LOG_STR_SIZE;
+	char *p = NULL;
+
+	p = str;
+	for (i = 0; i < times; i++) {
+		osal_get_local_time(&ts, &nsec);
+		str_len = snprintf(p, remain, "%llu.%06lu/0x%08x;", ts, nsec,
+								consys_read_cpupcr());
+		if (str_len < 0) {
+			WMT_PLAT_PR_WARN("%s snprintf fail", __func__);
+			continue;
+		}
+		p += str_len;
+		remain -= str_len;
+
+		if (sleep_ms > 0)
+			osal_sleep_ms(sleep_ms);
+	}
+	WMT_PLAT_PR_INFO("TIME/CPUPCR: %s", str);
+	return 0;
+}
+
 static UINT32 consys_soc_chipid_get(VOID)
 {
 	return PLATFORM_SOC_CHIP;
@@ -1583,3 +1630,53 @@ static UINT64 consys_get_options(VOID)
 	return options;
 }
 
+INT32 dump_conn_mcu_pc_log_wrapper(VOID)
+{
+	return dump_conn_mcu_pc_log("");
+}
+
+static INT32 consys_common_dump(const char *trg_str)
+{
+	int ret = 0;
+
+	ret += dump_conn_debug_dump(trg_str);
+	ret += dump_conn_mcu_debug_flag(trg_str);
+	ret += dump_conn_mcu_apb0_bus(trg_str);
+	ret += dump_conn_mcu_apb1_bus(trg_str);
+	ret += dump_conn_mcu_pc_log(trg_str);
+	ret += dump_conn_cfg_on_debug_signal(trg_str);
+	ret += dump_conn_cfg_on_register(trg_str);
+	ret += dump_conn_cmdbt_debug_signal(trg_str);
+	ret += dump_conn_emi_detect(trg_str);
+	ret += dump_conn_slp_protect_debug(trg_str);
+	ret += dump_conn_spm_r13(trg_str);
+	ret += dump_conn_bus_timeout_debug(trg_str);
+	ret += dump_conn_ILM_corrupt_issue_debug(trg_str);
+
+	return ret;
+}
+
+INT32 consys_cmd_tx_timeout_dump(VOID)
+{
+	return consys_common_dump("tx_timeout");
+}
+
+INT32 consys_cmd_rx_timeout_dump(VOID)
+{
+	return consys_common_dump("rx_timeout");
+}
+
+INT32 consys_coredump_timeout_dump(VOID)
+{
+	return consys_common_dump("coredump_timeout");
+}
+
+INT32 consys_assert_timeout_dump(VOID)
+{
+	return consys_common_dump("assert_timeout");
+}
+
+INT32 consys_before_chip_reset_dump(VOID)
+{
+	return consys_common_dump("before_chip_reset");
+}

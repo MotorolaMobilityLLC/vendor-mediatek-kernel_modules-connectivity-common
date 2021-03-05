@@ -258,6 +258,20 @@ extern struct bt_wifi_v33_status gBtWifiV33;
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
 */
+extern INT32 dump_conn_debug_dump(const char *trg_str);
+extern INT32 dump_conn_mcu_debug_flag(const char *trg_str);
+extern INT32 dump_conn_mcu_apb0_bus(const char *trg_str);
+extern INT32 dump_conn_mcu_apb1_bus(const char *trg_str);
+extern INT32 dump_conn_bus_timeout(const char *trg_str);
+extern INT32 dump_conn_mcu_pc_log(const char *trg_str);
+extern INT32 dump_conn_cfg_on_debug_signal(const char *trg_str);
+extern INT32 dump_conn_cfg_on_register(const char *trg_str);
+extern INT32 dump_conn_cmdbt_debug_signal(const char *trg_str);
+extern INT32 dump_conn_emi_detect(const char *trg_str);
+extern INT32 dump_conn_slp_protect_debug(const char *trg_str);
+extern INT32 dump_conn_spm_r13(const char *trg_str);
+extern INT32 dump_conn_bus_timeout_debug(const char *trg_str);
+extern INT32 dump_conn_ILM_corrupt_issue_debug(const char *trg_str);
 
 /*******************************************************************************
 *                              F U N C T I O N S

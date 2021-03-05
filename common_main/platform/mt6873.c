@@ -116,6 +116,7 @@ static INT32 consys_read_irq_info_from_dts(struct platform_device *pdev,
 		PINT32 irq_num, PUINT32 irq_flag);
 static INT32 consys_read_reg_from_dts(struct platform_device *pdev);
 static UINT32 consys_read_cpupcr(VOID);
+static INT32 consys_poll_cpupcr_dump(UINT32 times, UINT32 sleep_ms);
 static VOID force_trigger_assert_debug_pin(VOID);
 static INT32 consys_co_clock_type(VOID);
 static P_CONSYS_EMI_ADDR_INFO consys_soc_get_emi_phy_add(VOID);
@@ -152,6 +153,7 @@ static VOID consys_emi_entry_address(VOID);
 static VOID consys_set_xo_osc_ctrl(VOID);
 static VOID consys_identify_adie(VOID);
 static VOID consys_wifi_ctrl_setting(VOID);
+static VOID consys_wifi_ctrl_switch_conn_mode(VOID);
 static VOID consys_bus_timeout_config(VOID);
 static VOID consys_set_access_emi_hw_mode(VOID);
 static INT32 consys_dump_gating_state(P_CONSYS_STATE state);
@@ -159,6 +161,14 @@ static INT32 consys_sleep_info_enable_ctrl(UINT32 enable);
 static INT32 consys_sleep_info_read_ctrl(WMT_SLEEP_COUNT_TYPE type, PUINT64 sleep_counter, PUINT64 sleep_timer);
 static INT32 consys_sleep_info_clear(VOID);
 static UINT64 consys_get_options(VOID);
+static INT32 consys_polling_goto_idle(VOID);
+
+static INT32 dump_conn_mcu_pc_log_wrapper(VOID);
+static INT32 consys_cmd_tx_timeout_dump(VOID);
+static INT32 consys_cmd_rx_timeout_dump(VOID);
+static INT32 consys_coredump_timeout_dump(VOID);
+static INT32 consys_assert_timeout_dump(VOID);
+static INT32 consys_before_chip_reset_dump(VOID);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -239,6 +249,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_read_irq_info_from_dts = consys_read_irq_info_from_dts,
 	.consys_ic_read_reg_from_dts = consys_read_reg_from_dts,
 	.consys_ic_read_cpupcr = consys_read_cpupcr,
+	.consys_ic_poll_cpupcr_dump = consys_poll_cpupcr_dump,
 	.ic_force_trigger_assert_debug_pin = force_trigger_assert_debug_pin,
 	.consys_ic_co_clock_type = consys_co_clock_type,
 	.consys_ic_soc_get_emi_phy_add = consys_soc_get_emi_phy_add,
@@ -262,6 +273,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_set_xo_osc_ctrl = consys_set_xo_osc_ctrl,
 	.consys_ic_identify_adie = consys_identify_adie,
 	.consys_ic_wifi_ctrl_setting = consys_wifi_ctrl_setting,
+	.consys_ic_wifi_ctrl_switch_conn_mode = consys_wifi_ctrl_switch_conn_mode,
 	.consys_ic_bus_timeout_config = consys_bus_timeout_config,
 	.consys_ic_set_access_emi_hw_mode = consys_set_access_emi_hw_mode,
 	.consys_ic_dump_gating_state = consys_dump_gating_state,
@@ -273,6 +285,17 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_need_store_pdev = consys_need_store_pdev,
 	.consys_ic_store_pdev = consys_store_pdev,
 #endif
+
+	/* debug dump */
+	.consys_ic_cmd_tx_timeout_dump = consys_cmd_tx_timeout_dump,
+	.consys_ic_cmd_rx_timeout_dump = consys_cmd_rx_timeout_dump,
+	.consys_ic_coredump_timeout_dump = consys_coredump_timeout_dump,
+	.consys_ic_assert_timeout_dump = consys_assert_timeout_dump,
+	.consys_ic_before_chip_reset_dump = consys_before_chip_reset_dump,
+
+	.consys_ic_pc_log_dump = dump_conn_mcu_pc_log_wrapper,
+
+	.consys_ic_polling_goto_idle = consys_polling_goto_idle,
 };
 
 static const struct connlog_emi_config connsys_fw_log_parameter = {
@@ -596,12 +619,6 @@ static VOID consys_set_if_pinmux(MTK_WCN_BOOL enable)
 
 static VOID consys_hw_reset_bit_set(MTK_WCN_BOOL enable)
 {
-	UINT32 consys_ver_id = 0;
-	UINT32 cnt = 0;
-#if CONSYS_PMIC_CTRL_6635
-	UINT8 *consys_reg_base = NULL;
-#endif
-
 	if (enable) {
 		/*3.assert CONNSYS CPU SW reset  0x10007018 "[12]=1'b1  [31:24]=8'h88 (key)" */
 		CONSYS_REG_WRITE((conn_reg.ap_rgu_base + CONSYS_CPU_SW_RST_OFFSET),
@@ -612,43 +629,35 @@ static VOID consys_hw_reset_bit_set(MTK_WCN_BOOL enable)
 		CONSYS_REG_WRITE(conn_reg.ap_rgu_base + CONSYS_CPU_SW_RST_OFFSET,
 				(CONSYS_REG_READ(conn_reg.ap_rgu_base + CONSYS_CPU_SW_RST_OFFSET) &
 				 ~CONSYS_CPU_SW_RST_BIT) | CONSYS_CPU_SW_RST_CTRL_KEY);
-		/* check CONNSYS power-on completion
-		 * (polling "0x8000_0600[31:0]" == 0x1D1E and each polling interval is "1ms")
-		 * (apply this for guarantee that CONNSYS CPU goes to "cos_idle_loop")
-		 */
-		consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_base + 0x600);
-		while (consys_ver_id != 0x1D1E) {
-			if (cnt > 10)
-				break;
-			consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_base + 0x600);
-			WMT_PLAT_PR_INFO("0x18002600(0x%x)\n", consys_ver_id);
-			WMT_PLAT_PR_INFO("0x1800216c(0x%x)\n",
-					CONSYS_REG_READ(conn_reg.mcu_base + 0x16c));
-			WMT_PLAT_PR_INFO("0x18007104(0x%x)\n",
-					CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base +
-					CONSYS_CPUPCR_OFFSET));
-			msleep(20);
-			cnt++;
-		}
-
-#if CONSYS_PMIC_CTRL_6635
-		/* if(MT6635) CONN_WF_CTRL2 swtich to CONN mode */
-		consys_reg_base = ioremap_nocache(CONSYS_IF_PINMUX_REG_BASE, 0x1000);
-		if (!consys_reg_base) {
-			WMT_PLAT_PR_ERR("consys_if_pinmux_reg_base(%x) ioremap fail\n",
-					CONSYS_IF_PINMUX_REG_BASE);
-			return;
-		}
-		CONSYS_REG_WRITE(consys_reg_base + CONSYS_WF_CTRL2_03_OFFSET,
-				(CONSYS_REG_READ(consys_reg_base + CONSYS_WF_CTRL2_03_OFFSET) &
-				CONSYS_WF_CTRL2_03_MASK) | CONSYS_WF_CTRL2_CONN_MODE);
-		if (consys_reg_base)
-			iounmap(consys_reg_base);
-		else
-			WMT_PLAT_PR_ERR("consys_if_pinmux_reg_base(0x%x) ioremap fail!\n",
-					  CONSYS_IF_PINMUX_REG_BASE);
-#endif
 	}
+}
+
+static INT32 consys_polling_goto_idle(VOID)
+{
+	UINT32 consys_ver_id = 0;
+	UINT32 cnt = 0;
+
+	/* check CONNSYS power-on completion
+	 * (polling "0x8000_0600[31:0]" == 0x1D1E and each polling interval is "1ms")
+	 * (apply this for guarantee that CONNSYS CPU goes to "cos_idle_loop")
+	 */
+	consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_base + 0x600);
+	while (consys_ver_id != 0x1D1E) {
+		if (cnt > 10) {
+			WMT_PLAT_PR_ERR("can not go into idle!\n");
+			return -WMT_ERRCODE_POLL_NOT_GOTO_IDLE;
+		}
+		consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_base + 0x600);
+		WMT_PLAT_PR_INFO("0x18002600(0x%x)\n", consys_ver_id);
+		WMT_PLAT_PR_INFO("0x1800216c(0x%x)\n",
+				CONSYS_REG_READ(conn_reg.mcu_base + 0x16c));
+		WMT_PLAT_PR_INFO("0x18007104(0x%x)\n",
+				CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base +
+				CONSYS_CPUPCR_OFFSET));
+		msleep(20);
+		cnt++;
+	}
+	return 0;
 }
 
 static VOID consys_hw_spm_clk_gating_enable(VOID)
@@ -1273,6 +1282,29 @@ static VOID consys_wifi_ctrl_setting(VOID)
 		WMT_PLAT_PR_ERR("consys_if_pinmux_reg_base(0x%x) ioremap fail!\n",
 			CONSYS_IF_PINMUX_REG_BASE);
 	}
+#endif
+}
+
+static VOID consys_wifi_ctrl_switch_conn_mode(VOID)
+{
+#if CONSYS_PMIC_CTRL_6635
+	UINT8 *consys_reg_base = NULL;
+
+	/* if(MT6635) CONN_WF_CTRL2 switch to CONN mode */
+	consys_reg_base = ioremap_nocache(CONSYS_IF_PINMUX_REG_BASE, 0x1000);
+	if (!consys_reg_base) {
+		WMT_PLAT_PR_ERR("consys_if_pinmux_reg_base(%x) ioremap fail\n",
+				CONSYS_IF_PINMUX_REG_BASE);
+		return;
+	}
+	CONSYS_REG_WRITE(consys_reg_base + CONSYS_WF_CTRL2_03_OFFSET,
+			(CONSYS_REG_READ(consys_reg_base + CONSYS_WF_CTRL2_03_OFFSET) &
+			CONSYS_WF_CTRL2_03_MASK) | CONSYS_WF_CTRL2_CONN_MODE);
+	if (consys_reg_base)
+		iounmap(consys_reg_base);
+	else
+		WMT_PLAT_PR_ERR("consys_if_pinmux_reg_base(0x%x) ioremap fail!\n",
+				CONSYS_IF_PINMUX_REG_BASE);
 #endif
 }
 
@@ -1939,6 +1971,34 @@ static UINT32 consys_read_cpupcr(VOID)
 		return 0;
 
 	return CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base + CONSYS_CPUPCR_OFFSET);
+}
+
+static INT32 consys_poll_cpupcr_dump(UINT32 times, UINT32 sleep_ms)
+{
+	UINT64 ts;
+	ULONG nsec;
+	INT32 str_len = 0, i;
+	char str[DBG_LOG_STR_SIZE] = {""};
+	unsigned int remain = DBG_LOG_STR_SIZE;
+	char *p = NULL;
+
+	p = str;
+	for (i = 0; i < times; i++) {
+		osal_get_local_time(&ts, &nsec);
+		str_len = snprintf(p, remain, "%llu.%06lu/0x%08x;", ts, nsec,
+								consys_read_cpupcr());
+		if (str_len < 0) {
+			WMT_PLAT_PR_WARN("%s snprintf fail", __func__);
+			continue;
+		}
+		p += str_len;
+		remain -= str_len;
+
+		if (sleep_ms > 0)
+			osal_sleep_ms(sleep_ms);
+	}
+	WMT_PLAT_PR_INFO("TIME/CPUPCR: %s", str);
+	return 0;
 }
 
 static UINT32 consys_soc_chipid_get(VOID)
@@ -2637,4 +2697,81 @@ static UINT64 consys_get_options(VOID)
 			OPT_NORMAL_PATCH_DWN_3 |
 			OPT_PATCH_CHECKSUM;
 	return options;
+}
+
+INT32 dump_conn_mcu_pc_log_wrapper(VOID)
+{
+	return dump_conn_mcu_pc_log("");
+}
+
+static INT32 consys_common_dump(const char *trg_str)
+{
+	int ret = 0;
+
+	ret += dump_conn_mcu_pc_log(trg_str);
+
+	ret += dump_conn_debug_dump(trg_str);
+	ret += dump_conn_mcu_debug_flag(trg_str);
+	ret += dump_conn_mcu_ahb_bus_hang_layer1(trg_str);
+	ret += dump_conn_mcu_ahb_bus_hang_layer2(trg_str);
+	ret += dump_conn_mcu_ahb_bus_hang_layer3(trg_str);
+	ret += dump_conn_mcu_ahb_bus_hang_layer4(trg_str);
+	ret += dump_conn_mcu_ahb_timeout_info(trg_str);
+	ret += dump_conn_bus_hang_debug(trg_str);
+	ret += dump_conn_mcu_apb_timeout_info(trg_str);
+	ret += dump_conn_apb_bus0_hang(trg_str);
+	ret += dump_conn_apb_bus1_hang(trg_str);
+	ret += dump_conn_apb_bus2_hang(trg_str);
+	ret += dump_conn_emi_ctrl_host_csr(trg_str);
+	ret += dump_conn_mcu_confg_emi_ctrl(trg_str);
+	ret += dump_conn_mcu_cpu_probe(trg_str);
+	ret += dump_conn_mcu_ahb_probe(trg_str);
+	ret += dump_conn_mcu_idlm_prot_prob(trg_str);
+	ret += dump_conn_mcu_wf_cmdbt_ram_prob(trg_str);
+	ret += dump_conn_mcu_pda_dbg_flag(trg_str);
+	ret += dump_conn_mcu_sysram_prb(trg_str);
+	ret += dump_conn_mcu_confg(trg_str);
+	ret += dump_conn_mcu_i_eidlm(trg_str);
+	ret += dump_conn_mcu_dma(trg_str);
+	ret += dump_conn_mcu_tcm_prob(trg_str);
+	ret += dump_conn_mcu_met_prob(trg_str);
+	ret += dump_conn_mcusys_n9(trg_str);
+	ret += dump_conn_mcu_uart_dbg_loop(trg_str);
+	ret += dump_conn_cfg_on_Debug_Signal(trg_str);
+	ret += dump_conn_cfg_on_register(trg_str);
+	ret += dump_conn_cmdbt_debug_signal(trg_str);
+	ret += dump_conn_cmdbt_register(trg_str);
+	ret += dump_conn_emi_detect(trg_str);
+	ret += dump_conn_cmdbt_debug(trg_str);
+	ret += dump_conn_hif_reg_debug(trg_str);
+	ret += dump_conn_mcu_confg_bus_hang_reg(trg_str);
+	ret += dump_wf_pdma_reg_debug(trg_str);
+	ret += dump_conn_to_EMI_bus_path(trg_str);
+
+	return ret;
+}
+
+INT32 consys_cmd_tx_timeout_dump(VOID)
+{
+	return consys_common_dump("tx_timeout");
+}
+
+INT32 consys_cmd_rx_timeout_dump(VOID)
+{
+	return consys_common_dump("rx_timeout");
+}
+
+INT32 consys_coredump_timeout_dump(VOID)
+{
+	return consys_common_dump("coredump_timeout");
+}
+
+INT32 consys_assert_timeout_dump(VOID)
+{
+	return consys_common_dump("assert_timeout");
+}
+
+INT32 consys_before_chip_reset_dump(VOID)
+{
+	return consys_common_dump("before_chip_reset");
 }

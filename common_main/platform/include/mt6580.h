@@ -167,6 +167,10 @@
 #define CONSYS_FULL_DUMP_SYSB3_START		(CONSYS_FULL_DUMP_SYSB2_START + CONSYS_FULL_DUMP_SYSB2_LEN)
 #define CONSYS_FULL_DUMP_SYSB3_LEN		(0x16800)
 
+#define CONSYS_BUS_CLK_STATUS_OFFSET	0x00000100
+#define CONSYS_CPU_CLK_STATUS_OFFSET	0x0000010c
+#define CONSYS_DBG_CR1_OFFSET		0x00000408
+#define CONSYS_DBG_CR2_OFFSET		0x0000040c
 
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
