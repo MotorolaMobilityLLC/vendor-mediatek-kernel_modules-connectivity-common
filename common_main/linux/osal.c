@@ -1402,7 +1402,7 @@ INT32 osal_usleep_range(ULONG min, ULONG max)
 INT32 osal_gettimeofday(PINT32 sec, PINT32 usec)
 {
 	INT32 ret = 0;
-	struct timeval now;
+	struct timespec64 now;
 
 	osal_do_gettimeofday(&now);
 
@@ -1412,20 +1412,20 @@ INT32 osal_gettimeofday(PINT32 sec, PINT32 usec)
 		ret = -1;
 
 	if (usec != NULL)
-		*usec = now.tv_usec;
+		*usec = now.tv_nsec / NSEC_PER_USEC;
 	else
 		ret = -1;
 
 	return ret;
 }
 
-void osal_do_gettimeofday(struct timeval *tv)
+void osal_do_gettimeofday(struct timespec64 *tv)
 {
 	struct timespec64 now;
 
 	ktime_get_real_ts64(&now);
 	tv->tv_sec = now.tv_sec;
-	tv->tv_usec = now.tv_nsec / NSEC_PER_USEC;
+	tv->tv_nsec = now.tv_nsec;
 }
 
 INT32 osal_printtimeofday(const PUINT8 prefix)

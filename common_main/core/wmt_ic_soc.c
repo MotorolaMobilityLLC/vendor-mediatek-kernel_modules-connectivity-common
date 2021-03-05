@@ -3295,13 +3295,13 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 
 	/* Set FW patch buildtime into EMI for debugging */
 	if (emiInfo->emi_patch_mcu_buildtime_offset) {
-		patchBuildTimeAddr = ioremap_nocache(emiInfo->emi_ap_phy_addr +
+		patchBuildTimeAddr = ioremap(emiInfo->emi_ap_phy_addr +
 				emiInfo->emi_patch_mcu_buildtime_offset, PATCH_BUILD_TIME_SIZE);
 		if (patchBuildTimeAddr) {
 			osal_memcpy_toio(patchBuildTimeAddr, cDataTime, PATCH_BUILD_TIME_SIZE);
 			iounmap(patchBuildTimeAddr);
 		} else
-			WMT_ERR_FUNC("ioremap_nocache fail\n");
+			WMT_ERR_FUNC("ioremap fail\n");
 	}
 done:
 	if (patchHdr != NULL) {
@@ -3618,14 +3618,14 @@ INT32 mtk_wcn_soc_rom_patch_dwn(UINT32 ip_ver, UINT32 fw_ver)
 					(*mtk_wcn_wlan_emi_mpu_set_protection)(false);
 			}
 
-			patchAddr = ioremap_nocache(emiInfo->emi_ap_phy_addr + patchEmiOffset, patchSize);
+			patchAddr = ioremap(emiInfo->emi_ap_phy_addr + patchEmiOffset, patchSize);
 			WMT_INFO_FUNC("physAddr=0x%x, size=%d virAddr=0x%p\n",
 				emiInfo->emi_ap_phy_addr + patchEmiOffset, patchSize, patchAddr);
 			if (patchAddr) {
 				osal_memcpy_toio(patchAddr, pPatchBuf, patchSize);
 				iounmap(patchAddr);
 			} else
-				WMT_ERR_FUNC("ioremap_nocache fail\n");
+				WMT_ERR_FUNC("ioremap fail\n");
 
 			if (type == WMTDRV_TYPE_BT)
 				patchBuildTimeOffset = emiInfo->emi_ram_bt_buildtime_offset;
@@ -3635,14 +3635,14 @@ INT32 mtk_wcn_soc_rom_patch_dwn(UINT32 ip_ver, UINT32 fw_ver)
 				patchBuildTimeOffset = emiInfo->emi_ram_mcu_buildtime_offset;
 			/* Set ROM patch buildtime into EMI for debugging */
 			if (patchBuildTimeOffset) {
-				patchBuildTimeAddr = ioremap_nocache(emiInfo->emi_ap_phy_addr +
+				patchBuildTimeAddr = ioremap(emiInfo->emi_ap_phy_addr +
 						patchBuildTimeOffset, PATCH_BUILD_TIME_SIZE);
 				if (patchBuildTimeAddr) {
 					osal_memcpy_toio(patchBuildTimeAddr, cDataTime,
 							PATCH_BUILD_TIME_SIZE);
 					iounmap(patchBuildTimeAddr);
 				} else
-					WMT_ERR_FUNC("ioremap_nocache fail\n");
+					WMT_ERR_FUNC("ioremap fail\n");
 			}
 
 			if (type == WMTDRV_TYPE_WIFI) {
@@ -3696,14 +3696,14 @@ VOID mtk_wcn_soc_restore_wifi_cal_result(VOID)
 	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_BEFORE_RESTORE_CAL_RESULT);
 	/* Write Wi-Fi data to EMI */
 	if (gWiFiCalAddrOffset + gWiFiCalSize < emiInfo->emi_size) {
-		wifiCalAddr = ioremap_nocache(emiInfo->emi_ap_phy_addr + gWiFiCalAddrOffset,
+		wifiCalAddr = ioremap(emiInfo->emi_ap_phy_addr + gWiFiCalAddrOffset,
 				gWiFiCalSize);
 		if (wifiCalAddr) {
 			osal_memcpy_toio(wifiCalAddr, gWiFiCalResult, gWiFiCalSize);
 			iounmap(wifiCalAddr);
 			WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_AFTER_RESTORE_CAL_RESULT);
 		} else {
-			WMT_ERR_FUNC("ioremap_nocache fail\n");
+			WMT_ERR_FUNC("ioremap fail\n");
 		}
 	}
 	if (mtk_wcn_wlan_emi_mpu_set_protection)
@@ -3913,7 +3913,7 @@ static INT32 mtk_wcn_soc_calibration_backup(void)
 	WMT_STEP_DO_ACTIONS_FUNC(
 		STEP_TRIGGER_POINT_POWER_ON_AFTER_BT_WIFI_CALIBRATION);
 	gWiFiCalAddrOffset = wifiOffset;
-	virWiFiAddrBase = ioremap_nocache(
+	virWiFiAddrBase = ioremap(
 				emiInfo->emi_ap_phy_addr + gWiFiCalAddrOffset,
 				gWiFiCalSize);
 	if (virWiFiAddrBase) {

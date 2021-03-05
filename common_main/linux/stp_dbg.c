@@ -1454,7 +1454,7 @@ static _osal_inline_ INT32 stp_dbg_fill_hdr(STP_DBG_HDR_T *hdr, INT32 type, INT3
 			      INT32 crc, INT32 dir, INT32 len, INT32 dbg_type)
 {
 
-	struct timeval now;
+	struct timespec64 now;
 	UINT64 ts;
 	ULONG nsec;
 
@@ -1471,7 +1471,7 @@ static _osal_inline_ INT32 stp_dbg_fill_hdr(STP_DBG_HDR_T *hdr, INT32 type, INT3
 	hdr->ack = ack;
 	hdr->seq = seq;
 	hdr->sec = now.tv_sec;
-	hdr->usec = now.tv_usec;
+	hdr->usec = now.tv_nsec / NSEC_PER_USEC;
 	hdr->crc = crc;
 	hdr->dir = dir;	/* rx */
 	hdr->dmy = 0xffffffff;
