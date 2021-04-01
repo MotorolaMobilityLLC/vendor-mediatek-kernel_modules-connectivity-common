@@ -172,6 +172,7 @@ static INT32 consys_cmd_rx_timeout_dump(VOID);
 static INT32 consys_coredump_timeout_dump(VOID);
 static INT32 consys_assert_timeout_dump(VOID);
 static INT32 consys_before_chip_reset_dump(VOID);
+static INT32 consys_ipi_timeout_dump(VOID);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -290,6 +291,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_coredump_timeout_dump = consys_coredump_timeout_dump,
 	.consys_ic_assert_timeout_dump = consys_assert_timeout_dump,
 	.consys_ic_before_chip_reset_dump = consys_before_chip_reset_dump,
+	.consys_ic_ipi_timeout_dump = consys_ipi_timeout_dump,
 
 	.consys_ic_pc_log_dump = dump_conn_mcu_pc_log_wrapper,
 #if (COMMON_KERNEL_CLK_SUPPORT)
@@ -3097,3 +3099,9 @@ INT32 consys_before_chip_reset_dump(VOID)
 {
 	return consys_common_dump("before_chip_reset");
 }
+
+INT32 consys_ipi_timeout_dump(VOID)
+{
+	return consys_common_dump("ipi_timeout");
+}
+
