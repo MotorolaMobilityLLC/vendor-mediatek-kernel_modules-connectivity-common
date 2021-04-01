@@ -761,7 +761,7 @@ INT32 stp_btm_init_trigger_assert_timer(MTKSTP_BTM_T *stp_btm)
 
 INT32 stp_btm_start_trigger_assert_timer(MTKSTP_BTM_T *stp_btm)
 {
-	return osal_timer_start(&stp_btm->trigger_assert_timer, stp_btm->timeout);
+	return osal_timer_modify(&stp_btm->trigger_assert_timer, stp_btm->timeout);
 }
 
 INT32 stp_btm_stop_trigger_assert_timer(MTKSTP_BTM_T *stp_btm)
