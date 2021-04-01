@@ -562,7 +562,7 @@ LONG wmt_dev_tm_temp_query(VOID)
 #define HISTORY_NUM       3
 #define REFRESH_TIME    300	/* sec */
 #define ONE_DAY_LONG    86400	/* sec */
-#define MAX_TEMP    0x54 /* Max temperature for Connsys chip */
+#define MAX_TEMP    0x69 /* Max temperature for Connsys chip */
 
 	static INT32 s_temp_table[HISTORY_NUM] = { 99 };	/* not query yet. */
 	static INT32 s_idx_temp_table;
