@@ -111,6 +111,15 @@ static INT32 consys_emi_coredump_remapping(UINT8 __iomem **addr, UINT32 enable);
 static INT32 consys_reset_emi_coredump(UINT8 __iomem *addr);
 static UINT64 consys_get_options(VOID);
 
+enum connsys_debug_cr {
+	CONNSYS_CPU_CLK = 0,
+	CONNSYS_BUS_CLK = 1,
+	CONNSYS_DEBUG_CR1 = 2,
+	CONNSYS_DEBUG_CR2 = 3,
+	CONNSYS_EMI_REMAP = 4,
+	CONNSYS_CR_MAX
+};
+
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -1133,7 +1142,7 @@ static UINT32 consys_read_cpupcr(VOID)
 #endif
 }
 
-static UINT32 consys_read_debug_crs(ENUM_CONNSYS_DEBUG_CR cr)
+static UINT32 consys_read_debug_crs(enum connsys_debug_cr cr)
 {
 #ifdef CONFIG_OF		/*use DT */
 	P_CONSYS_EMI_ADDR_INFO emi_phy_addr;
