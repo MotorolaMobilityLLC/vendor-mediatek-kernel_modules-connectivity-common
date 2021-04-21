@@ -100,6 +100,70 @@ static INT32 wmt_conf_parse(P_DEV_WMT pWmtDev, const PINT8 pInBuf, UINT32 size);
 ********************************************************************************
 */
 
+// BEGIN IKSWR-71200
+#define ARRAY_VALUE_MAX  72
+
+typedef struct moto_product {
+        char hw_device[ARRAY_VALUE_MAX];
+        char hw_radio[ARRAY_VALUE_MAX];
+        char moto_filename[ARRAY_VALUE_MAX];
+} moto_product;
+
+static moto_product products_list[] = {
+        {"ellis",    "NCA", "ELLIS"},
+        {"ellis",    "CA",  "ELLIS_EPA"},
+
+
+        {{0},        {0},   {0}},
+};
+
+
+void read_cmdline (char *value, char *root_cmdline)
+{
+    char format[ARRAY_VALUE_MAX] = {0};
+    char *rootfsmtd_ptr = strstr(saved_command_line, root_cmdline);
+
+    if (rootfsmtd_ptr) {
+        memcpy(format, root_cmdline, strlen(root_cmdline));
+        strcat(format,"%s");
+        WMT_DBG_FUNC("[WMT-MOTO]format:%s\n", format);
+
+        sscanf(rootfsmtd_ptr, format, value);
+
+        WMT_INFO_FUNC("[WMT-MOTO]read_cmdline:%s%s\n", root_cmdline, value);
+    }
+
+}
+
+ void get_moto_wmt_soc_file_name(char *name)
+{
+	char device[ARRAY_VALUE_MAX] = {0};
+	char radio[ARRAY_VALUE_MAX] = {0};
+        char prefix[ARRAY_VALUE_MAX] = "WMT_SOC";
+	int num = 0;
+	int i = 0;
+
+        read_cmdline(device, "androidboot.device=");
+        read_cmdline(radio, "androidboot.radio=");
+
+
+	num = sizeof(products_list) / sizeof(moto_product);
+	for (i=0; i<num; i++) {
+		if (strncmp(device, (products_list+i)->hw_device, ARRAY_VALUE_MAX) == 0) {
+			if (strncmp(radio, (products_list+i)->hw_radio, ARRAY_VALUE_MAX) == 0 ||
+				strncmp((products_list+i)->hw_radio, "all", ARRAY_VALUE_MAX) == 0) {
+
+                                snprintf(name, ARRAY_VALUE_MAX, "%s_%s.cfg", prefix, (products_list+i)->moto_filename);
+                                WMT_INFO_FUNC("[WMT-MOTO]Use moto WMT_SOC file name: %s\n", name);
+                                return;
+                        }
+                }
+        }
+
+        WMT_INFO_FUNC("[WMT-MOTO]Use default WMT_SOC file name: %s\n", CUST_CFG_WMT_SOC);
+}
+// END IKSWR-71200
+
 static const struct parse_data wmtcfg_fields[] = {
 	CHAR(coex_wmt_ant_mode),
 	CHAR(coex_wmt_ant_mode_ex),
@@ -598,6 +662,7 @@ INT32 wmt_conf_read_file(VOID)
 {
 	INT32 ret = -1;
 	ENUM_WMT_CHIP_TYPE chip_type;
+        char filename[ARRAY_VALUE_MAX] = {0}; // IKSWR-71200
 
 	osal_memset(&gDevWmt.rWmtGenConf, 0, osal_sizeof(gDevWmt.rWmtGenConf));
 	osal_memset(&gDevWmt.pWmtCfg, 0, osal_sizeof(gDevWmt.pWmtCfg));
@@ -605,7 +670,16 @@ INT32 wmt_conf_read_file(VOID)
 	if (chip_type == WMT_CHIP_TYPE_SOC) {
 		osal_memset(&gDevWmt.cWmtcfgName[0], 0, osal_sizeof(gDevWmt.cWmtcfgName));
 
-		osal_strncat(&(gDevWmt.cWmtcfgName[0]), CUST_CFG_WMT_SOC, osal_sizeof(CUST_CFG_WMT_SOC));
+                // BEGIN IKSWR-71200
+                get_moto_wmt_soc_file_name(filename);
+
+                if(strlen(filename)) {
+                   osal_strncat(&(gDevWmt.cWmtcfgName[0]), filename, osal_sizeof(filename));
+                // END IKSWR-71200
+
+                } else {
+		   osal_strncat(&(gDevWmt.cWmtcfgName[0]), CUST_CFG_WMT_SOC, osal_sizeof(CUST_CFG_WMT_SOC));
+                }
 	}
 
 	if (!osal_strlen(&(gDevWmt.cWmtcfgName[0]))) {
