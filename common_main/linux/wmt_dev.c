@@ -44,10 +44,16 @@
 #if WMT_CREATE_NODE_DYNAMIC
 #include <linux/device.h>
 #endif
+#include <linux/version.h>
 #ifdef CONFIG_EARLYSUSPEND
 #include <linux/earlysuspend.h>
 #else
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0))
+#include <linux/of.h>
+#include "mtk_disp_notify.h"
+#else
 #include <linux/fb.h>
+#endif
 #endif
 #include <linux/proc_fs.h>
 #include <mtk_wcn_cmb_stub.h>
@@ -214,6 +220,44 @@ struct early_suspend wmt_early_suspend_handler = {
 #else
 
 static struct notifier_block wmt_fb_notifier;
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0))
+static INT32 wmt_fb_notifier_callback(struct notifier_block *nb, ULONG value, PVOID v)
+{
+	int data = 0;
+
+	if (!v)
+		return 0;
+
+	data = *(int *)v;
+
+	WMT_DBG_FUNC("wmt_fb_notifier_callback\n");
+
+	if (value == MTK_DISP_EVENT_BLANK) {
+		pr_info("%s+\n", __func__);
+		if (data == MTK_DISP_BLANK_UNBLANK) {
+			atomic_set(&g_es_lr_flag_for_quick_sleep, 0);
+			atomic_set(&g_es_lr_flag_for_lpbk_onoff, 1);
+			atomic_set(&g_es_lr_flag_for_blank, 1);
+			WMT_WARN_FUNC("@@@@@@@@@@wmt enter UNBLANK @@@@@@@@@@@@@@\n");
+			if (hif_info == 0)
+				atomic_set(&g_late_pwr_on_for_blank, 1);
+			else
+				schedule_work(&gPwrOnOffWork);
+		} else if (data == MTK_DISP_BLANK_POWERDOWN) {
+			atomic_set(&g_es_lr_flag_for_quick_sleep, 1);
+			atomic_set(&g_es_lr_flag_for_lpbk_onoff, 0);
+			atomic_set(&g_es_lr_flag_for_blank, 0);
+			WMT_WARN_FUNC("@@@@@@@@@@wmt enter early POWERDOWN @@@@@@@@@@@@@@\n");
+			schedule_work(&gPwrOnOffWork);
+		} else {
+			WMT_WARN_FUNC("@@@@@@@@@@data(%d) is not UNBLANK or POWERDOWN @@@@@@@@@@@@@@\n", data);
+		}
+		pr_info("%s-\n", __func__);
+	}
+
+	return 0;
+}
+#else
 static INT32 wmt_fb_notifier_callback(struct notifier_block *self, ULONG event, PVOID data)
 {
 	struct fb_event *evdata = data;
@@ -252,6 +296,7 @@ static INT32 wmt_fb_notifier_callback(struct notifier_block *self, ULONG event, 
 	}
 	return 0;
 }
+#endif
 #endif /* CONFIG_EARLYSUSPEND */
 /*******************************************************************************
 *                          F U N C T I O N S
@@ -1673,7 +1718,11 @@ static INT32 WMT_init(VOID)
 	WMT_INFO_FUNC("register_early_suspend finished\n");
 #else
 	wmt_fb_notifier.notifier_call = wmt_fb_notifier_callback;
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0))
+	ret = mtk_disp_notifier_register("wmt_driver", &wmt_fb_notifier);
+#else
 	ret = fb_register_client(&wmt_fb_notifier);
+#endif
 	if (ret)
 		WMT_ERR_FUNC("wmt register fb_notifier failed! ret(%d)\n", ret);
 	else
@@ -1731,7 +1780,11 @@ static VOID WMT_exit(VOID)
 	unregister_early_suspend(&wmt_early_suspend_handler);
 	WMT_INFO_FUNC("unregister_early_suspend finished\n");
 #else
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0))
+	mtk_disp_notifier_unregister(&wmt_fb_notifier);
+#else
 	fb_unregister_client(&wmt_fb_notifier);
+#endif
 #endif /* CONFIG_EARLYSUSPEND */
 
 	wmt_dev_patch_info_free();
