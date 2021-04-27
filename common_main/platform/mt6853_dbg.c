@@ -6,8 +6,8 @@
 #include "mtk_wcn_consys_hw.h"
 
 
-int g_mapped_reg_table_sz = 15;
-struct reg_map_addr g_mapped_reg_table[] = {
+int g_mapped_reg_table_sz_mt6853 = 15;
+struct reg_map_addr g_mapped_reg_table_mt6853[] = {
 	{ 0x18007000,	NULL,	0x140 },
 	{ 0x180C1100,	NULL,	0x538 },
 	{ 0x180B501C,	NULL,	0x30 },
@@ -25,7 +25,7 @@ struct reg_map_addr g_mapped_reg_table[] = {
 	{ 0x10002028,	NULL,	0x128 },
 };
 
-struct consys_dump_item g_conn_debug_dump[] = {
+static struct consys_dump_item g_conn_debug_dump[] = {
 	{ DUMP_ACT_WRITE,	0,	0x50,	0x80,	0x0},
 	{ DUMP_ACT_READ,	0,	0x0,	0x0,	0x0},
 	{ DUMP_ACT_READ,	0,	0x4,	0x0,	0x0},
@@ -54,13 +54,13 @@ struct consys_dump_item g_conn_debug_dump[] = {
 	{ DUMP_ACT_WRITE,	0,	0x50,	0x0,	0x0},
 };
 
-INT32 dump_conn_debug_dump(const char *trg_str)
+INT32 dump_conn_debug_dump_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_debug_dump",
 			g_conn_debug_dump, ARRAY_SIZE(g_conn_debug_dump));
 }
 
-struct consys_dump_item g_conn_mcu_debug_flag[] = {
+static struct consys_dump_item g_conn_mcu_debug_flag[] = {
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x4C,	0x7E},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x4525101,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
@@ -80,13 +80,13 @@ struct consys_dump_item g_conn_mcu_debug_flag[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_debug_flag(const char *trg_str)
+INT32 dump_conn_mcu_debug_flag_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_debug_flag",
 			g_conn_mcu_debug_flag, ARRAY_SIZE(g_conn_mcu_debug_flag));
 }
 
-struct consys_dump_item g_conn_mcu_ahb_bus_hang_layer1[] = {
+static struct consys_dump_item g_conn_mcu_ahb_bus_hang_layer1[] = {
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x4C,	0x7E},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x525101,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
@@ -106,13 +106,13 @@ struct consys_dump_item g_conn_mcu_ahb_bus_hang_layer1[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_ahb_bus_hang_layer1(const char *trg_str)
+INT32 dump_conn_mcu_ahb_bus_hang_layer1_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_ahb_bus_hang_layer1",
 			g_conn_mcu_ahb_bus_hang_layer1, ARRAY_SIZE(g_conn_mcu_ahb_bus_hang_layer1));
 }
 
-struct consys_dump_item g_conn_mcu_ahb_bus_hang_layer2[] = {
+static struct consys_dump_item g_conn_mcu_ahb_bus_hang_layer2[] = {
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x4525101,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x4545301,	0x0},
@@ -131,13 +131,13 @@ struct consys_dump_item g_conn_mcu_ahb_bus_hang_layer2[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_ahb_bus_hang_layer2(const char *trg_str)
+INT32 dump_conn_mcu_ahb_bus_hang_layer2_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_ahb_bus_hang_layer2",
 			g_conn_mcu_ahb_bus_hang_layer2, ARRAY_SIZE(g_conn_mcu_ahb_bus_hang_layer2));
 }
 
-struct consys_dump_item g_conn_mcu_ahb_bus_hang_layer3[] = {
+static struct consys_dump_item g_conn_mcu_ahb_bus_hang_layer3[] = {
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x8525101,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x8545301,	0x0},
@@ -156,13 +156,13 @@ struct consys_dump_item g_conn_mcu_ahb_bus_hang_layer3[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_ahb_bus_hang_layer3(const char *trg_str)
+INT32 dump_conn_mcu_ahb_bus_hang_layer3_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_ahb_bus_hang_layer3",
 			g_conn_mcu_ahb_bus_hang_layer3, ARRAY_SIZE(g_conn_mcu_ahb_bus_hang_layer3));
 }
 
-struct consys_dump_item g_conn_mcu_ahb_bus_hang_layer4[] = {
+static struct consys_dump_item g_conn_mcu_ahb_bus_hang_layer4[] = {
 	{ DUMP_ACT_WRITE,	0,	0x40,	0xC525101,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0xC545301,	0x0},
@@ -181,13 +181,13 @@ struct consys_dump_item g_conn_mcu_ahb_bus_hang_layer4[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_ahb_bus_hang_layer4(const char *trg_str)
+INT32 dump_conn_mcu_ahb_bus_hang_layer4_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_ahb_bus_hang_layer4",
 			g_conn_mcu_ahb_bus_hang_layer4, ARRAY_SIZE(g_conn_mcu_ahb_bus_hang_layer4));
 }
 
-struct consys_dump_item g_conn_mcu_ahb_timeout_info[] = {
+static struct consys_dump_item g_conn_mcu_ahb_timeout_info[] = {
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x30525101,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x30545301,	0x0},
@@ -238,13 +238,13 @@ struct consys_dump_item g_conn_mcu_ahb_timeout_info[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_ahb_timeout_info(const char *trg_str)
+INT32 dump_conn_mcu_ahb_timeout_info_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_ahb_timeout_info",
 			g_conn_mcu_ahb_timeout_info, ARRAY_SIZE(g_conn_mcu_ahb_timeout_info));
 }
 
-struct consys_dump_item g_conn_bus_hang_debug[] = {
+static struct consys_dump_item g_conn_bus_hang_debug[] = {
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x31525101,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x31545301,	0x0},
@@ -291,13 +291,13 @@ struct consys_dump_item g_conn_bus_hang_debug[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_bus_hang_debug(const char *trg_str)
+INT32 dump_conn_bus_hang_debug_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_bus_hang_debug",
 			g_conn_bus_hang_debug, ARRAY_SIZE(g_conn_bus_hang_debug));
 }
 
-struct consys_dump_item g_conn_mcu_apb_timeout_info[] = {
+static struct consys_dump_item g_conn_mcu_apb_timeout_info[] = {
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x28525101,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x28545301,	0x0},
@@ -312,13 +312,13 @@ struct consys_dump_item g_conn_mcu_apb_timeout_info[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_apb_timeout_info(const char *trg_str)
+INT32 dump_conn_mcu_apb_timeout_info_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_apb_timeout_info",
 			g_conn_mcu_apb_timeout_info, ARRAY_SIZE(g_conn_mcu_apb_timeout_info));
 }
 
-struct consys_dump_item g_conn_apb_bus0_hang[] = {
+static struct consys_dump_item g_conn_apb_bus0_hang[] = {
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x4C,	0x7E},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x1565501,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
@@ -358,13 +358,13 @@ struct consys_dump_item g_conn_apb_bus0_hang[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_apb_bus0_hang(const char *trg_str)
+INT32 dump_conn_apb_bus0_hang_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_apb_bus0_hang",
 			g_conn_apb_bus0_hang, ARRAY_SIZE(g_conn_apb_bus0_hang));
 }
 
-struct consys_dump_item g_conn_apb_bus1_hang[] = {
+static struct consys_dump_item g_conn_apb_bus1_hang[] = {
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x4C,	0x7E},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x15A5901,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
@@ -404,13 +404,13 @@ struct consys_dump_item g_conn_apb_bus1_hang[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_apb_bus1_hang(const char *trg_str)
+INT32 dump_conn_apb_bus1_hang_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_apb_bus1_hang",
 			g_conn_apb_bus1_hang, ARRAY_SIZE(g_conn_apb_bus1_hang));
 }
 
-struct consys_dump_item g_conn_apb_bus2_hang[] = {
+static struct consys_dump_item g_conn_apb_bus2_hang[] = {
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x4C,	0x7E},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x15A5901,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
@@ -450,13 +450,13 @@ struct consys_dump_item g_conn_apb_bus2_hang[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_apb_bus2_hang(const char *trg_str)
+INT32 dump_conn_apb_bus2_hang_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_apb_bus2_hang",
 			g_conn_apb_bus2_hang, ARRAY_SIZE(g_conn_apb_bus2_hang));
 }
 
-struct consys_dump_item g_conn_emi_ctrl_host_csr[] = {
+static struct consys_dump_item g_conn_emi_ctrl_host_csr[] = {
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x4C,	0x7E},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x424101,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
@@ -464,25 +464,25 @@ struct consys_dump_item g_conn_emi_ctrl_host_csr[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_emi_ctrl_host_csr(const char *trg_str)
+INT32 dump_conn_emi_ctrl_host_csr_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_emi_ctrl_host_csr",
 			g_conn_emi_ctrl_host_csr, ARRAY_SIZE(g_conn_emi_ctrl_host_csr));
 }
 
-struct consys_dump_item g_conn_mcu_confg_emi_ctrl[] = {
+static struct consys_dump_item g_conn_mcu_confg_emi_ctrl[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_confg_emi_ctrl(const char *trg_str)
+INT32 dump_conn_mcu_confg_emi_ctrl_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_confg_emi_ctrl",
 			g_conn_mcu_confg_emi_ctrl, ARRAY_SIZE(g_conn_mcu_confg_emi_ctrl));
 }
 
-struct consys_dump_item g_conn_mcu_pc_log[] = {
+static struct consys_dump_item g_conn_mcu_pc_log[] = {
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x0,	0x7E},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x2,	0x7E},
@@ -569,13 +569,13 @@ struct consys_dump_item g_conn_mcu_pc_log[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_pc_log(const char *trg_str)
+INT32 dump_conn_mcu_pc_log_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_pc_log",
 			g_conn_mcu_pc_log, ARRAY_SIZE(g_conn_mcu_pc_log));
 }
 
-struct consys_dump_item g_conn_mcu_cpu_probe[] = {
+static struct consys_dump_item g_conn_mcu_cpu_probe[] = {
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x4C,	0x7E},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x20101,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
@@ -583,13 +583,13 @@ struct consys_dump_item g_conn_mcu_cpu_probe[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_cpu_probe(const char *trg_str)
+INT32 dump_conn_mcu_cpu_probe_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_cpu_probe",
 			g_conn_mcu_cpu_probe, ARRAY_SIZE(g_conn_mcu_cpu_probe));
 }
 
-struct consys_dump_item g_conn_mcu_ahb_probe[] = {
+static struct consys_dump_item g_conn_mcu_ahb_probe[] = {
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x4C,	0x7E},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x60501,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
@@ -597,25 +597,25 @@ struct consys_dump_item g_conn_mcu_ahb_probe[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_ahb_probe(const char *trg_str)
+INT32 dump_conn_mcu_ahb_probe_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_ahb_probe",
 			g_conn_mcu_ahb_probe, ARRAY_SIZE(g_conn_mcu_ahb_probe));
 }
 
-struct consys_dump_item g_conn_mcu_idlm_prot_prob[] = {
+static struct consys_dump_item g_conn_mcu_idlm_prot_prob[] = {
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x4C,	0x7E},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0xA0901,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_idlm_prot_prob(const char *trg_str)
+INT32 dump_conn_mcu_idlm_prot_prob_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_idlm_prot_prob",
 			g_conn_mcu_idlm_prot_prob, ARRAY_SIZE(g_conn_mcu_idlm_prot_prob));
 }
 
-struct consys_dump_item g_conn_mcu_wf_cmdbt_ram_prob[] = {
+static struct consys_dump_item g_conn_mcu_wf_cmdbt_ram_prob[] = {
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x4C,	0x7E},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0xE0D01,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
@@ -623,13 +623,13 @@ struct consys_dump_item g_conn_mcu_wf_cmdbt_ram_prob[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_wf_cmdbt_ram_prob(const char *trg_str)
+INT32 dump_conn_mcu_wf_cmdbt_ram_prob_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_wf_cmdbt_ram_prob",
 			g_conn_mcu_wf_cmdbt_ram_prob, ARRAY_SIZE(g_conn_mcu_wf_cmdbt_ram_prob));
 }
 
-struct consys_dump_item g_conn_mcu_pda_dbg_flag[] = {
+static struct consys_dump_item g_conn_mcu_pda_dbg_flag[] = {
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x4C,	0x7E},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x121101,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
@@ -637,13 +637,13 @@ struct consys_dump_item g_conn_mcu_pda_dbg_flag[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_pda_dbg_flag(const char *trg_str)
+INT32 dump_conn_mcu_pda_dbg_flag_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_pda_dbg_flag",
 			g_conn_mcu_pda_dbg_flag, ARRAY_SIZE(g_conn_mcu_pda_dbg_flag));
 }
 
-struct consys_dump_item g_conn_mcu_sysram_prb[] = {
+static struct consys_dump_item g_conn_mcu_sysram_prb[] = {
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x4C,	0x7E},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x161501,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
@@ -651,13 +651,13 @@ struct consys_dump_item g_conn_mcu_sysram_prb[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_sysram_prb(const char *trg_str)
+INT32 dump_conn_mcu_sysram_prb_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_sysram_prb",
 			g_conn_mcu_sysram_prb, ARRAY_SIZE(g_conn_mcu_sysram_prb));
 }
 
-struct consys_dump_item g_conn_mcu_confg[] = {
+static struct consys_dump_item g_conn_mcu_confg[] = {
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x4C,	0x7E},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x1A1901,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
@@ -689,13 +689,13 @@ struct consys_dump_item g_conn_mcu_confg[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_confg(const char *trg_str)
+INT32 dump_conn_mcu_confg_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_confg",
 			g_conn_mcu_confg, ARRAY_SIZE(g_conn_mcu_confg));
 }
 
-struct consys_dump_item g_conn_mcu_i_eidlm[] = {
+static struct consys_dump_item g_conn_mcu_i_eidlm[] = {
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x4C,	0x7E},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x262501,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
@@ -707,13 +707,13 @@ struct consys_dump_item g_conn_mcu_i_eidlm[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_i_eidlm(const char *trg_str)
+INT32 dump_conn_mcu_i_eidlm_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_i_eidlm",
 			g_conn_mcu_i_eidlm, ARRAY_SIZE(g_conn_mcu_i_eidlm));
 }
 
-struct consys_dump_item g_conn_mcu_dma[] = {
+static struct consys_dump_item g_conn_mcu_dma[] = {
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x4C,	0x7E},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x2E2D01,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
@@ -721,13 +721,13 @@ struct consys_dump_item g_conn_mcu_dma[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_dma(const char *trg_str)
+INT32 dump_conn_mcu_dma_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_dma",
 			g_conn_mcu_dma, ARRAY_SIZE(g_conn_mcu_dma));
 }
 
-struct consys_dump_item g_conn_mcu_tcm_prob[] = {
+static struct consys_dump_item g_conn_mcu_tcm_prob[] = {
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x4C,	0x7E},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x323101,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
@@ -735,13 +735,13 @@ struct consys_dump_item g_conn_mcu_tcm_prob[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_tcm_prob(const char *trg_str)
+INT32 dump_conn_mcu_tcm_prob_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_tcm_prob",
 			g_conn_mcu_tcm_prob, ARRAY_SIZE(g_conn_mcu_tcm_prob));
 }
 
-struct consys_dump_item g_conn_mcu_met_prob[] = {
+static struct consys_dump_item g_conn_mcu_met_prob[] = {
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x4C,	0x7E},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x363501,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
@@ -749,13 +749,13 @@ struct consys_dump_item g_conn_mcu_met_prob[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_met_prob(const char *trg_str)
+INT32 dump_conn_mcu_met_prob_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_met_prob",
 			g_conn_mcu_met_prob, ARRAY_SIZE(g_conn_mcu_met_prob));
 }
 
-struct consys_dump_item g_conn_mcusys_n9[] = {
+static struct consys_dump_item g_conn_mcusys_n9[] = {
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x323101,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x343301,	0x0},
@@ -774,26 +774,26 @@ struct consys_dump_item g_conn_mcusys_n9[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcusys_n9(const char *trg_str)
+INT32 dump_conn_mcusys_n9_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcusys_n9",
 			g_conn_mcusys_n9, ARRAY_SIZE(g_conn_mcusys_n9));
 }
 
-struct consys_dump_item g_conn_mcu_uart_dbg_loop[] = {
+static struct consys_dump_item g_conn_mcu_uart_dbg_loop[] = {
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x464501,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x484701,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_uart_dbg_loop(const char *trg_str)
+INT32 dump_conn_mcu_uart_dbg_loop_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_uart_dbg_loop",
 			g_conn_mcu_uart_dbg_loop, ARRAY_SIZE(g_conn_mcu_uart_dbg_loop));
 }
 
-struct consys_dump_item g_conn_cfg_on_Debug_Signal[] = {
+static struct consys_dump_item g_conn_cfg_on_Debug_Signal[] = {
 	{ DUMP_ACT_WRITE,	1,	0x220,	0x80000000,	0x80000000},
 	{ DUMP_ACT_WRITE,	1,	0x220,	0x1,	0x7},
 	{ DUMP_ACT_WRITE,	1,	0x228,	0x3020100,	0x0},
@@ -838,13 +838,13 @@ struct consys_dump_item g_conn_cfg_on_Debug_Signal[] = {
 	{ DUMP_ACT_READ,	1,	0x240,	0x0,	0x0},
 };
 
-INT32 dump_conn_cfg_on_Debug_Signal(const char *trg_str)
+INT32 dump_conn_cfg_on_Debug_Signal_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_cfg_on_Debug_Signal",
 			g_conn_cfg_on_Debug_Signal, ARRAY_SIZE(g_conn_cfg_on_Debug_Signal));
 }
 
-struct consys_dump_item g_conn_cfg_on_register[] = {
+static struct consys_dump_item g_conn_cfg_on_register[] = {
 	{ DUMP_ACT_READ,	1,	0x0,	0x0,	0x0},
 	{ DUMP_ACT_READ,	1,	0x4,	0x0,	0x0},
 	{ DUMP_ACT_READ,	1,	0x8,	0x0,	0x0},
@@ -869,13 +869,13 @@ struct consys_dump_item g_conn_cfg_on_register[] = {
 	{ DUMP_ACT_READ,	1,	0x534,	0x0,	0x0},
 };
 
-INT32 dump_conn_cfg_on_register(const char *trg_str)
+INT32 dump_conn_cfg_on_register_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_cfg_on_register",
 			g_conn_cfg_on_register, ARRAY_SIZE(g_conn_cfg_on_register));
 }
 
-struct consys_dump_item g_conn_cmdbt_debug_signal[] = {
+static struct consys_dump_item g_conn_cmdbt_debug_signal[] = {
 	{ DUMP_ACT_WRITE,	2,	0x1C,	0x2,	0x2},
 	{ DUMP_ACT_WRITE,	2,	0x0,	0x3020100,	0x0},
 	{ DUMP_ACT_WRITE,	2,	0x4,	0x7060504,	0x0},
@@ -929,24 +929,24 @@ struct consys_dump_item g_conn_cmdbt_debug_signal[] = {
 	{ DUMP_ACT_READ,	2,	0x2C,	0x0,	0x0},
 };
 
-INT32 dump_conn_cmdbt_debug_signal(const char *trg_str)
+INT32 dump_conn_cmdbt_debug_signal_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_cmdbt_debug_signal",
 			g_conn_cmdbt_debug_signal, ARRAY_SIZE(g_conn_cmdbt_debug_signal));
 }
 
-struct consys_dump_item g_conn_cmdbt_register[] = {
+static struct consys_dump_item g_conn_cmdbt_register[] = {
 	{ DUMP_ACT_READ,	3,	0x0,	0x0,	0x0},
 	{ DUMP_ACT_READ,	3,	0x1C,	0x0,	0x0},
 };
 
-INT32 dump_conn_cmdbt_register(const char *trg_str)
+INT32 dump_conn_cmdbt_register_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_cmdbt_register",
 			g_conn_cmdbt_register, ARRAY_SIZE(g_conn_cmdbt_register));
 }
 
-struct consys_dump_item g_conn_emi_detect[] = {
+static struct consys_dump_item g_conn_emi_detect[] = {
 	{ DUMP_ACT_READ,	4,	0x0,	0x0,	0x0},
 	{ DUMP_ACT_READ,	4,	0x4,	0x0,	0x0},
 	{ DUMP_ACT_READ,	4,	0x8,	0x0,	0x0},
@@ -955,24 +955,24 @@ struct consys_dump_item g_conn_emi_detect[] = {
 	{ DUMP_ACT_READ,	5,	0x4,	0x0,	0x0},
 };
 
-INT32 dump_conn_emi_detect(const char *trg_str)
+INT32 dump_conn_emi_detect_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_emi_detect",
 			g_conn_emi_detect, ARRAY_SIZE(g_conn_emi_detect));
 }
 
-struct consys_dump_item g_conn_cmdbt_debug[] = {
+static struct consys_dump_item g_conn_cmdbt_debug[] = {
 	{ DUMP_ACT_READ,	6,	0x90,	0x0,	0x0},
 	{ DUMP_ACT_READ,	6,	0x0,	0x0,	0x0},
 };
 
-INT32 dump_conn_cmdbt_debug(const char *trg_str)
+INT32 dump_conn_cmdbt_debug_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_cmdbt_debug",
 			g_conn_cmdbt_debug, ARRAY_SIZE(g_conn_cmdbt_debug));
 }
 
-struct consys_dump_item g_conn_hif_reg_debug[] = {
+static struct consys_dump_item g_conn_hif_reg_debug[] = {
 	{ DUMP_ACT_READ,	7,	0x0,	0x0,	0x0},
 	{ DUMP_ACT_READ,	7,	0x4,	0x0,	0x0},
 	{ DUMP_ACT_READ,	7,	0xC,	0x0,	0x0},
@@ -984,13 +984,13 @@ struct consys_dump_item g_conn_hif_reg_debug[] = {
 	{ DUMP_ACT_READ,	7,	0x24,	0x0,	0x0},
 };
 
-INT32 dump_conn_hif_reg_debug(const char *trg_str)
+INT32 dump_conn_hif_reg_debug_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_hif_reg_debug",
 			g_conn_hif_reg_debug, ARRAY_SIZE(g_conn_hif_reg_debug));
 }
 
-struct consys_dump_item g_conn_mcu_confg_bus_hang_reg[] = {
+static struct consys_dump_item g_conn_mcu_confg_bus_hang_reg[] = {
 	{ DUMP_ACT_READ,	8,	0x140,	0x0,	0x0},
 	{ DUMP_ACT_READ,	8,	0x144,	0x0,	0x0},
 	{ DUMP_ACT_READ,	8,	0x148,	0x0,	0x0},
@@ -1009,13 +1009,13 @@ struct consys_dump_item g_conn_mcu_confg_bus_hang_reg[] = {
 	{ DUMP_ACT_READ,	8,	0x14,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_confg_bus_hang_reg(const char *trg_str)
+INT32 dump_conn_mcu_confg_bus_hang_reg_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_confg_bus_hang_reg",
 			g_conn_mcu_confg_bus_hang_reg, ARRAY_SIZE(g_conn_mcu_confg_bus_hang_reg));
 }
 
-struct consys_dump_item g_wf_pdma_reg_debug[] = {
+static struct consys_dump_item g_wf_pdma_reg_debug[] = {
 	{ DUMP_ACT_READ,	9,	0x100,	0x0,	0x0},
 	{ DUMP_ACT_READ,	9,	0x108,	0x0,	0x0},
 	{ DUMP_ACT_READ,	9,	0x0,	0x0,	0x0},
@@ -1112,13 +1112,13 @@ struct consys_dump_item g_wf_pdma_reg_debug[] = {
 	{ DUMP_ACT_READ,	9,	0x60,	0x0,	0x0},
 };
 
-INT32 dump_wf_pdma_reg_debug(const char *trg_str)
+INT32 dump_wf_pdma_reg_debug_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "wf_pdma_reg_debug",
 			g_wf_pdma_reg_debug, ARRAY_SIZE(g_wf_pdma_reg_debug));
 }
 
-struct consys_dump_item g_conn_to_EMI_bus_path[] = {
+static struct consys_dump_item g_conn_to_EMI_bus_path[] = {
 	{ DUMP_ACT_READ,	10,	0x0,	0x0,	0x0},
 	{ DUMP_ACT_READ,	11,	0x0,	0x0,	0x0},
 	{ DUMP_ACT_READ,	12,	0x0,	0x0,	0x0},
@@ -1135,7 +1135,7 @@ struct consys_dump_item g_conn_to_EMI_bus_path[] = {
 	{ DUMP_ACT_READ,	14,	0x0,	0x0,	0x0},
 };
 
-INT32 dump_conn_to_EMI_bus_path(const char *trg_str)
+INT32 dump_conn_to_EMI_bus_path_mt6853(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_to_EMI_bus_path",
 			g_conn_to_EMI_bus_path, ARRAY_SIZE(g_conn_to_EMI_bus_path));

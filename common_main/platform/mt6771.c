@@ -106,6 +106,8 @@ static INT32 consys_emi_coredump_remapping(UINT8 __iomem **addr, UINT32 enable);
 static INT32 consys_reset_emi_coredump(UINT8 __iomem *addr);
 static INT32 consys_dump_osc_state(P_CONSYS_STATE state);
 static UINT64 consys_get_options(VOID);
+static INT32 consys_jtag_set_for_mcu(VOID);
+static UINT32 consys_jtag_flag_ctrl(UINT32 enable);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -116,17 +118,17 @@ struct bt_wifi_v33_status gBtWifiV33;
 #endif
 
 /* CCF part */
-struct clk *clk_scp_conn_main;	/*ctrl conn_power_on/off */
+static struct clk *clk_scp_conn_main;	/*ctrl conn_power_on/off */
 
 /* PMIC part */
 #if CONSYS_PMIC_CTRL_ENABLE
-struct regulator *reg_VCN18;
-struct regulator *reg_VCN28;
-struct regulator *reg_VCN33_BT;
-struct regulator *reg_VCN33_WIFI;
+static struct regulator *reg_VCN18;
+static struct regulator *reg_VCN28;
+static struct regulator *reg_VCN33_BT;
+static struct regulator *reg_VCN33_WIFI;
 #endif
 
-EMI_CTRL_STATE_OFFSET mtk_wcn_emi_state_off = {
+static EMI_CTRL_STATE_OFFSET mtk_wcn_emi_state_off = {
 	.emi_apmem_ctrl_state = EXP_APMEM_CTRL_STATE,
 	.emi_apmem_ctrl_host_sync_state = EXP_APMEM_CTRL_HOST_SYNC_STATE,
 	.emi_apmem_ctrl_host_sync_num = EXP_APMEM_CTRL_HOST_SYNC_NUM,
@@ -144,7 +146,7 @@ EMI_CTRL_STATE_OFFSET mtk_wcn_emi_state_off = {
 	.emi_apmem_ctrl_assert_flag = EXP_APMEM_CTRL_ASSERT_FLAG,
 };
 
-CONSYS_EMI_ADDR_INFO mtk_wcn_emi_addr_info = {
+static CONSYS_EMI_ADDR_INFO mtk_wcn_emi_addr_info = {
 	.emi_phy_addr = CONSYS_EMI_FW_PHY_BASE,
 	.paged_trace_off = CONSYS_EMI_PAGED_TRACE_OFFSET,
 	.paged_dump_off = CONSYS_EMI_PAGED_DUMP_OFFSET,
@@ -154,7 +156,7 @@ CONSYS_EMI_ADDR_INFO mtk_wcn_emi_addr_info = {
 	.emi_core_dump_offset = CONSYS_EMI_COREDUMP_OFFSET,
 };
 
-WMT_CONSYS_IC_OPS consys_ic_ops = {
+WMT_CONSYS_IC_OPS consys_ic_ops_mt6771 = {
 	.consys_ic_clock_buffer_ctrl = consys_clock_buffer_ctrl,
 	.consys_ic_hw_reset_bit_set = consys_hw_reset_bit_set,
 	.consys_ic_hw_spm_clk_gating_enable = consys_hw_spm_clk_gating_enable,
@@ -188,6 +190,8 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_reset_emi_coredump = consys_reset_emi_coredump,
 	.consys_ic_dump_osc_state = consys_dump_osc_state,
 	.consys_ic_get_options = consys_get_options,
+	.consys_ic_jtag_set_for_mcu = consys_jtag_set_for_mcu,
+	.consys_ic_jtag_flag_ctrl = consys_jtag_flag_ctrl,
 };
 
 /*******************************************************************************
@@ -199,7 +203,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 *                              F U N C T I O N S
 ********************************************************************************
 */
-UINT32 gJtagCtrl;
+static UINT32 gJtagCtrl;
 
 #if CONSYS_ENALBE_SET_JTAG
 #define JTAG_ADDR1_BASE 0x10005000
@@ -208,7 +212,7 @@ UINT32 gJtagCtrl;
 #define AP2CONN_JTAG_2WIRE_OFFSET 0xF00
 #endif
 
-INT32 mtk_wcn_consys_jtag_set_for_mcu(VOID)
+static INT32 consys_jtag_set_for_mcu(VOID)
 {
 #if CONSYS_ENALBE_SET_JTAG
 	INT32 ret = 0;
@@ -356,10 +360,10 @@ error:
 	return ret;
 }
 
-UINT32 mtk_wcn_consys_jtag_flag_ctrl(UINT32 en)
+static UINT32 consys_jtag_flag_ctrl(UINT32 enable)
 {
-	WMT_PLAT_PR_INFO("%s jtag set for MCU\n", en ? "enable" : "disable");
-	gJtagCtrl = en;
+	WMT_PLAT_PR_INFO("%s jtag set for MCU\n", enable ? "enable" : "disable");
+	gJtagCtrl = enable;
 	return 0;
 }
 
@@ -1066,11 +1070,6 @@ static UINT32 consys_soc_chipid_get(VOID)
 static P_CONSYS_EMI_ADDR_INFO consys_soc_get_emi_phy_add(VOID)
 {
 	return &mtk_wcn_emi_addr_info;
-}
-
-P_WMT_CONSYS_IC_OPS mtk_wcn_get_consys_ic_ops(VOID)
-{
-	return &consys_ic_ops;
 }
 
 static INT32 consys_emi_coredump_remapping(UINT8 __iomem **addr, UINT32 enable)

@@ -429,6 +429,7 @@ INT32 wmt_plat_set_dynamic_dumpmem(PUINT32 buf);
 #if CFG_WMT_LTE_COEX_HANDLING
 INT32 wmt_plat_get_tdm_antsel_index(VOID);
 #endif
+INT32 wmt_plat_consys_hw_init(VOID);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

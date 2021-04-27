@@ -107,32 +107,37 @@ static OSAL_UNSLEEPABLE_LOCK g_sleep_counter_spinlock;
 static atomic_t g_probe_called = ATOMIC_INIT(0);
 
 #ifdef CONFIG_OF
+
+WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6580 = {};
+WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6739 = {};
+WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt8163 = {};
+WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt8167 = {};
+WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6771 = {};
+WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6765 = {};
+WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6761 = {};
+WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6779 = {};
+WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6768 = {};
+WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6785 = {};
+WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6833 = {};
+WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6853 = {};
+WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6873 = {};
+WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt8168 = {};
+
 const struct of_device_id apwmt_of_ids[] = {
-	{.compatible = "mediatek,mt3967-consys",},
-	{.compatible = "mediatek,mt6570-consys",},
-	{.compatible = "mediatek,mt6580-consys",},
-	{.compatible = "mediatek,mt6735-consys",},
-	{.compatible = "mediatek,mt6739-consys",},
-	{.compatible = "mediatek,mt6755-consys",},
-	{.compatible = "mediatek,mt6757-consys",},
-	{.compatible = "mediatek,mt6758-consys",},
-	{.compatible = "mediatek,mt6759-consys",},
-	{.compatible = "mediatek,mt6763-consys",},
-	{.compatible = "mediatek,mt6797-consys",},
-	{.compatible = "mediatek,mt8127-consys",},
-	{.compatible = "mediatek,mt8163-consys",},
-	{.compatible = "mediatek,mt8167-consys",},
-	{.compatible = "mediatek,mt6775-consys",},
-	{.compatible = "mediatek,mt6771-consys",},
-	{.compatible = "mediatek,mt6765-consys",},
-	{.compatible = "mediatek,mt6761-consys",},
-	{.compatible = "mediatek,mt6779-consys",},
-	{.compatible = "mediatek,mt6768-consys",},
-	{.compatible = "mediatek,mt6785-consys",},
-	{.compatible = "mediatek,mt6833-consys",},
-	{.compatible = "mediatek,mt6853-consys",},
-	{.compatible = "mediatek,mt6873-consys",},
-	{.compatible = "mediatek,mt8168-consys",},
+	{.compatible = "mediatek,mt6580-consys", .data = &consys_ic_ops_mt6580},
+	{.compatible = "mediatek,mt6739-consys", .data = &consys_ic_ops_mt6739},
+	{.compatible = "mediatek,mt8163-consys", .data = &consys_ic_ops_mt8163},
+	{.compatible = "mediatek,mt8167-consys", .data = &consys_ic_ops_mt8167},
+	{.compatible = "mediatek,mt6771-consys", .data = &consys_ic_ops_mt6771},
+	{.compatible = "mediatek,mt6765-consys", .data = &consys_ic_ops_mt6765},
+	{.compatible = "mediatek,mt6761-consys", .data = &consys_ic_ops_mt6761},
+	{.compatible = "mediatek,mt6779-consys", .data = &consys_ic_ops_mt6779},
+	{.compatible = "mediatek,mt6768-consys", .data = &consys_ic_ops_mt6768},
+	{.compatible = "mediatek,mt6785-consys", .data = &consys_ic_ops_mt6785},
+	{.compatible = "mediatek,mt6833-consys", .data = &consys_ic_ops_mt6833},
+	{.compatible = "mediatek,mt6853-consys", .data = &consys_ic_ops_mt6853},
+	{.compatible = "mediatek,mt6873-consys", .data = &consys_ic_ops_mt6873},
+	{.compatible = "mediatek,mt8168-consys", .data = &consys_ic_ops_mt8168},
 	{}
 };
 struct CONSYS_BASE_ADDRESS conn_reg;
@@ -179,32 +184,50 @@ static const struct thermal_zone_of_device_ops tz_wmt_thermal_ops = {
 *                              F U N C T I O N S
 ********************************************************************************
 */
-INT32 __weak mtk_wcn_consys_jtag_set_for_mcu(VOID)
+INT32 mtk_wcn_consys_jtag_set_for_mcu(VOID)
 {
-	WMT_PLAT_PR_WARN("Does not support on combo\n");
+	if (wmt_consys_ic_ops->consys_ic_jtag_set_for_mcu)
+		return wmt_consys_ic_ops->consys_ic_jtag_set_for_mcu();
+
 	return 0;
 }
 
 #if CONSYS_ENALBE_SET_JTAG
-UINT32 __weak mtk_wcn_consys_jtag_flag_ctrl(UINT32 en)
+UINT32 mtk_wcn_consys_jtag_flag_ctrl(UINT32 en)
 {
-	WMT_PLAT_PR_WARN("Does not support on combo\n");
+	if (wmt_consys_ic_ops->consys_ic_jtag_flag_ctrl)
+		return wmt_consys_ic_ops->consys_ic_jtag_flag_ctrl(en);
+
 	return 0;
 }
 #endif
 
 #ifdef CONSYS_WMT_REG_SUSPEND_CB_ENABLE
-UINT32 __weak mtk_wcn_consys_hw_osc_en_ctrl(UINT32 en)
+UINT32 mtk_wcn_consys_hw_osc_en_ctrl(UINT32 en)
 {
-	WMT_PLAT_PR_WARN("Does not support on combo\n");
+	if (wmt_consys_ic_ops->consys_ic_hw_osc_en_ctrl)
+		return wmt_consys_ic_ops->consys_ic_hw_osc_en_ctrl(en);
+
 	return 0;
 }
 #endif
 
-P_WMT_CONSYS_IC_OPS __weak mtk_wcn_get_consys_ic_ops(VOID)
+P_WMT_CONSYS_IC_OPS mtk_wcn_get_consys_ic_ops(VOID)
 {
-	WMT_PLAT_PR_WARN("Does not support on combo\n");
-	return NULL;
+	const struct of_device_id *of_id = NULL;
+
+	if (!g_pdev) {
+		WMT_PLAT_PR_INFO("g_pdev is NULL\n");
+		return NULL;
+	}
+
+	of_id = of_match_node(apwmt_of_ids, g_pdev->dev.of_node);
+	if (!of_id || !of_id->data) {
+		WMT_PLAT_PR_INFO("failed to look up compatible string\n");
+		return NULL;
+	}
+
+	return (P_WMT_CONSYS_IC_OPS)of_id->data;
 }
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
@@ -305,6 +328,12 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 		g_pdev = pdev;
 	else {
 		WMT_PLAT_PR_ERR("pdev is NULL\n");
+		return -1;
+	}
+
+	wmt_consys_ic_ops = mtk_wcn_get_consys_ic_ops();
+	if (!wmt_consys_ic_ops) {
+		WMT_PLAT_PR_INFO("wmt_consys_ic_ops is NULL\n");
 		return -1;
 	}
 
@@ -948,9 +977,6 @@ INT32 mtk_wcn_consys_hw_init(VOID)
 {
 	INT32 iRet = -1, retry = 0;
 
-	if (wmt_consys_ic_ops == NULL)
-		wmt_consys_ic_ops = mtk_wcn_get_consys_ic_ops();
-
 	iRet = platform_driver_register(&mtk_wmt_dev_drv);
 	if (iRet)
 		WMT_PLAT_PR_ERR("WMT platform driver registered failed(%d)\n", iRet);
@@ -964,7 +990,7 @@ INT32 mtk_wcn_consys_hw_init(VOID)
 	}
 
 #if WMT_DBG_SUPPORT
-	mtk_wcn_dump_util_init();
+	mtk_wcn_dump_util_init(mtk_wcn_consys_soc_chipid());
 #endif
 	return iRet;
 
@@ -980,7 +1006,10 @@ INT32 mtk_wcn_consys_hw_deinit(VOID)
 #ifdef CONFIG_MTK_HIBERNATION
 	unregister_swsusp_restore_noirq_func(ID_M_CONNSYS);
 #endif
+
+#if WMT_DBG_SUPPORT
 	mtk_wcn_dump_util_destroy();
+#endif
 
 	platform_driver_unregister(&mtk_wmt_dev_drv);
 	unregister_syscore_ops(&wmt_dbg_syscore_ops);

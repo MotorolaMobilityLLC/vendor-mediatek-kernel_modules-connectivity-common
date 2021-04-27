@@ -170,13 +170,16 @@ static INT32 consys_coredump_timeout_dump(VOID);
 static INT32 consys_assert_timeout_dump(VOID);
 static INT32 consys_before_chip_reset_dump(VOID);
 
+static INT32 consys_jtag_set_for_mcu(VOID);
+static UINT32 consys_jtag_flag_ctrl(UINT32 enable);
+
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
 */
 /* CCF part */
 #if (!COMMON_KERNEL_CLK_SUPPORT)
-struct clk *clk_scp_conn_main;	/*ctrl conn_power_on/off */
+static struct clk *clk_scp_conn_main;	/*ctrl conn_power_on/off */
 #endif
 static struct clk *clk_infracfg_ao_ccif4_ap_cg;       /* For direct path */
 
@@ -186,14 +189,14 @@ static struct platform_device *connsys_pdev;
 
 /* PMIC part */
 #if CONSYS_PMIC_CTRL_ENABLE
-struct regulator *reg_VCN13;
-struct regulator *reg_VCN18;
-struct regulator *reg_VCN33_1_BT;
-struct regulator *reg_VCN33_1_WIFI;
-struct regulator *reg_VCN33_2_WIFI;
+static struct regulator *reg_VCN13;
+static struct regulator *reg_VCN18;
+static struct regulator *reg_VCN33_1_BT;
+static struct regulator *reg_VCN33_1_WIFI;
+static struct regulator *reg_VCN33_2_WIFI;
 #endif
 
-EMI_CTRL_STATE_OFFSET mtk_wcn_emi_state_off = {
+static EMI_CTRL_STATE_OFFSET mtk_wcn_emi_state_off = {
 	.emi_apmem_ctrl_state = EXP_APMEM_CTRL_STATE,
 	.emi_apmem_ctrl_host_sync_state = EXP_APMEM_CTRL_HOST_SYNC_STATE,
 	.emi_apmem_ctrl_host_sync_num = EXP_APMEM_CTRL_HOST_SYNC_NUM,
@@ -212,7 +215,7 @@ EMI_CTRL_STATE_OFFSET mtk_wcn_emi_state_off = {
 	.emi_apmem_ctrl_chip_check_sleep = EXP_APMEM_CTRL_CHIP_CHECK_SLEEP,
 };
 
-CONSYS_EMI_ADDR_INFO mtk_wcn_emi_addr_info = {
+static CONSYS_EMI_ADDR_INFO mtk_wcn_emi_addr_info = {
 	.emi_phy_addr = CONSYS_EMI_FW_PHY_BASE,
 	.paged_trace_off = CONSYS_EMI_PAGED_TRACE_OFFSET,
 	.paged_dump_off = CONSYS_EMI_PAGED_DUMP_OFFSET,
@@ -225,7 +228,7 @@ CONSYS_EMI_ADDR_INFO mtk_wcn_emi_addr_info = {
 	.emi_core_dump_offset = CONSYS_EMI_COREDUMP_OFFSET,
 };
 
-WMT_CONSYS_IC_OPS consys_ic_ops = {
+WMT_CONSYS_IC_OPS consys_ic_ops_mt6873 = {
 	.consys_ic_clock_buffer_ctrl = consys_clock_buffer_ctrl,
 	.consys_ic_hw_reset_bit_set = consys_hw_reset_bit_set,
 	.consys_ic_hw_spm_clk_gating_enable = consys_hw_spm_clk_gating_enable,
@@ -296,6 +299,9 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_pc_log_dump = dump_conn_mcu_pc_log_wrapper,
 
 	.consys_ic_polling_goto_idle = consys_polling_goto_idle,
+
+	.consys_ic_jtag_set_for_mcu = consys_jtag_set_for_mcu,
+	.consys_ic_jtag_flag_ctrl = consys_jtag_flag_ctrl,
 };
 
 static const struct connlog_emi_config connsys_fw_log_parameter = {
@@ -318,9 +324,8 @@ static atomic_t g_power_on = ATOMIC_INIT(0);
 *                              F U N C T I O N S
 ********************************************************************************
 */
-INT32 rom_patch_dl_flag = 1;
-UINT32 gJtagCtrl;
-UINT32 g_connsys_lp_dump_info[2];
+static INT32 rom_patch_dl_flag = 1;
+static UINT32 gJtagCtrl;
 
 #if WMT_DEVAPC_DBG_SUPPORT
 static struct devapc_vio_callbacks devapc_handle = {
@@ -336,7 +341,7 @@ static struct devapc_vio_callbacks devapc_handle = {
 #define AP2CONN_JTAG_2WIRE_OFFSET 0xF00
 #endif
 
-INT32 mtk_wcn_consys_jtag_set_for_mcu(VOID)
+static INT32 consys_jtag_set_for_mcu(VOID)
 {
 #if 0
 #if CONSYS_ENALBE_SET_JTAG
@@ -490,10 +495,10 @@ error:
 #endif
 }
 
-UINT32 mtk_wcn_consys_jtag_flag_ctrl(UINT32 en)
+static UINT32 consys_jtag_flag_ctrl(UINT32 enable)
 {
-	WMT_PLAT_PR_INFO("%s jtag set for MCU\n", en ? "enable" : "disable");
-	gJtagCtrl = en;
+	WMT_PLAT_PR_INFO("%s jtag set for MCU\n", enable ? "enable" : "disable");
+	gJtagCtrl = enable;
 
 	return 0;
 }
@@ -2011,11 +2016,6 @@ static P_CONSYS_EMI_ADDR_INFO consys_soc_get_emi_phy_add(VOID)
 	return &mtk_wcn_emi_addr_info;
 }
 
-P_WMT_CONSYS_IC_OPS mtk_wcn_get_consys_ic_ops(VOID)
-{
-	return &consys_ic_ops;
-}
-
 static INT32 consys_dl_rom_patch(UINT32 ip_ver, UINT32 fw_ver)
 {
 	if (rom_patch_dl_flag) {
@@ -2483,7 +2483,7 @@ static INT32 consys_is_rc_mode_enable(VOID)
 #endif
 }
 
-UINT32 consys_sleep_info_is_enable(VOID)
+static UINT32 consys_sleep_info_is_enable(VOID)
 {
 	UINT32 ctrl_enable = 0;
 	UINT32 host_ctrl_enable = 0;
@@ -2701,52 +2701,52 @@ static UINT64 consys_get_options(VOID)
 
 INT32 dump_conn_mcu_pc_log_wrapper(VOID)
 {
-	return dump_conn_mcu_pc_log("");
+	return dump_conn_mcu_pc_log_mt6873("");
 }
 
 static INT32 consys_common_dump(const char *trg_str)
 {
 	int ret = 0;
 
-	ret += dump_conn_mcu_pc_log(trg_str);
+	ret += dump_conn_mcu_pc_log_mt6873(trg_str);
 
-	ret += dump_conn_debug_dump(trg_str);
-	ret += dump_conn_mcu_debug_flag(trg_str);
-	ret += dump_conn_mcu_ahb_bus_hang_layer1(trg_str);
-	ret += dump_conn_mcu_ahb_bus_hang_layer2(trg_str);
-	ret += dump_conn_mcu_ahb_bus_hang_layer3(trg_str);
-	ret += dump_conn_mcu_ahb_bus_hang_layer4(trg_str);
-	ret += dump_conn_mcu_ahb_timeout_info(trg_str);
-	ret += dump_conn_bus_hang_debug(trg_str);
-	ret += dump_conn_mcu_apb_timeout_info(trg_str);
-	ret += dump_conn_apb_bus0_hang(trg_str);
-	ret += dump_conn_apb_bus1_hang(trg_str);
-	ret += dump_conn_apb_bus2_hang(trg_str);
-	ret += dump_conn_emi_ctrl_host_csr(trg_str);
-	ret += dump_conn_mcu_confg_emi_ctrl(trg_str);
-	ret += dump_conn_mcu_cpu_probe(trg_str);
-	ret += dump_conn_mcu_ahb_probe(trg_str);
-	ret += dump_conn_mcu_idlm_prot_prob(trg_str);
-	ret += dump_conn_mcu_wf_cmdbt_ram_prob(trg_str);
-	ret += dump_conn_mcu_pda_dbg_flag(trg_str);
-	ret += dump_conn_mcu_sysram_prb(trg_str);
-	ret += dump_conn_mcu_confg(trg_str);
-	ret += dump_conn_mcu_i_eidlm(trg_str);
-	ret += dump_conn_mcu_dma(trg_str);
-	ret += dump_conn_mcu_tcm_prob(trg_str);
-	ret += dump_conn_mcu_met_prob(trg_str);
-	ret += dump_conn_mcusys_n9(trg_str);
-	ret += dump_conn_mcu_uart_dbg_loop(trg_str);
-	ret += dump_conn_cfg_on_Debug_Signal(trg_str);
-	ret += dump_conn_cfg_on_register(trg_str);
-	ret += dump_conn_cmdbt_debug_signal(trg_str);
-	ret += dump_conn_cmdbt_register(trg_str);
-	ret += dump_conn_emi_detect(trg_str);
-	ret += dump_conn_cmdbt_debug(trg_str);
-	ret += dump_conn_hif_reg_debug(trg_str);
-	ret += dump_conn_mcu_confg_bus_hang_reg(trg_str);
-	ret += dump_wf_pdma_reg_debug(trg_str);
-	ret += dump_conn_to_EMI_bus_path(trg_str);
+	ret += dump_conn_debug_dump_mt6873(trg_str);
+	ret += dump_conn_mcu_debug_flag_mt6873(trg_str);
+	ret += dump_conn_mcu_ahb_bus_hang_layer1_mt6873(trg_str);
+	ret += dump_conn_mcu_ahb_bus_hang_layer2_mt6873(trg_str);
+	ret += dump_conn_mcu_ahb_bus_hang_layer3_mt6873(trg_str);
+	ret += dump_conn_mcu_ahb_bus_hang_layer4_mt6873(trg_str);
+	ret += dump_conn_mcu_ahb_timeout_info_mt6873(trg_str);
+	ret += dump_conn_bus_hang_debug_mt6873(trg_str);
+	ret += dump_conn_mcu_apb_timeout_info_mt6873(trg_str);
+	ret += dump_conn_apb_bus0_hang_mt6873(trg_str);
+	ret += dump_conn_apb_bus1_hang_mt6873(trg_str);
+	ret += dump_conn_apb_bus2_hang_mt6873(trg_str);
+	ret += dump_conn_emi_ctrl_host_csr_mt6873(trg_str);
+	ret += dump_conn_mcu_confg_emi_ctrl_mt6873(trg_str);
+	ret += dump_conn_mcu_cpu_probe_mt6873(trg_str);
+	ret += dump_conn_mcu_ahb_probe_mt6873(trg_str);
+	ret += dump_conn_mcu_idlm_prot_prob_mt6873(trg_str);
+	ret += dump_conn_mcu_wf_cmdbt_ram_prob_mt6873(trg_str);
+	ret += dump_conn_mcu_pda_dbg_flag_mt6873(trg_str);
+	ret += dump_conn_mcu_sysram_prb_mt6873(trg_str);
+	ret += dump_conn_mcu_confg_mt6873(trg_str);
+	ret += dump_conn_mcu_i_eidlm_mt6873(trg_str);
+	ret += dump_conn_mcu_dma_mt6873(trg_str);
+	ret += dump_conn_mcu_tcm_prob_mt6873(trg_str);
+	ret += dump_conn_mcu_met_prob_mt6873(trg_str);
+	ret += dump_conn_mcusys_n9_mt6873(trg_str);
+	ret += dump_conn_mcu_uart_dbg_loop_mt6873(trg_str);
+	ret += dump_conn_cfg_on_Debug_Signal_mt6873(trg_str);
+	ret += dump_conn_cfg_on_register_mt6873(trg_str);
+	ret += dump_conn_cmdbt_debug_signal_mt6873(trg_str);
+	ret += dump_conn_cmdbt_register_mt6873(trg_str);
+	ret += dump_conn_emi_detect_mt6873(trg_str);
+	ret += dump_conn_cmdbt_debug_mt6873(trg_str);
+	ret += dump_conn_hif_reg_debug_mt6873(trg_str);
+	ret += dump_conn_mcu_confg_bus_hang_reg_mt6873(trg_str);
+	ret += dump_wf_pdma_reg_debug_mt6873(trg_str);
+	ret += dump_conn_to_EMI_bus_path_mt6873(trg_str);
 
 	return ret;
 }
