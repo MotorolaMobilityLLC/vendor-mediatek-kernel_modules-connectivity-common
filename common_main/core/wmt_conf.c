@@ -112,6 +112,7 @@ typedef struct moto_product {
 static moto_product products_list[] = {
         {"ellis",    "NCA", "ELLIS"},
         {"ellis",    "CA",  "ELLIS_EPA"},
+        {"tonga",    "NA",  "TONGA_EPA"},
 
 
         {{0},        {0},   {0}},
