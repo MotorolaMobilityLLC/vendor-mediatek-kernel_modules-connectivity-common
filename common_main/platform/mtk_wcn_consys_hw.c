@@ -42,7 +42,6 @@
 #include <linux/of_reserved_mem.h>
 #include <linux/pinctrl/consumer.h>
 #include <linux/of_gpio.h>
-#include <linux/syscore_ops.h>
 #include <connectivity_build_in_adapter.h>
 #include "wmt_lib.h"
 
@@ -73,8 +72,8 @@
 */
 static INT32 mtk_wmt_probe(struct platform_device *pdev);
 static INT32 mtk_wmt_remove(struct platform_device *pdev);
-static INT32 mtk_wmt_suspend(VOID);
-static void mtk_wmt_resume(VOID);
+static INT32 mtk_wmt_suspend(struct device *dev);
+static INT32 mtk_wmt_resume(struct device *dev);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -118,6 +117,7 @@ WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6761 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6779 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6768 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6785 = {};
+WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6781 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6833 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6853 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6873 = {};
@@ -134,6 +134,7 @@ const struct of_device_id apwmt_of_ids[] = {
 	{.compatible = "mediatek,mt6779-consys", .data = &consys_ic_ops_mt6779},
 	{.compatible = "mediatek,mt6768-consys", .data = &consys_ic_ops_mt6768},
 	{.compatible = "mediatek,mt6785-consys", .data = &consys_ic_ops_mt6785},
+	{.compatible = "mediatek,mt6781-consys", .data = &consys_ic_ops_mt6781},
 	{.compatible = "mediatek,mt6833-consys", .data = &consys_ic_ops_mt6833},
 	{.compatible = "mediatek,mt6853-consys", .data = &consys_ic_ops_mt6853},
 	{.compatible = "mediatek,mt6873-consys", .data = &consys_ic_ops_mt6873},
@@ -142,6 +143,11 @@ const struct of_device_id apwmt_of_ids[] = {
 };
 struct CONSYS_BASE_ADDRESS conn_reg;
 #endif
+
+static const struct dev_pm_ops wmt_drv_pm_ops = {
+	.suspend_noirq = mtk_wmt_suspend,
+	.resume_noirq = mtk_wmt_resume,
+};
 
 static struct platform_driver mtk_wmt_dev_drv = {
 	.probe = mtk_wmt_probe,
@@ -152,12 +158,8 @@ static struct platform_driver mtk_wmt_dev_drv = {
 #ifdef CONFIG_OF
 		   .of_match_table = apwmt_of_ids,
 #endif
+		   .pm = &wmt_drv_pm_ops,
 		   },
-};
-
-static struct syscore_ops wmt_dbg_syscore_ops = {
-	.suspend = mtk_wmt_suspend,
-	.resume = mtk_wmt_resume,
 };
 
 /* GPIO part */
@@ -466,7 +468,7 @@ static INT32 mtk_wmt_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static INT32 mtk_wmt_suspend(VOID)
+static INT32 mtk_wmt_suspend(struct device *dev)
 {
 	WMT_PLAT_PR_INFO(" mtk_wmt_suspend !!");
 
@@ -519,10 +521,12 @@ static void plat_resume_handler(struct work_struct *work)
 	}
 }
 
-static void mtk_wmt_resume(VOID)
+static INT32 mtk_wmt_resume(struct device *dev)
 {
 	WMT_PLAT_PR_INFO(" mtk_wmt_resume !!");
 	schedule_work(&plt_resume_worker);
+
+	return 0;
 }
 
 INT32 mtk_wcn_consys_sleep_info_read_all_ctrl(P_CONSYS_STATE state)
@@ -688,6 +692,8 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 			wmt_consys_ic_ops->consys_ic_wifi_ctrl_setting();
 		if (wmt_consys_ic_ops->consys_ic_bus_timeout_config)
 			wmt_consys_ic_ops->consys_ic_bus_timeout_config();
+		if (wmt_consys_ic_ops->consys_ic_set_mcu_mem_pdn_delay)
+			wmt_consys_ic_ops->consys_ic_set_mcu_mem_pdn_delay();
 		if (wmt_consys_ic_ops->consys_ic_hw_reset_bit_set)
 			wmt_consys_ic_ops->consys_ic_hw_reset_bit_set(DISABLE);
 
@@ -810,6 +816,7 @@ INT32 mtk_wcn_consys_detect_adie_chipid(UINT32 co_clock_type)
 			WMT_PLAT_PR_INFO("Set a-die chipid = %x\n", chipid);
 		} else
 			WMT_PLAT_PR_INFO("Detect a-die chipid = %x failed!\n", chipid);
+		wmt_lib_set_adie_workable((chipid > 0) ? 1 : 0);
 		WMT_PLAT_PR_INFO("CONSYS A-DIE DETECT finish\n");
 	}
 
@@ -986,7 +993,6 @@ INT32 mtk_wcn_consys_hw_init(VOID)
 			retry++;
 			WMT_PLAT_PR_INFO("g_probe_called = 0, retry = %d\n", retry);
 		}
-		register_syscore_ops(&wmt_dbg_syscore_ops);
 	}
 
 #if WMT_DBG_SUPPORT
@@ -1012,7 +1018,6 @@ INT32 mtk_wcn_consys_hw_deinit(VOID)
 #endif
 
 	platform_driver_unregister(&mtk_wmt_dev_drv);
-	unregister_syscore_ops(&wmt_dbg_syscore_ops);
 
 	if (wmt_consys_ic_ops)
 		wmt_consys_ic_ops = NULL;

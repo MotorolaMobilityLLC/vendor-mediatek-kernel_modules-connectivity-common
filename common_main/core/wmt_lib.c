@@ -106,6 +106,7 @@ static struct assert_work_st wmt_assert_work;
 
 static INT32 g_bt_no_acl_link = 1;
 static INT32 g_bt_no_br_acl_link = 1;
+static atomic_t g_AdieWorkable = ATOMIC_INIT(1);
 
 #define CONSYS_MET_WAIT	(1000*10) /* ms */
 #define MET_DUMP_MAX_NUM (1)
@@ -1802,6 +1803,15 @@ UINT32 wmt_lib_get_icinfo(ENUM_WMT_CHIPINFO_TYPE_T index)
 
 }
 
+UINT32 wmt_lib_get_adie_workable(VOID)
+{
+	return atomic_read(&g_AdieWorkable);
+}
+
+VOID wmt_lib_set_adie_workable(UINT32 workable)
+{
+	atomic_set(&g_AdieWorkable, ((workable > 0) ? 1 : 0));
+}
 
 PUINT8 wmt_lib_def_patch_name(VOID)
 {
