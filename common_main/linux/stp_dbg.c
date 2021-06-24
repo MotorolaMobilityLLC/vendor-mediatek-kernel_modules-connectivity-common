@@ -2197,7 +2197,7 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 		return -1;
 	}
 
-	if (g_stp_dbg_cpupcr->issue_type &&
+	if (g_stp_dbg_cpupcr->issue_type != STP_FW_ISSUE_TYPE_INVALID &&
 	    g_stp_dbg_cpupcr->issue_type != STP_HOST_TRIGGER_COLLECT_FTRACE) {
 		STP_DBG_PR_ERR("assert information has been set up\n");
 		return -1;

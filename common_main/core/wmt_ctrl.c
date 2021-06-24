@@ -989,7 +989,7 @@ INT32 wmt_ctrl_sdio_hw(P_WMT_CTRL_DATA pWmtCtrlData)
 	if (sdioSlotNum == WMT_SDIO_SLOT_SDIO2)
 		statBit = WMT_STAT_SDIO2_ON;
 
-	if (funcState) {
+	if (funcState != FUNC_ON) {
 		if (osal_test_and_set_bit(statBit, &pDev->state)) {
 			WMT_WARN_FUNC("CTRL_SDIO_SLOT slotNum(%d) already ON\n", sdioSlotNum);
 			/* still return 0 */
