@@ -153,7 +153,9 @@
 #define CONSYS_WD_SYS_RST_BIT		(0x1 << 9)
 
 /*CONSYS_MCU_CFG_ACR_REG*/
-#define CONSYS_MCU_CFG_ACR_MBIST_BIT	(0x1 << 0 | 0x1 << 1)
+#define CONSYS_MCU_CFG_ACR_MBIST_OFFSET	(0x10)
+#define CONSYS_MCU_CFG_ACR_MBIST_MASK	(0xfffffffc)
+#define CONSYS_MCU_CFG_ACR_MBIST_VAL	(0x3)
 
 /*control app2cnn_osc_en*/
 #define CONSYS_AP2CONN_OSC_EN_BIT	(0x1 << 10)
