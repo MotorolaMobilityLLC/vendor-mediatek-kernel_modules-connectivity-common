@@ -750,7 +750,7 @@ LONG wmt_dev_tm_temp_query(VOID)
 		osal_lock_unsleepable_lock(&g_temp_query_spinlock);
 		WMT_INFO_FUNC("[Thermal] s_idx_temp_table = %d, idx_temp_table = %d\n",
 			s_idx_temp_table, idx_temp_table);
-		WMT_INFO_FUNC("[Thermal] now.time = %lu, s_query.time = %lu, query.time = %lu, REFRESH_TIME = %d\n",
+		WMT_INFO_FUNC("[Thermal] now.time = %llu, s_query.time = %llu, query.time = %llu, REFRESH_TIME = %d\n",
 			now_time.tv_sec, s_query_time.tv_sec, query_time.tv_sec, REFRESH_TIME);
 
 		WMT_INFO_FUNC("[0] = %d, [1] = %d, [2] = %d\n----\n",
