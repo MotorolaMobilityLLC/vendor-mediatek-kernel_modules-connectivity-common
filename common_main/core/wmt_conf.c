@@ -169,6 +169,7 @@ static moto_product products_list[] = {
         {"ellis",    "NCA", "ELLIS"},
         {"ellis",    "CA",  "ELLIS_EPA"},
         {"tonga",    "NA",  "TONGA_EPA"},
+        {"milan",    "all",  "MILAN_FEM"},
 
         {{0},        {0},   {0}},
 };
