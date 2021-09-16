@@ -852,6 +852,8 @@ static int connlog_set_ring_buffer_base_addr(void)
 	EMI_WRITE32(gDev.virAddrEmiLogBase + 20, emi_offset_table[CONNLOG_TYPE_BT].emi_size);
 	EMI_WRITE32(gDev.virAddrEmiLogBase + 24, emi_offset_table[CONNLOG_TYPE_GPS].emi_base_offset);
 	EMI_WRITE32(gDev.virAddrEmiLogBase + 28, emi_offset_table[CONNLOG_TYPE_GPS].emi_size);
+	/* set state to resume initially */
+	EMI_WRITE32(gDev.virAddrEmiLogBase + 32, 1);
 	return 0;
 }
 
@@ -1347,3 +1349,31 @@ int connsys_dedicated_log_get_log_mode(void)
 {
 	return atomic_read(&log_mode);
 }
+
+/*****************************************************************************
+* FUNCTION
+*  connsys_dedicated_log_set_ap_state
+* DESCRIPTION
+*  set ap state
+* PARAMETERS
+*  int state  0:suspend, 1:resume
+* RETURNS
+*  0: successfuly, negative if error
+*****************************************************************************/
+int connsys_dedicated_log_set_ap_state(int state)
+{
+	if (!gDev.virAddrEmiLogBase) {
+		pr_notice("%s gDev.virAddrEmiLogBase is NULL\n", __func__);
+		return -1;
+	}
+
+	if (state < 0 || state > 1) {
+		pr_notice("%s state = %d is unexpected\n", __func__, state);
+		return -1;
+	}
+
+	EMI_WRITE32(gDev.virAddrEmiLogBase + 32,  state);
+	pr_info("%s state: %d\n", __func__, state);
+	return 0;
+}
+
