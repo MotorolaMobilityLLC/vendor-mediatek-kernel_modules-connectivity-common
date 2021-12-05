@@ -121,6 +121,7 @@ WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6785 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6781 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6833 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6853 = {};
+WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6855 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6873 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt8168 = {};
 
@@ -138,6 +139,7 @@ const struct of_device_id apwmt_of_ids[] = {
 	{.compatible = "mediatek,mt6781-consys", .data = &consys_ic_ops_mt6781},
 	{.compatible = "mediatek,mt6833-consys", .data = &consys_ic_ops_mt6833},
 	{.compatible = "mediatek,mt6853-consys", .data = &consys_ic_ops_mt6853},
+	{.compatible = "mediatek,mt6855-consys", .data = &consys_ic_ops_mt6855},
 	{.compatible = "mediatek,mt6873-consys", .data = &consys_ic_ops_mt6873},
 	{.compatible = "mediatek,mt8168-consys", .data = &consys_ic_ops_mt8168},
 	{}
@@ -292,6 +294,36 @@ static INT32 wmt_allocate_connsys_emi(struct platform_device *pdev)
 	return 0;
 }
 
+static int wmt_allocate_connsys_emi_by_lk2(struct platform_device *pdev)
+{
+#ifdef ALLOCATE_CONNSYS_EMI_FROM_KO
+	struct device_node *node;
+	unsigned int phy_addr = 0;
+	unsigned int phy_size = 0;
+
+	node = pdev->dev.of_node;
+	if (!node) {
+		WMT_PLAT_PR_INFO("%s: unable to get consys node\n", __func__);
+		return -1;
+	}
+
+	if (of_property_read_u32(node, "emi-addr", &phy_addr)) {
+		WMT_PLAT_PR_INFO("%s: unable to get emi_addr\n", __func__);
+		return -1;
+	}
+
+	if (of_property_read_u32(node, "emi-size", &phy_size)) {
+		WMT_PLAT_PR_INFO("%s: unable to get emi_size\n", __func__);
+		return -1;
+	}
+
+	WMT_PLAT_PR_INFO("%s emi_addr %x, emi_size %x\n", __func__, phy_addr, phy_size);
+	gConEmiPhyBase = phy_addr;
+	gConEmiSize = phy_size;
+#endif
+	return 0;
+}
+
 static int wmt_thermal_get_temp_cb(void *data, int *temp)
 {
 	if (temp) {
@@ -340,7 +372,9 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 		return -1;
 	}
 
-	wmt_allocate_connsys_emi(pdev);
+	if (wmt_allocate_connsys_emi(pdev) < 0)
+		wmt_allocate_connsys_emi_by_lk2(pdev);
+
 	wmt_thermal_register(pdev);
 
 	if (wmt_consys_ic_ops->consys_ic_need_store_pdev) {
@@ -999,6 +1033,18 @@ INT32 mtk_wcn_consys_hw_init(VOID)
 		}
 	}
 
+	if (wmt_consys_ic_ops->consys_ic_pmic_register_device) {
+		iRet = wmt_consys_ic_ops->consys_ic_pmic_register_device();
+		if (iRet)
+			WMT_PLAT_PR_ERR("WMT PMIC registered failed(%d)\n", iRet);
+	}
+
+	if (wmt_consys_ic_ops->consys_ic_clock_register_device) {
+		iRet = wmt_consys_ic_ops->consys_ic_clock_register_device();
+		if (iRet)
+			WMT_PLAT_PR_ERR("WMT clock registered failed(%d)\n", iRet);
+	}
+
 #if WMT_DBG_SUPPORT
 	mtk_wcn_dump_util_init(mtk_wcn_consys_soc_chipid());
 #endif
@@ -1347,4 +1393,16 @@ VOID mtk_wcn_consys_set_vcn33_1_voltage(UINT32 voltage)
 
 	if (wmt_consys_ic_ops && wmt_consys_ic_ops->consys_ic_set_vcn33_1_voltage)
 		wmt_consys_ic_ops->consys_ic_set_vcn33_1_voltage(voltage);
+}
+
+PVOID mtk_wcn_consys_clock_get_regmap(VOID)
+{
+	if (wmt_consys_ic_ops->consys_ic_clock_get_regmap)
+		return wmt_consys_ic_ops->consys_ic_clock_get_regmap();
+	return NULL;
+}
+
+struct platform_device *get_consys_device(void)
+{
+	return g_pdev;
 }
