@@ -46,7 +46,7 @@
 #define CONSYS_SLEEP_CHECK_BIT                      (0x1 << 18)
 
 /*CONSYS_TOP1_PWR_CTRL_REG*/
-#define SRCLKEN_RC_BASE                             (0x1000F800)
+#define SRCLKEN_RC_BASE                             (0x1C00D000)
 #define SRCLKEN_RC_CENTRAL_CFG1_BIT                 (0x1 << 0)
 #define SRCLKEN_RC_CENTRAL_CFG1                     (0x4)
 
@@ -71,11 +71,6 @@
 
 #define CONSYS_EMI_BT_ENTRY_ADDRESS                 (0xF0170000)
 #define CONSYS_EMI_WIFI_ENTRY_ADDRESS               (0xF02A0000)
-
-/* AP_PCCIF4_BASE Register */
-#define INFRASYS_COMMON_AP2MD_PCCIF4_AP_PERI_AP_CCU_CONFIG  (0x314)
-#define INFRASYS_COMMON_AP2MD_PCCIF4_AP_PCCIF_ACK_OFFSET    (0x14)
-#define INFRASYS_COMMON_AP2MD_CON_PWR_ON_CON_SW_READY_MASK  (0x3 << 0)
 
 /**********************************************************************/
 /* Base: mcu_base (0x1800_2000) */
@@ -118,7 +113,6 @@
 /**********************************************************************/
 /* Base: conn_top_misc_on_base (0x180c_1000) */
 /**********************************************************************/
-#define CONSYS_ACCESS_EMI_HW_MODE_OFFSET            (0x168)
 #define CONN_CFG_ON_DBGSEL_ADDR_OFFSET              (0x310)
 #define CONN_CFG_ON_MON_CTL_ADDR_OFFSET             (0x320)
 #define CONN_CFG_ON_MON_SEL0_ADDR_OFFSET            (0x328)
@@ -140,6 +134,11 @@
 /* Base: INFRACFG_AO_BASE (0x1000_1000) */
 /**********************************************************************/
 #define CCIF_MISC_CLR_2                             0xbf0
+
+/**********************************************************************/
+/* Base: ap_pccif4_base (0x1024_C000) */
+/**********************************************************************/
+#define INFRASYS_COMMON_AP2MD_PCCIF4_AP_PCCIF_ACK_OFFSET    (0x14)
 
 
 /**********************************************************************/
