@@ -1077,6 +1077,11 @@ VOID wmt_lib_set_bt_link_status(INT32 type, INT32 value)
 		g_bt_no_br_acl_link = value;
 }
 
+PVOID wmt_lib_consys_clock_get_regmap(VOID)
+{
+	return mtk_wcn_consys_clock_get_regmap();
+}
+
 /*
  * Allow BT to reset as long as one of the conditions is true.
  * 1. no ACL link

@@ -258,6 +258,9 @@ typedef UINT32(*CONSYS_IC_EMI_SET_REMAPPING_REG) (VOID);
 typedef INT32(*IC_BT_WIFI_SHARE_V33_SPIN_LOCK_INIT) (VOID);
 typedef INT32(*CONSYS_IC_CLK_GET_FROM_DTS) (struct platform_device *pdev);
 typedef INT32(*CONSYS_IC_PMIC_GET_FROM_DTS) (struct platform_device *pdev);
+typedef INT32(*CONSYS_IC_PMIC_REGISTER_DEVICE) (VOID);
+typedef INT32(*CONSYS_IC_CLOCK_REGISTER_DEVICE) (VOID);
+typedef PVOID(*CONSYS_IC_CLOCK_GET_REGMAP) (VOID);
 typedef INT32(*CONSYS_IC_READ_IRQ_INFO_FROM_DTS) (struct platform_device *pdev, PINT32 irq_num, PUINT32 irq_flag);
 typedef INT32(*CONSYS_IC_READ_REG_FROM_DTS) (struct platform_device *pdev);
 typedef UINT32(*CONSYS_IC_READ_CPUPCR) (VOID);
@@ -381,6 +384,9 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	/* DTS - init */
 	CONSYS_IC_CLK_GET_FROM_DTS consys_ic_clk_get_from_dts;
 	CONSYS_IC_PMIC_GET_FROM_DTS consys_ic_pmic_get_from_dts;
+	CONSYS_IC_PMIC_REGISTER_DEVICE consys_ic_pmic_register_device;
+	CONSYS_IC_CLOCK_REGISTER_DEVICE consys_ic_clock_register_device;
+	CONSYS_IC_CLOCK_GET_REGMAP consys_ic_clock_get_regmap;
 	CONSYS_IC_READ_IRQ_INFO_FROM_DTS consys_ic_read_irq_info_from_dts;
 	CONSYS_IC_READ_REG_FROM_DTS consys_ic_read_reg_from_dts;
 
@@ -540,6 +546,9 @@ INT32 mtk_wcn_consys_ipi_timeout_dump(VOID);
 VOID mtk_wcn_dump_util_init(UINT32 chipid);
 VOID mtk_wcn_dump_util_destroy(VOID);
 
+PVOID mtk_wcn_consys_clock_get_regmap(VOID);
+
 VOID mtk_wcn_consys_set_vcn33_1_voltage(UINT32 voltage);
+struct platform_device *get_consys_device(void);
 #endif /* _MTK_WCN_CONSYS_HW_H_ */
 

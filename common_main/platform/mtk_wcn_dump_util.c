@@ -57,6 +57,7 @@ int __weak g_mapped_reg_table_sz_mt6785;
 int __weak g_mapped_reg_table_sz_mt6781;
 int __weak g_mapped_reg_table_sz_mt6833;
 int __weak g_mapped_reg_table_sz_mt6853;
+int __weak g_mapped_reg_table_sz_mt6855;
 int __weak g_mapped_reg_table_sz_mt6873;
 int __weak g_mapped_reg_table_sz_mt8168;
 
@@ -73,6 +74,7 @@ REG_MAP_ADDR __weak g_mapped_reg_table_mt6785[] = {};
 REG_MAP_ADDR __weak g_mapped_reg_table_mt6781[] = {};
 REG_MAP_ADDR __weak g_mapped_reg_table_mt6833[] = {};
 REG_MAP_ADDR __weak g_mapped_reg_table_mt6853[] = {};
+REG_MAP_ADDR __weak g_mapped_reg_table_mt6855[] = {};
 REG_MAP_ADDR __weak g_mapped_reg_table_mt6873[] = {};
 REG_MAP_ADDR __weak g_mapped_reg_table_mt8168[] = {};
 
@@ -233,6 +235,10 @@ VOID init_dump_util_variable(UINT32 chipid)
 	case 0x6853:
 		g_mapped_reg_table_sz = g_mapped_reg_table_sz_mt6853;
 		g_mapped_reg_table = g_mapped_reg_table_mt6853;
+		break;
+	case 0x6855:
+		g_mapped_reg_table_sz = g_mapped_reg_table_sz_mt6855;
+		g_mapped_reg_table = g_mapped_reg_table_mt6855;
 		break;
 	case 0x6873:
 		g_mapped_reg_table_sz = g_mapped_reg_table_sz_mt6873;
