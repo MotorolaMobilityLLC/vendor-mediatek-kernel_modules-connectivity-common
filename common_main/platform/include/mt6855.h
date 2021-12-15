@@ -37,6 +37,7 @@
 #define CONSYS_AP2CONN_OSC_EN_OFFSET                0x00000f00
 #define CONSYS_EMI_MAPPING_OFFSET                   0x00000380
 #define CONSYS_EMI_PERI_MAPPING_OFFSET              0x00000388
+#define CONSYS_EMI_GPS_MAPPING_OFFSET               0x00000398
 #define CONSYS_EMI_AP_MD_OFFSET                     0x0000039C
 
 /*CONN_HIF_ON_BASE*/

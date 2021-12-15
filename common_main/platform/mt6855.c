@@ -1440,6 +1440,12 @@ static UINT32 consys_emi_set_remapping_reg(VOID)
 	WMT_PLAT_PR_INFO("CONSYS_EMI_MAPPING dump in restore cb(0x%08x)\n",
 			CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_MAPPING_OFFSET));
 
+	/*GPS Registers remapping*/
+	CONSYS_REG_WRITE_OFFSET_RANGE(conn_reg.topckgen_base + CONSYS_EMI_GPS_MAPPING_OFFSET,
+					  0x1C000000, 0, 16, 20);
+	WMT_PLAT_PR_INFO("GPS_MAPPING dump in restore cb(0x%08x)\n",
+			CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_GPS_MAPPING_OFFSET));
+
 	/*Perisys Configuration Registers remapping*/
 	CONSYS_REG_WRITE_OFFSET_RANGE(conn_reg.topckgen_base + CONSYS_EMI_PERI_MAPPING_OFFSET,
 					  0x10003000, 0, 16, 20);
