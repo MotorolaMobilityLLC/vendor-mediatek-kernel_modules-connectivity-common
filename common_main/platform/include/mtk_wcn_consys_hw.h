@@ -323,6 +323,9 @@ typedef UINT32(*CONSYS_IC_JTAG_FLAG_CTRL) (UINT32 enable);
 typedef UINT32(*CONSYS_IC_HW_OSC_EN_CTRL) (UINT32 enable);
 #endif
 
+typedef PINT32 CONSYS_IC_GET_DEBUG_REG_ARY_SIZE;
+typedef P_REG_MAP_ADDR CONSYS_IC_GET_DEBUG_REG_ARY;
+
 typedef struct _WMT_CONSYS_IC_OPS_ {
 
 	/* POS */
@@ -444,6 +447,9 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 #ifdef CONSYS_WMT_REG_SUSPEND_CB_ENABLE
 	CONSYS_IC_HW_OSC_EN_CTRL consys_ic_hw_osc_en_ctrl;
 #endif
+
+	CONSYS_IC_GET_DEBUG_REG_ARY_SIZE consys_ic_get_debug_reg_ary_size;
+	CONSYS_IC_GET_DEBUG_REG_ARY consys_ic_get_debug_reg_ary;
 } WMT_CONSYS_IC_OPS, *P_WMT_CONSYS_IC_OPS;
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -549,6 +555,10 @@ VOID mtk_wcn_dump_util_destroy(VOID);
 PVOID mtk_wcn_consys_clock_get_regmap(VOID);
 
 VOID mtk_wcn_consys_set_vcn33_1_voltage(UINT32 voltage);
+
+INT32 mtk_wcn_consys_get_debug_reg_ary_size(VOID);
+P_REG_MAP_ADDR mtk_wcn_consys_get_debug_reg_ary(VOID);
+
 struct platform_device *get_consys_device(void);
 #endif /* _MTK_WCN_CONSYS_HW_H_ */
 

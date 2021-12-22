@@ -44,58 +44,6 @@
 int g_mapped_reg_table_sz;
 P_REG_MAP_ADDR g_mapped_reg_table;
 
-#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6761)
-extern int g_mapped_reg_table_sz_mt6761;
-extern REG_MAP_ADDR g_mapped_reg_table_mt6761[];
-#endif
-
-#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6765)
-extern int g_mapped_reg_table_sz_mt6765;
-extern REG_MAP_ADDR g_mapped_reg_table_mt6765[];
-#endif
-
-#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6768)
-extern int g_mapped_reg_table_sz_mt6768;
-extern REG_MAP_ADDR g_mapped_reg_table_mt6768[];
-#endif
-
-#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6779)
-extern int g_mapped_reg_table_sz_mt6779;
-extern REG_MAP_ADDR g_mapped_reg_table_mt6779[];
-#endif
-
-#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6781)
-extern int g_mapped_reg_table_sz_mt6781;
-extern REG_MAP_ADDR g_mapped_reg_table_mt6781[];
-#endif
-
-#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6785)
-extern int g_mapped_reg_table_sz_mt6785;
-extern REG_MAP_ADDR g_mapped_reg_table_mt6785[];
-#endif
-
-#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6833)
-extern int g_mapped_reg_table_sz_mt6833;
-extern REG_MAP_ADDR g_mapped_reg_table_mt6833[];
-#endif
-
-#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6853)
-extern int g_mapped_reg_table_sz_mt6853;
-extern REG_MAP_ADDR g_mapped_reg_table_mt6853[];
-#endif
-
-#if 0
-#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6855)
-extern int g_mapped_reg_table_sz_mt6855;
-extern REG_MAP_ADDR g_mapped_reg_table_mt6855[];
-#endif
-#endif
-
-#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6873)
-extern int g_mapped_reg_table_sz_mt6873;
-extern REG_MAP_ADDR g_mapped_reg_table_mt6873[];
-#endif
-
 static struct reg_map_addr *get_mapped_reg(unsigned int mapped_tbl_idx)
 {
 	struct reg_map_addr *reg_addr = NULL;
@@ -201,73 +149,17 @@ INT32 execute_dump_action(const char *trg_str, const char *dump_prefix, struct c
 
 VOID init_dump_util_variable(UINT32 chipid)
 {
-	switch (chipid) {
-	case 0x6761:
-#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6761)
-		g_mapped_reg_table_sz = g_mapped_reg_table_sz_mt6761;
-		g_mapped_reg_table = g_mapped_reg_table_mt6761;
-#endif
-		break;
-	case 0x6765:
-#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6765)
-		g_mapped_reg_table_sz = g_mapped_reg_table_sz_mt6765;
-		g_mapped_reg_table = g_mapped_reg_table_mt6765;
-#endif
-		break;
-	case 0x6768:
-#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6768)
-		g_mapped_reg_table_sz = g_mapped_reg_table_sz_mt6768;
-		g_mapped_reg_table = g_mapped_reg_table_mt6768;
-#endif
-		break;
-	case 0x6779:
-#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6779)
-		g_mapped_reg_table_sz = g_mapped_reg_table_sz_mt6779;
-		g_mapped_reg_table = g_mapped_reg_table_mt6779;
-#endif
-		break;
-	case 0x6781:
-#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6781)
-		g_mapped_reg_table_sz = g_mapped_reg_table_sz_mt6781;
-		g_mapped_reg_table = g_mapped_reg_table_mt6781;
-#endif
-		break;
-	case 0x6785:
-#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6785)
-		g_mapped_reg_table_sz = g_mapped_reg_table_sz_mt6785;
-		g_mapped_reg_table = g_mapped_reg_table_mt6785;
-#endif
-		break;
-	case 0x6833:
-#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6833)
-		g_mapped_reg_table_sz = g_mapped_reg_table_sz_mt6833;
-		g_mapped_reg_table = g_mapped_reg_table_mt6833;
-#endif
-		break;
-	case 0x6853:
-#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6853)
-		g_mapped_reg_table_sz = g_mapped_reg_table_sz_mt6853;
-		g_mapped_reg_table = g_mapped_reg_table_mt6853;
-#endif
-		break;
-#if 0
-	case 0x6855:
-#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6855)
-		g_mapped_reg_table_sz = g_mapped_reg_table_sz_mt6855;
-		g_mapped_reg_table = g_mapped_reg_table_mt6855;
-#endif
-		break;
-#endif
-	case 0x6873:
-#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6873)
-		g_mapped_reg_table_sz = g_mapped_reg_table_sz_mt6873;
-		g_mapped_reg_table = g_mapped_reg_table_mt6873;
-#endif
-		break;
-	default:
+	int table_ary_sz = 0;
+	P_REG_MAP_ADDR table_ary = NULL;
+
+	table_ary_sz = mtk_wcn_consys_get_debug_reg_ary_size();
+	table_ary = mtk_wcn_consys_get_debug_reg_ary();
+
+	if (table_ary_sz && table_ary) {
+		g_mapped_reg_table_sz = table_ary_sz;
+		g_mapped_reg_table = table_ary;
+	} else
 		WMT_PLAT_PR_INFO("chipid(0x%x) not support\n", chipid);
-		break;
-	}
 }
 
 VOID mtk_wcn_dump_util_init(UINT32 chipid)
