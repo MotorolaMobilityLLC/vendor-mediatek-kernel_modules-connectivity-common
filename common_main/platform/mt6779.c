@@ -196,6 +196,9 @@ static struct regulator *reg_VCN33_1_WIFI;
 static struct regulator *reg_VCN33_2_WIFI;
 #endif
 
+extern int g_mapped_reg_table_sz_mt6779;
+extern REG_MAP_ADDR g_mapped_reg_table_mt6779[];
+
 static EMI_CTRL_STATE_OFFSET mtk_wcn_emi_state_off = {
 	.emi_apmem_ctrl_state = EXP_APMEM_CTRL_STATE,
 	.emi_apmem_ctrl_host_sync_state = EXP_APMEM_CTRL_HOST_SYNC_STATE,
@@ -288,6 +291,9 @@ WMT_CONSYS_IC_OPS consys_ic_ops_mt6779 = {
 
 	.consys_ic_jtag_set_for_mcu = consys_jtag_set_for_mcu,
 	.consys_ic_jtag_flag_ctrl = consys_jtag_flag_ctrl,
+
+	.consys_ic_get_debug_reg_ary_size = &g_mapped_reg_table_sz_mt6779,
+	.consys_ic_get_debug_reg_ary = g_mapped_reg_table_mt6779,
 };
 
 static const struct connlog_emi_config connsys_fw_log_parameter = {
