@@ -2438,12 +2438,12 @@ static INT32 consys_common_dump(const char *trg_str)
 	ret += dump_conn_cfg_on_register_mt6855(trg_str);
 	ret += dump_conn_cmdbt_debug_signal_mt6855(trg_str);
 	ret += dump_conn_cmdbt_register_mt6855(trg_str);
-	ret += dump_conn_emi_detect_mt6855(trg_str);
+	//ret += dump_conn_emi_detect_mt6855(trg_str);
 	ret += dump_conn_cmdbt_debug_mt6855(trg_str);
 	ret += dump_conn_hif_reg_debug_mt6855(trg_str);
 	ret += dump_conn_mcu_confg_bus_hang_reg_mt6855(trg_str);
 	ret += dump_wf_pdma_reg_debug_mt6855(trg_str);
-	ret += dump_conn_to_EMI_bus_path_mt6855(trg_str);
+	//ret += dump_conn_to_EMI_bus_path_mt6855(trg_str);
 
 	return ret;
 }
