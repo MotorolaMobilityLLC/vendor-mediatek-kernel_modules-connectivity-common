@@ -290,6 +290,7 @@ static INT32 wmt_allocate_connsys_emi(struct platform_device *pdev)
 
 	gConEmiPhyBase = rmem->base;
 	gConEmiSize = rmem->size;
+	WMT_PLAT_PR_INFO("%s emi_addr %x, emi_size %x\n", __func__, gConEmiPhyBase, gConEmiSize);
 #endif
 	return 0;
 }
