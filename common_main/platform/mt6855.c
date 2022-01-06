@@ -1332,6 +1332,27 @@ static INT32 consys_hw_wifi_bt_legacy_mode_vcn33_1_ctrl(UINT32 enable)
 
 	return 0;
 }
+
+static INT32 consys_update_pmic_voter(UINT32 enable)
+{
+	struct regmap *r = g_regmap_mt6363;
+
+	if (enable) {
+		/* request VS2 to 1.475V by VS2 VOTER */
+		consys_pmic_regmap_set_value(r, MT6363_TOP_VRCTL_VOSEL_VBUCK0_ADDR, 0xff, 0x76);
+
+		/* request VCN13 to 1.37V */
+		consys_pmic_regmap_set_value(r, MT6363_VCN13_ANA_CON0, 0xff, 0x7);
+	} else {
+		/* restore VCN13 to 1.3V */
+		consys_pmic_regmap_set_value(r, MT6363_VCN13_ANA_CON0, 0xff, 0x0);
+
+		/* restore VS2 to 1.45V by VS2 VOTER */
+		consys_pmic_regmap_set_value(r, MT6363_TOP_VRCTL_VOSEL_VBUCK0_ADDR, 0xff, 0x74);
+	}
+
+	return 0;
+}
 #endif
 
 static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
@@ -1340,6 +1361,8 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 	if (mtk_wcn_consys_get_adie_chipid() != SECONDARY_ADIE)
 		/* 6631 not supported */
 		return 0;
+
+	consys_update_pmic_voter(enable);
 
 	if (consys_is_rc_mode_enable_mt6855())
 		return 0;

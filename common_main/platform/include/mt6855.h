@@ -145,6 +145,9 @@
 /**********************************************************************/
 /* 6363 + 6369 PMIC ID defined */
 /**********************************************************************/
+#define MT6363_TOP_VRCTL_VOSEL_VBUCK0_ADDR          0x24c
+#define MT6363_VCN13_ANA_CON0                       0x1f88
+
 #define MT6363_RG_LDO_VRFIO18_MON_ADDR              0x1bd1
 #define MT6363_RG_LDO_VRFIO18_RC6_OP_EN_ADDR        0x1bd2
 #define MT6363_RG_LDO_VRFIO18_RC6_OP_CFG_ADDR       0x1bd5
