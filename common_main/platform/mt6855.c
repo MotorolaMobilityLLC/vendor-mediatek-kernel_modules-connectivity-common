@@ -178,7 +178,7 @@ static int consys_clock_mt6685_probe(struct platform_device *pdev);
 ********************************************************************************
 */
 /* CCF part */
-struct clk *clk_infracfg_ao_ccif4_ap_cg;       /* For direct path */
+struct clk *clk_infracfg_ao_ccif4_ap_cg_mt6855;       /* For direct path */
 
 /* PMIC part */
 #if CONSYS_PMIC_CTRL_ENABLE
@@ -381,7 +381,7 @@ static struct platform_driver consys_clock_mt6685_dev_drv = {
 */
 static INT32 rom_patch_dl_flag = 1;
 static UINT32 gJtagCtrl;
-UINT32 g_vcn33_1_voltage = 3300000;
+UINT32 g_vcn33_1_voltage_mt6855 = 3300000;
 
 #if WMT_DEVAPC_DBG_SUPPORT
 static struct devapc_vio_callbacks devapc_handle = {
@@ -503,12 +503,12 @@ static INT32 consys_clk_get_from_dts(struct platform_device *pdev)
 	pm_runtime_enable(&pdev->dev);
 	dev_pm_syscore_device(&pdev->dev, true);
 
-	clk_infracfg_ao_ccif4_ap_cg = devm_clk_get(&pdev->dev, "ccif");
-	if (IS_ERR(clk_infracfg_ao_ccif4_ap_cg)) {
-		WMT_PLAT_PR_INFO("[CCF]cannot get clk_infracfg_ao_ccif4_ap_cg clock.\n");
-		return PTR_ERR(clk_infracfg_ao_ccif4_ap_cg);
+	clk_infracfg_ao_ccif4_ap_cg_mt6855 = devm_clk_get(&pdev->dev, "ccif");
+	if (IS_ERR(clk_infracfg_ao_ccif4_ap_cg_mt6855)) {
+		WMT_PLAT_PR_INFO("[CCF]cannot get clk_infracfg_ao_ccif4_ap_cg_mt6855 clock.\n");
+		return PTR_ERR(clk_infracfg_ao_ccif4_ap_cg_mt6855);
 	}
-	WMT_PLAT_PR_DBG("[CCF]clk_infracfg_ao_ccif4_ap_cg=%p\n", clk_infracfg_ao_ccif4_ap_cg);
+	WMT_PLAT_PR_DBG("[CCF]clk_infracfg_ao_ccif4_ap_cg_mt6855=%p\n", clk_infracfg_ao_ccif4_ap_cg_mt6855);
 
 	return 0;
 }
@@ -808,12 +808,12 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 
 	if (enable) {
 #if CONSYS_PWR_ON_OFF_API_AVAILABLE
-		iRet = clk_prepare_enable(clk_infracfg_ao_ccif4_ap_cg);
+		iRet = clk_prepare_enable(clk_infracfg_ao_ccif4_ap_cg_mt6855);
 		if (iRet) {
-			WMT_PLAT_PR_INFO("clk_prepare_enable(clk_infracfg_ao_ccif4_ap_cg) fail(%d)\n", iRet);
+			WMT_PLAT_PR_INFO("clk_prepare_enable(clk_infracfg_ao_ccif4_ap_cg_mt6855) fail(%d)\n", iRet);
 			return iRet;
 		}
-		WMT_PLAT_PR_DBG("clk_prepare_enable(clk_infracfg_ao_ccif4_ap_cg) ok\n");
+		WMT_PLAT_PR_DBG("clk_prepare_enable(clk_infracfg_ao_ccif4_ap_cg_mt6855) ok\n");
 
 		iRet = consys_platform_spm_conn_ctrl_mt6855(1);
 		if (iRet) {
@@ -868,8 +868,8 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 				0xFF);
 		}
 
-		clk_disable_unprepare(clk_infracfg_ao_ccif4_ap_cg);
-		WMT_PLAT_PR_DBG("clk_disable_unprepare(clk_infracfg_ao_ccif4_ap_cg) calling\n");
+		clk_disable_unprepare(clk_infracfg_ao_ccif4_ap_cg_mt6855);
+		WMT_PLAT_PR_DBG("clk_disable_unprepare(clk_infracfg_ao_ccif4_ap_cg_mt6855) calling\n");
 
 #else
 		consys_hw_power_ctrl_mt6855_gen(false);
@@ -964,7 +964,7 @@ static VOID consys_hw_vcn33_primary_rc_mode_enable(VOID)
      /* 4. set PMIC VCN33_1 LDO HW_OP_EN = 1, HW_OP_CFG = 0 */
 	if (reg_VCN33_1) {
 		/* set PMIC VCN33_1 LDO 3.3V ot 3.5V */
-		regulator_set_voltage(reg_VCN33_1, g_vcn33_1_voltage, g_vcn33_1_voltage);
+		regulator_set_voltage(reg_VCN33_1, g_vcn33_1_voltage_mt6855, g_vcn33_1_voltage_mt6855);
 		/* set PMIC VCN33_1 LDO SW_OP_EN = 1, SW_EN = 1, SW_LP = 0 (sw enable & normal mode) */
 		regulator_set_mode(reg_VCN33_1, REGULATOR_MODE_NORMAL); /* SW_LP = 0 */
 		ret = regulator_enable(reg_VCN33_1); /* SW_EN = 1 */
@@ -999,7 +999,7 @@ static VOID consys_hw_vcn33_primary_legacy_mode_enable(VOID)
 	/* 4. set PMIC VCN33_1 LDO HW_OP_EN = 1, HW_OP_CFG = 1 */
 	if (reg_VCN33_1) {
 		/* set PMIC VCN33_1 LDO 1.8V */
-		regulator_set_voltage(reg_VCN33_1, g_vcn33_1_voltage, g_vcn33_1_voltage);
+		regulator_set_voltage(reg_VCN33_1, g_vcn33_1_voltage_mt6855, g_vcn33_1_voltage_mt6855);
 		/* set PMIC VCN33_1 LDO SW_OP_EN = 1, SW_EN = 1, SW_LP = 0 (sw enable & normal mode) */
 		regulator_set_mode(reg_VCN33_1, REGULATOR_MODE_NORMAL); /* SW_LP = 0 */
 		ret = regulator_enable(reg_VCN33_1); /* SW_EN = 1 */
@@ -1059,7 +1059,7 @@ static VOID consys_hw_vcn33_secondary_rc_mode_enable(VOID)
 	/* 4. set PMIC VCN33_1 LDO HW_OP_EN = 1, HW_OP_CFG = 0 */
 	if (reg_VCN33_1) {
 		/* set PMIC VCN33_1 LDO 3.3V or 3.5V */
-		regulator_set_voltage(reg_VCN33_1, g_vcn33_1_voltage, g_vcn33_1_voltage);
+		regulator_set_voltage(reg_VCN33_1, g_vcn33_1_voltage_mt6855, g_vcn33_1_voltage_mt6855);
 		/* set PMIC VCN33_1 LDO SW_OP_EN = 0, SW_EN = 0, SW_LP = 0 (SW disable) */
 		regulator_set_mode(reg_VCN33_1, REGULATOR_MODE_NORMAL); /* SW_LP = 0 */
 		if (ret)
@@ -1319,7 +1319,7 @@ static INT32 consys_hw_wifi_bt_legacy_mode_vcn33_1_ctrl(UINT32 enable)
 	/* 4. set PMIC VCN33_1 LDO HW_OP_EN = 1, HW_OP_CFG = 0 */
 	if (reg_VCN33_1) {
 		/* set PMIC VCN33_1 LDO 1.8V */
-		regulator_set_voltage(reg_VCN33_1, g_vcn33_1_voltage, g_vcn33_1_voltage);
+		regulator_set_voltage(reg_VCN33_1, g_vcn33_1_voltage_mt6855, g_vcn33_1_voltage_mt6855);
 		/* set PMIC VCN33_1 LDO SW_OP_EN = 1, SW_EN = 1, SW_LP = 0 (sw enable & normal mode) */
 		regulator_set_mode(reg_VCN33_1, REGULATOR_MODE_NORMAL); /* SW_LP = 0 */
 		ret = regulator_enable(reg_VCN33_1); /* SW_EN = 1 */
@@ -2498,8 +2498,8 @@ INT32 consys_before_chip_reset_dump(VOID)
 
 static VOID consys_set_vcn33_1_voltage(UINT32 voltage)
 {
-	if (voltage == 0 || voltage == g_vcn33_1_voltage)
+	if (voltage == 0 || voltage == g_vcn33_1_voltage_mt6855)
 		return;
 
-	g_vcn33_1_voltage = voltage;
+	g_vcn33_1_voltage_mt6855 = voltage;
 }
