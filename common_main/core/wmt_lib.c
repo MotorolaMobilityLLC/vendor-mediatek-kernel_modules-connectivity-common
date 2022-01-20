@@ -2720,6 +2720,16 @@ PUINT8 wmt_lib_get_cpupcr_xml_format(PUINT32 pLen)
 	return &g_cpupcr_buf[0];
 }
 
+VOID wmt_lib_init_tm_temp_query(VOID)
+{
+	wmt_dev_init_tm_temp_query();
+}
+
+VOID wmt_lib_deinit_tm_temp_query(VOID)
+{
+	wmt_dev_deinit_tm_temp_query();
+}
+
 INT32 wmt_lib_tm_temp_query(VOID)
 {
 	return wmt_dev_tm_temp_query();
