@@ -376,6 +376,7 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 	if (wmt_allocate_connsys_emi(pdev) < 0)
 		wmt_allocate_connsys_emi_by_lk2(pdev);
 
+	wmt_lib_init_tm_temp_query();
 	wmt_thermal_register(pdev);
 
 	if (wmt_consys_ic_ops->consys_ic_need_store_pdev) {
@@ -499,6 +500,7 @@ static INT32 mtk_wmt_remove(struct platform_device *pdev)
 
 	osal_unsleepable_lock_deinit(&g_sleep_counter_spinlock);
 	osal_sleepable_lock_deinit(&g_adie_chipid_lock);
+	wmt_lib_deinit_tm_temp_query();
 
 	atomic_set(&g_probe_called, 0);
 	return 0;

@@ -602,6 +602,16 @@ VOID wmt_dev_set_temp_threshold(INT32 val)
 	WMT_INFO_FUNC("Set temperature threashold to %d\n", val);
 }
 
+VOID wmt_dev_init_tm_temp_query(VOID)
+{
+	osal_unsleepable_lock_init(&g_temp_query_spinlock);
+}
+
+VOID wmt_dev_deinit_tm_temp_query(VOID)
+{
+	osal_unsleepable_lock_deinit(&g_temp_query_spinlock);
+}
+
 LONG wmt_dev_tm_temp_query(VOID)
 {
 #define HISTORY_NUM       3
@@ -1627,8 +1637,6 @@ static INT32 WMT_init(VOID)
 	gWmtInitStatus = WMT_INIT_START;
 	init_waitqueue_head((wait_queue_head_t *) &gWmtInitWq);
 
-	osal_unsleepable_lock_init(&g_temp_query_spinlock);
-
 #if (MTK_WCN_REMOVE_KO)
 	/* called in do_common_drv_init() */
 #else
@@ -1775,7 +1783,6 @@ static VOID WMT_exit(VOID)
 	if (gWmtInitStatus != WMT_INIT_DONE)
 		return;
 
-	osal_unsleepable_lock_deinit(&g_temp_query_spinlock);
 #ifdef CONFIG_EARLYSUSPEND
 	unregister_early_suspend(&wmt_early_suspend_handler);
 	WMT_INFO_FUNC("unregister_early_suspend finished\n");
