@@ -65,8 +65,8 @@
 /* Direct path */
 #include <mtk_ccci_common.h>
 #include <linux/gpio.h>
-#if WMT_DEVAPC_DBG_SUPPORT
-#include <devapc_public.h>
+#if IS_ENABLED(CONFIG_MTK_DEVAPC)
+#include <linux/soc/mediatek/devapc_public.h>
 #endif
 
 #include <linux/pm_runtime.h>
@@ -136,7 +136,7 @@ static VOID consys_set_mcif_emi_mpu_protection(MTK_WCN_BOOL enable);
  * otherwise: 0
  */
 static INT32 consys_calibration_backup_restore_support(VOID);
-#if WMT_DEVAPC_DBG_SUPPORT
+#if IS_ENABLED(CONFIG_MTK_DEVAPC)
 static VOID consys_devapc_violation_cb(VOID);
 #endif
 static VOID consyc_register_devapc_cb(VOID);
@@ -383,7 +383,7 @@ static INT32 rom_patch_dl_flag = 1;
 static UINT32 gJtagCtrl;
 UINT32 g_vcn33_1_voltage_mt6855 = 3300000;
 
-#if WMT_DEVAPC_DBG_SUPPORT
+#if IS_ENABLED(CONFIG_MTK_DEVAPC)
 static struct devapc_vio_callbacks devapc_handle = {
 	.id = INFRA_SUBSYS_CONN,
 	.debug_dump = consys_devapc_violation_cb,
@@ -2176,7 +2176,7 @@ static INT32 consys_calibration_backup_restore_support(VOID)
 	return 1;
 }
 
-#if WMT_DEVAPC_DBG_SUPPORT
+#if IS_ENABLED(CONFIG_MTK_DEVAPC)
 static VOID consys_devapc_violation_cb(VOID)
 {
 	/**
@@ -2189,7 +2189,7 @@ static VOID consys_devapc_violation_cb(VOID)
 
 static VOID consyc_register_devapc_cb(VOID)
 {
-#if WMT_DEVAPC_DBG_SUPPORT
+#if IS_ENABLED(CONFIG_MTK_DEVAPC)
 	register_devapc_vio_callback(&devapc_handle);
 #endif
 }
