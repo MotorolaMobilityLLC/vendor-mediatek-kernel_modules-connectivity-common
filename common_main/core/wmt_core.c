@@ -1579,11 +1579,20 @@ static INT32 opfunc_pwr_sv(P_WMT_OP pWmtOp)
 	UINT8 evt_buf[16] = { 0 };
 	ULONG ctrlPa1 = 0;
 	ULONG ctrlPa2 = 0;
+	UINT32 cfg_on_dbg = 0;
 
 	typedef INT32(*STP_PSM_CB) (const MTKSTP_PSM_ACTION_T);
 	STP_PSM_CB psm_cb = NULL;
 
 	if (pWmtOp->au4OpData[0] == SLEEP) {
+		if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC && wmt_plat_get_soc_chipid() == 0x6855) {
+			/* check mcu status, only send sleep command when mcu is active */
+			cfg_on_dbg = CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base + 0x12C);
+			if (((cfg_on_dbg & 0x000E0000) >> 17) != 0x1) {
+				WMT_INFO_FUNC("send SLEEP when mcu is inactive, 0x1800712C = 0x%x\n", cfg_on_dbg);
+				goto pwr_sv_done;
+			}
+		}
 		WMT_DBG_FUNC("**** Send sleep command\n");
 		/* mtk_wcn_stp_set_psm_state(ACT_INACT); */
 		/* (*kal_stp_flush_rx)(WMT_TASK_INDX); */
@@ -1663,7 +1672,14 @@ static INT32 opfunc_pwr_sv(P_WMT_OP pWmtOp)
 		}
 		WMT_DBG_FUNC("Send wakeup command OK!\n");
 	} else if (pWmtOp->au4OpData[0] == HOST_AWAKE) {
-
+		if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC && wmt_plat_get_soc_chipid() == 0x6855) {
+			/* check mcu status, only send host awake command when mcu is active */
+			cfg_on_dbg = CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base + 0x12C);
+			if (((cfg_on_dbg & 0x000E0000) >> 17) != 0x1) {
+				WMT_INFO_FUNC("send HOST_AWAKE when mcu is inactive, 0x1800712C = 0x%x\n", cfg_on_dbg);
+				goto pwr_sv_done;
+			}
+		}
 		WMT_DBG_FUNC("**** Send host awake command\n");
 
 		psm_cb = (STP_PSM_CB) pWmtOp->au4OpData[1];
