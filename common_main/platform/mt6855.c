@@ -1120,6 +1120,21 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 #if CONSYS_PMIC_CTRL_ENABLE
 	struct regmap *r = g_regmap_mt6363;
 	int ret = 0;
+	void __iomem *vir_addr_pmif_spmi_m_base = NULL;
+
+	if (mtk_wcn_consys_get_adie_chipid() == SECONDARY_ADIE) {
+		vir_addr_pmif_spmi_m_base = ioremap(PMIF_SPMI_M_BASE, 0x200);
+		if (!vir_addr_pmif_spmi_m_base) {
+			pr_notice("vir_addr_pmif_spmi_m_base(%x) ioremap fail\n",
+				PMIF_SPMI_M_BASE);
+			return -1;
+		}
+		CONSYS_SET_BIT(vir_addr_pmif_spmi_m_base +
+			PMIF_SPMI_M_INF_EN_OFFSET_ADDR, (0x1 << 17));
+		CONSYS_SET_BIT(vir_addr_pmif_spmi_m_base +
+			PMIF_SPMI_M_ARB_EN_OFFSET_ADDR, (0x1 << 17));
+		iounmap(vir_addr_pmif_spmi_m_base);
+	}
 
 	if (enable) {
 		if (consys_is_rc_mode_enable_mt6855()) {
