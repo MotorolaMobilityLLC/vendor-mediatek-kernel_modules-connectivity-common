@@ -56,6 +56,7 @@
 #endif
 #endif
 #include <linux/proc_fs.h>
+#include <linux/thermal.h>
 #include <mtk_wcn_cmb_stub.h>
 #include "osal_typedef.h"
 #include "osal.h"
@@ -602,16 +603,6 @@ VOID wmt_dev_set_temp_threshold(INT32 val)
 	WMT_INFO_FUNC("Set temperature threashold to %d\n", val);
 }
 
-VOID wmt_dev_init_tm_temp_query(VOID)
-{
-	osal_unsleepable_lock_init(&g_temp_query_spinlock);
-}
-
-VOID wmt_dev_deinit_tm_temp_query(VOID)
-{
-	osal_unsleepable_lock_deinit(&g_temp_query_spinlock);
-}
-
 LONG wmt_dev_tm_temp_query(VOID)
 {
 #define HISTORY_NUM       3
@@ -633,6 +624,9 @@ LONG wmt_dev_tm_temp_query(VOID)
 	INT32 index = 0;
 	LONG return_temp = 0;
 	INT8 query_cond = 0;
+
+	if (gWmtClose != 0)
+		return THERMAL_TEMP_INVALID;
 
 	/* Let us work on the copied version of function static variables */
 	osal_lock_unsleepable_lock(&g_temp_query_spinlock);
@@ -1637,6 +1631,8 @@ static INT32 WMT_init(VOID)
 	gWmtInitStatus = WMT_INIT_START;
 	init_waitqueue_head((wait_queue_head_t *) &gWmtInitWq);
 
+	osal_unsleepable_lock_init(&g_temp_query_spinlock);
+
 #if (MTK_WCN_REMOVE_KO)
 	/* called in do_common_drv_init() */
 #else
@@ -1783,6 +1779,7 @@ static VOID WMT_exit(VOID)
 	if (gWmtInitStatus != WMT_INIT_DONE)
 		return;
 
+	osal_unsleepable_lock_deinit(&g_temp_query_spinlock);
 #ifdef CONFIG_EARLYSUSPEND
 	unregister_early_suspend(&wmt_early_suspend_handler);
 	WMT_INFO_FUNC("unregister_early_suspend finished\n");
