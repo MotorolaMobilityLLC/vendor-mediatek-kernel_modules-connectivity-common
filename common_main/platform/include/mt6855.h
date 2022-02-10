@@ -141,6 +141,13 @@
 /**********************************************************************/
 #define INFRASYS_COMMON_AP2MD_PCCIF4_AP_PCCIF_ACK_OFFSET    (0x14)
 
+/**********************************************************************/
+/* Base: pmif_spmi_m_base (0x1C80_4000) */
+/**********************************************************************/
+#define PMIF_SPMI_M_BASE                            0x1C804000
+#define PMIF_SPMI_M_INF_EN_OFFSET_ADDR              0x24
+#define PMIF_SPMI_M_OTHER_INF_EN_OFFSET_ADDR        0x28
+#define PMIF_SPMI_M_ARB_EN_OFFSET_ADDR              0x150
 
 /**********************************************************************/
 /* 6363 + 6369 PMIC ID defined */
