@@ -1142,11 +1142,43 @@ static INT32 consys_update_clock_vrfck1_voter(MTK_WCN_BOOL enable)
 }
 #endif
 
+#if CONSYS_PMIC_CTRL_ENABLE
+static INT32 consys_update_vs2_voter(VOID)
+{
+	void __iomem *vir_addr_pmif_spmi_m_base = NULL;
+
+	if (mtk_wcn_consys_get_adie_chipid() != SECONDARY_ADIE)
+		return 0;
+
+	vir_addr_pmif_spmi_m_base = ioremap(PMIF_SPMI_M_BASE, 0x200);
+
+	if (!vir_addr_pmif_spmi_m_base) {
+		pr_notice("vir_addr_pmif_spmi_m_base(%x) ioremap fail\n",
+			PMIF_SPMI_M_BASE);
+		return -1;
+	}
+
+	CONSYS_SET_BIT(vir_addr_pmif_spmi_m_base +
+		PMIF_SPMI_M_INF_EN_OFFSET_ADDR, (0x1 << 17));
+	CONSYS_SET_BIT(vir_addr_pmif_spmi_m_base +
+		PMIF_SPMI_M_ARB_EN_OFFSET_ADDR, (0x1 << 17));
+	CONSYS_SET_BIT(vir_addr_pmif_spmi_m_base +
+		PMIF_SPMI_M_OTHER_INF_EN_OFFSET_ADDR, (0x1 << 0));
+
+	if (vir_addr_pmif_spmi_m_base)
+		iounmap(vir_addr_pmif_spmi_m_base);
+
+	return 0;
+}
+#endif
+
 static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 {
 #if CONSYS_PMIC_CTRL_ENABLE
 	struct regmap *r = g_regmap_mt6363;
 	int ret = 0;
+
+	consys_update_vs2_voter();
 
 	if (enable) {
 		consys_update_clock_vrfck1_voter(enable);
