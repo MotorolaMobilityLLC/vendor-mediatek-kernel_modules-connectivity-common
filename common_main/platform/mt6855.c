@@ -1117,6 +1117,31 @@ static VOID consys_hw_vcn13_secondary_legacy_mode_enable(VOID)
 }
 #endif
 
+#if CONSYS_PMIC_CTRL_ENABLE
+static INT32 consys_update_clock_vrfck1_voter(MTK_WCN_BOOL enable)
+{
+	struct regmap *r = g_regmap_mt6685;
+
+	/* unlock vrfck1 voter control */
+	consys_pmic_regmap_set_value(r, 0x39E, 0xFF, 0x7A);
+	consys_pmic_regmap_set_value(r, 0x39F, 0xFF, 0x99);
+
+	if (enable) {
+		/* set vrfck1 voter to 1.25V*/
+		consys_pmic_regmap_set_value(r, 0x1c92, 0xF, 0x0);
+	} else {
+		/* set vrfck1 voter to 1.4V*/
+		consys_pmic_regmap_set_value(r, 0x1c92, 0xF, 0x3);
+	}
+
+	/* lock vrfck1 voter control */
+	consys_pmic_regmap_set_value(r, 0x39E, 0xFF, 0x0);
+	consys_pmic_regmap_set_value(r, 0x39F, 0xFF, 0x0);
+
+	return 0;
+}
+#endif
+
 static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 {
 #if CONSYS_PMIC_CTRL_ENABLE
@@ -1124,6 +1149,8 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 	int ret = 0;
 
 	if (enable) {
+		consys_update_clock_vrfck1_voter(enable);
+
 		if (consys_is_rc_mode_enable_mt6855()) {
 			/* RC mode */
 			/* 1. set PMIC VRFIO18 LDO PMIC HW mode control by PMRC_EN[9][8][7][6] */
