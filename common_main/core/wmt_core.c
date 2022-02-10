@@ -1579,61 +1579,53 @@ static INT32 opfunc_pwr_sv(P_WMT_OP pWmtOp)
 	UINT8 evt_buf[16] = { 0 };
 	ULONG ctrlPa1 = 0;
 	ULONG ctrlPa2 = 0;
-	UINT32 cfg_on_dbg = 0;
 
 	typedef INT32(*STP_PSM_CB) (const MTKSTP_PSM_ACTION_T);
 	STP_PSM_CB psm_cb = NULL;
 
 	if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC && wmt_plat_get_soc_chipid() == 0x6855) {
-		if (pWmtOp->au4OpData[0] == SLEEP || pWmtOp->au4OpData[0] == HOST_AWAKE) {
-			CONSYS_REG_WRITE(conn_reg.mcu_conn_hif_on_base + 0x50, 0x80);
-			cfg_on_dbg = CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base + 0x12C);
-			CONSYS_REG_WRITE(conn_reg.mcu_conn_hif_on_base + 0x50, 0x0);
-			if (((cfg_on_dbg & 0x000E0000) >> 17) != 0x1) {
-				WMT_INFO_FUNC("send HOST_AWAKE/SLEEP when mcu is inactive, 0x1800712C=[0x%x], cmd=[%d]\n", cfg_on_dbg, pWmtOp->au4OpData[0]);
-
-				if (mtk_wcn_stp_is_btif_fullset_mode()) {
-					WMT_INFO_FUNC("wakeup connsys by btif");
-					ret = wmt_core_ctrl(WMT_CTRL_SOC_WAKEUP_CONSYS, &ctrlPa1, &ctrlPa2);
-					if (ret) {
-						WMT_ERR_FUNC("wmt-core:WAKEUP_CONSYS by BTIF fail(%d)", ret);
-						goto pwr_sv_done;
-					}
-				} else if (mtk_wcn_stp_is_sdio_mode()) {
-					WMT_INFO_FUNC("**** Send wakeup command\n");
-					ret =
-						wmt_core_tx((const PUINT8)WMT_WAKEUP_CMD, sizeof(WMT_WAKEUP_CMD), &u4_result, 1);
-					if (ret || (u4_result != sizeof(WMT_WAKEUP_CMD))) {
-						wmt_core_rx_flush(WMT_TASK_INDX);
-						WMT_ERR_FUNC("wmt_core: WAKEUP_CMD ret(%d) cmd len err(%d, %zu)\n",
-								ret, u4_result, sizeof(WMT_WAKEUP_CMD));
-						goto pwr_sv_done;
-					}
-				}
-				evt_len = sizeof(WMT_WAKEUP_EVT);
-				ret = wmt_core_rx(evt_buf, evt_len, &u4_result);
-				if (ret || (u4_result != evt_len)) {
-					WMT_ERR_FUNC
-						("wmt_core: read WAKEUP_EVT fail(%d) len(%d, %d), host grigger firmaware assert\n",
-							ret, u4_result, evt_len);
-
-					wmt_lib_trigger_assert(WMTDRV_TYPE_WMT, 34);
+		if (pWmtOp->au4OpData[0] == HOST_AWAKE) {
+			if (mtk_wcn_stp_is_btif_fullset_mode()) {
+				WMT_INFO_FUNC("wakeup connsys by btif");
+				ret = wmt_core_ctrl(WMT_CTRL_SOC_WAKEUP_CONSYS, &ctrlPa1, &ctrlPa2);
+				if (ret) {
+					WMT_ERR_FUNC("wmt-core:WAKEUP_CONSYS by BTIF fail(%d)", ret);
 					goto pwr_sv_done;
 				}
-
-				if (osal_memcmp(evt_buf, (const PVOID)WMT_WAKEUP_EVT, sizeof(WMT_WAKEUP_EVT)) != 0) {
-					WMT_ERR_FUNC("wmt_core: compare WMT_WAKEUP_EVT error\n");
+			} else if (mtk_wcn_stp_is_sdio_mode()) {
+				WMT_INFO_FUNC("**** Send wakeup command\n");
+				ret = wmt_core_tx((const PUINT8)WMT_WAKEUP_CMD,
+					sizeof(WMT_WAKEUP_CMD), &u4_result, 1);
+				if (ret || (u4_result != sizeof(WMT_WAKEUP_CMD))) {
 					wmt_core_rx_flush(WMT_TASK_INDX);
-					WMT_ERR_FUNC("rx(%d):[%2X,%2X,%2X,%2X,%2X,%2X] exp(%zu):[%2X,%2X,%2X,%2X,%2X,%2X]\n",
-							u4_result, evt_buf[0], evt_buf[1], evt_buf[2], evt_buf[3], evt_buf[4],
-							evt_buf[5], sizeof(WMT_WAKEUP_EVT), WMT_WAKEUP_EVT[0],
-							WMT_WAKEUP_EVT[1], WMT_WAKEUP_EVT[2], WMT_WAKEUP_EVT[3],
-							WMT_WAKEUP_EVT[4], WMT_WAKEUP_EVT[5]);
-					mtk_wcn_stp_dbg_dump_package();
+					WMT_ERR_FUNC("wmt_core: WAKEUP_CMD ret(%d) cmd len err(%d, %zu)\n",
+							ret, u4_result, sizeof(WMT_WAKEUP_CMD));
 					goto pwr_sv_done;
 				}
-				WMT_INFO_FUNC("Send wakeup command OK!\n");
 			}
+			evt_len = sizeof(WMT_WAKEUP_EVT);
+			ret = wmt_core_rx(evt_buf, evt_len, &u4_result);
+			if (ret || (u4_result != evt_len)) {
+				WMT_ERR_FUNC
+					("wmt_core: read WAKEUP_EVT fail(%d) len(%d, %d), %s\n",
+						ret, u4_result, evt_len, "host grigger firmaware assert");
+
+				wmt_lib_trigger_assert(WMTDRV_TYPE_WMT, 34);
+				goto pwr_sv_done;
+			}
+
+			if (osal_memcmp(evt_buf, (const PVOID)WMT_WAKEUP_EVT, sizeof(WMT_WAKEUP_EVT)) != 0) {
+				WMT_ERR_FUNC("wmt_core: compare WMT_WAKEUP_EVT error\n");
+				wmt_core_rx_flush(WMT_TASK_INDX);
+				WMT_ERR_FUNC("rx(%d):[%2X,%2X,%2X,%2X,%2X,%2X] exp(%zu):[%2X,%2X,%2X,%2X,%2X,%2X]\n",
+						u4_result, evt_buf[0], evt_buf[1], evt_buf[2], evt_buf[3], evt_buf[4],
+						evt_buf[5], sizeof(WMT_WAKEUP_EVT), WMT_WAKEUP_EVT[0],
+						WMT_WAKEUP_EVT[1], WMT_WAKEUP_EVT[2], WMT_WAKEUP_EVT[3],
+						WMT_WAKEUP_EVT[4], WMT_WAKEUP_EVT[5]);
+				mtk_wcn_stp_dbg_dump_package();
+				goto pwr_sv_done;
+			}
+			WMT_INFO_FUNC("Send wakeup command OK!\n");
 		}
 	}
 
