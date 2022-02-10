@@ -454,8 +454,6 @@ extern MTK_WCN_BOOL wmt_lib_handle_idc_msg(conn_md_ipc_ilm_t *idc_infor);
 #endif
 extern UINT32 wmt_lib_get_drv_status(UINT32 type);
 extern INT32 wmt_lib_tm_temp_query(VOID);
-extern VOID wmt_lib_init_tm_temp_query(VOID);
-extern VOID wmt_lib_deinit_tm_temp_query(VOID);
 extern INT32 wmt_lib_trigger_reset(VOID);
 extern INT32 wmt_lib_trigger_assert(ENUM_WMTDRV_TYPE_T type, UINT32 reason);
 extern INT32 wmt_lib_trigger_assert_keyword(ENUM_WMTDRV_TYPE_T type, UINT32 reason, PUINT8 keyword);
