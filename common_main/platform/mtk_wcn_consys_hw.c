@@ -1414,10 +1414,10 @@ PVOID mtk_wcn_consys_clock_get_regmap(VOID)
 	return NULL;
 }
 
-UINT32 mtk_wcn_consys_wakeup_btif_status(VOID)
+UINT32 mtk_wcn_consys_wakeup_btif_irq_pull_low(VOID)
 {
-	if (wmt_consys_ic_ops->consys_ic_wakeup_btif_status)
-		return wmt_consys_ic_ops->consys_ic_wakeup_btif_status();
+	if (wmt_consys_ic_ops->consys_ic_wakeup_btif_irq_pull_low)
+		return wmt_consys_ic_ops->consys_ic_wakeup_btif_irq_pull_low();
 	return 1;
 }
 
