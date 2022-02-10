@@ -167,7 +167,7 @@ static INT32 consys_jtag_set_for_mcu(VOID);
 static UINT32 consys_jtag_flag_ctrl(UINT32 enable);
 
 static INT32 consys_cr_remapping(UINT32 enable);
-static UINT32 consys_wakeup_btif_status(VOID);
+static UINT32 consys_wakeup_btif_irq_pull_low(VOID);
 
 #if CONSYS_PMIC_CTRL_ENABLE
 static int consys_pmic_mt6363_probe(struct platform_device *pdev);
@@ -310,7 +310,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops_mt6855 = {
 	.consys_ic_jtag_flag_ctrl = consys_jtag_flag_ctrl,
 
 	.consys_ic_cr_remapping = consys_cr_remapping,
-	.consys_ic_wakeup_btif_status = consys_wakeup_btif_status,
+	.consys_ic_wakeup_btif_irq_pull_low = consys_wakeup_btif_irq_pull_low,
 
 	.consys_ic_get_debug_reg_ary_size = &g_mapped_reg_table_sz_mt6855,
 	.consys_ic_get_debug_reg_ary = g_mapped_reg_table_mt6855,
@@ -526,15 +526,13 @@ static INT32 consys_cr_remapping(UINT32 enable)
 	return 0;
 }
 
-static UINT32 consys_wakeup_btif_status(VOID)
+static UINT32 consys_wakeup_btif_irq_pull_low(VOID)
 {
 	if (g_conn_mcu_btif_0_base) {
-		if (CONSYS_REG_READ(g_conn_mcu_btif_0_base +
-			BTIF_WAK_ADDR_OFFSET) == 0x1) {
-			WMT_PLAT_PR_INFO("[%s] 0x180a2064=[0x1]\n", __func__);
-			return 0;
-		} else
-			return 1;
+		/* write 0x180a2064[31:0] = 0x1 */
+		CONSYS_REG_WRITE(g_conn_mcu_btif_0_base +
+			BTIF_WAK_ADDR_OFFSET, 0x1);
+		return 0;
 	}
 
 	return 1;
