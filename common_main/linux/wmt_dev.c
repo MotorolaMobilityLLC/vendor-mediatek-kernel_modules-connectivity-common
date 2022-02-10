@@ -177,7 +177,7 @@ struct device *wmt_dev;
 
 /*LCM on/off ctrl for wmt varabile*/
 UINT32 hif_info;
-UINT8 gWmtClose;
+UINT8 gWmtClose = 1;
 static struct work_struct gPwrOnOffWork;
 static atomic_t g_es_lr_flag_for_quick_sleep = ATOMIC_INIT(1); /* for ctrl quick sleep flag */
 static atomic_t g_es_lr_flag_for_lpbk_onoff = ATOMIC_INIT(0); /* for ctrl lpbk on off */
