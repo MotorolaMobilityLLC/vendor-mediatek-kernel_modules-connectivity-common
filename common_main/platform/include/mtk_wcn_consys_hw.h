@@ -316,6 +316,8 @@ typedef INT32(*CONSYS_IC_IPI_TIMEOUT_DUMP) (VOID);
 typedef INT32(*CONSYS_IC_BEFORE_CHIP_RESET_DUMP) (VOID);
 typedef INT32(*CONSYS_IC_PC_LOG_DUMP) (VOID);
 typedef VOID(*CONSYS_IC_SET_VCN33_1_VOLTAGE) (UINT32 voltage);
+typedef INT32(*CONSYS_IC_CR_REMAPPING) (UINT32 enable);
+typedef UINT32(*CONSYS_IC_WAKEUP_BTIF_STATUS) (VOID);
 
 typedef INT32(*CONSYS_IC_JTAG_SET_FOR_MCU) (VOID);
 typedef UINT32(*CONSYS_IC_JTAG_FLAG_CTRL) (UINT32 enable);
@@ -441,6 +443,8 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_GET_OPTIONS consys_ic_get_options;
 	CONSYS_IC_POLLING_GOTO_IDLE consys_ic_polling_goto_idle;
 	CONSYS_IC_SET_VCN33_1_VOLTAGE consys_ic_set_vcn33_1_voltage;
+	CONSYS_IC_CR_REMAPPING consys_ic_cr_remapping;
+	CONSYS_IC_WAKEUP_BTIF_STATUS consys_ic_wakeup_btif_status;
 
 	CONSYS_IC_JTAG_SET_FOR_MCU consys_ic_jtag_set_for_mcu;
 	CONSYS_IC_JTAG_FLAG_CTRL consys_ic_jtag_flag_ctrl;
@@ -553,6 +557,7 @@ VOID mtk_wcn_dump_util_init(UINT32 chipid);
 VOID mtk_wcn_dump_util_destroy(VOID);
 
 PVOID mtk_wcn_consys_clock_get_regmap(VOID);
+UINT32 mtk_wcn_consys_wakeup_btif_status(VOID);
 
 VOID mtk_wcn_consys_set_vcn33_1_voltage(UINT32 voltage);
 
