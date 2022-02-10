@@ -807,6 +807,8 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 #endif
 
 	if (enable) {
+		consys_emi_set_remapping_reg();
+
 #if CONSYS_PWR_ON_OFF_API_AVAILABLE
 		iRet = clk_prepare_enable(clk_infracfg_ao_ccif4_ap_cg_mt6855);
 		if (iRet) {
