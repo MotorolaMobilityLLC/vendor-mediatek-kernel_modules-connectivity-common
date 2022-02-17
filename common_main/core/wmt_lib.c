@@ -1086,13 +1086,13 @@ static INT32 wmt_lib_is_bt_able_to_reset(VOID)
 	if (g_bt_no_acl_link)
 		return 1;
 	else if (g_bt_no_br_acl_link) {
-		struct timeval time;
+		struct timespec64 time;
 		ULONG local_time;
 		struct rtc_time tm;
 
 		osal_do_gettimeofday(&time);
 		local_time = (ULONG)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
-		rtc_time_to_tm(local_time, &tm);
+		rtc_time64_to_tm(local_time, &tm);
 		if (tm.tm_hour == 2)
 			return 1;
 	}
@@ -1338,7 +1338,7 @@ static INT32 met_thread(void *pvData)
 	}
 	osal_memset(met_dump_buf, 0, MET_DUMP_SIZE);
 
-	emi_met_base = ioremap_nocache(emi_info->emi_ap_phy_addr + emi_met_offset, emi_met_size);
+	emi_met_base = ioremap(emi_info->emi_ap_phy_addr + emi_met_offset, emi_met_size);
 	if (!emi_met_base) {
 		osal_free(met_dump_buf);
 		WMT_ERR_FUNC("met emi ioremap fail\n");
