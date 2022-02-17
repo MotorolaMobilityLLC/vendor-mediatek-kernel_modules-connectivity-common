@@ -20,29 +20,23 @@
 #include "wmt_detect.h"
 #include "wlan_drv_init.h"
 
-#ifdef MTK_WCN_WLAN_GEN4
 int __attribute__((weak)) mtk_wcn_wlan_gen4_init()
 {
 	WMT_DETECT_PR_INFO("no impl. mtk_wcn_wlan_gen4_init\n");
 	return 0;
 }
-#endif
 
-#ifdef MTK_WCN_WLAN_GEN3
 int __attribute__((weak)) mtk_wcn_wlan_gen3_init()
 {
 	WMT_DETECT_PR_INFO("no impl. mtk_wcn_wlan_gen3_init\n");
 	return 0;
 }
-#endif
 
-#ifdef MTK_WCN_WLAN_GEN2
 int __attribute__((weak)) mtk_wcn_wlan_gen2_init()
 {
 	WMT_DETECT_PR_INFO("no impl. mtk_wcn_wlan_gen2_init\n");
 	return 0;
 }
-#endif
 
 int __attribute__((weak)) mtk_wcn_wmt_wifi_init()
 {
@@ -63,15 +57,11 @@ int do_wlan_drv_init(int chip_id)
 	i_ret += ret;
 
 	switch (chip_id) {
+	case 0x6765:
 	case 0x6632:
-#ifdef MTK_WCN_WLAN_GEN4
 		/* WLAN driver init */
 		ret = mtk_wcn_wlan_gen4_init();
 		WMT_DETECT_PR_INFO("WLAN-GEN4 driver init, ret:%d\n", ret);
-#else
-		WMT_DETECT_PR_ERR("WLAN-GEN4 driver is not supported, please check CONFIG_MTK_COMBO_CHIP\n");
-		ret = -1;
-#endif
 		break;
 
 	case 0x6630:
@@ -80,25 +70,15 @@ int do_wlan_drv_init(int chip_id)
 	case 0x6759:
 	case 0x6775:
 	case 0x6771:
-#ifdef MTK_WCN_WLAN_GEN3
 		/* WLAN driver init */
 		ret = mtk_wcn_wlan_gen3_init();
 		WMT_DETECT_PR_INFO("WLAN-GEN3 driver init, ret:%d\n", ret);
-#else
-		WMT_DETECT_PR_ERR("WLAN-GEN3 driver is not supported, please check CONFIG_MTK_COMBO_CHIP\n");
-		ret = -1;
-#endif
 		break;
 
 	default:
-#ifdef MTK_WCN_WLAN_GEN2
 		/* WLAN driver init */
 		ret = mtk_wcn_wlan_gen2_init();
 		WMT_DETECT_PR_INFO("WLAN-GEN2 driver init, ret:%d\n", ret);
-#else
-		WMT_DETECT_PR_ERR("WLAN-GEN2 driver is not supported, please check CONFIG_MTK_COMBO_CHIP\n");
-		ret = -1;
-#endif
 		break;
 	}
 
