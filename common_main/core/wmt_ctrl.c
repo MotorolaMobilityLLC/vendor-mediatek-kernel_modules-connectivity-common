@@ -108,6 +108,8 @@ static INT32 wmt_ctrl_get_patch_name(P_WMT_CTRL_DATA pWmtCtrlData);
 
 static INT32 wmt_ctrl_get_rom_patch_info(P_WMT_CTRL_DATA pWmtCtrlData);
 
+static INT32 wmt_ctrl_update_patch_version(P_WMT_CTRL_DATA);
+
 /* TODO: [FixMe][GeorgeKuo]: remove unused function */
 /*static INT32  wmt_ctrl_hwver_get(P_WMT_CTRL_DATA);*/
 
@@ -159,6 +161,7 @@ static const WMT_CTRL_FUNC wmt_ctrl_func[] = {
 #endif
 	[WMT_CTRL_EVT_PARSER] = wmt_ctrl_evt_parser,
 	[WMT_CTRL_GET_ROM_PATCH_INFO] = wmt_ctrl_get_rom_patch_info,
+	[WMT_CTRL_UPDATE_PATCH_VERSION] = wmt_ctrl_update_patch_version,
 	[WMT_CTRL_MAX] = wmt_ctrl_others,
 };
 
@@ -659,6 +662,21 @@ INT32 wmt_ctrl_get_rom_patch_info(P_WMT_CTRL_DATA pWmtCtrlData)
 	}
 
 	return ret;
+}
+
+INT32 wmt_ctrl_update_patch_version(P_WMT_CTRL_DATA pWmtCtrlData)
+{
+	P_DEV_WMT pDev = &gDevWmt;	/* single instance */
+	INT32 iRet;
+	UINT8 cmdStr[NAME_MAX + 1] = { 0 };
+
+	osal_snprintf(cmdStr, NAME_MAX, "update_patch_version");
+	iRet = wmt_ctrl_ul_cmd(pDev, cmdStr);
+	if (iRet) {
+		WMT_WARN_FUNC("wmt_ctrl_ul_cmd fail(%d)\n", iRet);
+		return -1;
+	}
+	return 0;
 }
 
 INT32 wmt_ctrl_soc_paldo_ctrl(P_WMT_CTRL_DATA pWmtCtrlData)
