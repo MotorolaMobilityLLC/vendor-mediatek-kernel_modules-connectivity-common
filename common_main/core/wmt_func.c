@@ -297,7 +297,8 @@ INT32 wmt_func_bt_on(P_WMT_IC_OPS pOps, P_WMT_GEN_CONF pConf)
 	ctrlPa2 = PALDO_ON;
 	iRet = wmt_core_ctrl(WMT_CTRL_SOC_PALDO_CTRL, &ctrlPa1, &ctrlPa2);
 	if (iRet) {
-		WMT_ERR_FUNC("wmt-func: wmt_ctrl_soc_paldo_ctrl failed(%d)(%d)(%d)\n", iRet, ctrlPa1, ctrlPa2);
+		WMT_ERR_FUNC("wmt-func: wmt_ctrl_soc_paldo_ctrl failed(%d)(%lu)(%lu)\n",
+				iRet, ctrlPa1, ctrlPa2);
 		return -1;
 	}
 	iRet = wmt_core_func_ctrl_cmd(WMTDRV_TYPE_BT, MTK_WCN_BOOL_TRUE);

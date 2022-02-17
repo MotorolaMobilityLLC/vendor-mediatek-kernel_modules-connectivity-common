@@ -1068,9 +1068,9 @@ static INT32 wmt_internal_loopback(INT32 count, INT32 max)
 		pOp->op.au4OpData[0] = lpbk_buffer.payload_length;	/* packet length */
 		pOp->op.au4OpData[1] = (UINT32) &gLpbkBuf[0];
 		pSignal->timeoutValue = MAX_EACH_WMT_CMD;
-		WMT_INFO_FUNC("OPID(%d) type(%d) start\n", pOp->op.opId, pOp->op.au4OpData[0]);
+		WMT_INFO_FUNC("OPID(%d) type(%zu) start\n", pOp->op.opId, pOp->op.au4OpData[0]);
 		if (DISABLE_PSM_MONITOR()) {
-			WMT_ERR_FUNC("wake up failed,OPID(%d) type(%d) abort\n", pOp->op.opId,
+			WMT_ERR_FUNC("wake up failed,OPID(%d) type(%zu) abort\n", pOp->op.opId,
 					pOp->op.au4OpData[0]);
 			wmt_lib_put_op_to_free_queue(pOp);
 			ret = -2;
@@ -1079,11 +1079,12 @@ static INT32 wmt_internal_loopback(INT32 count, INT32 max)
 		ret = wmt_lib_put_act_op(pOp);
 		ENABLE_PSM_MONITOR();
 		if (ret == MTK_WCN_BOOL_FALSE) {
-			WMT_WARN_FUNC("OPID(%d) type(%d)fail\n", pOp->op.opId, pOp->op.au4OpData[0]);
+			WMT_WARN_FUNC("OPID(%d) type(%zu)fail\n",
+					pOp->op.opId, pOp->op.au4OpData[0]);
 			ret = -3;
 			break;
 		}
-		WMT_INFO_FUNC("OPID(%d) length(%d) ok\n", pOp->op.opId, pOp->op.au4OpData[0]);
+		WMT_INFO_FUNC("OPID(%d) length(%zu) ok\n", pOp->op.opId, pOp->op.au4OpData[0]);
 
 		memcpy(&lpbk_buffer.in_payload[0], &gLpbkBuf[0], max);
 
@@ -1144,9 +1145,10 @@ static INT32 wmt_dbg_set_mcu_clock(INT32 par1, INT32 par2, INT32 par3)
 	pOp->op.au4OpData[1] = version;
 	pSignal->timeoutValue = MAX_EACH_WMT_CMD;
 
-	WMT_INFO_FUNC("OPID(%d) kind(%d) start\n", pOp->op.opId, pOp->op.au4OpData[0]);
+	WMT_INFO_FUNC("OPID(%d) kind(%zu) start\n", pOp->op.opId, pOp->op.au4OpData[0]);
 	if (DISABLE_PSM_MONITOR()) {
-		WMT_ERR_FUNC("wake up failed,OPID(%d) kind(%d) abort\n", pOp->op.opId, pOp->op.au4OpData[0]);
+		WMT_ERR_FUNC("wake up failed,OPID(%d) kind(%zu) abort\n",
+				pOp->op.opId, pOp->op.au4OpData[0]);
 		wmt_lib_put_op_to_free_queue(pOp);
 		return -2;
 	}
@@ -1154,10 +1156,11 @@ static INT32 wmt_dbg_set_mcu_clock(INT32 par1, INT32 par2, INT32 par3)
 	ret = wmt_lib_put_act_op(pOp);
 	ENABLE_PSM_MONITOR();
 	if (ret == MTK_WCN_BOOL_FALSE) {
-		WMT_WARN_FUNC("OPID(%d) kind(%d)fail(%d)\n", pOp->op.opId, pOp->op.au4OpData[0], ret);
+		WMT_WARN_FUNC("OPID(%d) kind(%zu)fail(%d)\n",
+				pOp->op.opId, pOp->op.au4OpData[0], ret);
 		return -3;
 	}
-	WMT_INFO_FUNC("OPID(%d) kind(%d) ok\n", pOp->op.opId, pOp->op.au4OpData[0]);
+	WMT_INFO_FUNC("OPID(%d) kind(%zu) ok\n", pOp->op.opId, pOp->op.au4OpData[0]);
 
 	return ret;
 }
