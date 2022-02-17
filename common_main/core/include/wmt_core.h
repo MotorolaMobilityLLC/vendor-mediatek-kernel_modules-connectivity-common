@@ -205,6 +205,11 @@ typedef struct _WMT_HIF_CONF {
 
 typedef INT32(*WMT_OPID_FUNC) (P_WMT_OP);
 
+struct WMT_BYTE_ARRAY {
+	UINT32 size;
+	PUINT8 data;
+};
+
 typedef struct _WMT_GEN_CONF {
 	UINT8 cfgExist;
 
@@ -265,6 +270,8 @@ typedef struct _WMT_GEN_CONF {
 	UINT32 coex_wmt_ext_elna_gain_p1_D1;
 	UINT32 coex_wmt_ext_elna_gain_p1_D2;
 	UINT32 coex_wmt_ext_elna_gain_p1_D3;
+
+	struct WMT_BYTE_ARRAY *coex_wmt_epa_elna;
 
 	UINT8 bt_tssi_from_wifi;
 	UINT16 bt_tssi_target;
