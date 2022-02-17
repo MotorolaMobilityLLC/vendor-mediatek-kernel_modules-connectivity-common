@@ -500,7 +500,7 @@ INT32 stp_dbg_soc_core_dump(INT32 dump_sink)
 PUINT8 stp_dbg_soc_id_to_task(UINT32 id)
 {
 	P_WMT_PATCH_INFO p_patch_info;
-	PUINT8 patch_name;
+	PUINT8 patch_name = NULL;
 	UINT32 temp_id;
 
 	if (id >= STP_DBG_TASK_ID_MAX) {
@@ -509,7 +509,8 @@ PUINT8 stp_dbg_soc_id_to_task(UINT32 id)
 	}
 
 	p_patch_info = wmt_lib_get_patch_info();
-	patch_name = p_patch_info->patchName;
+	if (p_patch_info)
+		patch_name = p_patch_info->patchName;
 
 	if (patch_name == NULL) {
 		STP_DBG_PR_ERR("patch_name is null\n");
