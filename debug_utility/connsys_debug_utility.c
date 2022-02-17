@@ -119,6 +119,7 @@ static void connlog_ring_print(int conn_type);
 static void connlog_event_set(int conn_type);
 static void connlog_log_data_handler(struct work_struct *work);
 static void work_timer_handler(unsigned long data);
+static void connlog_do_schedule_work(bool count);
 
 /*******************************************************************************
 *                              F U N C T I O N S
@@ -425,6 +426,27 @@ static void connlog_event_set(int conn_type)
 
 /*****************************************************************************
 * FUNCTION
+*  connlog_do_schedule_work
+* DESCRIPTION
+*  schedule work to read emi log data
+* PARAMETERS
+*  count      [IN]        write irq counter to EMI
+* RETURNS
+*  void
+*****************************************************************************/
+static void connlog_do_schedule_work(bool count)
+{
+	spin_lock_irqsave(&gDev.irq_lock, gDev.flags);
+	if (count) {
+		gDev.irq_counter++;
+		EMI_WRITE32(gDev.virAddrEmiLogBase + CONNLOG_IRQ_COUNTER_BASE, gDev.irq_counter);
+	}
+	gDev.eirqOn = !schedule_work(&gDev.logDataWorker);
+	spin_unlock_irqrestore(&gDev.irq_lock, gDev.flags);
+}
+
+/*****************************************************************************
+* FUNCTION
 *  work_timer_handler
 * DESCRIPTION
 *  IRQ is still on, do schedule_work again
@@ -435,9 +457,7 @@ static void connlog_event_set(int conn_type)
 *****************************************************************************/
 static void work_timer_handler(unsigned long data)
 {
-	spin_lock_irqsave(&gDev.irq_lock, gDev.flags);
-	gDev.eirqOn = !schedule_work(&gDev.logDataWorker);
-	spin_unlock_irqrestore(&gDev.irq_lock, gDev.flags);
+	connlog_do_schedule_work(false);
 }
 
 /*****************************************************************************
@@ -495,11 +515,7 @@ static void connlog_log_data_handler(struct work_struct *work)
 *****************************************************************************/
 static irqreturn_t connlog_eirq_isr(int irq, void *arg)
 {
-	spin_lock_irqsave(&gDev.irq_lock, gDev.flags);
-	gDev.irq_counter++;
-	EMI_WRITE32(gDev.virAddrEmiLogBase + CONNLOG_IRQ_COUNTER_BASE, gDev.irq_counter);
-	gDev.eirqOn = !schedule_work(&gDev.logDataWorker);
-	spin_unlock_irqrestore(&gDev.irq_lock, gDev.flags);
+	connlog_do_schedule_work(true);
 	return IRQ_HANDLED;
 }
 
@@ -977,6 +993,21 @@ void connsys_dedicated_log_get_utc_time(unsigned int *second,
 	*usecond = (unsigned int)time.tv_usec; /* UTC time microsecond unit */
 }
 EXPORT_SYMBOL(connsys_dedicated_log_get_utc_time);
+
+/*****************************************************************************
+* FUNCTION
+*  connsys_dedicated_log_flush_emi
+* DESCRIPTION
+*  flush EMI buffer to log cache.
+* PARAMETERS
+*  void
+* RETURNS
+*  void
+*****************************************************************************/
+void connsys_dedicated_log_flush_emi(void)
+{
+	connlog_do_schedule_work(false);
+}
 
 /*****************************************************************************
 * FUNCTION
