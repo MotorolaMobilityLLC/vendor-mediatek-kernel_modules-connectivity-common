@@ -531,7 +531,8 @@ INT32 mtk_wcn_consys_sleep_info_restore(VOID)
 
 	WMT_PLAT_PR_DBG("sleep count info restore start\n");
 
-	if (wmt_consys_ic_ops->consys_ic_sleep_info_enable_ctrl &&
+	if (NULL != wmt_consys_ic_ops &&
+			wmt_consys_ic_ops->consys_ic_sleep_info_enable_ctrl &&
 			wmt_consys_ic_ops->consys_ic_sleep_info_read_ctrl &&
 			wmt_consys_ic_ops->consys_ic_sleep_info_clear) {
 		if ((wmt_lib_get_drv_status(WMTDRV_TYPE_WMT) == DRV_STS_FUNC_ON)
