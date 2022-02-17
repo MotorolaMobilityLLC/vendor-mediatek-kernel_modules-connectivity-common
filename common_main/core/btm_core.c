@@ -269,13 +269,7 @@ P_OSAL_OP _stp_btm_get_free_op(MTKSTP_BTM_T *stp_btm)
 	if (stp_btm) {
 		pOp = _stp_btm_get_op(stp_btm, &stp_btm->rFreeOpQ);
 		if (pOp) {
-			osal_memset(&pOp->op, 0, sizeof(pOp->op));
-
-			/* at the moment the signal's timeoutValue is initialized by caller of _stp_btm_get_free_op(),
-			 * and the signal's comp is initialized in _stp_btm_put_act_op(),
-			 * leaving us with no choice but to initialize timeoutExtension here.
-			 */
-			pOp->signal.timeoutExtension = 0;
+			osal_memset(pOp, 0, osal_sizeof(OSAL_OP));
 		}
 
 		return pOp;
@@ -286,7 +280,6 @@ P_OSAL_OP _stp_btm_get_free_op(MTKSTP_BTM_T *stp_btm)
 INT32 _stp_btm_put_act_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP pOp)
 {
 	INT32 bRet = 0;
-	INT32 bCleanup = 0;
 	INT32 wait_ret = -1;
 
 	P_OSAL_SIGNAL pSignal = NULL;
@@ -303,11 +296,13 @@ INT32 _stp_btm_put_act_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP pOp)
 			osal_signal_init(&pOp->signal);
 		}
 
+		/* Init ref_count to 2, as one is held by current thread, the second by btm thread */
+		atomic_set(&pOp->ref_count, 2);
+
 		/* put to active Q */
 		bRet = _stp_btm_put_op(stp_btm, &stp_btm->rActiveOpQ, pOp);
 		if (bRet == 0) {
 			STP_BTM_DBG_FUNC("put active queue fail\n");
-			bCleanup = 1;	/* MTK_WCN_BOOL_TRUE; */
 			break;
 		}
 		/* wake up wmtd */
@@ -315,12 +310,8 @@ INT32 _stp_btm_put_act_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP pOp)
 
 		if (pSignal->timeoutValue == 0) {
 			bRet = 1;	/* MTK_WCN_BOOL_TRUE; */
-			/* clean it in wmtd */
 			break;
 		}
-
-		/* wait result, clean it here */
-		bCleanup = 1;	/* MTK_WCN_BOOL_TRUE; */
 
 		/* check result */
 		wait_ret = osal_wait_for_signal_timeout(&pOp->signal, &stp_btm->BTMd);
@@ -336,7 +327,7 @@ INT32 _stp_btm_put_act_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP pOp)
 		}
 	} while (0);
 
-	if (bCleanup) {
+	if (pOp && atomic_dec_and_test(&pOp->ref_count)) {
 		/* put Op back to freeQ */
 		_stp_btm_put_op(stp_btm, &stp_btm->rFreeOpQ, pOp);
 	}
@@ -416,11 +407,10 @@ handler_done:
 				(id >= osal_array_size(g_btm_op_name)) ? ("???") : (g_btm_op_name[id]), result);
 		}
 
-		if (osal_op_is_wait_for_signal(pOp)) {
-			osal_op_raise_signal(pOp, result);
-		} else {
-			/* put Op back to freeQ */
+		if (atomic_dec_and_test(&pOp->ref_count)) {
 			_stp_btm_put_op(stp_btm, &stp_btm->rFreeOpQ, pOp);
+		} else if (osal_op_is_wait_for_signal(pOp)) {
+			osal_op_raise_signal(pOp, result);
 		}
 
 		if (id == STP_OPID_BTM_EXIT) {
