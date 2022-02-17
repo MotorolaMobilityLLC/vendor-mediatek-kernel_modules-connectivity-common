@@ -90,6 +90,11 @@
 /* #define MTK_WCN_CMB_MERGE_INTERFACE_SUPPORT (0) */
 
 #define CFG_WMT_POWER_ON_DLM  (1)
+
+/* Define local option for debug purpose */
+#define CFG_CALIBRATION_BACKUP_RESTORE (1)
+#define CALIBRATION_BACKUP_RESTORE_BUFFER_SIZE (640)
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -104,6 +109,15 @@ static UINT8 gFullPatchName[NAME_MAX + 1];
 static const WMT_IC_INFO_S *gp_soc_info;
 static WMT_PATCH gp_soc_patch_info;
 static WMT_CO_CLOCK gCoClockEn = WMT_CO_CLOCK_DIS;
+
+#if CFG_CALIBRATION_BACKUP_RESTORE
+static PUINT8 gBTCalResult;
+static UINT16 gBTCalResultSize;
+static UINT32 gWiFiCalAddrOffset;
+static UINT32 gWiFiCalSize;
+static PUINT8 gWiFiCalResult;
+#endif
+
 #if 0
 static UINT8 WMT_WAKEUP_DIS_GATE_CMD[] = { 0x1, 0x3, 0x01, 0x00, 0x04 };
 static UINT8 WMT_WAKEUP_DIS_GATE_EVT[] = { 0x2, 0x3, 0x02, 0x0, 0x0, 0x04 };
@@ -249,6 +263,14 @@ static UINT8 WMT_CORE_CO_CLOCK_EVT[] = { 0x2, 0x0A, 0x01, 0x00, 0x00 };
 
 static UINT8 WMT_CORE_START_RF_CALIBRATION_CMD[] = { 0x1, 0x14, 0x1, 0x00, 0x01 };
 static UINT8 WMT_CORE_START_RF_CALIBRATION_EVT[] = { 0x2, 0x14, 0x02, 0x00, 0x00, 0x01 };
+
+#if CFG_CALIBRATION_BACKUP_RESTORE
+static UINT8 WMT_CORE_GET_RF_CALIBRATION_CMD[] = { 0x1, 0x14, 0x01, 0x00, 0x03 };
+/* byte[2] & byte[3] is left for length */
+static UINT8 WMT_CORE_SEND_RF_CALIBRATION_CMD[] = { 0x1, 0x14, 0x00, 0x00, 0x02, 0x00, 0x00 };
+static UINT8 WMT_CORE_SEND_RF_CALIBRATION_EVT_OK[] = { 0x2, 0x14, 0x02, 0x00, 0x00, 0x02 };
+static UINT8 WMT_CORE_SEND_RF_CALIBRATION_EVT_RECAL[] = { 0x2, 0x14, 0x02, 0x00, 0x01, 0x02 };
+#endif
 
 #if (MTK_WCN_CMB_MERGE_INTERFACE_SUPPORT)
 static UINT8 WMT_SET_I2S_SLAVE_REG_CMD[] = { 0x01, 0x08, 0x10, 0x00	/*length */
@@ -1043,6 +1065,13 @@ static INT32 mtk_wcn_soc_set_sdio_driving(void);
 #endif
 static UINT32 mtk_wcn_soc_update_patch_version(VOID);
 
+static INT32 mtk_wcn_soc_calibration(void);
+static INT32 mtk_wcn_soc_do_calibration(void);
+#if CFG_CALIBRATION_BACKUP_RESTORE
+static INT32 mtk_wcn_soc_calibration_backup(void);
+static INT32 mtk_wcn_soc_calibration_restore(void);
+#endif
+
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -1420,29 +1449,11 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	}
 
 	/* 7. start RF calibration data */
-	ctrlPa1 = BT_PALDO;
-	ctrlPa2 = PALDO_ON;
-	iRet = wmt_core_ctrl(WMT_CTRL_SOC_PALDO_CTRL, &ctrlPa1, &ctrlPa2);
-	ctrlPa1 = WIFI_PALDO;
-	ctrlPa2 = PALDO_ON;
-	iRet = wmt_core_ctrl(WMT_CTRL_SOC_PALDO_CTRL, &ctrlPa1, &ctrlPa2);
-
-	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_BEFORE_BT_WIFI_CALIBRATION);
-	iRet = wmt_core_init_script(calibration_table, osal_array_size(calibration_table));
+	iRet = mtk_wcn_soc_calibration();
 	if (iRet) {
-		/* pwrap_read(0x0210,&ctrlPa1); */
-		/* pwrap_read(0x0212,&ctrlPa2); */
-		/* WMT_ERR_FUNC("power status: 210:(%d),212:(%d)!\n", ctrlPa1, ctrlPa2); */
-		WMT_ERR_FUNC("calibration_table fail(%d)\n", iRet);
+		WMT_ERR_FUNC("calibration failed\n");
 		return -9;
 	}
-
-	ctrlPa1 = BT_PALDO;
-	ctrlPa2 = PALDO_OFF;
-	iRet = wmt_core_ctrl(WMT_CTRL_SOC_PALDO_CTRL, &ctrlPa1, &ctrlPa2);
-	ctrlPa1 = WIFI_PALDO;
-	ctrlPa2 = PALDO_OFF;
-	iRet = wmt_core_ctrl(WMT_CTRL_SOC_PALDO_CTRL, &ctrlPa1, &ctrlPa2);
 
 	/* turn off VCN28 after reading efuse */
 	ctrlPa1 = EFUSE_PALDO;
@@ -3269,10 +3280,14 @@ INT32 mtk_wcn_soc_rom_patch_dwn(UINT32 ip_ver, UINT32 fw_ver)
 		}
 
 		if (patchEmiOffset + patchSize < emiInfo->emi_size) {
+			WMT_INFO_FUNC("[Rom Patch] emiInfo: emi_ap_phy_addr=0x%x emi_size=%d emi_phy_addr=0x%x\n",
+				emiInfo->emi_ap_phy_addr, emiInfo->emi_size, emiInfo->emi_phy_addr);
 			WMT_INFO_FUNC("[Rom Patch]Name=%s,EmiOffset=0x%x,Size=0x%x\n",
 					gFullPatchName, patchEmiOffset, patchSize);
 
 			patchAddr = ioremap_nocache(emiInfo->emi_ap_phy_addr + patchEmiOffset, patchSize);
+			WMT_INFO_FUNC("physAddr=0x%x, size=%d virAddr=0x%x\n",
+				emiInfo->emi_ap_phy_addr + patchEmiOffset, patchSize, patchAddr);
 			if (patchAddr) {
 				osal_memcpy_toio(patchAddr, pPatchBuf, patchSize);
 				iounmap(patchAddr);
@@ -3297,4 +3312,406 @@ done:
 	}
 
 	return iRet;
+}
+
+
+VOID mtk_wcn_soc_restore_wifi_cal_result(VOID)
+{
+#if CFG_CALIBRATION_BACKUP_RESTORE
+	P_CONSYS_EMI_ADDR_INFO emiInfo = mtk_wcn_consys_soc_get_emi_phy_add();
+	PUINT8 wifiCalAddr = NULL;
+
+	if (!emiInfo) {
+		WMT_ERR_FUNC("Get EMI info failed.\n");
+		return;
+	}
+
+	if (mtk_consys_is_calibration_backup_restore_support() == 0 ||
+	    mtk_wcn_stp_assert_flow_get() == 0) {
+		WMT_INFO_FUNC(
+			"Skip restore, chip id=%x mtk_wcn_stp_assert_flow_get()=%d\n",
+			wmt_ic_ops_soc.icId, mtk_wcn_stp_assert_flow_get());
+		return;
+	}
+	/* Disable Wi-Fi MPU to touch Wi-Fi calibration data */
+	if (mtk_wcn_wlan_emi_mpu_set_protection)
+		(*mtk_wcn_wlan_emi_mpu_set_protection)(false);
+	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_BEFORE_RESTORE_CAL_RESULT);
+	/* Write Wi-Fi data to EMI */
+	if (gWiFiCalAddrOffset + gWiFiCalSize < emiInfo->emi_size) {
+		wifiCalAddr = ioremap_nocache(emiInfo->emi_ap_phy_addr + gWiFiCalAddrOffset,
+				gWiFiCalSize);
+		if (wifiCalAddr) {
+			osal_memcpy_toio(wifiCalAddr, gWiFiCalResult, gWiFiCalSize);
+			iounmap(wifiCalAddr);
+			WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_AFTER_RESTORE_CAL_RESULT);
+		} else {
+			WMT_ERR_FUNC("ioremap_nocache fail\n");
+		}
+	}
+	if (mtk_wcn_wlan_emi_mpu_set_protection)
+		(*mtk_wcn_wlan_emi_mpu_set_protection)(true);
+#else
+	WMT_INFO_FUNC("Skip restore because it is not supported.\n");
+#endif
+}
+
+#if CFG_CALIBRATION_BACKUP_RESTORE
+/*
+ * To restore calibration data
+ * For BT, send by STP command.
+ * For Wi-Fi write to EMI directly.
+ *
+ * Return value:
+ *	0: restore success
+ *	1: recalibration happened. Caller need to re-get calibration data
+ *	< 0: fail. Caller need to re-send calibration command.
+ */
+static INT32 mtk_wcn_soc_calibration_restore(void)
+{
+	INT32 iRet = 0;
+	PUINT8 evtBuf = NULL;
+	UINT32 u4Res;
+	UINT16 len = 0;
+
+	/* Allocate event buffer */
+	evtBuf = osal_malloc(CALIBRATION_BACKUP_RESTORE_BUFFER_SIZE);
+	if (evtBuf == NULL) {
+		WMT_ERR_FUNC("allocate event buffer failed\n");
+		return -1;
+	}
+
+	if ((gBTCalResultSize != 0 && gBTCalResult != NULL &&
+	    (gBTCalResultSize + sizeof(WMT_CORE_SEND_RF_CALIBRATION_CMD)) < CALIBRATION_BACKUP_RESTORE_BUFFER_SIZE) &&
+	    (gWiFiCalResult != NULL && gWiFiCalSize != 0 && gWiFiCalAddrOffset != 0)) {
+		WMT_INFO_FUNC("Send calibration data size=%d\n", gBTCalResultSize);
+		WMT_INFO_FUNC("Send calibration data start\n");
+		/* Construct send calibration cmd for BT
+		 * Format: 0x01 0x14 [ X+3 (2 bytes)] 0x02
+		 *         [BT data len (2 bytes)] [BT data (X bytes)]
+		 */
+		/* clear buffer */
+		osal_memset(&evtBuf[0], 0, CALIBRATION_BACKUP_RESTORE_BUFFER_SIZE);
+		/* copy cmd template */
+		osal_memcpy(
+			&evtBuf[0],
+			WMT_CORE_SEND_RF_CALIBRATION_CMD,
+			sizeof(WMT_CORE_SEND_RF_CALIBRATION_CMD));
+		/* Setup length to byte 2&3 */
+		len = gBTCalResultSize + 3;
+		osal_memcpy(&evtBuf[2], &len, 2);
+		osal_memcpy(&evtBuf[5], &gBTCalResultSize, 2);
+		osal_memcpy(&evtBuf[7], gBTCalResult, gBTCalResultSize);
+		len = sizeof(WMT_CORE_SEND_RF_CALIBRATION_CMD) + gBTCalResultSize;
+		iRet = wmt_core_tx(evtBuf, len, &u4Res, MTK_WCN_BOOL_FALSE);
+		if (iRet || u4Res != len) {
+			WMT_ERR_FUNC("Send calibration data TX failed (%d), %d bytes writes, expect %d\n",
+				iRet, u4Res, len);
+			iRet = -4;
+			goto restore_end;
+		}
+		/* RX: 02 14 02 00 XX 02
+		 * XX means status
+		 *    0: OK
+		 *    1: recalibration happened
+		 */
+		iRet = wmt_core_rx(evtBuf, CALIBRATION_BACKUP_RESTORE_BUFFER_SIZE, &u4Res);
+		WMT_INFO_FUNC("Send calibration data end\n");
+		if (iRet || u4Res != sizeof(WMT_CORE_SEND_RF_CALIBRATION_EVT_OK)) {
+			WMT_ERR_FUNC("Send calibration data event failed(%d), %d bytes get, expect %d\n",
+				iRet, u4Res, sizeof(WMT_CORE_SEND_RF_CALIBRATION_EVT_OK));
+			iRet = -5;
+			goto restore_end;
+		}
+		/* Check return */
+		if (osal_memcmp(&evtBuf[0], WMT_CORE_SEND_RF_CALIBRATION_EVT_OK,
+				sizeof(WMT_CORE_SEND_RF_CALIBRATION_EVT_OK)) == 0) {
+			WMT_INFO_FUNC("Send calibration data OK.\n");
+			iRet = 0;
+		} else if (osal_memcmp(&evtBuf[0], WMT_CORE_SEND_RF_CALIBRATION_EVT_RECAL,
+				       sizeof(WMT_CORE_SEND_RF_CALIBRATION_EVT_RECAL)) == 0) {
+			WMT_INFO_FUNC("Recalibration happened. Re-get calibration data\n");
+			iRet = 1;
+			goto restore_end;
+		} else {
+			/* Do calibration */
+			WMT_ERR_FUNC("Send calibration event error. 0x%2x 0x%2x 0x%2x 0x%2x 0x%2x 0x%2x\n",
+				      evtBuf[0], evtBuf[1], evtBuf[2], evtBuf[3], evtBuf[4], evtBuf[5]);
+			iRet = -5;
+			goto restore_end;
+		}
+	} else {
+		WMT_ERR_FUNC("Did not restore calibration data. Buf=0x%x, size=%d\n",
+			gBTCalResult, gBTCalResultSize);
+		iRet = -6;
+		goto restore_end;
+	}
+
+restore_end:
+	if (mtk_wcn_wlan_emi_mpu_set_protection)
+		(*mtk_wcn_wlan_emi_mpu_set_protection)(false);
+	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_AFTER_RESTORE_CAL_CMD);
+	if (mtk_wcn_wlan_emi_mpu_set_protection)
+		(*mtk_wcn_wlan_emi_mpu_set_protection)(true);
+	osal_free(evtBuf);
+	return iRet;
+}
+
+/*
+ * To backup calibration data
+ * For BT, get data by STP command.
+ * For Wi-Fi, get EMI offset and length from STP command and then
+ * backup data from EMI
+ *
+ * Return value:
+ *      0: backup success
+ *      < 0: fail
+ */
+static INT32 mtk_wcn_soc_calibration_backup(void)
+{
+	INT32 iRet = 0;
+	PUINT8 evtBuf;
+	UINT32 u4Res;
+	UINT16 len = 0;
+	P_CONSYS_EMI_ADDR_INFO emiInfo = mtk_wcn_consys_soc_get_emi_phy_add();
+	UINT32 wifiOffset = 0;
+	UINT32 wifiLen = 0;
+	void __iomem *virWiFiAddrBase;
+
+	/* Allocate RX event buffer */
+	evtBuf = osal_malloc(CALIBRATION_BACKUP_RESTORE_BUFFER_SIZE);
+	if (evtBuf == NULL) {
+		WMT_ERR_FUNC("Allocate event buffer failed\n");
+		return -1;
+	}
+	/* Get calibration data TX */
+	iRet = wmt_core_tx(WMT_CORE_GET_RF_CALIBRATION_CMD,
+			sizeof(WMT_CORE_GET_RF_CALIBRATION_CMD),
+			&u4Res, MTK_WCN_BOOL_FALSE);
+	if (iRet || u4Res != sizeof(WMT_CORE_GET_RF_CALIBRATION_CMD)) {
+		WMT_ERR_FUNC("Write get calibration cmd failed(%d), exp: %d but write %d\n",
+			iRet, sizeof(WMT_CORE_GET_RF_CALIBRATION_CMD), u4Res);
+		goto get_calibration_fail;
+	}
+	osal_memset(&evtBuf[0], 0, CALIBRATION_BACKUP_RESTORE_BUFFER_SIZE);
+	iRet = wmt_core_rx(evtBuf, CALIBRATION_BACKUP_RESTORE_BUFFER_SIZE, &u4Res);
+	/* RX expected format:
+	 *   02 14 [X+14 (2 bytes)] 00 03
+	 *   [BT size = X (2 bytes)] [BT Cal. Data (X bytes)]
+	 *   [WiFi Size = 8 (2 bytes)] [WiFi Offset (4 bytes)] [WiFi len(4 bytes)]
+	 */
+	if (iRet || u4Res < 8) {
+		WMT_ERR_FUNC("Get calibration event failed(%d), get %d bytes\n", iRet, u4Res);
+		goto get_calibration_fail;
+	}
+	/* Check data validaness */
+	if (evtBuf[0] != 0x02 || evtBuf[1] != 0x14 ||
+	    evtBuf[4] != 0x00 || evtBuf[5] != 0x03) {
+		WMT_ERR_FUNC("Get calibration event error. 0x%2x 0x%2x 0x%2x 0x%2x 0x%2x 0x%2x\n",
+			evtBuf[0], evtBuf[1], evtBuf[2], evtBuf[3], evtBuf[4], evtBuf[5]);
+		goto get_calibration_fail;
+	}
+	/* Get data success, backup it.
+	 * Data size is not the same as previous, realloc memory
+	 */
+	osal_memcpy(&len, &evtBuf[6], 2);
+	if (len != gBTCalResultSize) {
+		gBTCalResultSize = len;
+		if (gBTCalResult != NULL) {
+			osal_free(gBTCalResult);
+			gBTCalResult = NULL;
+		}
+	}
+	if (gBTCalResult == NULL)
+		gBTCalResult = osal_malloc(gBTCalResultSize);
+	if (gBTCalResult == NULL) {
+		WMT_ERR_FUNC("Allocate BT calibration buffer failed.\n");
+		goto get_calibration_fail;
+	}
+	osal_memcpy(gBTCalResult, &evtBuf[8], gBTCalResultSize);
+	/* Get Wi-Fi info */
+	osal_memcpy(&wifiOffset, &evtBuf[10 + gBTCalResultSize], 4);
+	osal_memcpy(&wifiLen, &evtBuf[14 + gBTCalResultSize], 4);
+	if (wifiLen != gWiFiCalSize) {
+		gWiFiCalSize = wifiLen;
+		if (gWiFiCalResult != NULL) {
+			osal_free(gWiFiCalResult);
+			gWiFiCalResult = NULL;
+		}
+	}
+	if (gWiFiCalResult == NULL)
+		gWiFiCalResult = osal_malloc(gWiFiCalSize);
+	if (gWiFiCalResult == NULL) {
+		WMT_ERR_FUNC("Allocate Wi-Fi calibration buffer failed.\n");
+		goto get_calibration_fail;
+	}
+	/* Start to backup Wi-Fi data */
+	if (!emiInfo) {
+		WMT_ERR_FUNC("get emi info fail!\n");
+		goto get_calibration_fail;
+	}
+	/* Before copy, disable Wi-Fi MPU to access EMI */
+	if (mtk_wcn_wlan_emi_mpu_set_protection)
+		(*mtk_wcn_wlan_emi_mpu_set_protection)(false);
+	WMT_STEP_DO_ACTIONS_FUNC(
+		STEP_TRIGGER_POINT_POWER_ON_AFTER_BT_WIFI_CALIBRATION);
+	gWiFiCalAddrOffset = wifiOffset;
+	virWiFiAddrBase = ioremap_nocache(
+				emiInfo->emi_ap_phy_addr + gWiFiCalAddrOffset,
+				gWiFiCalSize);
+	if (virWiFiAddrBase) {
+		osal_memcpy_fromio(gWiFiCalResult, virWiFiAddrBase, gWiFiCalSize);
+		iounmap(virWiFiAddrBase);
+	} else {
+		WMT_ERR_FUNC("Remap Wi-Fi EMI fail: offset=%d size=%d\n",
+			     gWiFiCalAddrOffset, gWiFiCalSize);
+		goto get_calibration_fail;
+	}
+	/* Enable Wi-Fi MPU after finished. */
+	if (mtk_wcn_wlan_emi_mpu_set_protection)
+		(*mtk_wcn_wlan_emi_mpu_set_protection)(true);
+	WMT_INFO_FUNC("gBTCalResultSize=%d gWiFiCalResult=0x%x gWiFiCalSize=%d gWiFiCalAddrOffset=0x%x\n",
+		gBTCalResultSize,
+		gWiFiCalResult,
+		gWiFiCalSize,
+		gWiFiCalAddrOffset);
+	osal_free(evtBuf);
+	return 0;
+get_calibration_fail:
+	WMT_ERR_FUNC("Get calibration failed.\n");
+	if (emiInfo) {
+		WMT_ERR_FUNC("emiInfo: emi_ap_phy_addr=0x%x emi_size=%d emi_phy_addr=0x%x\n",
+			emiInfo->emi_ap_phy_addr,
+			emiInfo->emi_size,
+			emiInfo->emi_phy_addr);
+	}
+	WMT_ERR_FUNC("gBTCalResultSize=%d gWiFiCalResult=0x%x gWiFiCalSize=%d gWiFiCalAddrOffset=0x%x\n",
+		gBTCalResultSize, gWiFiCalResult,
+		gWiFiCalSize, gWiFiCalAddrOffset);
+	if (gBTCalResult != NULL) {
+		osal_free(gBTCalResult);
+		gBTCalResult = NULL;
+	}
+	gBTCalResultSize = 0;
+	if (gWiFiCalResult != NULL) {
+		osal_free(gWiFiCalResult);
+		gWiFiCalResult = NULL;
+	}
+	gWiFiCalSize = 0;
+	gWiFiCalAddrOffset = 0;
+	/* Enable Wi-Fi MPU after finished. */
+	if (mtk_wcn_wlan_emi_mpu_set_protection)
+		(*mtk_wcn_wlan_emi_mpu_set_protection)(true);
+	osal_free(evtBuf);
+	return -1;
+}
+#endif
+
+static INT32 mtk_wcn_soc_do_calibration(void)
+{
+	INT32 iRet = 0;
+
+#if CFG_CALIBRATION_BACKUP_RESTORE
+	/* When chip reset is caused by assert, skip calibration.
+	 * Restore old data.
+	 */
+	if (mtk_consys_is_calibration_backup_restore_support() == 0 ||
+	    mtk_wcn_stp_assert_flow_get() == 0) {
+		WMT_INFO_FUNC(
+			"Skip restore, chip id=%x mtk_wcn_stp_assert_flow_get()=%d\n",
+			wmt_ic_ops_soc.icId, mtk_wcn_stp_assert_flow_get());
+		goto do_calibration;
+	}
+
+	iRet = mtk_wcn_soc_calibration_restore();
+	if (iRet == 0) {
+		WMT_INFO_FUNC("Restore success\n");
+		return 0;
+	} else if (iRet == 1) {
+		WMT_INFO_FUNC("Recal happened. Re-get calibration data.\n");
+		goto get_calibration;
+	} else
+		/* For all other case, re-cali. */
+		WMT_ERR_FUNC("Re-cal because restore fail(%d)\n", iRet);
+
+do_calibration:
+#endif /* CFG_CALIBRATION_BACKUP_RESTORE */
+	/* Do calibration */
+	WMT_INFO_FUNC("Calibration start\n");
+	iRet = wmt_core_init_script(
+		calibration_table,
+		osal_array_size(calibration_table));
+	WMT_INFO_FUNC("Calibration end\n");
+	if (iRet) {
+	#if CFG_CALIBRATION_BACKUP_RESTORE
+		/* Calibration failed. Clear backup data. */
+		if (gBTCalResult != NULL) {
+			osal_free(gBTCalResult);
+			gBTCalResult = NULL;
+		}
+		gBTCalResultSize = 0;
+		if (gWiFiCalResult != NULL) {
+			osal_free(gWiFiCalResult);
+			gWiFiCalResult = NULL;
+		}
+		gWiFiCalSize = 0;
+		gWiFiCalAddrOffset = 0;
+	#endif
+		WMT_ERR_FUNC("do calibration failed (%d)\n", iRet);
+		return -1;
+	}
+
+#if CFG_CALIBRATION_BACKUP_RESTORE
+	if (mtk_consys_is_calibration_backup_restore_support() == 0)
+		return 0;
+
+get_calibration:
+	iRet = mtk_wcn_soc_calibration_backup();
+	/* Backup process should not influence power on sequence.
+	 * Hence, even it return error, just record it and
+	 * report calibration success.
+	 */
+	if (iRet == 0)
+		WMT_INFO_FUNC("Backup success\n");
+	else
+		WMT_ERR_FUNC("Backup failed(%d)\n", iRet);
+#endif
+	return 0;
+}
+
+static INT32 mtk_wcn_soc_calibration(void)
+{
+	INT32 iRet = -1;
+	INT32 iCalRet = -1;
+	unsigned long ctrlPa1;
+	unsigned long ctrlPa2;
+
+	/* Turn on BT/Wi-Fi */
+	ctrlPa1 = BT_PALDO;
+	ctrlPa2 = PALDO_ON;
+	iRet = wmt_core_ctrl(WMT_CTRL_SOC_PALDO_CTRL, &ctrlPa1, &ctrlPa2);
+	ctrlPa1 = WIFI_PALDO;
+	ctrlPa2 = PALDO_ON;
+	iRet = wmt_core_ctrl(WMT_CTRL_SOC_PALDO_CTRL, &ctrlPa1, &ctrlPa2);
+
+	WMT_INFO_FUNC("mtk_wcn_soc_do_calibration start\n");
+	iCalRet = mtk_wcn_soc_do_calibration();
+	WMT_INFO_FUNC("mtk_wcn_soc_do_calibration end\n");
+
+	/* Turn off BT/Wi-Fi */
+	ctrlPa1 = BT_PALDO;
+	ctrlPa2 = PALDO_OFF;
+	iRet = wmt_core_ctrl(WMT_CTRL_SOC_PALDO_CTRL, &ctrlPa1, &ctrlPa2);
+	ctrlPa1 = WIFI_PALDO;
+	ctrlPa2 = PALDO_OFF;
+	iRet = wmt_core_ctrl(WMT_CTRL_SOC_PALDO_CTRL, &ctrlPa1, &ctrlPa2);
+
+	if (iCalRet) {
+		/* pwrap_read(0x0210,&ctrlPa1); */
+		/* pwrap_read(0x0212,&ctrlPa2); */
+		/* WMT_ERR_FUNC("power status: 210:(%d),212:(%d)!\n", ctrlPa1, ctrlPa2); */
+		WMT_ERR_FUNC("calibration_table fail(%d)\n", iCalRet);
+		return -1;
+	}
+	return 0;
 }
