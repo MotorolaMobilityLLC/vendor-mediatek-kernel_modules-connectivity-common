@@ -411,6 +411,7 @@ extern INT32 wmt_lib_wifi_fem_cfg_report(PVOID pvInfoBuf);
 #if CFG_WMT_PS_SUPPORT
 extern UINT32 wmt_lib_quick_sleep_ctrl(UINT32 en);
 #endif
+extern UINT32 wmt_lib_fw_patch_update_rst_ctrl(UINT32 en);
 #if CONSYS_ENALBE_SET_JTAG
 extern UINT32 wmt_lib_jtag_flag_set(UINT32 en);
 #endif

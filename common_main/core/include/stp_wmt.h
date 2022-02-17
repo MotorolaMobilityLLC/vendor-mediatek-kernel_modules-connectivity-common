@@ -89,6 +89,8 @@ extern MTK_WCN_BOOL wmt_lib_is_quick_ps_support(VOID);
 
 extern INT32 wmt_lib_ps_set_idle_time(UINT32 psIdleTime);
 
+extern INT32 wmt_lib_update_fw_patch_chip_rst(VOID);
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
