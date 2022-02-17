@@ -1056,6 +1056,8 @@ static INT32 wmt_stp_init_epa(VOID);
 
 static INT32 wmt_stp_init_epa_elna(VOID);
 
+static INT32 wmt_stp_init_epa_elna_invert_cr(VOID);
+
 #if CFG_WMT_FILTER_MODE_SETTING
 static INT32 wmt_stp_wifi_lte_coex(VOID);
 #endif
@@ -1474,6 +1476,12 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	if (iRet) {
 		WMT_ERR_FUNC("init_epa_elna fail(%d)\n", iRet);
 		return -22;
+	}
+
+	iRet = wmt_stp_init_epa_elna_invert_cr();
+	if (iRet) {
+		WMT_ERR_FUNC("init_invert_cr fail(%d)\n", iRet);
+		return -23;
 	}
 
 	/* init coex before start RF calibration */
@@ -2475,6 +2483,134 @@ static INT32 wmt_stp_init_epa_elna(VOID)
 	return iRet;
 }
 
+static INT32 wmt_stp_init_epa_elna_invert_cr(VOID)
+{
+	INT32 iRet;
+	UINT32 uVal = 0;
+	unsigned long addr;
+	WMT_GEN_CONF *pWmtGenConf;
+	UINT32 default_invert_cr[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+	UINT32 default_invert_bit[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+	PINT8 pbuf;
+	long res;
+	PINT8 tok1, tok2;
+	UINT32 item1, item2, item_index;
+	UINT32 invert_cr, invert_bit;
+
+	mtk_wcn_consys_ic_get_ant_sel_cr_addr(default_invert_cr, default_invert_bit);
+	pWmtGenConf = (P_WMT_GEN_CONF) addr;
+
+	/*Get wmt config */
+	iRet = wmt_core_ctrl(WMT_CTRL_GET_WMT_CONF, &addr, 0);
+	if (iRet) {
+		WMT_ERR_FUNC("ctrl GET_WMT_CONF fail(%d)\n", iRet);
+		return -2;
+	}
+	WMT_INFO_FUNC("ctrl GET_WMT_CONF ok(0x%08lx)\n", addr);
+
+	pWmtGenConf = (P_WMT_GEN_CONF) addr;
+
+	/*Check if WMT.cfg exists */
+	if (pWmtGenConf->cfgExist == 0) {
+		WMT_DBG_FUNC("cfgExist == 0, skip config chip\n");
+		/*if WMT.cfg not existed, still return success and adopt the default value */
+		return 0;
+	}
+
+	WMT_DBG_FUNC("pWmtGenConf->coex_wmt_antsel_invert_support=[%s]\n",
+		pWmtGenConf->coex_wmt_antsel_invert_support);
+
+	if (pWmtGenConf->coex_wmt_antsel_invert_support == NULL ||
+			osal_strlen(pWmtGenConf->coex_wmt_antsel_invert_support) <= 0)
+		return 0;
+
+	pbuf = osal_malloc(osal_strlen(pWmtGenConf->coex_wmt_antsel_invert_support)+1);
+	if (pbuf == NULL) {
+		WMT_ERR_FUNC("init_invert_cr, malloc fail, size %d\n",
+			osal_strlen(pWmtGenConf->coex_wmt_antsel_invert_support)+1);
+		return -1;
+	}
+
+	osal_strcpy(pbuf, pWmtGenConf->coex_wmt_antsel_invert_support);
+
+	while ((tok1 = osal_strsep(&pbuf, " /\\")) != NULL) {
+		if (*tok1 == '\0')
+			continue;
+		if (!*tok1)
+			continue;
+		item1 = 0;
+		item2 = 0;
+		item_index = 0;
+		while ((tok2 = osal_strsep(&tok1, " ,")) != NULL) {
+			if (*tok2 == '\0')
+				continue;
+			if (!*tok2)
+				continue;
+			if ((osal_strlen(tok2) > 2) && ((*tok2) == '0') && (*(tok2 + 1) == 'x'))
+				osal_strtol(tok2 + 2, 16, &res);
+			else
+				osal_strtol(tok2, 10, &res);
+			if (item_index == 0)
+				item1 = res;
+			else if (item_index == 1)
+				item2 = res;
+			item_index++;
+		}
+
+		if (item_index != 1 && item_index != 2)
+			continue;
+		if ((item_index == 1) && (item1 > 7 || item1 < 0))
+			continue;
+		if ((item_index == 2) && (item2 > 31 || item2 < 0))
+			continue;
+
+		if (item_index == 1) {
+			invert_cr = default_invert_cr[item1];
+			invert_bit = default_invert_bit[item1];
+		} else if (item_index == 2) {
+			invert_cr = item1;
+			invert_bit = item2;
+		}
+
+		if (invert_cr == 0)
+			continue;
+
+		uVal = 0;
+		iRet = wmt_core_reg_rw_raw(0, invert_cr, &uVal, 0xFFFFFFFF);
+		if (iRet) {
+			WMT_ERR_FUNC("init_invert_cr, read 0x%x[%d](before write) fail(%d)\n",
+				invert_cr, invert_bit, iRet);
+			continue;
+		}
+		WMT_DBG_FUNC("init_invert_cr, 0x%x[%d](before write) = 0x%x\n",
+			invert_cr, invert_bit, uVal);
+
+		uVal = 0x1 << invert_bit;
+		iRet = wmt_core_reg_rw_raw(1, invert_cr, &uVal, 0x1 << invert_bit);
+		if (iRet) {
+			WMT_ERR_FUNC("init_invert_cr, write 0x%x[%d]=1 fail(%d)\n",
+				invert_cr, invert_bit, iRet);
+			continue;
+		}
+
+		uVal = 0;
+		iRet = wmt_core_reg_rw_raw(0, invert_cr, &uVal, 0xFFFFFFFF);
+		if (iRet) {
+			WMT_ERR_FUNC("init_invert_cr, read 0x%x[%d](after write) fail(%d)\n",
+				invert_cr, invert_bit, iRet);
+			continue;
+		}
+		WMT_DBG_FUNC("init_invert_cr, 0x%x[%d](after write) = 0x%x\n",
+			invert_cr, invert_bit, uVal);
+	}
+
+	if (pbuf != NULL) {
+		osal_free(pbuf);
+		pbuf = NULL;
+	}
+
+	return 0;
+}
 
 static INT32 wmt_stp_init_wifi_ant_swap(VOID)
 {

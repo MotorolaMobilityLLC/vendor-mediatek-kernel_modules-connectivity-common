@@ -274,6 +274,7 @@ typedef struct _WMT_GEN_CONF {
 	UINT32 coex_wmt_ext_elna_gain_p1_D1;
 	UINT32 coex_wmt_ext_elna_gain_p1_D2;
 	UINT32 coex_wmt_ext_elna_gain_p1_D3;
+	PINT8 coex_wmt_antsel_invert_support;
 
 	struct WMT_BYTE_ARRAY *coex_wmt_epa_elna;
 
