@@ -168,11 +168,11 @@ enum CONSYS_BASE_ADDRESS_INDEX {
 	INFRACFG_REG_BASE_INDEX,
 };
 
-struct reg_map_addr {
+typedef struct reg_map_addr {
 	UINT32 phy_addr;
 	UINT8 *vir_addr;
 	UINT32 size;
-};
+} REG_MAP_ADDR, *P_REG_MAP_ADDR;
 
 enum consys_dump_action {
 	DUMP_ACT_WRITE = 0,
@@ -297,6 +297,12 @@ typedef INT32(*CONSYS_IC_BEFORE_CHIP_RESET_DUMP) (VOID);
 typedef INT32(*CONSYS_IC_PC_LOG_DUMP) (VOID);
 typedef VOID(*CONSYS_IC_SET_VCN33_1_VOLTAGE) (UINT32 voltage);
 
+typedef INT32(*CONSYS_IC_JTAG_SET_FOR_MCU) (VOID);
+typedef UINT32(*CONSYS_IC_JTAG_FLAG_CTRL) (UINT32 enable);
+#ifdef CONSYS_WMT_REG_SUSPEND_CB_ENABLE
+typedef UINT32(*CONSYS_IC_HW_OSC_EN_CTRL) (UINT32 enable);
+#endif
+
 typedef struct _WMT_CONSYS_IC_OPS_ {
 
 	/* POS */
@@ -408,6 +414,12 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_GET_OPTIONS consys_ic_get_options;
 	CONSYS_IC_POLLING_GOTO_IDLE consys_ic_polling_goto_idle;
 	CONSYS_IC_SET_VCN33_1_VOLTAGE consys_ic_set_vcn33_1_voltage;
+
+	CONSYS_IC_JTAG_SET_FOR_MCU consys_ic_jtag_set_for_mcu;
+	CONSYS_IC_JTAG_FLAG_CTRL consys_ic_jtag_flag_ctrl;
+#ifdef CONSYS_WMT_REG_SUSPEND_CB_ENABLE
+	CONSYS_IC_HW_OSC_EN_CTRL consys_ic_hw_osc_en_ctrl;
+#endif
 } WMT_CONSYS_IC_OPS, *P_WMT_CONSYS_IC_OPS;
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -418,8 +430,6 @@ extern void mt_irq_dump_status(int irq);
 #endif
 extern struct CONSYS_BASE_ADDRESS conn_reg;
 extern UINT32 gCoClockFlag;
-extern EMI_CTRL_STATE_OFFSET mtk_wcn_emi_state_off;
-extern CONSYS_EMI_ADDR_INFO mtk_wcn_emi_addr_info;
 
 extern UINT64 gConEmiSize;
 extern phys_addr_t gConEmiPhyBase;
@@ -509,11 +519,9 @@ INT32 mtk_wnc_consys_before_chip_reset_dump(VOID);
 INT32 mtk_wcn_consys_pc_log_dump(VOID);
 INT32 mtk_wcn_consys_ipi_timeout_dump(VOID);
 
-VOID mtk_wcn_dump_util_init(VOID);
+VOID mtk_wcn_dump_util_init(UINT32 chipid);
 VOID mtk_wcn_dump_util_destroy(VOID);
 
-extern int g_mapped_reg_table_sz;
-extern struct reg_map_addr g_mapped_reg_table[];
 VOID mtk_wcn_consys_set_vcn33_1_voltage(UINT32 voltage);
 #endif /* _MTK_WCN_CONSYS_HW_H_ */
 
