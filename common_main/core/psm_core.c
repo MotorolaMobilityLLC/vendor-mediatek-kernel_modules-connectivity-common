@@ -507,7 +507,7 @@ INT32 _stp_psm_put_act_op(MTKSTP_PSM_T *stp_psm, P_OSAL_OP pOp)
 		}
 	} while (0);
 
-	if (pOp && atomic_dec_and_test(&pOp->ref_count)) {
+	if (stp_psm && pOp && atomic_dec_and_test(&pOp->ref_count)) {
 		/* put Op back to freeQ */
 		bRet = _stp_psm_put_op(stp_psm, &stp_psm->rFreeOpQ, pOp);
 		if (bRet == 0)
