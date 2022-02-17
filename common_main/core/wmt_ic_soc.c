@@ -219,6 +219,15 @@ static UINT8 WMT_MISC_COEX_SETTING_CONFIG_CMD[] = { 0x01, 0x10, 0x09,
 	0xBB, 0xBB, 0xBB, 0xBB
 };
 static UINT8 WMT_MISC_COEX_SETTING_CONFIG_EVT[] = { 0x02, 0x10, 0x01, 0x00, 0x00 };
+#else
+static UINT8 WMT_COEX_WIFI_PATH_CMD[] = { 0x01, 0x10, 0x03, 0x00, 0x1A, 0x0F, 0x00 };
+static UINT8 WMT_COEX_WIFI_PATH_EVT[] = { 0x02, 0x10, 0x01, 0x00, 0x00 };
+
+static UINT8 WMT_COEX_EXT_ELAN_GAIN_P1_CMD[] = { 0x01, 0x10, 0x12, 0x00, 0x1B, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+static UINT8 WMT_COEX_EXT_ELAN_GAIN_P1_EVT[] = { 0x02, 0x10, 0x01, 0x00, 0x00 };
 #endif
 
 static UINT8 WMT_EPA_SETTING_CONFIG_CMD[] = { 0x01, 0x02, 0x02, 0x00, 0x0E, 0x00 };
@@ -938,6 +947,9 @@ static struct init_script coex_table[] = {
 	INIT_CMD(WMT_WIFI_COEX_SETTING_CONFIG_CMD, WMT_WIFI_COEX_SETTING_CONFIG_EVT, "coex_wifi"),
 	INIT_CMD(WMT_PTA_COEX_SETTING_CONFIG_CMD, WMT_PTA_COEX_SETTING_CONFIG_EVT, "coex_ext_pta"),
 	INIT_CMD(WMT_MISC_COEX_SETTING_CONFIG_CMD, WMT_MISC_COEX_SETTING_CONFIG_EVT, "coex_misc"),
+#else
+	INIT_CMD(WMT_COEX_WIFI_PATH_CMD, WMT_COEX_WIFI_PATH_EVT, "wifi path"),
+	INIT_CMD(WMT_COEX_EXT_ELAN_GAIN_P1_CMD, WMT_COEX_EXT_ELAN_GAIN_P1_EVT, "wifi elan gain p1"),
 #endif
 };
 
@@ -1448,6 +1460,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	}
 
 	/* init epa before start RF calibration */
+	/* for chip 0x6739 */
 	iRet = wmt_stp_init_epa();
 
 	if (iRet) {
@@ -1455,11 +1468,24 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		return -20;
 	}
 
+	/* for chip 0x6779 */
 	iRet = wmt_stp_init_epa_elna();
 
 	if (iRet) {
 		WMT_ERR_FUNC("init_epa_elna fail(%d)\n", iRet);
 		return -22;
+	}
+
+	/* init coex before start RF calibration */
+	if (wmt_ic_ops_soc.icId == 0x6765 ||
+		wmt_ic_ops_soc.icId == 0x6761 ||
+		wmt_ic_ops_soc.icId == 0x6768) {
+		iRet = wmt_stp_init_coex();
+		if (iRet) {
+			WMT_ERR_FUNC("init_coex fail(%d)\n", iRet);
+			return -10;
+		}
+		WMT_DBG_FUNC("init_coex ok\n");
 	}
 
 	iRet = wmt_stp_init_wifi_ant_swap();
@@ -2179,7 +2205,12 @@ static INT32 wmt_stp_init_coex(VOID)
 #define COEX_WIFI 2
 #define COEX_PTA  3
 #define COEX_MISC 4
+#else
+#define COEX_WIFI_PATH 1
+#define COEX_EXT_ELAN_GAIN_P1 2
 #endif
+#define WMT_COXE_CONFIG_ADJUST_ANTENNA_OPCODE 6
+
 	/*Get wmt config */
 	iRet = wmt_core_ctrl(WMT_CTRL_GET_WMT_CONF, &addr, 0);
 	if (iRet) {
@@ -2198,7 +2229,8 @@ static INT32 wmt_stp_init_coex(VOID)
 	}
 
 	/*Dump the coex-related info */
-	WMT_DBG_FUNC("coex_wmt:0x%x\n", pWmtGenConf->coex_wmt_ant_mode);
+	WMT_DBG_FUNC("coex_wmt_ant_mode:0x%x, coex_wmt_wifi_path:0x%x\n",
+			pWmtGenConf->coex_wmt_ant_mode, pWmtGenConf->coex_wmt_wifi_path);
 #if CFG_SUBSYS_COEX_NEED
 	WMT_DBG_FUNC("coex_bt:0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n",
 		     pWmtGenConf->coex_bt_rssi_upper_limit,
@@ -2222,6 +2254,7 @@ static INT32 wmt_stp_init_coex(VOID)
 #endif
 
 	/*command adjustion due to WMT.cfg */
+	coex_table[COEX_WMT].cmd[4] = WMT_COXE_CONFIG_ADJUST_ANTENNA_OPCODE;
 	coex_table[COEX_WMT].cmd[5] = pWmtGenConf->coex_wmt_ant_mode;
 	if (gWmtDbgLvl >= WMT_LOG_DBG)
 		wmt_core_dump_data(&coex_table[COEX_WMT].cmd[0], coex_table[COEX_WMT].str, coex_table[COEX_WMT].cmdSz);
@@ -2264,6 +2297,60 @@ static INT32 wmt_stp_init_coex(VOID)
 		    sizeof(pWmtGenConf->coex_misc_ext_feature_set));
 
 	wmt_core_dump_data(&coex_table[COEX_MISC].cmd[0], coex_table[COEX_MISC].str, coex_table[COEX_MISC].cmdSz);
+#else
+	coex_table[COEX_WIFI_PATH].cmd[5] =
+		(UINT8)((pWmtGenConf->coex_wmt_wifi_path & 0x00FF) >> 0);
+	coex_table[COEX_WIFI_PATH].cmd[6] =
+		(UINT8)((pWmtGenConf->coex_wmt_wifi_path & 0xFF00) >> 8);
+
+	if (gWmtDbgLvl >= WMT_LOG_DBG) {
+		wmt_core_dump_data(&coex_table[COEX_WIFI_PATH].cmd[0],
+				coex_table[COEX_WIFI_PATH].str, coex_table[COEX_WIFI_PATH].cmdSz);
+	}
+
+	coex_table[COEX_EXT_ELAN_GAIN_P1].cmd[5] = pWmtGenConf->coex_wmt_ext_elna_gain_p1_support;
+	/* wmt_ext_elna_gain_p1 D0*/
+	coex_table[COEX_EXT_ELAN_GAIN_P1].cmd[6] =
+		(UINT8)((pWmtGenConf->coex_wmt_ext_elna_gain_p1_D0 & 0x000000FF) >> 0);
+	coex_table[COEX_EXT_ELAN_GAIN_P1].cmd[7] =
+		(UINT8)((pWmtGenConf->coex_wmt_ext_elna_gain_p1_D0 & 0x0000FF00) >> 8);
+	coex_table[COEX_EXT_ELAN_GAIN_P1].cmd[8] =
+		(UINT8)((pWmtGenConf->coex_wmt_ext_elna_gain_p1_D0 & 0x00FF0000) >> 16);
+	coex_table[COEX_EXT_ELAN_GAIN_P1].cmd[9] =
+		(UINT8)((pWmtGenConf->coex_wmt_ext_elna_gain_p1_D0 & 0xFF000000) >> 24);
+	/* wmt_ext_elna_gain_p1 D1*/
+	coex_table[COEX_EXT_ELAN_GAIN_P1].cmd[10] =
+		(UINT8)((pWmtGenConf->coex_wmt_ext_elna_gain_p1_D1 & 0x000000FF) >> 0);
+	coex_table[COEX_EXT_ELAN_GAIN_P1].cmd[11] =
+		(UINT8)((pWmtGenConf->coex_wmt_ext_elna_gain_p1_D1 & 0x0000FF00) >> 8);
+	coex_table[COEX_EXT_ELAN_GAIN_P1].cmd[12] =
+		(UINT8)((pWmtGenConf->coex_wmt_ext_elna_gain_p1_D1 & 0x00FF0000) >> 16);
+	coex_table[COEX_EXT_ELAN_GAIN_P1].cmd[13] =
+		(UINT8)((pWmtGenConf->coex_wmt_ext_elna_gain_p1_D1 & 0xFF000000) >> 24);
+	/* wmt_ext_elna_gain_p1 D2*/
+	coex_table[COEX_EXT_ELAN_GAIN_P1].cmd[14] =
+		(UINT8)((pWmtGenConf->coex_wmt_ext_elna_gain_p1_D2 & 0x000000FF) >> 0);
+	coex_table[COEX_EXT_ELAN_GAIN_P1].cmd[15] =
+		(UINT8)((pWmtGenConf->coex_wmt_ext_elna_gain_p1_D2 & 0x0000FF00) >> 8);
+	coex_table[COEX_EXT_ELAN_GAIN_P1].cmd[16] =
+		(UINT8)((pWmtGenConf->coex_wmt_ext_elna_gain_p1_D2 & 0x00FF0000) >> 16);
+	coex_table[COEX_EXT_ELAN_GAIN_P1].cmd[17] =
+		(UINT8)((pWmtGenConf->coex_wmt_ext_elna_gain_p1_D2 & 0xFF000000) >> 24);
+	/* wmt_ext_elna_gain_p1 D3*/
+	coex_table[COEX_EXT_ELAN_GAIN_P1].cmd[18] =
+		(UINT8)((pWmtGenConf->coex_wmt_ext_elna_gain_p1_D3 & 0x000000FF) >> 0);
+	coex_table[COEX_EXT_ELAN_GAIN_P1].cmd[19] =
+		(UINT8)((pWmtGenConf->coex_wmt_ext_elna_gain_p1_D3 & 0x0000FF00) >> 8);
+	coex_table[COEX_EXT_ELAN_GAIN_P1].cmd[20] =
+		(UINT8)((pWmtGenConf->coex_wmt_ext_elna_gain_p1_D3 & 0x00FF0000) >> 16);
+	coex_table[COEX_EXT_ELAN_GAIN_P1].cmd[21] =
+		(UINT8)((pWmtGenConf->coex_wmt_ext_elna_gain_p1_D3 & 0xFF000000) >> 24);
+
+	if (gWmtDbgLvl >= WMT_LOG_DBG) {
+		wmt_core_dump_data(&coex_table[COEX_EXT_ELAN_GAIN_P1].cmd[0],
+				   coex_table[COEX_EXT_ELAN_GAIN_P1].str,
+				   coex_table[COEX_EXT_ELAN_GAIN_P1].cmdSz);
+	}
 #endif
 
 	iRet = wmt_core_init_script(coex_table, ARRAY_SIZE(coex_table));
