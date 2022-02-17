@@ -1821,7 +1821,7 @@ static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO
 	INT32 remain_array_len = 0;
 
 	PUINT8 parser_sub_string[] = {
-		"<ASSERT> ",
+		"{ASSERT} ",
 		"id=",
 		"isr=",
 		"irq=",
@@ -2469,6 +2469,10 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 			for (i = 0; i < len; i++) {
 				if (tempbuf[i] == '\0')
 					tempbuf[i] = '?';
+				else if (tempbuf[i] == '<')
+					tempbuf[i] = '{';
+				else if (tempbuf[i] == '>')
+					tempbuf[i] = '}';
 			}
 
 			tempbuf[len] = '\0';
