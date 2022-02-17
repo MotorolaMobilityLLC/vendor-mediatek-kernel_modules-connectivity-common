@@ -779,6 +779,7 @@ VOID mtk_wcn_consys_clock_fail_dump(VOID)
 {
 	if (wmt_consys_ic_ops->consys_ic_clock_fail_dump)
 		wmt_consys_ic_ops->consys_ic_clock_fail_dump();
+	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_WHEN_CLOCK_FAIL);
 }
 
 INT32 mtk_consys_is_connsys_reg(UINT32 addr)
