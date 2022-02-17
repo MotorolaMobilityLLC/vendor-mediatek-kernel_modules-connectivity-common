@@ -295,6 +295,7 @@ typedef struct _WMT_GEN_CONF {
 	/* wifi ant swap feature */
 	UINT8 wifi_ant_swap_mode;
 	UINT8 wifi_main_ant_polarity;
+	UINT8 wifi_ant_swap_ant_sel_gpio;
 } WMT_GEN_CONF, *P_WMT_GEN_CONF;
 
 typedef enum _ENUM_DRV_STS_ {

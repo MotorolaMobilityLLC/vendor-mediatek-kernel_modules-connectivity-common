@@ -832,12 +832,12 @@ INT32 mtk_consys_chip_reset_status(VOID)
 	return chip_reset_status;
 }
 
-INT32 mtk_consys_get_wifi_ant_swap_gpio_value(VOID)
+INT32 mtk_consys_is_ant_swap_enable_by_hwid(VOID)
 {
-	INT32 value = connectivity_export_gpio_get_tristate_input(wifi_ant_swap_gpio_pin_num);
-
-	WMT_PLAT_PR_INFO("ant swap pin number:%d %d\n", wifi_ant_swap_gpio_pin_num, value);
-	return value;
+	if (wmt_consys_ic_ops->consys_ic_is_ant_swap_enable_by_hwid)
+		return wmt_consys_ic_ops->consys_ic_is_ant_swap_enable_by_hwid(wifi_ant_swap_gpio_pin_num);
+	else
+		return 0;
 }
 
 INT32 mtk_consys_resume_dump_info(VOID)
