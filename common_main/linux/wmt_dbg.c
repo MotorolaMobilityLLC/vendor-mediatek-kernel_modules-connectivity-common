@@ -56,6 +56,7 @@ static struct proc_dir_entry *gWmtDbgEntry;
 COEX_BUF gCoexBuf;
 static UINT8 gEmiBuf[WMT_EMI_DEBUG_BUF_SIZE];
 PUINT8 buf_emi;
+static OSAL_SLEEPABLE_LOCK g_dbg_emi_lock;
 
 static ssize_t wmt_dbg_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos);
 static ssize_t wmt_dbg_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos);
@@ -579,6 +580,11 @@ INT32 wmt_dbg_fwinfor_from_emi(INT32 par1, INT32 par2, INT32 par3)
 	offset = par2;
 	len = par3;
 
+	if (osal_lock_sleepable_lock(&g_dbg_emi_lock)) {
+		WMT_ERR_FUNC("lock failed\n");
+		return -1;
+	}
+
 	buf_emi = kmalloc(sizeof(UINT8) * BUF_LEN_MAX, GFP_KERNEL);
 	if (!buf_emi) {
 		WMT_ERR_FUNC("buf kmalloc memory fail\n");
@@ -640,6 +646,7 @@ INT32 wmt_dbg_fwinfor_from_emi(INT32 par1, INT32 par2, INT32 par3)
 	WMT_INFO_FUNC("\n\n -- paged trace ascii output --\n\n");
 	wmt_dbg_fwinfor_print_buff(len);
 	kfree(buf_emi);
+	osal_unlock_sleepable_lock(&g_dbg_emi_lock);
 
 	return 0;
 }
@@ -1451,6 +1458,7 @@ INT32 wmt_dev_dbg_setup(VOID)
 		WMT_ERR_FUNC("Unable to create / wmt_aee proc entry\n\r");
 		i_ret = -1;
 	}
+	osal_sleepable_lock_init(&g_dbg_emi_lock);
 
 	return i_ret;
 }
@@ -1459,6 +1467,8 @@ INT32 wmt_dev_dbg_remove(VOID)
 {
 	if (gWmtDbgEntry != NULL)
 		proc_remove(gWmtDbgEntry);
+
+	osal_sleepable_lock_deinit(&g_dbg_emi_lock);
 
 #if CFG_WMT_PS_SUPPORT
 	wmt_lib_ps_deinit();
