@@ -2050,7 +2050,7 @@ static INT32 mtk_wcn_soc_ver_check(VOID)
 
 	p_info = mtk_wcn_soc_find_wmt_ic_info(hw_ver);
 	if (p_info == NULL) {
-		WMT_ERR_FUNC("0x%x: hw_ver(0x%x) find wmt ic info fail\n", wmt_ic_ops_soc.icId);
+		WMT_ERR_FUNC("0x%x: hw_ver(0x%x) find wmt ic info fail\n", wmt_ic_ops_soc.icId, hw_ver);
 		return -3;
 	}
 	WMT_WARN_FUNC("0x%x: ic info: %s.%s (0x%x/0x%x, HWVER:0x%04x, patch_ext:%s)\n",
