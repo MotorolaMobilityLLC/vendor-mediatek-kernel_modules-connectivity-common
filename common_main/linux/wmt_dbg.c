@@ -443,14 +443,17 @@ INT32 wmt_dbg_chip_rst(INT32 par1, INT32 par2, INT32 par3)
 
 INT32 wmt_dbg_func_ctrl(INT32 par1, INT32 par2, INT32 par3)
 {
+	MTK_WCN_BOOL ret = MTK_WCN_BOOL_FALSE;
+
 	if (par2 < WMTDRV_TYPE_WMT || par2 == WMTDRV_TYPE_LPBK) {
 		if (par3 == 0) {
 			WMT_INFO_FUNC("function off test, type(%d)\n", par2);
-			mtk_wcn_wmt_func_off(par2);
+			ret = mtk_wcn_wmt_func_off(par2);
 		} else {
 			WMT_INFO_FUNC("function on test, type(%d)\n", par2);
-			mtk_wcn_wmt_func_on(par2);
+			ret = mtk_wcn_wmt_func_on(par2);
 		}
+		WMT_INFO_FUNC("function test return %d\n", ret);
 	} else
 		WMT_INFO_FUNC("function ctrl test, invalid type(%d)\n", par2);
 
@@ -899,12 +902,15 @@ static INT32 wmt_dbg_fw_log_ctrl(INT32 par1, INT32 onoff, INT32 level)
 
 INT32 wmt_dbg_pre_pwr_on_ctrl(INT32 par1, INT32 enable, INT32 par3)
 {
+	MTK_WCN_BOOL ret = MTK_WCN_BOOL_FALSE;
 
 	WMT_INFO_FUNC("%s pre power on function\n", enable ? "enable" : "disable");
 
 	if (enable) {
 		/* Turn LPBK off and set always power on flag to 1 */
-		mtk_wcn_wmt_func_off(WMTDRV_TYPE_LPBK);
+		ret = mtk_wcn_wmt_func_off(WMTDRV_TYPE_LPBK);
+		if (!ret)
+			WMT_WARN_FUNC("mtk_wcn_wmt_func_off(WMTDRV_TYPE_LPBK) return %d\n", ret);
 		wmt_dev_apo_ctrl(1);
 	} else {
 		/* Just set always power on flag to 0 */
