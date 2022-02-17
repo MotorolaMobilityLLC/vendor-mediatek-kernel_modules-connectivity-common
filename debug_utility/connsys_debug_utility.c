@@ -143,7 +143,7 @@ void *connlog_cache_allocate(size_t size)
 * FUNCTION
 *  connlog_set_ring_ready
 * DESCRIPTION
-*  set reserved bit [63:56] be MTK36500 to indicate that init is ready.
+*  set reserved bit be EMIFWLOG to indicate that init is ready.
 * PARAMETERS
 *  void
 * RETURNS
@@ -151,7 +151,7 @@ void *connlog_cache_allocate(size_t size)
 *****************************************************************************/
 static void connlog_set_ring_ready(void)
 {
-	const char ready_str[] = "MTK36500";
+	const char ready_str[] = "EMIFWLOG";
 
 	memcpy_toio(gVirAddrEmiLogBase + CONNLOG_READY_PATTERN_BASE,
 		ready_str, CONNLOG_READY_PATTERN_BASE_SIZE);
