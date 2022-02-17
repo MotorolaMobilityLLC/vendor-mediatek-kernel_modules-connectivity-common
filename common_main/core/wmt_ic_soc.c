@@ -3155,7 +3155,7 @@ done:
 
 #endif
 
-INT32 mtk_wcn_soc_rom_patch_dwn(UINT32 ip_ver)
+INT32 mtk_wcn_soc_rom_patch_dwn(UINT32 ip_ver, UINT32 fw_ver)
 {
 	INT32 iRet = -1;
 	struct wmt_rom_patch *patchHdr = NULL;
@@ -3181,6 +3181,7 @@ INT32 mtk_wcn_soc_rom_patch_dwn(UINT32 ip_ver)
 		ctrlData.au4CtrlData[1] = (SIZE_T)&gFullPatchName;
 		ctrlData.au4CtrlData[2] = (SIZE_T)&addressByte;
 		ctrlData.au4CtrlData[3] = ip_ver;
+		ctrlData.au4CtrlData[4] = fw_ver;
 		iRet = wmt_ctrl(&ctrlData);
 		if (iRet > 0) {
 			WMT_INFO_FUNC("There is no need to download (%d) type patch!\n", type);
