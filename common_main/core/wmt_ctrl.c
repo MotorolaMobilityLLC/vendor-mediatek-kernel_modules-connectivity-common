@@ -607,6 +607,11 @@ INT32 wmt_ctrl_get_patch_info(P_WMT_CTRL_DATA pWmtCtrlData)
 	PUINT8 pNbuf = NULL;
 	PUINT8 pAbuf = NULL;
 
+	if (pDev->pWmtPatchInfo == NULL) {
+		WMT_ERR_FUNC("pWmtPatchInfo is NULL\n");
+		return -1;
+	}
+
 	downLoadSeq = pWmtCtrlData->au4CtrlData[0];
 	WMT_DBG_FUNC("download seq is %d\n", downLoadSeq);
 
