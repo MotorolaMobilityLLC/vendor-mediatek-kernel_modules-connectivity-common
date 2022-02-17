@@ -1081,8 +1081,8 @@ static INT32 opfunc_hif_conf(P_WMT_OP pWmtOp)
 	}
 
 	if (gMtkWmtCtx.wmtInfoBit & WMT_OP_HIF_BIT) {
-		WMT_ERR_FUNC("WMT-CORE: WMT HIF already exist. overwrite! old (%d), new(%zu))\n",
-			     gMtkWmtCtx.wmtHifConf.hifType, pWmtOp->au4OpData[0]);
+		WMT_ERR_FUNC("WMT-CORE: WMT HIF already exist. Just return\n");
+		return 0;
 	} else {
 		gMtkWmtCtx.wmtInfoBit |= WMT_OP_HIF_BIT;
 		WMT_ERR_FUNC("WMT-CORE: WMT HIF info added\n");
