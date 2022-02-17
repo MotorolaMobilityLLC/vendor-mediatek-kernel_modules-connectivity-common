@@ -385,8 +385,10 @@ static int wmt_step_get_cfg(const char *p_patch_name, osal_firmware **pp_patch)
 	osal_firmware *fw = NULL;
 
 	*pp_patch = NULL;
-	if (request_firmware((const struct firmware **)&fw, p_patch_name, NULL) != 0)
+	if (request_firmware((const struct firmware **)&fw, p_patch_name, NULL) != 0) {
+		release_firmware(fw);
 		return -1;
+	}
 
 	WMT_DBG_FUNC("Load step cfg %s ok!!\n", p_patch_name);
 	*pp_patch = fw;
