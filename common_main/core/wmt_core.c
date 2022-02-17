@@ -3415,8 +3415,7 @@ static INT32 opfunc_try_pwr_off(P_WMT_OP pWmtOp)
 	 * Because only wmtd_worker_thread get wlan lock for wifi on/off in current design.
 	 * It means it can decide whether to do Connsys power off after Wifi function on/off complete.
 	 */
-	iRet = wmt_lib_wlan_lock_trylock();
-	if (iRet == 0) {
+	if (wmt_lib_wlan_lock_trylock() == 0) {
 		WMT_INFO_FUNC("Can't lock wlan mutex which might be held by wlan on/off procedure.\n");
 		return iRet;
 	}
