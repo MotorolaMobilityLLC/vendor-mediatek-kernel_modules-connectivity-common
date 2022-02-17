@@ -39,7 +39,7 @@
 
 #define KBYTE (1024*sizeof(char))
 #define CONSYS_PAGED_DUMP_SIZE (32*KBYTE)
-#define CONSYS_EMI_MEM_SIZE (343*KBYTE) /*coredump space , 343K is enough */
+#define CONSYS_EMI_MEM_SIZE (96*KBYTE) /*coredump space , 96K is enough */
 
 #define CONSYS_SET_BIT(REG, BITVAL) (*((volatile UINT32 *)(REG)) |= ((UINT32)(BITVAL)))
 #define CONSYS_CLR_BIT(REG, BITVAL) ((*(volatile UINT32 *)(REG)) &= ~((UINT32)(BITVAL)))
