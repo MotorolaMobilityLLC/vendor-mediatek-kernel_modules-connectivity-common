@@ -1148,8 +1148,8 @@ static INT32 wmt_ctrl_trg_assert(P_WMT_CTRL_DATA pWmtCtrlData)
 	WMT_INFO_FUNC("wmt-ctrl:drv_type(%d),reason(%d),keyword(%s)\n", drv_type, reason, keyword);
 
 	if (mtk_wcn_stp_get_wmt_trg_assert() == 0) {
-		mtk_wcn_stp_set_wmt_trg_assert(1);
 		mtk_wcn_stp_dbg_dump_package();
+		mtk_wcn_stp_set_wmt_trg_assert(1);
 
 		iRet = mtk_wcn_stp_wmt_trg_assert();
 		if (iRet == 0) {
