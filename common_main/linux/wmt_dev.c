@@ -179,6 +179,7 @@ struct device *wmt_dev;
 
 /*LCM on/off ctrl for wmt varabile*/
 UINT32 hif_info;
+UINT8 gWmtClose;
 static struct work_struct gPwrOnOffWork;
 static atomic_t g_es_lr_flag_for_quick_sleep = ATOMIC_INIT(1); /* for ctrl quick sleep flag */
 static atomic_t g_es_lr_flag_for_lpbk_onoff = ATOMIC_INIT(0); /* for ctrl lpbk on off */
@@ -1666,8 +1667,10 @@ static INT32 WMT_open(struct inode *inode, struct file *file)
 		return -EIO;
 	}
 
-	if (atomic_inc_return(&gWmtRefCnt) == 1)
+	if (atomic_inc_return(&gWmtRefCnt) == 1) {
 		WMT_INFO_FUNC("1st call\n");
+		gWmtClose = 0;
+	}
 
 	return 0;
 }
@@ -1676,8 +1679,10 @@ static INT32 WMT_close(struct inode *inode, struct file *file)
 {
 	WMT_INFO_FUNC("major %d minor %d (pid %d)\n", imajor(inode), iminor(inode), current->pid);
 
-	if (atomic_dec_return(&gWmtRefCnt) == 0)
+	if (atomic_dec_return(&gWmtRefCnt) == 0) {
 		WMT_INFO_FUNC("last call\n");
+		gWmtClose = 1;
+	}
 
 	return 0;
 }
@@ -1742,6 +1747,11 @@ VOID wmt_dev_bgw_desense_deinit(VOID)
 VOID wmt_dev_send_cmd_to_daemon(UINT32 cmd)
 {
 	send_command_to_daemon(cmd);
+}
+
+UINT8 wmt_dev_is_close(VOID)
+{
+	return gWmtClose;
 }
 
 static INT32 WMT_init(VOID)
