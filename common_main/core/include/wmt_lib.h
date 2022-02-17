@@ -348,6 +348,7 @@ INT32 wmt_lib_gps_mcu_ctrl(PUINT8 p_tx_data_buf, UINT32 tx_data_len, PUINT8 p_rx
 			   UINT32 rx_data_buf_len, PUINT32 p_rx_data_len);
 VOID wmt_lib_set_ext_ldo(UINT32 flag);
 UINT32 wmt_lib_get_ext_ldo(VOID);
+INT32 wmt_lib_try_pwr_off(VOID);
 
 extern INT32 DISABLE_PSM_MONITOR(VOID);
 extern VOID ENABLE_PSM_MONITOR(VOID);
