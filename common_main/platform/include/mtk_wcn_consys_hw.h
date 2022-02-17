@@ -273,6 +273,7 @@ INT32 mtk_wcn_consys_hw_pwr_on(UINT32 co_clock_type);
 INT32 mtk_wcn_consys_hw_rst(UINT32 co_clock_type);
 INT32 mtk_wcn_consys_hw_bt_paldo_ctrl(UINT32 enable);
 INT32 mtk_wcn_consys_hw_wifi_paldo_ctrl(UINT32 enable);
+INT32 mtk_wcn_consys_hw_efuse_paldo_ctrl(UINT32 enable, UINT32 co_clock_type);
 INT32 mtk_wcn_consys_hw_vcn28_ctrl(UINT32 enable);
 INT32 mtk_wcn_consys_hw_state_show(VOID);
 PUINT8 mtk_wcn_consys_emi_virt_addr_get(UINT32 ctrl_state_offset);
