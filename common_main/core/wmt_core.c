@@ -3384,9 +3384,13 @@ static INT32 opfunc_try_pwr_off(P_WMT_OP pWmtOp)
 	INT32 iRet = 0;
 	UINT32 drvType = pWmtOp->au4OpData[0];
 
-	iRet = wmt_lib_wlan_lock_aquire();
-	if (iRet) {
-		WMT_ERR_FUNC("--->lock wlan_lock failed, iRet=%d\n", iRet);
+	/* Why it can use try lock?
+	 * Because only wmtd_worker_thread get wlan lock for wifi on/off in current design.
+	 * It means it can decide whether to do Connsys power off after Wifi function on/off complete.
+	 */
+	iRet = wmt_lib_wlan_lock_trylock();
+	if (iRet == 0) {
+		WMT_INFO_FUNC("Can't lock wlan mutex which might be held by wlan on/off procedure.\n");
 		return iRet;
 	}
 	if ((gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_BT] == DRV_STS_POWER_OFF) &&
