@@ -1692,10 +1692,11 @@ static void _wmt_step_do_read_register_action(struct step_reigster_info *p_reg_i
 static int wmt_step_do_read_register_action(struct step_reigster_info *p_reg_info,
 	STEP_DO_EXTRA func_do_extra)
 {
+#define WMT_STEP_REGISTER_ACTION_BUF_LEN 128
 	phys_addr_t phy_addr;
 	void __iomem *p_addr = NULL;
 	SIZE_T vir_addr;
-	char buf[128];
+	char buf[WMT_STEP_REGISTER_ACTION_BUF_LEN];
 
 	if (p_reg_info->address_type == STEP_REGISTER_PHYSICAL_ADDRESS) {
 		phy_addr = p_reg_info->address + p_reg_info->offset;
@@ -1707,7 +1708,8 @@ static int wmt_step_do_read_register_action(struct step_reigster_info *p_reg_inf
 
 		p_addr = ioremap_nocache(phy_addr, 0x4);
 		if (p_addr) {
-			sprintf(buf, "STEP show: reg read Phy addr(0x%08x): 0x%08x\n",
+			snprintf(buf, WMT_STEP_REGISTER_ACTION_BUF_LEN,
+				"STEP show: reg read Phy addr(0x%08x): 0x%08x\n",
 				(unsigned int)phy_addr, CONSYS_REG_READ(p_addr));
 			_wmt_step_do_read_register_action(p_reg_info, func_do_extra, buf,
 				CONSYS_REG_READ(p_addr));
@@ -1725,7 +1727,8 @@ static int wmt_step_do_read_register_action(struct step_reigster_info *p_reg_inf
 			return -1;
 		}
 
-		sprintf(buf, "STEP show: reg read (symbol, offset)(%d, 0x%08x): 0x%08x\n",
+		snprintf(buf, WMT_STEP_REGISTER_ACTION_BUF_LEN,
+			"STEP show: reg read (symbol, offset)(%d, 0x%08x): 0x%08x\n",
 			p_reg_info->address_type, p_reg_info->offset,
 			CONSYS_REG_READ(vir_addr));
 		_wmt_step_do_read_register_action(p_reg_info, func_do_extra, buf,
