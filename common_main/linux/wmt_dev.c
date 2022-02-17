@@ -59,6 +59,7 @@
 #include "wmt_lib.h"
 #include "wmt_conf.h"
 #include "wmt_dbg.h"
+#include "wmt_user_proc.h"
 #include "psm_core.h"
 #include "stp_core.h"
 #include "stp_exp.h"
@@ -1637,6 +1638,7 @@ static INT32 WMT_init(VOID)
 #if CFG_WMT_DBG_SUPPORT
 	wmt_dev_dbg_setup();
 #endif
+	wmt_dev_user_proc_setup();
 
 	wmt_dev_proc_init();
 	wmt_alarm_init();
@@ -1686,6 +1688,7 @@ error:
 #if CFG_WMT_DBG_SUPPORT
 	wmt_dev_dbg_remove();
 #endif
+	wmt_dev_user_proc_remove();
 #if WMT_CREATE_NODE_DYNAMIC
 	if (!(IS_ERR(wmt_dev)))
 		device_destroy(wmt_class, devID);
@@ -1737,6 +1740,7 @@ static VOID WMT_exit(VOID)
 #if CFG_WMT_DBG_SUPPORT
 	wmt_dev_dbg_remove();
 #endif
+	wmt_dev_user_proc_remove();
 
 	wmt_dev_proc_deinit();
 	wmt_alarm_deinit();
