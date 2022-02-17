@@ -3422,7 +3422,20 @@ INT32 mtk_wcn_stp_assert_timeout_handle(VOID)
 	INT32 ret = -1;
 	PUINT8 pbuf;
 	INT32 len;
+	UINT32 dump_num = 0;
+	P_CONSYS_EMI_ADDR_INFO p_ecsi;
 
+	p_ecsi = wmt_plat_get_emi_phy_add();
+	if (wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_assert_flag)) {
+		STP_INFO_FUNC("EMI assert flag was set. To do coredump.\n");
+		dump_num = wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_chip_page_dump_num);
+		if (dump_num == 0)
+			dump_num = CORE_DUMP_NUM;
+		STP_INFO_FUNC("dump num(%d)\n", dump_num);
+		stp_dbg_dump_num(dump_num);
+		ret = stp_btm_notify_wmt_dmp_wq(STP_BTM_CORE(stp_core_ctx));
+		return ret;
+	}
 	/*host trigger assert but no coredump data will polling fw cpupcr*/
 	STP_INFO_FUNC("host trigger fw assert timeout!\n");
 	WMT_STEP_COMMAND_TIMEOUT_DO_ACTIONS_FUNC("Trigger assert timeout");
