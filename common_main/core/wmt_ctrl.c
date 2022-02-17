@@ -256,7 +256,6 @@ INT32 wmt_ctrl_rx(P_WMT_CTRL_DATA pWmtCtrlData /*UINT8 *pBuff, UINT32 buffLen, U
 
 			if (leftCnt <= 0) {
 				stp_dbg_poll_cpupcr(5, 1, 1);
-				WMT_STEP_COMMAND_TIMEOUT_DO_ACTIONS_FUNC("STP RX timeout");
 				WMT_ERR_FUNC("wmt_dev_rx_timeout: timeout,jiffies(%lu),timeoutvalue(%d)\n",
 				     jiffies, pDev->rWmtRxWq.timeoutValue);
 				WMT_STEP_COMMAND_TIMEOUT_DO_ACTIONS_FUNC("STP RX timeout");
