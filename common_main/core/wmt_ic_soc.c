@@ -42,6 +42,7 @@
 #include "wmt_core.h"
 #include "wmt_lib.h"
 #include "stp_core.h"
+#include "mtk_wcn_consys_hw.h"
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -151,6 +152,19 @@ static UINT8 WMT_PATCH_P_ADDRESS_CMD[] = {
 		0xff, 0xff, 0xff, 0xff
 };
 static UINT8 WMT_PATCH_P_ADDRESS_EVT[] = { 0x02, 0x08, 0x04, 0x00, 0x00, 0x00, 0x00, 0x01 };
+
+static UINT8 WMT_PATCH_PDA_CFG_CMD[] = {
+		0x01, 0x01, 0x11, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00,	/*Target address*/
+		0x00, 0x00, 0x00, 0x00,	/*Download size*/
+		0x00, 0x00, 0x00, 0x00,	/*Scramble key*/
+		0x2f, 0x02, 0x02, 0x00	/*Configuration*/
+};
+static UINT8 WMT_PATCH_PDA_CFG_EVT[] = { 0x02, 0x01, 0x01, 0x00, 0x00};
+
+static UINT8 WMT_PATCH_ADDRESS_CMD_NEW[] = { 0x01, 0x01, 0x05, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00};
+
+static UINT8 WMT_PATCH_ADDRESS_EVT_NEW[] = { 0x02, 0x01, 0x01, 0x00, 0x00};
 #endif
 
 /*coex cmd/evt++*/
@@ -991,6 +1005,8 @@ static INT32 wmt_stp_wifi_lte_coex(VOID);
 static INT32 mtk_wcn_soc_patch_dwn(UINT32 index);
 static INT32 mtk_wcn_soc_patch_info_prepare(VOID);
 static UINT32 mtk_wcn_soc_get_patch_num(VOID);
+static INT32 mtk_wcn_soc_normal_patch_dwn(PUINT8 pPatchBuf, UINT32 patchSize, PUINT8 addressByte);
+static INT32 mtk_wcn_soc_pda_patch_dwn(PUINT8 pPatchBuf, UINT32 patchSize, PUINT8 addressByte);
 #else
 static INT32 mtk_wcn_soc_patch_dwn(VOID);
 #endif
@@ -1137,6 +1153,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		wmt_ic_ops_soc.icId == 0x0507 ||
 		wmt_ic_ops_soc.icId == 0x0713 ||
 		wmt_ic_ops_soc.icId == 0x0788 ||
+		wmt_ic_ops_soc.icId == 0x6765 ||
 		wmt_ic_ops_soc.icId == 0x0688) {
 		iRet = wmt_core_init_script(set_mcuclk_table_3, osal_array_size(set_mcuclk_table_3));
 		if (iRet)
@@ -1166,6 +1183,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		wmt_ic_ops_soc.icId == 0x0507 ||
 		wmt_ic_ops_soc.icId == 0x0713 ||
 		wmt_ic_ops_soc.icId == 0x0788 ||
+		wmt_ic_ops_soc.icId == 0x6765 ||
 		wmt_ic_ops_soc.icId == 0x0688) {
 		iRet = wmt_core_init_script(set_mcuclk_table_4, osal_array_size(set_mcuclk_table_4));
 		if (iRet)
@@ -1217,6 +1235,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		wmt_ic_ops_soc.icId == 0x0507 ||
 		wmt_ic_ops_soc.icId == 0x0713 ||
 		wmt_ic_ops_soc.icId == 0x0788 ||
+		wmt_ic_ops_soc.icId == 0x6765 ||
 		wmt_ic_ops_soc.icId == 0x0688) {
 		/* add WMT_COXE_CONFIG_EXT_COMPONENT_OPCODE command for 2G4 eLNA demand*/
 		if (pWmtGenConf->coex_wmt_ext_component) {
@@ -1247,6 +1266,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		(wmt_ic_ops_soc.icId == 0x0788) ||
 		(wmt_ic_ops_soc.icId == 0x0699) ||
 		(wmt_ic_ops_soc.icId == 0x0337) ||
+		(wmt_ic_ops_soc.icId == 0x6765) ||
 		(wmt_ic_ops_soc.icId == 0x0633)) {
 		wmt_stp_wifi_lte_coex();
 		WMT_DBG_FUNC("wmt_stp_wifi_lte_coex done!\n");
@@ -1269,6 +1289,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		      pWmtGenConf->bt_tssi_from_wifi, pWmtGenConf->bt_tssi_target);
 	if (pWmtGenConf->bt_tssi_from_wifi) {
 		if (wmt_ic_ops_soc.icId == 0x0713 ||
+		    wmt_ic_ops_soc.icId == 0x6765 ||
 		    wmt_ic_ops_soc.icId == 0x0788)
 			WMT_BT_TSSI_FROM_WIFI_CONFIG_CMD[4] = 0x10;
 
@@ -1682,6 +1703,7 @@ static INT32 mtk_wcn_soc_gps_sync_ctrl(WMT_IC_PIN_STATE state, UINT32 flag)
 		wmt_ic_ops_soc.icId != 0x0507 &&
 		wmt_ic_ops_soc.icId != 0x0713 &&
 		wmt_ic_ops_soc.icId != 0x0788 &&
+		wmt_ic_ops_soc.icId != 0x6765 &&
 		wmt_ic_ops_soc.icId != 0x0688) {
 		if (state == WMT_IC_PIN_MUX)
 			uVal = 0x1 << 28;
@@ -1925,6 +1947,7 @@ static INT32 wmt_stp_wifi_lte_coex(VOID)
 				wmt_ic_ops_soc.icId == 0x0507 ||
 				wmt_ic_ops_soc.icId == 0x0713 ||
 				wmt_ic_ops_soc.icId == 0x0788 ||
+				wmt_ic_ops_soc.icId == 0x6765 ||
 				wmt_ic_ops_soc.icId == 0x0688) {
 			/* add WMT_COXE_CONFIG_EXT_COMPONENT_OPCODE command for 2G4 eLNA demand*/
 			if (pWmtGenConf->coex_wmt_ext_component) {
@@ -2272,13 +2295,10 @@ static UINT32 mtk_wcn_soc_get_patch_num(VOID)
 	return ctrlPa1;
 }
 
-static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
+static INT32 mtk_wcn_soc_normal_patch_dwn(PUINT8 pPatchBuf, UINT32 patchSize, PUINT8 addressByte)
 {
 	INT32 iRet = -1;
-	P_WMT_PATCH patchHdr = NULL;
-	PUINT8 pBuf = NULL;
-	PUINT8 pPatchBuf = NULL;
-	UINT32 patchSize;
+	UINT32 patchSizePerFrag = 0;
 	UINT32 fragSeq;
 	UINT32 fragNum;
 	UINT16 fragSize = 0;
@@ -2287,95 +2307,11 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 	UINT32 u4Res;
 	UINT8 evtBuf[8];
 	UINT8 addressevtBuf[12];
-	UINT8 addressByte[4];
-	PINT8 cDataTime = NULL;
-	/*PINT8 cPlat = NULL; */
-	UINT16 u2HwVer = 0;
-	UINT16 u2SwVer = 0;
-	UINT32 u4PatchVer = 0;
-	UINT32 patchSizePerFrag = 0;
-	WMT_CTRL_DATA ctrlData;
 
-	/*1.check hardware information */
-	if (gp_soc_info == NULL) {
-		WMT_ERR_FUNC("null gp_soc_info!\n");
-		return -1;
-	}
-
-	osal_memset(gFullPatchName, 0, osal_sizeof(gFullPatchName));
-
-	ctrlData.ctrlId = WMT_CTRL_GET_PATCH_INFO;
-	ctrlData.au4CtrlData[0] = index + 1;
-	ctrlData.au4CtrlData[1] = (SIZE_T) &gFullPatchName;
-	ctrlData.au4CtrlData[2] = (SIZE_T) &addressByte;
-	iRet = wmt_ctrl(&ctrlData);
-	WMT_DBG_FUNC("the %d time valid patch found: (%s)\n", index + 1, gFullPatchName);
-
-	/* <2.2> read patch content */
-	ctrlData.ctrlId = WMT_CTRL_GET_PATCH;
-	ctrlData.au4CtrlData[0] = (SIZE_T)NULL;
-	ctrlData.au4CtrlData[1] = (SIZE_T)&gFullPatchName;
-	ctrlData.au4CtrlData[2] = (SIZE_T)&pBuf;
-	ctrlData.au4CtrlData[3] = (SIZE_T)&patchSize;
-	iRet = wmt_ctrl(&ctrlData);
-	if (iRet) {
-		WMT_ERR_FUNC("wmt_core: WMT_CTRL_GET_PATCH fail:%d\n", iRet);
-		iRet -= 1;
-		goto done;
-	}
-
-	/* |<-BCNT_PATCH_BUF_HEADROOM(8) bytes dummy allocated->|<-patch file->| */
-	/* patch file with header:
-	 * |<-patch header: 28 Bytes->|<-patch body: X Bytes ----->|
-	 */
-	pPatchBuf = osal_malloc(patchSize);
-	if (pPatchBuf == NULL) {
-		WMT_ERR_FUNC("vmalloc pPatchBuf for patch download fail\n");
-		return -2;
-	}
-	osal_memcpy(pPatchBuf, pBuf, patchSize);
-	/* check patch file information */
-	patchHdr = (P_WMT_PATCH) pPatchBuf;
-
-	cDataTime = patchHdr->ucDateTime;
-	u2HwVer = patchHdr->u2HwVer;
-	u2SwVer = patchHdr->u2SwVer;
-	u4PatchVer = patchHdr->u4PatchVer;
-	/*cPlat = &patchHdr->ucPLat[0]; */
-
-	cDataTime[15] = '\0';
-	if (index == 0) {
-		WMT_DBG_FUNC("===========================================\n");
-		WMT_INFO_FUNC("[Patch]BuiltTime = %s, HVer = 0x%x, SVer = 0x%x, PhVer = 0x%04x,Platform = %c%c%c%c\n",
-		cDataTime, ((u2HwVer & 0x00ff) << 8) | ((u2HwVer & 0xff00) >> 8),
-		((u2SwVer & 0x00ff) << 8) | ((u2SwVer & 0xff00) >> 8),
-		((u4PatchVer & 0xff000000) >> 24) | ((u4PatchVer & 0x00ff0000) >> 16),
-		patchHdr->ucPLat[0], patchHdr->ucPLat[1], patchHdr->ucPLat[2], patchHdr->ucPLat[3]);
-		WMT_DBG_FUNC("[Consys Patch] Hw Ver = 0x%x\n", ((u2HwVer & 0x00ff) << 8) | ((u2HwVer & 0xff00) >> 8));
-		WMT_DBG_FUNC("[Consys Patch] Sw Ver = 0x%x\n", ((u2SwVer & 0x00ff) << 8) | ((u2SwVer & 0xff00) >> 8));
-		WMT_DBG_FUNC("[Consys Patch] Ph Ver = 0x%04x\n",
-			      ((u4PatchVer & 0xff000000) >> 24) | ((u4PatchVer & 0x00ff0000) >> 16));
-		WMT_DBG_FUNC("[Consys Patch] Platform = %c%c%c%c\n", patchHdr->ucPLat[0], patchHdr->ucPLat[1],
-			      patchHdr->ucPLat[2], patchHdr->ucPLat[3]);
-		WMT_DBG_FUNC("===========================================\n");
-	}
-
-	/* remove patch header:
-	 * |<-patch body: X Bytes (X=patchSize)--->|
-	 */
-	if (patchSize < sizeof(WMT_PATCH)) {
-		WMT_ERR_FUNC("error patch size\n");
-		iRet = -1;
-		goto done;
-	}
-	patchSize -= sizeof(WMT_PATCH);
-	pPatchBuf += sizeof(WMT_PATCH);
 	patchSizePerFrag = DEFAULT_PATCH_FRAG_SIZE;
 	/* reserve 1st patch cmd space before patch body
 	 *        |<-WMT_CMD: 5Bytes->|<-patch body: X Bytes (X=patchSize)----->|
 	 */
-	/* gp_soc_patch_info = patchHdr; */
-	osal_memcpy(&gp_soc_patch_info, patchHdr, osal_sizeof(WMT_PATCH));
 	pPatchBuf -= sizeof(WMT_PATCH_CMD);
 
 	fragNum = patchSize / patchSizePerFrag;
@@ -2423,32 +2359,59 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 		WMT_PATCH_P_ADDRESS_CMD[9] = 0x0b;
 	}
 
+	if (wmt_ic_ops_soc.icId == 0x6765) {
+		/*send part patch address command */
+		WMT_PATCH_ADDRESS_CMD_NEW[5] = addressByte[0];
+		WMT_PATCH_ADDRESS_CMD_NEW[6] = addressByte[1];
+		WMT_PATCH_ADDRESS_CMD_NEW[7] = addressByte[2];
+		WMT_PATCH_ADDRESS_CMD_NEW[8] = addressByte[3];
+		WMT_DBG_FUNC("4 bytes address command:0x%02x,0x%02x,0x%02x,0x%02x",
+			     WMT_PATCH_ADDRESS_CMD_NEW[5],
+			     WMT_PATCH_ADDRESS_CMD_NEW[6],
+			     WMT_PATCH_ADDRESS_CMD_NEW[7],
+			     WMT_PATCH_ADDRESS_CMD_NEW[8]);
+		iRet = wmt_core_tx((PUINT8) &WMT_PATCH_ADDRESS_CMD_NEW[0], sizeof(WMT_PATCH_ADDRESS_CMD_NEW),
+				   &u4Res, MTK_WCN_BOOL_FALSE);
+		if (iRet || (u4Res != sizeof(WMT_PATCH_ADDRESS_CMD_NEW))) {
+			WMT_ERR_FUNC("wmt_core:wmt part patch address CMD fail(%d),size(%d)\n", iRet, u4Res);
+			return -1;
+		}
+		osal_memset(addressevtBuf, 0, sizeof(addressevtBuf));
+		iRet = wmt_core_rx(addressevtBuf, sizeof(WMT_PATCH_ADDRESS_EVT_NEW), &u4Res);
+		if (iRet || (u4Res != sizeof(WMT_PATCH_ADDRESS_EVT_NEW))) {
+			WMT_ERR_FUNC("wmt_core:wmt patch address EVT fail(%d),size(%d)\n", iRet, u4Res);
+			mtk_wcn_stp_dbg_dump_package();
+			return -1;
+		}
+		goto patch_download;
+	}
+
 	/*send wmt part patch address command */
 	iRet =
 	    wmt_core_tx((PUINT8) &WMT_PATCH_ADDRESS_CMD[0], sizeof(WMT_PATCH_ADDRESS_CMD), &u4Res, MTK_WCN_BOOL_FALSE);
 	if (iRet || (u4Res != sizeof(WMT_PATCH_ADDRESS_CMD))) {
 		WMT_ERR_FUNC("wmt_core:wmt patch address CMD fail(%d),size(%d)\n", iRet, u4Res);
-		iRet -= 1;
-		goto done;
+		return -1;
 	}
 	osal_memset(addressevtBuf, 0, sizeof(addressevtBuf));
 	iRet = wmt_core_rx(addressevtBuf, sizeof(WMT_PATCH_ADDRESS_EVT), &u4Res);
 	if (iRet || (u4Res != sizeof(WMT_PATCH_ADDRESS_EVT))) {
 		WMT_ERR_FUNC("wmt_core:wmt patch address EVT fail(%d),size(%d)\n", iRet, u4Res);
 		mtk_wcn_stp_dbg_dump_package();
-		iRet -= 1;
-		goto done;
+		return -1;
 	}
 #if CFG_CHECK_WMT_RESULT
 	if (osal_memcmp(addressevtBuf, WMT_PATCH_ADDRESS_EVT, osal_sizeof(WMT_PATCH_ADDRESS_EVT)) != 0) {
 		WMT_ERR_FUNC("wmt_core: write WMT_PATCH_ADDRESS_CMD status fail\n");
-		iRet -= 1;
-		goto done;
+		return -1;
 	}
 #endif
 
 	/*send part patch address command */
-	osal_memcpy(&WMT_PATCH_P_ADDRESS_CMD[12], addressByte, osal_sizeof(addressByte));
+	WMT_PATCH_P_ADDRESS_CMD[12] = addressByte[0];
+	WMT_PATCH_P_ADDRESS_CMD[13] = addressByte[1];
+	WMT_PATCH_P_ADDRESS_CMD[14] = addressByte[2];
+	WMT_PATCH_P_ADDRESS_CMD[15] = addressByte[3];
 	WMT_DBG_FUNC("4 bytes address command:0x%02x,0x%02x,0x%02x,0x%02x",
 		      WMT_PATCH_P_ADDRESS_CMD[12],
 		      WMT_PATCH_P_ADDRESS_CMD[13], WMT_PATCH_P_ADDRESS_CMD[14], WMT_PATCH_P_ADDRESS_CMD[15]);
@@ -2456,26 +2419,24 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 	    wmt_core_tx((PUINT8) &WMT_PATCH_P_ADDRESS_CMD[0], sizeof(WMT_PATCH_P_ADDRESS_CMD), &u4Res,
 			MTK_WCN_BOOL_FALSE);
 	if (iRet || (u4Res != sizeof(WMT_PATCH_P_ADDRESS_CMD))) {
-		WMT_ERR_FUNC("wmt_core:wmt part patch address CMD fail(%d),size(%d),index(%d)\n", iRet, u4Res, index);
-		iRet -= 1;
-		goto done;
+		WMT_ERR_FUNC("wmt_core:wmt part patch address CMD fail(%d),size(%d)\n", iRet, u4Res);
+		return -1;
 	}
 	osal_memset(addressevtBuf, 0, sizeof(addressevtBuf));
 	iRet = wmt_core_rx(addressevtBuf, sizeof(WMT_PATCH_P_ADDRESS_EVT), &u4Res);
 	if (iRet || (u4Res != sizeof(WMT_PATCH_P_ADDRESS_EVT))) {
-		WMT_ERR_FUNC("wmt_core:wmt patch address EVT fail(%d),size(%d),index(%d)\n", iRet, u4Res, index);
+		WMT_ERR_FUNC("wmt_core:wmt patch address EVT fail(%d),size(%d)\n", iRet, u4Res);
 		mtk_wcn_stp_dbg_dump_package();
-		iRet -= 1;
-		goto done;
+		return -1;
 	}
 #if CFG_CHECK_WMT_RESULT
 	if (osal_memcmp(addressevtBuf, WMT_PATCH_P_ADDRESS_EVT, osal_sizeof(WMT_PATCH_ADDRESS_EVT)) != 0) {
-		WMT_ERR_FUNC("wmt_core: write WMT_PATCH_ADDRESS_CMD status fail,index(%d)\n", index);
-		iRet -= 1;
-		goto done;
+		WMT_ERR_FUNC("wmt_core: write WMT_PATCH_ADDRESS_CMD status fail\n");
+		return -1;
 	}
 #endif
 
+patch_download:
 	/* send all fragments */
 	offset = sizeof(WMT_PATCH_CMD);
 	fragSeq = 0;
@@ -2505,7 +2466,7 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 		if (iRet || (u4Res != fragSize + sizeof(WMT_PATCH_CMD))) {
 			WMT_ERR_FUNC("wmt_core: write fragSeq(%d) size(%d, %d) fail(%d)\n", fragSeq,
 				     fragSize + sizeof(WMT_PATCH_CMD), u4Res, iRet);
-			iRet -= 1;
+			iRet = -1;
 			break;
 		}
 		WMT_DBG_FUNC("wmt_core: write fragSeq(%d) size(%d, %d) ok\n",
@@ -2518,7 +2479,7 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 			WMT_ERR_FUNC("wmt_core: read WMT_PATCH_EVT length(%d, %d) fail(%d)\n", sizeof(WMT_PATCH_EVT),
 				     u4Res, iRet);
 			mtk_wcn_stp_dbg_dump_package();
-			iRet -= 1;
+			iRet = -1;
 			break;
 		}
 #if CFG_CHECK_WMT_RESULT
@@ -2537,7 +2498,7 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 				WMT_PATCH_EVT[2],
 				WMT_PATCH_EVT[3],
 				WMT_PATCH_EVT[4]);
-			iRet -= 1;
+			iRet = -1;
 			break;
 		}
 #endif
@@ -2550,7 +2511,192 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 		      iRet, fragSeq, fragSize, (!iRet && (fragSeq == fragNum)) ? "ok" : "fail");
 
 	if (fragSeq != fragNum)
+		return -1;
+
+	return 0;
+}
+
+static INT32 mtk_wcn_soc_pda_patch_dwn(PUINT8 pPatchBuf, UINT32 patchSize, PUINT8 addressByte)
+{
+	UINT32 u4Res;
+	UINT8 evtBuf[8];
+	INT32 iRet = -1;
+	UINT32 fragSeq;
+	UINT32 fragNum;
+	UINT16 fragSize = 0;
+	UINT32 patchSizePerFrag = 0;
+	UINT32 offset;
+
+	/*PDA download address*/
+	WMT_PATCH_PDA_CFG_CMD[5] = addressByte[3];
+	WMT_PATCH_PDA_CFG_CMD[6] = addressByte[2];
+	WMT_PATCH_PDA_CFG_CMD[7] = addressByte[1];
+	WMT_PATCH_PDA_CFG_CMD[8] = addressByte[0];
+
+	/*PDA download size*/
+	WMT_PATCH_PDA_CFG_CMD[9] = patchSize & 0xFF000000 >> 24;
+	WMT_PATCH_PDA_CFG_CMD[10] = patchSize & 0xFF0000 >> 16;
+	WMT_PATCH_PDA_CFG_CMD[11] = patchSize & 0xFF00 >> 8;
+	WMT_PATCH_PDA_CFG_CMD[12] = patchSize & 0xFF;
+
+	iRet = wmt_core_tx((PUINT8) &WMT_PATCH_PDA_CFG_CMD[0], sizeof(WMT_PATCH_PDA_CFG_CMD), &u4Res,
+			MTK_WCN_BOOL_FALSE);
+	if (iRet || (u4Res != sizeof(WMT_PATCH_PDA_CFG_CMD))) {
+		WMT_ERR_FUNC("wmt_core:wmt part patch PDA config CMD fail(%d),size(%d)\n",
+				iRet, u4Res);
+		return -1;
+	}
+	osal_memset(evtBuf, 0, sizeof(evtBuf));
+	iRet = wmt_core_rx(evtBuf, sizeof(WMT_PATCH_PDA_CFG_EVT), &u4Res);
+	if (iRet || (u4Res != sizeof(WMT_PATCH_PDA_CFG_EVT))) {
+		WMT_ERR_FUNC("wmt_core:wmt patch PDA config EVT fail(%d),size(%d)\n",
+				iRet, u4Res);
+		mtk_wcn_stp_dbg_dump_package();
+		return -1;
+	}
+
+	patchSizePerFrag = DEFAULT_PATCH_FRAG_SIZE;
+	fragNum = patchSize / patchSizePerFrag;
+	fragNum += ((fragNum * patchSizePerFrag) == patchSize) ? 0 : 1;
+
+	/* send all fragments */
+	offset = 0;
+	fragSeq = 0;
+	while (fragSeq < fragNum) {
+		WMT_DBG_FUNC("patch size(%d) fragNum(%d)\n", patchSize, fragNum);
+		if (fragSeq == (fragNum - 1)) {
+			/* last fragment */
+			fragSize = patchSize - fragSeq * patchSizePerFrag;
+		} else
+			fragSize = patchSizePerFrag;
+
+		iRet = wmt_core_tx(pPatchBuf + offset, fragSize, &u4Res, MTK_WCN_BOOL_TRUE);
+		if (iRet || (u4Res != fragSize)) {
+			WMT_ERR_FUNC("wmt_core: write fragSeq(%d) size(%d, %d) fail(%d)\n",
+					fragSeq, fragSize, u4Res, iRet);
+			iRet = -1;
+			break;
+		}
+
+		WMT_DBG_FUNC("wmt_core: write fragSeq(%d) size(%d, %d) ok\n",
+			     fragSeq, fragSize, u4Res);
+
+		offset += patchSizePerFrag;
+		++fragSeq;
+	}
+
+	WMT_WARN_FUNC("wmt_core: patch dwn:%d frag(%d, %d) %s\n",
+		      iRet, fragSeq, fragSize, (!iRet && (fragSeq == fragNum)) ? "ok" : "fail");
+
+	if (fragSeq != fragNum)
+		return -1;
+
+	return 0;
+}
+
+static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
+{
+	INT32 iRet = -1;
+	P_WMT_PATCH patchHdr = NULL;
+	PUINT8 pBuf = NULL;
+	PUINT8 pPatchBuf = NULL;
+	UINT32 patchSize;
+	PINT8 cDataTime = NULL;
+	UINT16 u2HwVer = 0;
+	UINT16 u2SwVer = 0;
+	UINT32 u4PatchVer = 0;
+	WMT_CTRL_DATA ctrlData;
+	P_CONSYS_EMI_ADDR_INFO emiInfo;
+	UINT8 addressByte[4];
+
+	/*1.check hardware information */
+	if (gp_soc_info == NULL) {
+		WMT_ERR_FUNC("null gp_soc_info!\n");
+		return -1;
+	}
+
+	osal_memset(gFullPatchName, 0, osal_sizeof(gFullPatchName));
+
+	ctrlData.ctrlId = WMT_CTRL_GET_PATCH_INFO;
+	ctrlData.au4CtrlData[0] = index + 1;
+	ctrlData.au4CtrlData[1] = (SIZE_T)&gFullPatchName;
+	ctrlData.au4CtrlData[2] = (SIZE_T)&addressByte;
+	iRet = wmt_ctrl(&ctrlData);
+	WMT_DBG_FUNC("the %d time valid patch found: (%s)\n", index + 1, gFullPatchName);
+
+	/* <2.2> read patch content */
+	ctrlData.ctrlId = WMT_CTRL_GET_PATCH;
+	ctrlData.au4CtrlData[0] = (SIZE_T)NULL;
+	ctrlData.au4CtrlData[1] = (SIZE_T)&gFullPatchName;
+	ctrlData.au4CtrlData[2] = (SIZE_T)&pBuf;
+	ctrlData.au4CtrlData[3] = (SIZE_T)&patchSize;
+	iRet = wmt_ctrl(&ctrlData);
+	if (iRet) {
+		WMT_ERR_FUNC("wmt_core: WMT_CTRL_GET_PATCH fail:%d\n", iRet);
 		iRet -= 1;
+		goto done;
+	}
+
+	/* |<-BCNT_PATCH_BUF_HEADROOM(8) bytes dummy allocated->|<-patch file->| */
+	/* patch file with header:
+	 * |<-patch header: 28 Bytes->|<-patch body: X Bytes ----->|
+	 */
+	pPatchBuf = osal_malloc(patchSize);
+	if (pPatchBuf == NULL) {
+		WMT_ERR_FUNC("vmalloc pPatchBuf for patch download fail\n");
+		return -2;
+	}
+	osal_memcpy(pPatchBuf, pBuf, patchSize);
+	/* check patch file information */
+	patchHdr = (P_WMT_PATCH) pPatchBuf;
+
+	cDataTime = patchHdr->ucDateTime;
+	u2HwVer = patchHdr->u2HwVer;
+	u2SwVer = patchHdr->u2SwVer;
+	u4PatchVer = patchHdr->u4PatchVer;
+
+	cDataTime[15] = '\0';
+	if (index == 0) {
+		WMT_INFO_FUNC("[Patch]BuiltTime=%s,HVer=0x%x,SVer=0x%x,PhVer=0x%04x,Platform=%c%c%c%c\n",
+				cDataTime, ((u2HwVer & 0x00ff) << 8) | ((u2HwVer & 0xff00) >> 8),
+				((u2SwVer & 0x00ff) << 8) | ((u2SwVer & 0xff00) >> 8),
+				((u4PatchVer & 0xff000000) >> 24) | ((u4PatchVer & 0x00ff0000) >> 16),
+				patchHdr->ucPLat[0], patchHdr->ucPLat[1],
+				patchHdr->ucPLat[2], patchHdr->ucPLat[3]);
+	}
+	osal_memcpy(&gp_soc_patch_info, patchHdr, osal_sizeof(WMT_PATCH));
+
+	/* remove patch header:
+	 * |<-patch body: X Bytes (X=patchSize)--->|
+	 */
+	if (patchSize < sizeof(WMT_PATCH)) {
+		WMT_ERR_FUNC("error patch size\n");
+		iRet = -1;
+		goto done;
+	}
+	patchSize -= sizeof(WMT_PATCH);
+	pPatchBuf += sizeof(WMT_PATCH);
+
+	if (wmt_ic_ops_soc.icId == 0x6765) {
+		/* remove patch checksum:
+		 * |<-patch checksum: 2Bytes->|<-patch body: X Bytes (X=patchSize)--->|
+		 */
+		pPatchBuf += BCNT_PATCH_BUF_CHECKSUM;
+		patchSize -= BCNT_PATCH_BUF_CHECKSUM;
+	}
+
+	emiInfo = mtk_wcn_consys_soc_get_emi_phy_add();
+	if (!emiInfo) {
+		WMT_ERR_FUNC("get emi info fail!\n");
+		iRet = -1;
+		goto done;
+	}
+
+	if (emiInfo->pda_dl_patch_flag)
+		iRet = mtk_wcn_soc_pda_patch_dwn(pPatchBuf, patchSize, addressByte);
+	else
+		iRet = mtk_wcn_soc_normal_patch_dwn(pPatchBuf, patchSize, addressByte);
+
 done:
 	if (patchHdr != NULL) {
 		osal_free(patchHdr);
@@ -2559,7 +2705,6 @@ done:
 	}
 
 	/* WMT_CTRL_FREE_PATCH always return 0 */
-	/* wmt_core_ctrl(WMT_CTRL_FREE_PATCH, NULL, NULL); */
 	ctrlData.ctrlId = WMT_CTRL_FREE_PATCH;
 	ctrlData.au4CtrlData[0] = index + 1;
 	wmt_ctrl(&ctrlData);
@@ -2755,3 +2900,127 @@ done:
 }
 
 #endif
+
+INT32 mtk_wcn_soc_rom_patch_dwn(UINT32 ip_ver)
+{
+	INT32 iRet = -1;
+	struct wmt_rom_patch *patchHdr = NULL;
+	PUINT8 pBuf = NULL;
+	PUINT8 pPatchBuf = NULL;
+	UINT32 patchSize;
+	UINT8 addressByte[4];
+	PINT8 cDataTime = NULL;
+	UINT16 u2HwVer = 0;
+	UINT16 u2SwVer = 0;
+	UINT32 u4PatchType = 0;
+	UINT32 type;
+	UINT32 patchEmiOffset;
+	PUINT8 patchAddr;
+	WMT_CTRL_DATA ctrlData;
+	P_CONSYS_EMI_ADDR_INFO emiInfo;
+
+	for (type = WMTDRV_TYPE_BT; type < WMTDRV_TYPE_ANT; type++) {
+		osal_memset(gFullPatchName, 0, osal_sizeof(gFullPatchName));
+
+		ctrlData.ctrlId = WMT_CTRL_GET_ROM_PATCH_INFO;
+		ctrlData.au4CtrlData[0] = type;
+		ctrlData.au4CtrlData[1] = (SIZE_T)&gFullPatchName;
+		ctrlData.au4CtrlData[2] = (SIZE_T)&addressByte;
+		ctrlData.au4CtrlData[3] = ip_ver;
+		iRet = wmt_ctrl(&ctrlData);
+		if (iRet > 0) {
+			WMT_INFO_FUNC("There is no need to download (%d) type patch!\n", type);
+			continue;
+		}
+
+		/* <2.2> read patch content */
+		ctrlData.ctrlId = WMT_CTRL_GET_PATCH;
+		ctrlData.au4CtrlData[0] = (SIZE_T)NULL;
+		ctrlData.au4CtrlData[1] = (SIZE_T)&gFullPatchName;
+		ctrlData.au4CtrlData[2] = (SIZE_T)&pBuf;
+		ctrlData.au4CtrlData[3] = (SIZE_T)&patchSize;
+		iRet = wmt_ctrl(&ctrlData);
+		if (iRet) {
+			WMT_ERR_FUNC("wmt_core: WMT_CTRL_GET_PATCH fail:%d\n", iRet);
+			iRet = -1;
+			goto done;
+		}
+
+		/* |<-BCNT_PATCH_BUF_HEADROOM(8) bytes dummy allocated->|<-patch file->|
+		 * patch file with header:
+		 * |<-patch header: 32 Bytes->|<-patch body: X Bytes ----->|
+		 */
+		pPatchBuf = osal_malloc(patchSize);
+		if (pPatchBuf == NULL) {
+			WMT_ERR_FUNC("vmalloc pPatchBuf for patch download fail\n");
+			iRet = -2;
+			goto done;
+		}
+		osal_memcpy(pPatchBuf, pBuf, patchSize);
+		/* check patch file information */
+		patchHdr = (struct wmt_rom_patch *) pPatchBuf;
+
+		cDataTime = patchHdr->ucDateTime;
+		u2HwVer = patchHdr->u2HwVer;
+		u2SwVer = patchHdr->u2SwVer;
+		u4PatchType = patchHdr->u4PatchType;
+
+		cDataTime[15] = '\0';
+		WMT_INFO_FUNC("[RomPatch]BTime=%s,HVer=0x%x,SVer=0x%x,Platform=%c%c%c%c\n,Type=%x\n",
+				cDataTime,
+				((u2HwVer & 0x00ff) << 8) | ((u2HwVer & 0xff00) >> 8),
+				((u2SwVer & 0x00ff) << 8) | ((u2SwVer & 0xff00) >> 8),
+				patchHdr->ucPLat[0], patchHdr->ucPLat[1],
+				patchHdr->ucPLat[2], patchHdr->ucPLat[3],
+				u4PatchType);
+
+		/* remove patch header:
+		 * |<-patch body: X Bytes (X=patchSize)--->|
+		 */
+		if (patchSize < sizeof(struct wmt_rom_patch)) {
+			WMT_ERR_FUNC("error patch size\n");
+			iRet = -3;
+			goto done;
+		}
+		patchSize -= sizeof(struct wmt_rom_patch);
+		pPatchBuf += sizeof(struct wmt_rom_patch);
+
+		patchEmiOffset = (addressByte[2] << 16) | (addressByte[1] << 8) | addressByte[0];
+
+		emiInfo = mtk_wcn_consys_soc_get_emi_phy_add();
+		if (!emiInfo) {
+			WMT_ERR_FUNC("get emi info fail!\n");
+			iRet = -4;
+			goto done;
+		}
+
+		if (patchEmiOffset + patchSize < emiInfo->emi_size) {
+			WMT_INFO_FUNC("[Rom Patch]Name=%s,EmiOffset=0x%x,Size=0x%x\n",
+					gFullPatchName, patchEmiOffset, patchSize);
+
+			patchAddr = ioremap_nocache(emiInfo->emi_phy_addr + patchEmiOffset, patchSize);
+			if (patchAddr) {
+				osal_memcpy_toio(patchAddr, pPatchBuf, patchSize);
+				iounmap(patchAddr);
+			} else
+				WMT_ERR_FUNC("ioremap_nocache fail\n");
+		} else
+			WMT_ERR_FUNC("The rom patch is too big to overflow on EMI\n");
+
+done:
+		if (patchHdr != NULL) {
+			osal_free(patchHdr);
+			pPatchBuf = NULL;
+			patchHdr = NULL;
+		}
+
+		/* WMT_CTRL_FREE_PATCH always return 0 */
+		ctrlData.ctrlId = WMT_CTRL_FREE_PATCH;
+		ctrlData.au4CtrlData[0] = type;
+		wmt_ctrl(&ctrlData);
+		if (iRet)
+			break;
+	}
+
+	return iRet;
+}

@@ -87,6 +87,7 @@ const struct of_device_id apwmt_of_ids[] = {
 	{.compatible = "mediatek,mt8167-consys",},
 	{.compatible = "mediatek,mt6775-consys",},
 	{.compatible = "mediatek,mt6771-consys",},
+	{.compatible = "mediatek,mt6765-consys",},
 	{}
 };
 struct CONSYS_BASE_ADDRESS conn_reg;
@@ -475,6 +476,9 @@ INT32 mtk_wcn_consys_hw_rst(UINT32 co_clock_type)
 
 	WMT_PLAT_INFO_FUNC("CONSYS-HW, hw_rst start, eirq should be disabled before this step\n");
 
+	if (wmt_consys_ic_ops->consys_ic_set_dl_rom_patch_flag)
+		wmt_consys_ic_ops->consys_ic_set_dl_rom_patch_flag(1);
+
 	/*1. do whole hw power off flow */
 	iRet += mtk_wcn_consys_hw_reg_ctrl(0, co_clock_type);
 
@@ -647,4 +651,46 @@ VOID mtk_wcn_consys_hang_debug(VOID)
 UINT32 mtk_consys_get_gps_lna_pin_num(VOID)
 {
 	return gps_lna_pin_num;
+}
+
+INT32 mtk_wcn_consys_reg_ctrl(UINT32 is_write, enum CONSYS_BASE_ADDRESS_INDEX index, UINT32 offset,
+		PUINT32 value)
+{
+	UINT32 reg_info[index*4 + 4];
+	struct device_node *node;
+	PVOID remap_addr = NULL;
+
+
+	node = g_pdev->dev.of_node;
+	if (node) {
+		if (of_property_read_u32_array(node, "reg", reg_info, ARRAY_SIZE(reg_info))) {
+			WMT_PLAT_ERR_FUNC("get reg from DTS fail!!\n");
+			return -1;
+		}
+	} else {
+		WMT_PLAT_ERR_FUNC("[%s] can't find CONSYS compatible node\n", __func__);
+		return -1;
+	}
+
+	if (reg_info[index*4 + 3] < offset) {
+		WMT_PLAT_ERR_FUNC("Access overflow of address(0x%x), offset(0x%x)!\n",
+				reg_info[index*4 + 1], reg_info[index*4 + 3]);
+		return -1;
+	}
+
+	remap_addr = ioremap(reg_info[index*4 + 1] + offset, 0x4);
+	if (remap_addr == NULL) {
+		WMT_PLAT_ERR_FUNC("ioremap fail!\n");
+		return -1;
+	}
+
+	if (is_write)
+		CONSYS_REG_WRITE(remap_addr, *value);
+	else
+		*value = CONSYS_REG_READ(remap_addr);
+
+	if (remap_addr)
+		iounmap(remap_addr);
+
+	return 0;
 }

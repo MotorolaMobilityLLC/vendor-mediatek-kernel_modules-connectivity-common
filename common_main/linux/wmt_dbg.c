@@ -103,6 +103,7 @@ static INT32 wmt_dbg_func0_reg_write(INT32 par1, INT32 address, INT32 value);
 static INT32 wmt_dbg_stp_sdio_reg_read(INT32 par1, INT32 address, INT32 value);
 static INT32 wmt_dbg_stp_sdio_reg_write(INT32 par1, INT32 address, INT32 value);
 static INT32 wmt_dbg_show_thread_debug_info(INT32 par1, INT32 address, INT32 value);
+static INT32 wmt_dbg_met_ctrl(INT32 par1, INT32 met_ctrl, INT32 log_ctrl);
 
 static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x0] = wmt_dbg_psm_ctrl,
@@ -149,6 +150,7 @@ static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x23] = wmt_dbg_func0_reg_write,
 	[0x24] = wmt_dbg_stp_sdio_reg_read,
 	[0x25] = wmt_dbg_stp_sdio_reg_write,
+	[0x26] = wmt_dbg_met_ctrl,
 	[0x30] = wmt_dbg_show_thread_debug_info,
 };
 
@@ -745,6 +747,19 @@ static INT32 wmt_dbg_show_thread_debug_info(INT32 par1, INT32 address, INT32 val
 	osal_dump_thread_state("mtk_stp_btm");
 
 	return 0;
+}
+
+INT32 wmt_dbg_met_ctrl(INT32 par1, INT32 met_ctrl, INT32 log_ctrl)
+{
+	UINT32 ret = -1;
+
+	ret = wmt_lib_met_ctrl(met_ctrl, log_ctrl);
+	WMT_INFO_FUNC("met ctrl(0x%08x) met log print to %s, %s\n",
+		      met_ctrl,
+		      log_ctrl == 0 ? "kernel log" : "ftrace log",
+		      ret != 0 ? "failed" : "succeed");
+
+	return ret;
 }
 
 INT32 wmt_dbg_ut_test(INT32 par1, INT32 par2, INT32 par3)
