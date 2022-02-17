@@ -279,8 +279,11 @@ INT32 wmt_ctrl_rx(P_WMT_CTRL_DATA pWmtCtrlData /*UINT8 *pBuff, UINT32 buffLen, U
 			WMT_INFO_FUNC("RX waiting [%lu] ms ===========", jiffies_to_msecs(jiffies - start_time));
 			/* dump btif_rxd's backtrace to check whether it is blocked or not */
 			osal_dump_thread_state("btif_rxd");
-			mtk_wcn_consys_poll_cpucpr_dump(5, 1);
-			if (leftCnt == loopCnt - 1)
+			if (!mtk_wcn_stp_is_sdio_mode())
+				mtk_wcn_consys_poll_cpucpr_dump(5, 1);
+			else
+				stp_dbg_poll_cpupcr(5, 1, 1);
+			if ((leftCnt == loopCnt - 1) && !mtk_wcn_stp_is_sdio_mode())
 				mtk_wcn_consys_pc_log_dump();
 
 			if (!mtk_wcn_stp_is_sdio_mode())
@@ -313,7 +316,10 @@ INT32 wmt_ctrl_rx(P_WMT_CTRL_DATA pWmtCtrlData /*UINT8 *pBuff, UINT32 buffLen, U
 				osal_thread_sched_unmark(p_rx_thread, &schedstats);
 				wmt_ctrl_show_sched_stats_log(p_rx_thread, &schedstats);
 
-				mtk_wcn_consys_poll_cpucpr_dump(5, 1);
+				if (!mtk_wcn_stp_is_sdio_mode())
+					mtk_wcn_consys_poll_cpucpr_dump(5, 1);
+				else
+					stp_dbg_poll_cpupcr(5, 1, 1);
 				WMT_ERR_FUNC("wmt_dev_rx_timeout: timeout,jiffies(%lu),timeoutvalue(%d)\n",
 					     jiffies, pDev->rWmtRxWq.timeoutValue);
 				wmt_lib_cmd_rx_timeout_dump();
