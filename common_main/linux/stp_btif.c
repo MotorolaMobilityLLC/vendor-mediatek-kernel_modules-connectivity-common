@@ -85,6 +85,11 @@ INT32 mtk_wcn_consys_stp_btif_open(VOID)
 	WMT_DBG_FUNC("STP open bitf OK\n");
 
 	thread->pThread = mtk_btif_exp_rx_thread_get(g_stp_btif.stpBtifId);
+	if (!thread->pThread) {
+		WMT_INFO_FUNC("thread->pThread is NULL\n");
+		return -1;
+	}
+
 	osal_strncpy(thread->threadName, thread->pThread->comm, sizeof(thread->pThread->comm));
 	mtk_wcn_stp_register_if_tx(STP_BTIF_IF_TX, (MTK_WCN_STP_IF_TX) mtk_wcn_consys_stp_btif_tx);
 	mtk_wcn_stp_register_rx_has_pending_data(STP_BTIF_IF_TX,

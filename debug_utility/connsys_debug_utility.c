@@ -211,6 +211,9 @@ static void connlog_set_ring_ready(void)
 *****************************************************************************/
 static void connlog_buffer_init(int conn_type)
 {
+	if (conn_type < 0 || conn_type >= CONNLOG_TYPE_END)
+		return;
+
 	/* init ring emi */
 	ring_emi_init(
 		      gDev.virAddrEmiLogBase + emi_offset_table[conn_type].emi_buf,
@@ -245,13 +248,19 @@ static void connlog_buffer_init(int conn_type)
 static void connlog_ring_emi_to_cache(int conn_type)
 {
 	struct ring_emi_segment ring_emi_seg;
-	struct ring_emi *ring_emi = &connlog_buffer_table[conn_type].ring_emi;
-	struct ring *ring_cache = &connlog_buffer_table[conn_type].ring_cache;
+	struct ring_emi *ring_emi;
+	struct ring *ring_cache;
 	int total_size = 0;
 	int count = 0;
 	unsigned int cache_max_size = 0;
 	static DEFINE_RATELIMIT_STATE(_rs, 10 * HZ, 1);
 	static DEFINE_RATELIMIT_STATE(_rs2, HZ, 1);
+
+	if (conn_type < 0 || conn_type >= CONNLOG_TYPE_END)
+		return;
+
+	ring_emi = &connlog_buffer_table[conn_type].ring_emi;
+	ring_cache = &connlog_buffer_table[conn_type].ring_cache;
 
 	if (RING_FULL(ring_cache)) {
 		if (__ratelimit(&_rs))
@@ -328,7 +337,8 @@ static void connlog_dump_buf(const char *title, const char *buf, ssize_t sz)
 	i = 0;
 	line[LOG_LINE_SIZE-1] = 0;
 	while (sz--) {
-		snprintf(line + i*3, 3, "%02x", *buf);
+		if (snprintf(line + i*3, 3, "%02x", *buf) < 0)
+			return;
 		line[i*3 + 2] = ' ';
 
 		if (IS_VISIBLE_CHAR(*buf))
@@ -363,6 +373,9 @@ static void connlog_fw_log_parser(int conn_type, const char *buf, ssize_t sz)
 	unsigned int utc_us = 0;
 	unsigned int buf_len = 0;
 	unsigned int print_len = 0;
+
+	if (conn_type < 0 || conn_type >= CONNLOG_TYPE_END)
+		return;
 
 	while (sz > LOG_HEAD_LENG) {
 		if (*buf == log_head[0]) {
@@ -407,6 +420,9 @@ static void connlog_ring_print(int conn_type)
 	unsigned int buf_size;
 	struct ring_emi_segment ring_emi_seg;
 	struct ring_emi *ring_emi;
+
+	if (conn_type < 0 || conn_type >= CONNLOG_TYPE_END)
+		return;
 
 	ring_emi = &connlog_buffer_table[conn_type].ring_emi;
 	if (RING_EMI_EMPTY(ring_emi) || !ring_emi_read_all_prepare(&ring_emi_seg, ring_emi)) {
@@ -455,7 +471,8 @@ static void connlog_ring_print(int conn_type)
 *****************************************************************************/
 static void connlog_event_set(int conn_type)
 {
-	if ((conn_type < CONNLOG_TYPE_END) && (event_callback_table[conn_type] != 0x0))
+	if ((conn_type >= 0) && (conn_type < CONNLOG_TYPE_END) &&
+		(event_callback_table[conn_type] != 0x0))
 		(*event_callback_table[conn_type])();
 }
 
@@ -1090,8 +1107,13 @@ ssize_t connsys_log_read(int conn_type, char *buf, size_t count)
 	unsigned int written = 0;
 	unsigned int cache_buf_size;
 	struct ring_segment ring_seg;
-	struct ring *ring = &connlog_buffer_table[conn_type].ring_cache;
+	struct ring *ring;
 	unsigned int size = 0;
+
+	if (conn_type < 0 || conn_type >= CONNLOG_TYPE_END)
+		return 0;
+
+	ring = &connlog_buffer_table[conn_type].ring_cache;
 
 	if (atomic_read(&log_mode) != LOG_TO_FILE)
 		goto done;
@@ -1132,8 +1154,13 @@ ssize_t connsys_log_read_to_user(int conn_type, char __user *buf, size_t count)
 	static DEFINE_RATELIMIT_STATE(_rs, 10 * HZ, 1);
 	unsigned int cache_buf_size;
 	struct ring_segment ring_seg;
-	struct ring *ring = &connlog_buffer_table[conn_type].ring_cache;
+	struct ring *ring;
 	unsigned int size = 0;
+
+	if (conn_type < 0 || conn_type >= CONNLOG_TYPE_END)
+		return 0;
+
+	ring = &connlog_buffer_table[conn_type].ring_cache;
 
 	if (atomic_read(&log_mode) != LOG_TO_FILE)
 		goto done;
