@@ -686,17 +686,15 @@ VOID stp_do_tx_timeout(VOID)
 			osal_assert(0);
 		}
 
-
 		do {
-			STP_WARN_FUNC("[stp.ctx]*rxack (=last rx ack) = %d\n\r",
-				      stp_core_ctx.sequence.rxack);
-			STP_WARN_FUNC("[stp.ctx]txack (=last rx seq)= %d\n\r",
-				      stp_core_ctx.sequence.txack);
-			STP_WARN_FUNC("[stp.ctx]*txseq (=next tx seq)= %d\n\r",
-				      stp_core_ctx.sequence.txseq);
-			STP_WARN_FUNC("Resend STP packet from %d -> %d\n\r", seq,
-				      (stp_core_ctx.sequence.txseq <=
-				       0) ? (7) : (stp_core_ctx.sequence.txseq - 1));
+			/* rxack (=last rx ack), txack (=last rx seq), txseq (=next tx seq) */
+			STP_WARN_FUNC("[stp.ctx]rxack/txack/txseq=%d/%d/%d(Resend from%d->%d)\n",
+				      stp_core_ctx.sequence.rxack,
+				      stp_core_ctx.sequence.txack,
+				      stp_core_ctx.sequence.txseq,
+				      seq,
+				      (stp_core_ctx.sequence.txseq <= 0) ? (7) :
+				      (stp_core_ctx.sequence.txseq - 1));
 			stp_dump_tx_queue(seq);
 
 			stp_send_tx_queue(seq);
