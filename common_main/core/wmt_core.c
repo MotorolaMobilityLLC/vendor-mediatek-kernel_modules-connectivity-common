@@ -1195,7 +1195,6 @@ static INT32 opfunc_func_on(P_WMT_OP pWmtOp)
 	INT32 iRet = -1;
 	INT32 iPwrOffRet = -1;
 	UINT32 drvType = pWmtOp->au4OpData[0];
-	P_DEV_WMT pWmtDev = &gDevWmt;
 
 	/* Check abnormal type */
 	if (drvType > WMTDRV_TYPE_COREDUMP) {
@@ -1245,7 +1244,6 @@ static INT32 opfunc_func_on(P_WMT_OP pWmtOp)
 						WMT_WARN_FUNC("put to activeWorker queue fail\n");
 						return -4;
 					}
-					osal_trigger_event(&pWmtDev->rWmtdWorkerWq);
 					return 0;
 				}
 				return opfunc_wlan_probe(pWmtOp);
@@ -1310,7 +1308,6 @@ static INT32 opfunc_func_off(P_WMT_OP pWmtOp)
 {
 	INT32 iRet = -1;
 	UINT32 drvType = pWmtOp->au4OpData[0];
-	P_DEV_WMT pWmtDev = &gDevWmt;
 
 	/* Check abnormal type */
 	if (drvType > WMTDRV_TYPE_COREDUMP) {
@@ -1345,7 +1342,6 @@ static INT32 opfunc_func_off(P_WMT_OP pWmtOp)
 						WMT_WARN_FUNC("put to activeWorker queue fail\n");
 						return -4;
 					}
-					osal_trigger_event(&pWmtDev->rWmtdWorkerWq);
 					return 0;
 				}
 				return opfunc_wlan_remove(pWmtOp);
