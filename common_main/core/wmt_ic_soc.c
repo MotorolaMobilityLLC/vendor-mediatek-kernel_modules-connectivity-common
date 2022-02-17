@@ -2591,7 +2591,7 @@ static INT32 wmt_stp_init_wifi_ant_swap(VOID)
 static INT32 wmt_init_wifi_config(VOID)
 {
 	INT32 iRet;
-	unsigned long addr;
+	unsigned long addr = 0;
 	WMT_GEN_CONF *pWmtGenConf;
 	struct init_script script[1];
 	struct WMT_BYTE_ARRAY *ba;
