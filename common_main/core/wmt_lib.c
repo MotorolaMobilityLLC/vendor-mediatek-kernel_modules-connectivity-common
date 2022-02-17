@@ -445,6 +445,7 @@ INT32 wmt_lib_deinit(VOID)
 	P_OSAL_THREAD pThraed;
 	INT32 i;
 	INT32 iResult;
+	struct vendor_patch_table *table = &(gDevWmt.patch_table);
 
 	pDevWmt = &gDevWmt;
 	pThraed = &gDevWmt.thread;
@@ -528,6 +529,15 @@ INT32 wmt_lib_deinit(VOID)
 #if CFG_WMT_LTE_COEX_HANDLING
 	wmt_idc_deinit();
 #endif
+
+	if (table->active_version != NULL) {
+		for (i = 0; i < table->num; i++) {
+			if (table->active_version[i])
+				osal_free(table->active_version[i]);
+		}
+		osal_free(table->active_version);
+		table->active_version = NULL;
+	}
 
 	WMT_STEP_DEINIT_FUNC();
 
@@ -3057,11 +3067,6 @@ INT32 wmt_lib_set_vendor_patch_version(struct wmt_vendor_patch *p)
 	struct vendor_patch_table *table = &(gDevWmt.patch_table);
 	struct wmt_vendor_patch *patch = table->patch;
 
-	if (table->num >= MAX_PATCH_NUM) {
-		WMT_ERR_FUNC("set vendor version exceeding limit");
-		return -1;
-	}
-
 	if (patch == NULL) {
 		INT32 init_capacity = 5;
 
@@ -3071,25 +3076,24 @@ INT32 wmt_lib_set_vendor_patch_version(struct wmt_vendor_patch *p)
 			WMT_ERR_FUNC("[oom]set vendor patch version");
 			return -1;
 		}
+
 		table->patch = patch;
 		table->capacity = init_capacity;
 		table->num = 0;
+
+		table->active_version = (PUINT8 *)osal_malloc(sizeof(PUINT8) * init_capacity);
+		if (table->active_version == NULL) {
+			osal_free(table->patch);
+			table->patch = NULL;
+			WMT_ERR_FUNC("[oom]alloc active patch");
+			return -1;
+		}
+		osal_memset(table->active_version, 0, sizeof(PUINT8) * init_capacity);
 	}
 
 	if (table->capacity == table->num) {
-		INT32 new_capacity = table->capacity + 1;
-
-		patch = (struct wmt_vendor_patch *)osal_malloc(
-			sizeof(struct wmt_vendor_patch) * new_capacity);
-		if (patch == NULL) {
-			WMT_ERR_FUNC("[oom]set vendor patch version");
-			return -1;
-		}
-		osal_memcpy(patch, table->patch,
-			sizeof(struct wmt_vendor_patch)	* table->capacity);
-		osal_free(table->patch);
-		table->patch = patch;
-		table->capacity = new_capacity;
+		WMT_ERR_FUNC("reach to limit");
+		return -1;
 	}
 
 	/* copy patch info to table */
@@ -3114,8 +3118,8 @@ INT32 wmt_lib_get_vendor_patch_version(struct wmt_vendor_patch *p)
 	}
 
 	osal_memcpy(p, &table->patch[p->id], sizeof(struct wmt_vendor_patch));
-	WMT_INFO_FUNC("get version: %s %s t:%d id:%d",
-		p->file_name, p->version, p->type, p->id);
+	WMT_INFO_FUNC("get version: %s %s t:%d",
+		p->file_name, p->version, p->type);
 	return 0;
 }
 
@@ -3130,26 +3134,53 @@ INT32 wmt_lib_get_check_patch_status(VOID)
 	return gDevWmt.patch_table.status;
 }
 
-INT32 wmt_lib_set_active_patch_version(PUINT8 version)
+INT32 wmt_lib_set_active_patch_version(struct wmt_vendor_patch *p)
 {
-	if (osal_strlen(version) >= sizeof(gDevWmt.patch_table.active_version)) {
-		WMT_ERR_FUNC("version: %s too long to set", version);
+	struct vendor_patch_table *table = &(gDevWmt.patch_table);
+
+	if (p->id < 0 || p->id >= table->num) {
+		WMT_ERR_FUNC("patch id: %s is invalid. num = %d", p->id, table->num);
 		return -1;
 	}
 
-	if (osal_strcmp(version, gDevWmt.patch_table.active_version) == 0)
+	if (table->active_version == NULL) {
+		WMT_ERR_FUNC("active version is NULL");
+		return -1;
+	}
+
+	if (table->active_version[p->id] == NULL) {
+		table->active_version[p->id] = osal_malloc(sizeof(UINT8) * (WMT_FIRMWARE_VERSION_LENGTH + 1));
+		if (table->active_version[p->id] == NULL) {
+			WMT_ERR_FUNC("oom when alloc active_version");
+			return -1;
+		}
+	} else if (osal_strcmp(p->version, table->active_version[p->id]) == 0)
 		return 0;
 
-	gDevWmt.patch_table.need_update = 1;
-	osal_strncpy(gDevWmt.patch_table.active_version, version,
-		strlen(version) + 1);
+	wmt_lib_set_need_update_patch_version(1);
+	osal_strncpy(table->active_version[p->id], p->version, WMT_FIRMWARE_VERSION_LENGTH + 1);
 	return 0;
 }
 
-INT32 wmt_lib_get_active_patch_version(PUINT8 version)
+INT32 wmt_lib_get_active_patch_version(struct wmt_vendor_patch *p)
 {
-	osal_strncpy(version, gDevWmt.patch_table.active_version,
-		strlen(gDevWmt.patch_table.active_version) + 1);
+	struct vendor_patch_table *table = &(gDevWmt.patch_table);
+	INT32 id = p->id;
+
+	if (id >= table->num || id < 0) {
+		WMT_ERR_FUNC("id %d out of range", p->id);
+		return -1;
+	}
+	if (table->active_version[id] == NULL) {
+		WMT_ERR_FUNC("active_version is null: id = %d", id);
+		return -1;
+	}
+
+	osal_memcpy(p, &table->patch[id], sizeof(struct wmt_vendor_patch));
+	osal_strncpy(p->version, table->active_version[id],
+		WMT_FIRMWARE_VERSION_LENGTH + 1);
+	WMT_INFO_FUNC("get active version: %s %s t:%d id:%d",
+		p->file_name, p->version, p->type, id);
 	return 0;
 }
 
