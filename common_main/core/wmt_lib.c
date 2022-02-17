@@ -1298,7 +1298,7 @@ static INT32 met_thread(void *pvData)
 
 	WMT_INFO_FUNC("emi phy base:%x, emi vir base:%x, met offset:%x, size:%x\n",
 			emi_info->emi_ap_phy_addr,
-			emi_met_base,
+			(unsigned int)emi_met_base,
 			emi_met_offset,
 			emi_met_size);
 
@@ -2987,7 +2987,7 @@ INT32 wmt_lib_gps_mcu_ctrl(PUINT8 p_tx_data_buf, UINT32 tx_data_len, PUINT8 p_rx
 	ENABLE_PSM_MONITOR();
 
 	if (bRet == MTK_WCN_BOOL_FALSE) {
-		WMT_WARN_FUNC("WMT_OPID_GPS_MCU_CTRL fail(%d)\n", pOp->op.au4OpData[5]);
+		WMT_WARN_FUNC("WMT_OPID_GPS_MCU_CTRL fail(%zu)\n", pOp->op.au4OpData[5]);
 		return -1;
 	}
 
