@@ -2047,14 +2047,6 @@ static INT32 opfunc_hw_rst(P_WMT_OP pWmtOp)
 
 	wmt_core_dump_func_state("BE HW RST");
     /*-->Reset WMT  data structure*/
-	/*gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_BT] = DRV_STS_POWER_OFF;*/
-	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_FM] = DRV_STS_POWER_OFF;
-	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPS] = DRV_STS_POWER_OFF;
-	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPSL5] = DRV_STS_POWER_OFF;
-	/* gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WIFI] = DRV_STS_POWER_OFF; */
-	/*gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_LPBK] = DRV_STS_POWER_OFF;*/
-	/* gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_SDIO1]= DRV_STS_POWER_OFF; */
-	/* gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_SDIO2]= DRV_STS_POWER_OFF; */
 	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_STP] = DRV_STS_POWER_OFF;
 	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_ANT] = DRV_STS_POWER_OFF;
 	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_COREDUMP] = DRV_STS_POWER_OFF;
@@ -2085,6 +2077,22 @@ static INT32 opfunc_hw_rst(P_WMT_OP pWmtOp)
 						iRet, ctrlPa1, ctrlPa2);
 		}
 		gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_BT] = DRV_STS_POWER_OFF;
+	}
+
+	if (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPS] == DRV_STS_FUNC_ON ||
+		gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPSL5] == DRV_STS_FUNC_ON ||
+		gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_FM] == DRV_STS_FUNC_ON) {
+		if (mtk_wcn_stp_is_btif_fullset_mode()) {
+			ctrlPa1 = GPS_PALDO;
+			ctrlPa2 = PALDO_OFF;
+			iRet = wmt_core_ctrl(WMT_CTRL_SOC_PALDO_CTRL, &ctrlPa1, &ctrlPa2);
+			if (iRet)
+				WMT_ERR_FUNC("WMT-CORE: wmt_ctrl_soc_paldo_ctrl failed(%d)(%lu)(%lu)\n",
+						iRet, ctrlPa1, ctrlPa2);
+		}
+		gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_FM] = DRV_STS_POWER_OFF;
+		gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPS] = DRV_STS_POWER_OFF;
+		gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPSL5] = DRV_STS_POWER_OFF;
 	}
 
 	iRet = wmt_lib_wlan_lock_aquire();
@@ -2138,6 +2146,8 @@ static INT32 opfunc_hw_rst(P_WMT_OP pWmtOp)
 		gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WIFI] = DRV_STS_POWER_OFF;
 	}
 	wmt_lib_wlan_lock_release();
+
+	mtk_wcn_wmt_system_state_reset();
 
 	if (gMtkWmtCtx.wmtHifConf.hifType == WMT_HIF_SDIO) {
 		ctrlPa1 = WMT_SDIO_FUNC_STP;
