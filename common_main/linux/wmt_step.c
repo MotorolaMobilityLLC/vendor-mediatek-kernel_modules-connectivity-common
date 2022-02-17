@@ -1930,6 +1930,7 @@ static int _wmt_step_do_emi_action(struct step_emi_info *p_emi_info, STEP_DO_EXT
 static bool wmt_step_reg_readable(struct step_reigster_info *p_reg_info)
 {
 	phys_addr_t phy_addr;
+	SIZE_T vir_addr;
 
 	if (p_reg_info->address_type == STEP_REGISTER_PHYSICAL_ADDRESS) {
 		phy_addr = p_reg_info->address + p_reg_info->offset;
@@ -1944,8 +1945,10 @@ static bool wmt_step_reg_readable(struct step_reigster_info *p_reg_info)
 		    p_reg_info->address_type == STEP_REGISTER_CFG_ON_BASE ||
 		    p_reg_info->address_type == STEP_REGISTER_HIF_ON_BASE ||
 		    p_reg_info->address_type == STEP_MCU_TOP_MISC_ON_BASE ||
-		    p_reg_info->address_type == STEP_CIRQ_BASE)
-			return wmt_lib_reg_readable();
+		    p_reg_info->address_type == STEP_CIRQ_BASE) {
+			vir_addr = p_reg_info->address + p_reg_info->offset;
+			return wmt_lib_reg_readable_by_addr(vir_addr);
+		}
 	}
 
 	return 1;
