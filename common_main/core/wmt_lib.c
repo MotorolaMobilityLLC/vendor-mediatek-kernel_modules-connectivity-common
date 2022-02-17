@@ -105,8 +105,8 @@ struct assert_work_st {
 
 static struct assert_work_st wmt_assert_work;
 
-static INT32 g_bt_no_acl_link;
-static INT32 g_bt_no_br_acl_link;
+static INT32 g_bt_no_acl_link = 1;
+static INT32 g_bt_no_br_acl_link = 1;
 
 #define CONSYS_MET_WAIT	(1000*10) /* ms */
 #define MET_DUMP_MAX_NUM (1)
@@ -115,6 +115,8 @@ static INT32 g_bt_no_br_acl_link;
 #define EMI_MET_WRITE_OFFSET	0x4
 #define EMI_MET_DATA_OFFSET	0x8
 #define FW_PATCH_UPDATE_RST_DURATION 180 /* 180 seconds */
+
+#define WMT_LIB_DMP_CONSYS_MAX_TIMES 10
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -348,6 +350,10 @@ INT32 wmt_lib_init(VOID)
 	osal_sleepable_lock_init(&pDevWmt->rFreeOpQ.sLock);
 	pDevWmt->state.data = 0;
 
+	atomic_set(&pDevWmt->state_dmp_req.version, 0);
+	for (i = 0; i < WMT_LIB_DMP_SLOT; i++)
+		osal_sleepable_lock_init(&(pDevWmt->state_dmp_req.consys_ops[i].lock));
+
 	/* Initialize op queue */
 	RB_INIT(&pDevWmt->rFreeOpQ, WMT_OP_BUF_SIZE);
 	RB_INIT(&pDevWmt->rActiveOpQ, WMT_OP_BUF_SIZE);
@@ -513,6 +519,10 @@ INT32 wmt_lib_deinit(VOID)
 	osal_sleepable_lock_deinit(&pDevWmt->wlan_lock);
 	osal_sleepable_lock_deinit(&pDevWmt->assert_lock);
 	osal_sleepable_lock_deinit(&pDevWmt->psm_lock);
+
+	for (i = 0; i < WMT_LIB_DMP_SLOT; i++)
+		osal_sleepable_lock_deinit(&(pDevWmt->state_dmp_req.consys_ops[i].lock));
+
 	osal_event_deinit(&pDevWmt->rWmtdWq);
 	osal_event_deinit(&pDevWmt->rWmtdWorkerWq);
 
@@ -2415,6 +2425,7 @@ ENUM_WMTRSTRET_TYPE_T wmt_lib_cmb_rst(ENUM_WMTRSTSRC_TYPE_T src)
 rstDone:
 	osal_clear_bit(WMT_STAT_RST_ON, &pDevWmt->state);
 	chip_reset_only = 0;
+	mtk_wcn_consys_sleep_info_restore();
 	return retval;
 }
 
@@ -2670,6 +2681,10 @@ PUINT8 wmt_lib_get_cpupcr_xml_format(PUINT32 pLen)
 	return &g_cpupcr_buf[0];
 }
 
+
+/**
+ * called by wmt_dev wmt_dev_proc_for_dump_info_read
+ */
 PUINT8 wmt_lib_get_cpupcr_reg_info(PUINT32 pLen, PUINT32 consys_reg)
 {
 	osal_memset(&g_cpupcr_buf[0], 0, WMT_STP_CPUPCR_BUF_SIZE);
@@ -3246,32 +3261,93 @@ VOID wmt_lib_trigger_assert_keyword_delay(ENUM_WMTDRV_TYPE_T type, UINT32 reason
 	schedule_work(&(a->work));
 }
 
-INT32 wmt_lib_resume_dump_info(VOID)
+INT32 wmt_lib_dmp_consys_state(P_CONSYS_STATE_DMP_INFO dmp_info,
+			unsigned int cpupcr_times, unsigned int slp_ms)
 {
 	P_OSAL_OP pOp;
-	MTK_WCN_BOOL bRet;
+	MTK_WCN_BOOL bRet = MTK_WCN_BOOL_TRUE;
 	P_OSAL_SIGNAL pSignal;
+	P_CONSYS_STATE_DMP_OP dmp_op = NULL;
+	P_CONSYS_STATE_DMP_OP tmp_op;
+	int i, wait_ms = 1000, tmp;
+	struct consys_state_dmp_req *p_req = &gDevWmt.state_dmp_req;
 
-	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_WHEN_AP_RESUME);
 
-	if (mtk_consys_check_reg_readable() == 0)
-		return MTK_WCN_BOOL_TRUE;
+	if (cpupcr_times > WMT_LIB_DMP_CONSYS_MAX_TIMES) {
+		pr_warn("dump too many times [%d]\n", cpupcr_times);
+		return MTK_WCN_BOOL_FALSE;
+	}
+
+	/* make sure:						*/
+	/* 1. consys already power on		*/
+	/* 2. consys register is readable	*/
+	if (wmt_lib_get_drv_status(WMTDRV_TYPE_WMT) != DRV_STS_FUNC_ON
+			|| osal_test_bit(WMT_STAT_PWR, &gDevWmt.state) == 0) {
+		return MTK_WCN_BOOL_FALSE;
+	}
+
+	for (i = 0; i < WMT_LIB_DMP_SLOT; i++) {
+		tmp_op = &p_req->consys_ops[i];
+		if (osal_trylock_sleepable_lock(&tmp_op->lock) == 1) {
+			if (tmp_op->status == WMT_DUMP_STATE_NONE) {
+				tmp = atomic_add_return(1, &p_req->version);
+				dmp_op = tmp_op;
+				dmp_op->status = WMT_DUMP_STATE_SCHEDULED;
+				dmp_op->version = tmp;
+			}
+			osal_unlock_sleepable_lock(&tmp_op->lock);
+			if (dmp_op != NULL)
+				break;
+		}
+	}
+
+	if (dmp_op == NULL)
+		return MTK_WCN_BOOL_FALSE;
+
+	memset(&dmp_op->dmp_info, 0, sizeof(struct consys_state_dmp_info));
+	dmp_op->times = cpupcr_times > WMT_CORE_DMP_CPUPCR_NUM ?
+				WMT_CORE_DMP_CPUPCR_NUM : cpupcr_times;
+	dmp_op->cpu_sleep_ms = slp_ms;
 
 	pOp = wmt_lib_get_free_op();
-
 	if (!pOp) {
-		WMT_DBG_FUNC("get_free_lxop fail\n");
-		return MTK_WCN_BOOL_FALSE;
+		WMT_DBG_FUNC("get_free_op fail\n");
+		bRet = MTK_WCN_BOOL_FALSE;
+		goto err;
 	}
+
+	tmp = cpupcr_times * slp_ms;
+	if (wait_ms < tmp)
+		wait_ms = tmp + 300;
+
 	pSignal = &pOp->signal;
-	pOp->op.opId = WMT_OPID_RESUME_DUMP_INFO;
-	pSignal->timeoutValue = 0;
+	pOp->op.opId = WMT_OPID_GET_CONSYS_STATE;
+	pOp->op.au4OpData[0] = (SIZE_T)dmp_op;
+	pOp->op.au4OpData[1] = (SIZE_T)dmp_op->version;
+	pSignal->timeoutValue = wait_ms;
 
 	bRet = wmt_lib_put_act_op(pOp);
+
 	if (bRet == MTK_WCN_BOOL_FALSE) {
-		WMT_WARN_FUNC("WMT_OPID_RESUME_DUMP_INFO failed\n");
-		return MTK_WCN_BOOL_FALSE;
+		WMT_WARN_FUNC("WMT_OPID_GET_CONSYS_STATE failed\n");
+		goto err;
 	}
 
-	return MTK_WCN_BOOL_TRUE;
+	memcpy(dmp_info, &dmp_op->dmp_info, sizeof(struct consys_state_dmp_info));
+err:
+	osal_lock_sleepable_lock(&dmp_op->lock);
+	dmp_op->status = WMT_DUMP_STATE_NONE;
+	osal_unlock_sleepable_lock(&dmp_op->lock);
+	return bRet;
 }
+
+INT32 wmt_lib_reg_readable(VOID)
+{
+	if (wmt_lib_get_drv_status(WMTDRV_TYPE_WMT) != DRV_STS_FUNC_ON
+			|| osal_test_bit(WMT_STAT_PWR, &gDevWmt.state) == 0) {
+		return MTK_WCN_BOOL_FALSE;
+	}
+	return mtk_consys_check_reg_readable();
+}
+
+
