@@ -136,6 +136,7 @@ static INT32 opfunc_set_mcu_clk(P_WMT_OP pWmtOp);
 static INT32 opfunc_adie_lpbk_test(P_WMT_OP pWmtOp);
 static INT32 wmt_core_gen2_set_mcu_clk(UINT32 kind);
 static INT32 wmt_core_gen3_set_mcu_clk(UINT32 kind);
+static INT32 wmt_core_set_mcu_clk(UINT32 kind);
 static VOID wmt_core_dump_func_state(PINT8 pSource);
 static INT32 wmt_core_stp_init(VOID);
 static INT32 wmt_core_trigger_assert(VOID);
@@ -2548,6 +2549,58 @@ static INT32 wmt_core_gen3_set_mcu_clk(UINT32 kind)
 	return fgFail;
 }
 
+static INT32 wmt_core_set_mcu_clk(UINT32 kind)
+{
+	INT32 iRet = -1;
+	UINT32 u4WrittenSize = 0;
+	UINT32 u4ReadSize = 0;
+	UINT8 evt_buffer[12] = { 0 };
+	MTK_WCN_BOOL fgFail;
+
+	UINT8 WMT_SET_MCU_CLK_CMD[] = { 0x01, 0x0a, 0x04, 0x00, 0x09, 0x03, 0x00, 0x00 };
+	UINT8 WMT_SET_MCU_CLK_EVT[] = { 0x02, 0x0a, 0x01, 0x00, 0x00 };
+
+
+	WMT_INFO_FUNC("clock frequency 0x%x\n", kind);
+	WMT_SET_MCU_CLK_CMD[6] = (kind & 0xff);
+
+	do {
+		fgFail = MTK_WCN_BOOL_TRUE;
+
+		iRet = wmt_core_tx(&WMT_SET_MCU_CLK_CMD[0], osal_sizeof(WMT_SET_MCU_CLK_CMD), &u4WrittenSize,
+				   MTK_WCN_BOOL_FALSE);
+		if (iRet || (u4WrittenSize != osal_sizeof(WMT_SET_MCU_CLK_CMD))) {
+			WMT_ERR_FUNC("WMT_SET_MCU_CLK_CMD fail(%d),size(%d)\n", iRet, u4WrittenSize);
+			break;
+		}
+
+		iRet = wmt_core_rx(evt_buffer, osal_sizeof(WMT_SET_MCU_CLK_EVT), &u4ReadSize);
+		if (iRet || (u4ReadSize != osal_sizeof(WMT_SET_MCU_CLK_EVT))) {
+			WMT_ERR_FUNC("WMT_SET_MCU_CLK_EVT fail(%d),size(%d)\n", iRet, u4ReadSize);
+			mtk_wcn_stp_dbg_dump_package();
+			break;
+		}
+
+		if (osal_memcmp(evt_buffer, WMT_SET_MCU_CLK_EVT, osal_sizeof(WMT_SET_MCU_CLK_EVT)) != 0) {
+			WMT_ERR_FUNC("WMT_SET_MCU_CLK_EVT compare fail, [0-3]:0x%02x,0x%02x,0x%02x,0x%02x\n",
+				     evt_buffer[0], evt_buffer[1], evt_buffer[2], evt_buffer[3]);
+			WMT_ERR_FUNC("WMT_SET_MCU_CLK_EVT compare fail, [4-7]:0x%02x,0x%02x,0x%02x,0x%02x\n",
+				     evt_buffer[4], evt_buffer[5], evt_buffer[6], evt_buffer[7]);
+			break;
+		}
+
+		fgFail = MTK_WCN_BOOL_FALSE;
+
+	} while (0);
+
+	if (fgFail == MTK_WCN_BOOL_FALSE)
+		WMT_INFO_FUNC("wmt-core:set mcu clock ok!\n");
+	else
+		WMT_INFO_FUNC("wmt-core:set mcu clock fail!\n");
+
+	return fgFail;
+}
+
 static INT32 opfunc_set_mcu_clk(P_WMT_OP pWmtOp)
 {
 	UINT32 kind = 0;
@@ -2564,8 +2617,11 @@ static INT32 opfunc_set_mcu_clk(P_WMT_OP pWmtOp)
 	case 1:
 		ret = wmt_core_gen3_set_mcu_clk(kind);
 		break;
+	case 2:
+		ret = wmt_core_set_mcu_clk(kind);
+		break;
 	default:
-		WMT_ERR_FUNC("wmt-core: version(%d) is not gen2 or gen3!\n", version);
+		WMT_ERR_FUNC("wmt-core: version(%d) is not support!\n", version);
 		ret = MTK_WCN_BOOL_TRUE;
 	}
 
