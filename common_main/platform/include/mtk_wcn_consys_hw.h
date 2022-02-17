@@ -253,6 +253,7 @@ typedef VOID(*CONSYS_IC_EMI_ENTRY_ADDRESS) (VOID);
 typedef VOID(*CONSYS_IC_SET_XO_OSC_CTRL) (VOID);
 typedef VOID(*CONSYS_IC_IDENTIFY_ADIE) (VOID);
 typedef VOID(*CONSYS_IC_WIFI_CTRL_SETTING) (VOID);
+typedef VOID(*CONSYS_IC_WIFI_CTRL_SWITCH_CONN_MODE) (VOID);
 typedef VOID(*CONSYS_IC_BUS_TIMEOUT_CONFIG) (VOID);
 typedef VOID(*CONSYS_IC_SET_ACCESS_EMI_HW_MODE) (VOID);
 typedef INT32(*CONSYS_IC_DUMP_GATING_STATE) (P_CONSYS_STATE state);
@@ -260,6 +261,7 @@ typedef INT32(*CONSYS_IC_SLEEP_INFO_ENABLE_CTRL) (UINT32 enable);
 typedef INT32(*CONSYS_IC_SLEEP_INFO_READ_CTRL) (WMT_SLEEP_COUNT_TYPE type, PUINT64 sleep_counter, PUINT64 sleep_timer);
 typedef INT32(*CONSYS_IC_SLEEP_INFO_CLEAR) (VOID);
 typedef UINT64(*CONSYS_IC_GET_OPTIONS) (VOID);
+typedef INT32(*CONSYS_IC_POLLING_GOTO_IDLE) (VOID);
 
 typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_CLOCK_BUFFER_CTRL consys_ic_clock_buffer_ctrl;
@@ -317,6 +319,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_SET_XO_OSC_CTRL consys_ic_set_xo_osc_ctrl;
 	CONSYS_IC_IDENTIFY_ADIE consys_ic_identify_adie;
 	CONSYS_IC_WIFI_CTRL_SETTING consys_ic_wifi_ctrl_setting;
+	CONSYS_IC_WIFI_CTRL_SWITCH_CONN_MODE consys_ic_wifi_ctrl_switch_conn_mode;
 	CONSYS_IC_BUS_TIMEOUT_CONFIG consys_ic_bus_timeout_config;
 	CONSYS_IC_SET_ACCESS_EMI_HW_MODE consys_ic_set_access_emi_hw_mode;
 	CONSYS_IC_DUMP_GATING_STATE consys_ic_dump_gating_state;
@@ -324,6 +327,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_SLEEP_INFO_READ_CTRL consys_ic_sleep_info_read_ctrl;
 	CONSYS_IC_SLEEP_INFO_CLEAR consys_ic_sleep_info_clear;
 	CONSYS_IC_GET_OPTIONS consys_ic_get_options;
+	CONSYS_IC_POLLING_GOTO_IDLE consys_ic_polling_goto_idle;
 } WMT_CONSYS_IC_OPS, *P_WMT_CONSYS_IC_OPS;
 /*******************************************************************************
 *                            P U B L I C   D A T A

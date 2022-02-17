@@ -1184,6 +1184,7 @@ static INT32 _wmt_soc_mode_ctrl(UINT32 mode)
 static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 {
 	INT32 iRet = -1;
+	INT32 retry = 3;
 	unsigned long ctrlPa1;
 	unsigned long ctrlPa2;
 	UINT32 hw_ver;
@@ -1213,7 +1214,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	    || (pWmtHifConf == NULL)
 	    ) {
 		WMT_ERR_FUNC("null pointers: gp_soc_info(0x%p), pWmtHifConf(0x%p)\n", gp_soc_info, pWmtHifConf);
-		return -1;
+		return -WMT_ERRCODE_NULL_FUNC_POINTER;
 	}
 
 	hw_ver = gp_soc_info->u4HwVer;
@@ -1224,13 +1225,15 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		emiInfo = mtk_wcn_consys_soc_get_emi_phy_add();
 		if (!emiInfo) {
 			WMT_ERR_FUNC("get emi info fail!\n");
-			return -1;
+			return -WMT_ERRCODE_EMI_NOT_READY;
 		}
 		/* non-PDA mode, enable full mode before patch download */
 		if (!emiInfo->pda_dl_patch_flag) {
 			iRet = _wmt_soc_mode_ctrl(MTKSTP_BTIF_FULL_MODE);
-			if (iRet)
-				return iRet;
+			if (iRet) {
+				WMT_ERR_FUNC("config btif full mode fail!\n");
+				return -WMT_ERRCODE_STP_CONFIG_FAIL;
+			}
 		}
 	}
 
@@ -1247,8 +1250,10 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	if (wmt_ic_ops_soc.options & OPT_POWER_ON_DLM_TABLE) {
 		iRet = wmt_core_init_script(wmt_power_on_dlm_table,
 				osal_array_size(wmt_power_on_dlm_table));
-		if (iRet)
+		if (iRet) {
 			WMT_ERR_FUNC("wmt_power_on_dlm_table fail(%d)\n", iRet);
+			return -WMT_ERRCODE_INIT_DLM_TABLE_FAIL;
+		}
 		WMT_DBG_FUNC("wmt_power_on_dlm_table ok\n");
 	}
 #endif
@@ -1259,28 +1264,33 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	/* If patch number is 0, it's first time connys power on */
 	if ((wmt_ic_ops_soc.options & OPT_DISABLE_ROM_PATCH_DWN) == 0) {
 		patch_num = mtk_wcn_soc_get_patch_num();
-		if (patch_num == 0 || wmt_lib_get_patch_info() == NULL) {
-			iRet = mtk_wcn_soc_patch_info_prepare();
-			if (iRet) {
-				WMT_ERR_FUNC("patch info perpare fail(%d)\n", iRet);
-				return -6;
+		while (patch_num == 0 || wmt_lib_get_patch_info() == NULL) {
+			if (retry-- <= 0) {
+				WMT_ERR_FUNC("patch info retry fail, patch num = %d\n", patch_num);
+				return -WMT_ERRCODE_PATCH_INFO_FAIL;
 			}
+			iRet = mtk_wcn_soc_patch_info_prepare();
+			if (iRet)
+				WMT_ERR_FUNC("patch info perpare fail(%d)\n", iRet);
 			patch_num = mtk_wcn_soc_get_patch_num();
-			WMT_INFO_FUNC("patch total num = [%d]\n", patch_num);
 		}
-	} else {
+		WMT_INFO_FUNC("patch total num = [%d]\n", patch_num);
+	} else
 		patch_num = 0;
-	}
 #if CFG_WMT_PATCH_DL_OPTM
 	if (patch_num != 0) {
 		if (wmt_ic_ops_soc.options & OPT_SET_MCUCLK_TABLE_1_2) {
 			iRet = wmt_core_init_script(set_mcuclk_table_1, osal_array_size(set_mcuclk_table_1));
-			if (iRet)
+			if (iRet) {
 				WMT_ERR_FUNC("set_mcuclk_table_1 fail(%d)\n", iRet);
+				return -WMT_ERRCODE_INIT_MCUCLK_TABLE_FAIL;
+			}
 		} else if (wmt_ic_ops_soc.options & OPT_SET_MCUCLK_TABLE_3_4) {
 			iRet = wmt_core_init_script(set_mcuclk_table_3, osal_array_size(set_mcuclk_table_3));
-			if (iRet)
+			if (iRet) {
 				WMT_ERR_FUNC("set_mcuclk_table_3 fail(%d)\n", iRet);
+				return -WMT_ERRCODE_INIT_MCUCLK_TABLE_FAIL;
+			}
 		}
 	}
 #endif
@@ -1290,7 +1300,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		iRet = mtk_wcn_soc_patch_dwn(patch_index);
 		if (iRet) {
 			WMT_ERR_FUNC("patch dwn fail (%d),patch_index(%d)\n", iRet, patch_index);
-			return -7;
+			return -WMT_ERRCODE_PATCH_DWN_FAIL;
 		}
 		if (patch_index == (patch_num - 1))
 			WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_BEFORE_CONNSYS_RESET);
@@ -1298,7 +1308,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		iRet = wmt_core_init_script(init_table_3, osal_array_size(init_table_3));
 		if (iRet) {
 			WMT_ERR_FUNC("init_table_3 fail(%d)\n", iRet);
-			return -8;
+			return -WMT_ERRCODE_PATCH_DWN_FAIL;
 		}
 	}
 
@@ -1306,12 +1316,16 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	if (patch_num != 0) {
 		if (wmt_ic_ops_soc.options & OPT_SET_MCUCLK_TABLE_1_2) {
 			iRet = wmt_core_init_script(set_mcuclk_table_2, osal_array_size(set_mcuclk_table_2));
-			if (iRet)
+			if (iRet) {
 				WMT_ERR_FUNC("set_mcuclk_table_2 fail(%d)\n", iRet);
+				return -WMT_ERRCODE_INIT_MCUCLK_TABLE_FAIL;
+			}
 		} else if (wmt_ic_ops_soc.options & OPT_SET_MCUCLK_TABLE_3_4) {
 			iRet = wmt_core_init_script(set_mcuclk_table_4, osal_array_size(set_mcuclk_table_4));
-			if (iRet)
+			if (iRet) {
 				WMT_ERR_FUNC("set_mcuclk_table_4 fail(%d)\n", iRet);
+				return -WMT_ERRCODE_INIT_MCUCLK_TABLE_FAIL;
+			}
 		}
 	}
 #endif
@@ -1330,7 +1344,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		iRet = wmt_core_init_script(init_table_3, osal_array_size(init_table_3));
 		if (iRet) {
 			WMT_ERR_FUNC("init_table_3 fail(%d)\n", iRet);
-			return -8;
+			return -WMT_ERRCODE_INIT_RESET_CMD_FAIL;
 		}
 	}
 #endif
@@ -1339,8 +1353,10 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	if (pWmtHifConf->hifType == WMT_HIF_BTIF &&
 	    emiInfo->pda_dl_patch_flag) {
 		iRet = _wmt_soc_mode_ctrl(MTKSTP_BTIF_FULL_MODE);
-		if (iRet)
-			return iRet;
+		if (iRet) {
+			WMT_ERR_FUNC("config btif full mode fail!\n");
+			return -WMT_ERRCODE_STP_CONFIG_FAIL;
+		}
 	}
 
 	chipid = wmt_plat_get_soc_chipid();
@@ -1360,14 +1376,14 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 #else
 			osal_dbg_assert_aee("Connsys A-die is not exist", "Please check Connsys A-die\0");
 #endif
-			return -21;
+			return -WMT_ERRCODE_ADIE_NOT_EXIST;
 		}
 	}
 
 	iRet = wmt_init_wifi_config();
 	if (iRet) {
 		WMT_ERR_FUNC("init_wifi_config fail(%d)\n", iRet);
-		return -22;
+		return -WMT_ERRCODE_INIT_WIFI_CONFIG_FAIL;
 	}
 
 #ifdef CFG_WMT_READ_EFUSE_VCN33
@@ -1443,7 +1459,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 
 	if (iRet) {
 		WMT_ERR_FUNC("init_epa fail(%d)\n", iRet);
-		return -20;
+		return -WMT_ERRCODE_INIT_EPA_FAIL;
 	}
 
 	/* for chip 0x6779 */
@@ -1451,13 +1467,13 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 
 	if (iRet) {
 		WMT_ERR_FUNC("init_epa_elna fail(%d)\n", iRet);
-		return -22;
+		return -WMT_ERRCODE_INIT_EPA_ELNA_FAIL;
 	}
 
 	iRet = wmt_stp_init_epa_elna_invert_cr();
 	if (iRet) {
 		WMT_ERR_FUNC("init_invert_cr fail(%d)\n", iRet);
-		return -23;
+		return -WMT_ERRCODE_INIT_EPA_ELNA_INVERT_CR_FAIL;
 	}
 
 	/* init coex before start RF calibration */
@@ -1465,7 +1481,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		iRet = wmt_stp_init_coex();
 		if (iRet) {
 			WMT_ERR_FUNC("init_coex fail(%d)\n", iRet);
-			return -10;
+			return -WMT_ERRCODE_INIT_COEX_FAIL;
 		}
 		WMT_DBG_FUNC("init_coex ok\n");
 	}
@@ -1481,7 +1497,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	iRet = mtk_wcn_soc_calibration();
 	if (iRet) {
 		WMT_ERR_FUNC("calibration failed\n");
-		return -9;
+		return -WMT_ERRCODE_CALIBRATION_FAIL;
 	}
 
 	/* turn off VCN28 after reading efuse */
@@ -1493,7 +1509,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		iRet = wmt_stp_init_coex();
 		if (iRet) {
 			WMT_ERR_FUNC("init_coex fail(%d)\n", iRet);
-			return -10;
+			return -WMT_ERRCODE_INIT_COEX_FAIL;
 		}
 		WMT_DBG_FUNC("init_coex ok\n");
 	}
@@ -1560,7 +1576,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 			iRet = wmt_core_init_script(osc_type_table, osal_array_size(osc_type_table));
 			if (iRet) {
 				WMT_ERR_FUNC("osc_type_table fail(%d), goes on\n", iRet);
-				return -11;
+				return -WMT_ERRCODE_INIT_COCLOCK_TYPE_FAIL;
 			}
 		} else {
 			WMT_WARN_FUNC("co-clock disabled.\n");
@@ -1570,7 +1586,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	iRet = wmt_core_init_script(merge_pcm_table, osal_array_size(merge_pcm_table));
 	if (iRet) {
 		WMT_ERR_FUNC("merge_pcm_table fail(%d), goes on\n", iRet);
-		return -12;
+		return -WMT_ERRCODE_INIT_MERGE_PCM_TABLE_FAIL;
 	}
 #endif
 
@@ -1580,7 +1596,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	iRet = wmt_core_init_script(init_table_5_1, osal_array_size(init_table_5_1));
 	if (iRet) {
 		WMT_ERR_FUNC("init_table_5_1 fm mode(%d) fail(%d)\n", pWmtHifConf->au4StrapConf[0], iRet);
-		return -13;
+		return -WMT_ERRCODE_INIT_FM_MODE_FAIL;
 	}
 	WMT_DBG_FUNC("set fm mode (%d) ok\n", pWmtHifConf->au4StrapConf[0]);
 
@@ -1588,20 +1604,16 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	iRet = wmt_core_init_script(set_registers, osal_array_size(set_registers));
 	if (iRet) {
 		WMT_ERR_FUNC("set_registers fail(%d)", iRet);
-		return -14;
+		return -WMT_ERRCODE_INIT_SET_REGISTER_FAIL;
 	}
 #endif
 
-#if CFG_WMT_COREDUMP_ENABLE
-	/*Open Core Dump Function @QC begin */
-	mtk_wcn_stp_coredump_flag_ctrl(1);
-#endif
 	if (wmt_ic_ops_soc.options & OPT_SET_COREDUMP_LEVEL) {
 		if (mtk_wcn_stp_coredump_flag_get() != 0) {
 			iRet = wmt_core_init_script(init_table_6, osal_array_size(init_table_6));
 			if (iRet) {
 				WMT_ERR_FUNC("init_table_6 core dump setting fail(%d)\n", iRet);
-				return -15;
+				return -WMT_ERRCODE_INIT_SET_COREDUMP_FAIL;
 			}
 			WMT_DBG_FUNC("enable soc_consys firmware coredump\n");
 		} else {
@@ -1619,7 +1631,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 				MTK_WCN_BOOL_FALSE);
 		if (iRet || (u4Res != sizeof(WMT_GET_SOC_ADIE_CHIPID_CMD))) {
 			WMT_ERR_FUNC("wmt_core:read A die chipid CMD fail(%d),size(%d)\n", iRet, u4Res);
-			return -16;
+			return -WMT_ERRCODE_READ_ADIE_TX_CMD_FAIL;
 		}
 		osal_memset(evtbuf, 0, sizeof(evtbuf));
 		iRet = wmt_core_rx(evtbuf, sizeof(WMT_GET_SOC_ADIE_CHIPID_EVT), &u4Res);
@@ -1633,7 +1645,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 					WMT_GET_SOC_ADIE_CHIPID_EVT[3],
 					WMT_GET_SOC_ADIE_CHIPID_EVT[4]);
 			mtk_wcn_stp_dbg_dump_package();
-			return -17;
+			return -WMT_ERRCODE_READ_ADIE_RX_EVT_FAIL;
 		}
 
 		osal_memcpy(&aDieChipid, &evtbuf[u4Res - 2], 2);
@@ -1669,7 +1681,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		iRet = wmt_ctrl(&ctrlData);
 		if (iRet < 0) {
 			WMT_ERR_FUNC("wmt_core: read PMIC chipid fail(%d)\n", iRet);
-			return -18;
+			return -WMT_ERRCODE_READ_PMIC_CHIPID_FAIL;
 		}
 		pmicChipid = ctrlData.au4CtrlData[2];
 		WMT_INFO_FUNC("current PMIC chipid(0x%x)\n", pmicChipid);
@@ -1715,8 +1727,8 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	ctrlData.au4CtrlData[2] = (SIZE_T) &gp_soc_patch_info;
 	iRet = wmt_ctrl(&ctrlData);
 	if (iRet) {
-		WMT_ERR_FUNC("set dump info fail(%d)\n", iRet);
-		return -19;
+		WMT_ERR_FUNC("set stp dbg info fail(%d)\n", iRet);
+		return -WMT_ERRCODE_SET_STP_DBG_INFO_FAIL;
 	}
 #endif
 
