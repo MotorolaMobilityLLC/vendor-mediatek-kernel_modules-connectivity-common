@@ -213,6 +213,7 @@ typedef INT32(*CONSYS_IC_HW_VCN28_CTRL) (UINT32 enable);
 typedef INT32(*CONSYS_IC_HW_WIFI_VCN33_CTRL) (UINT32 enable);
 typedef INT32(*CONSYS_IC_HW_BT_VCN33_CTRL) (UINT32 enable);
 typedef UINT32(*CONSYS_IC_SOC_CHIPID_GET) (VOID);
+typedef INT32(*CONSYS_IC_ADIE_CHIPID_DETECT) (VOID);
 typedef INT32(*CONSYS_IC_EMI_MPU_SET_REGION_PROTECTION) (VOID);
 typedef UINT32(*CONSYS_IC_EMI_SET_REMAPPING_REG) (VOID);
 typedef INT32(*IC_BT_WIFI_SHARE_V33_SPIN_LOCK_INIT) (VOID);
@@ -274,6 +275,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_HW_WIFI_VCN33_CTRL consys_ic_hw_wifi_vcn33_ctrl;
 	CONSYS_IC_HW_BT_VCN33_CTRL consys_ic_hw_bt_vcn33_ctrl;
 	CONSYS_IC_SOC_CHIPID_GET consys_ic_soc_chipid_get;
+	CONSYS_IC_ADIE_CHIPID_DETECT consys_ic_adie_chipid_detect;
 	CONSYS_IC_EMI_MPU_SET_REGION_PROTECTION consys_ic_emi_mpu_set_region_protection;
 	CONSYS_IC_EMI_SET_REMAPPING_REG consys_ic_emi_set_remapping_reg;
 	IC_BT_WIFI_SHARE_V33_SPIN_LOCK_INIT ic_bt_wifi_share_v33_spin_lock_init;
@@ -380,6 +382,8 @@ UINT32 mtk_wcn_consys_jtag_flag_ctrl(UINT32 en);
 UINT32 mtk_wcn_consys_hw_osc_en_ctrl(UINT32 en);
 #endif
 UINT32 mtk_wcn_consys_soc_chipid(VOID);
+UINT32 mtk_wcn_consys_get_adie_chipid(VOID);
+INT32 mtk_wcn_consys_detect_adie_chipid(UINT32 co_clock_type);
 #if !defined(CONFIG_MTK_GPIO_LEGACY)
 struct pinctrl *mtk_wcn_consys_get_pinctrl(VOID);
 #endif
