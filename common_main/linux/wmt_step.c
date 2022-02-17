@@ -1964,7 +1964,15 @@ int _wmt_step_do_register_action(struct step_reigster_info *p_reg_info, STEP_DO_
 			WMT_ERR_FUNC("STEP failed: Wake up, continue to show register\n");
 	}
 
+	if (wmt_lib_power_lock_trylock() == 0) {
+		WMT_INFO_FUNC("STEP failed: can't get lock\n");
+		if (is_wakeup == 1)
+			ENABLE_PSM_MONITOR();
+		return -1;
+	}
+
 	if (!wmt_step_reg_readable(p_reg_info)) {
+		wmt_lib_power_lock_release();
 		WMT_ERR_FUNC("STEP failed: register cant read (No clock)\n");
 		if (is_wakeup == 1)
 			ENABLE_PSM_MONITOR();
@@ -1976,6 +1984,7 @@ int _wmt_step_do_register_action(struct step_reigster_info *p_reg_info, STEP_DO_
 		ret = wmt_step_do_write_register_action(p_reg_info, func_do_extra);
 	else
 		ret = wmt_step_do_read_register_action(p_reg_info, func_do_extra);
+	wmt_lib_power_lock_release();
 
 	if (is_wakeup == 1)
 		ENABLE_PSM_MONITOR();
