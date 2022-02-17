@@ -50,6 +50,13 @@
 #define WMT_EMI_DEBUG_BUF_SIZE (32*1024)
 #endif
 
+struct wmt_dbg_work {
+	struct work_struct work;
+	INT32 x;
+	INT32 y;
+	INT32 z;
+};
+
 static struct proc_dir_entry *gWmtDbgEntry;
 COEX_BUF gCoexBuf;
 static UINT8 gEmiBuf[WMT_EMI_DEBUG_BUF_SIZE];
@@ -1414,6 +1421,38 @@ err_exit:
 	return retval;
 }
 
+static VOID delay_work_func(struct work_struct *work)
+{
+	struct wmt_dbg_work *dbgWork = container_of(work, struct wmt_dbg_work, work);
+
+	if (!dbgWork) {
+		WMT_ERR_FUNC("fail to get dbgWork");
+		return;
+	}
+
+	(*wmt_dev_dbg_func[dbgWork->x]) (dbgWork->x, dbgWork->y, dbgWork->z);
+
+	kvfree(dbgWork);
+}
+
+static VOID wmt_dbg_delay_work(INT32 x, INT32 y, INT32 z)
+{
+	struct wmt_dbg_work *dbgWork;
+
+	dbgWork = kmalloc(sizeof(struct wmt_dbg_work), GFP_KERNEL);
+	if (!dbgWork) {
+		WMT_ERR_FUNC("fail to allocate memory");
+		return;
+	}
+
+	dbgWork->x = x;
+	dbgWork->y = y;
+	dbgWork->z = z;
+
+	INIT_WORK(&dbgWork->work, delay_work_func);
+	schedule_work(&dbgWork->work);
+}
+
 ssize_t wmt_dbg_write(struct file *filp, const char __user *buffer, size_t count, loff_t *f_pos)
 {
 	ULONG len = count;
@@ -1496,7 +1535,10 @@ ssize_t wmt_dbg_write(struct file *filp, const char __user *buffer, size_t count
 	}
 
 	if (osal_array_size(wmt_dev_dbg_func) > x && NULL != wmt_dev_dbg_func[x])
-		(*wmt_dev_dbg_func[x]) (x, y, z);
+		if (x == 0x7)
+			wmt_dbg_delay_work(x, y, z);
+		else
+			(*wmt_dev_dbg_func[x]) (x, y, z);
 	else
 		WMT_WARN_FUNC("no handler defined for command id(0x%08x)\n\r", x);
 
