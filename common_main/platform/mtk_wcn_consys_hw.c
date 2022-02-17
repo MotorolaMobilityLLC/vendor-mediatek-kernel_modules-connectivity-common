@@ -97,6 +97,9 @@ UINT32 gps_lna_pin_num = 0xffffffff;
 INT32 chip_reset_status = -1;
 static INT32 wifi_ant_swap_gpio_pin_num;
 
+static UINT32 g_adie_chipid;
+static OSAL_SLEEPABLE_LOCK g_adie_chipid_lock;
+
 static atomic64_t g_sleep_counter_enable = ATOMIC64_INIT(1);
 static OSAL_UNSLEEPABLE_LOCK g_sleep_counter_spinlock;
 
@@ -360,6 +363,7 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 		wmt_consys_ic_ops->consys_ic_register_devapc_cb();
 
 	osal_unsleepable_lock_init(&g_sleep_counter_spinlock);
+	osal_sleepable_lock_init(&g_adie_chipid_lock);
 
 	INIT_WORK(&plt_resume_worker, plat_resume_handler);
 
@@ -382,6 +386,7 @@ static INT32 mtk_wmt_remove(struct platform_device *pdev)
 		g_pdev = NULL;
 
 	osal_unsleepable_lock_deinit(&g_sleep_counter_spinlock);
+	osal_sleepable_lock_deinit(&g_adie_chipid_lock);
 
 	return 0;
 }
@@ -692,6 +697,43 @@ UINT32 mtk_wcn_consys_soc_chipid(VOID)
 		return wmt_consys_ic_ops->consys_ic_soc_chipid_get();
 	else
 		return 0;
+}
+
+UINT32 mtk_wcn_consys_get_adie_chipid(VOID)
+{
+	return g_adie_chipid;
+}
+
+INT32 mtk_wcn_consys_detect_adie_chipid(UINT32 co_clock_type)
+{
+	INT32 chipid = 0;
+
+	if (osal_lock_sleepable_lock(&g_adie_chipid_lock))
+		return 0;
+
+	/* detect a-die only once */
+	if (g_adie_chipid) {
+		osal_unlock_sleepable_lock(&g_adie_chipid_lock);
+		return g_adie_chipid;
+	}
+
+	if (wmt_consys_ic_ops == NULL)
+		wmt_consys_ic_ops = mtk_wcn_get_consys_ic_ops();
+
+	if (wmt_consys_ic_ops && wmt_consys_ic_ops->consys_ic_adie_chipid_detect) {
+		WMT_PLAT_PR_INFO("CONSYS A-DIE DETECT start\n");
+		chipid = wmt_consys_ic_ops->consys_ic_adie_chipid_detect();
+		if (chipid > 0) {
+			g_adie_chipid = chipid;
+			WMT_PLAT_PR_INFO("Set a-die chipid = %x\n", chipid);
+		} else
+			WMT_PLAT_PR_INFO("Detect a-die chipid = %x failed!\n", chipid);
+		WMT_PLAT_PR_INFO("CONSYS A-DIE DETECT finish\n");
+	}
+
+	osal_unlock_sleepable_lock(&g_adie_chipid_lock);
+
+	return chipid;
 }
 
 struct pinctrl *mtk_wcn_consys_get_pinctrl()

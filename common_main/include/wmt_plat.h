@@ -389,6 +389,7 @@ INT32 wmt_plat_update_host_sync_num(VOID);
 INT32 wmt_plat_get_dump_info(UINT32 offset);
 INT32 wmt_plat_write_emi_l(UINT32 offset, UINT32 value);
 UINT32 wmt_plat_get_soc_chipid(VOID);
+INT32 wmt_plat_get_adie_chipid(VOID);
 UINT32 wmt_plat_soc_co_clock_flag_get(VOID);
 INT32 wmt_plat_set_dbg_mode(UINT32 flag);
 INT32 wmt_plat_set_dynamic_dumpmem(PUINT32 buf);
