@@ -57,8 +57,8 @@ static _osal_inline_ INT32 stp_dbg_combo_put_dump_to_aee(VOID)
 	static UINT8 tmp[2048];
 
 	UINT32 buf_len;
-	STP_PACKET_T *pkt;
-	STP_DBG_HDR_T *hdr;
+	STP_PACKET_T *pkt = NULL;
+	STP_DBG_HDR_T *hdr = NULL;
 	INT32 remain = 0;
 	INT32 retry = 0;
 	INT32 ret = 0;
@@ -99,8 +99,8 @@ static _osal_inline_ INT32 stp_dbg_combo_put_dump_to_nl(VOID)
 	static UINT8 tmp[2048];
 
 	UINT32 buf_len;
-	STP_PACKET_T *pkt;
-	STP_DBG_HDR_T *hdr;
+	STP_PACKET_T *pkt = NULL;
+	STP_DBG_HDR_T *hdr = NULL;
 	INT32 remain = 0;
 	INT32 index = 0;
 	INT32 retry = 0;
