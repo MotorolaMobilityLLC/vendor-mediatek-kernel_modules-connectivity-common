@@ -718,3 +718,11 @@ VOID mtk_wcn_consys_clock_fail_dump(VOID)
 	if (wmt_consys_ic_ops->consys_ic_clock_fail_dump)
 		wmt_consys_ic_ops->consys_ic_clock_fail_dump();
 }
+
+INT32 mtk_consys_is_connsys_reg(UINT32 addr)
+{
+	if (wmt_consys_ic_ops->consys_ic_is_connsys_reg)
+		return wmt_consys_ic_ops->consys_ic_is_connsys_reg(addr);
+	else
+		return 0;
+}
