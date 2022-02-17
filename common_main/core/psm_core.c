@@ -916,6 +916,12 @@ static inline INT32 _stp_psm_wait_wmt_event_wq(MTKSTP_PSM_T *stp_psm)
 	if (stp_psm == NULL)
 		return STP_PSM_OPERATION_FAIL;
 	osal_wait_for_event_timeout(&stp_psm->wait_wmt_q, _stp_psm_wait_wmt_event, (PVOID) stp_psm);
+
+	if (mtk_wcn_stp_get_wmt_trg_assert() == 1 || mtk_wcn_stp_coredump_start_get() == 1) {
+		STP_PSM_PR_INFO("Host/Fw already triggered assert. Skip psm operation.\n");
+		return STP_PSM_OPERATION_FAIL;
+	}
+
 	if (osal_test_bit(STP_PSM_WMT_EVENT_WAKEUP_EN, &stp_psm->flag)) {
 		osal_clear_bit(STP_PSM_WMT_EVENT_WAKEUP_EN, &stp_psm->flag);
 		_stp_psm_dbg_dmp_in(g_stp_psm_dbg, stp_psm->flag.data, __LINE__);
