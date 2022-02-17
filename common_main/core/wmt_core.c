@@ -1076,7 +1076,6 @@ static INT32 wmt_core_hw_check(VOID)
 	case 0x0713:
 	case 0x0788:
 	case 0x6765:
-	case 0x3967:
 	case 0x6761:
 	case 0x6779:
 	case 0x6768:
@@ -1111,8 +1110,11 @@ static INT32 wmt_core_hw_check(VOID)
 	WMT_DBG_FUNC("chip id(0x%x) fp: init(0x%p), deinit(0x%p), pin_ctrl(0x%p), ver_chk(0x%p)\n",
 		     chipid, p_ops->sw_init, p_ops->sw_deinit, p_ops->ic_pin_ctrl,
 		     p_ops->ic_ver_check);
-	if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC)
+	if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC) {
 		wmt_ic_ops_soc.icId = chipid;
+		wmt_ic_ops_soc.options = mtk_wcn_consys_get_options();
+		WMT_INFO_FUNC("options = %llx", wmt_ic_ops_soc.options);
+	}
 	iret = p_ops->ic_ver_check();
 	if (iret) {
 		WMT_ERR_FUNC("chip id(0x%x) ver_check error:%d\n", chipid, iret);

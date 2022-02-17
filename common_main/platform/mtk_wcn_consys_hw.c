@@ -1107,3 +1107,13 @@ INT32 mtk_wcn_consys_dump_gating_state(P_CONSYS_STATE state)
 
 	return MTK_WCN_BOOL_FALSE;
 }
+
+UINT64 mtk_wcn_consys_get_options(VOID)
+{
+	if (wmt_consys_ic_ops->consys_ic_get_options)
+		return wmt_consys_ic_ops->consys_ic_get_options();
+
+	WMT_PLAT_PR_INFO("Please implement consys_ic_get_options!");
+	wmt_lib_trigger_assert(WMTDRV_TYPE_WMT, 45);
+	return 0;
+}
