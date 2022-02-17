@@ -1266,7 +1266,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 				return -6;
 			}
 			patch_num = mtk_wcn_soc_get_patch_num();
-			WMT_INFO_FUNC("patch total num = [%lu]\n", patch_num);
+			WMT_INFO_FUNC("patch total num = [%d]\n", patch_num);
 		}
 	} else {
 		patch_num = 0;
