@@ -42,13 +42,16 @@ typedef void (*CONNLOG_EVENT_CB) (void);
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
 */
-void connlog_dump_emi(int offset, int size);
+
 /* Common Driver API */
 int connsys_dedicated_log_path_apsoc_init(phys_addr_t emiaddr, unsigned int irq_num, unsigned int irq_flag);
 void connsys_dedicated_log_path_apsoc_deinit(void);
 void __iomem *connsys_log_get_emi_log_base_vir_addr(void);
 void connsys_dedicated_log_get_utc_time(unsigned int *second, unsigned int *usecond);
 void connsys_dedicated_log_flush_emi(void);
+void connsys_dedicated_log_set_log_mode(int mode);
+int connsys_dedicated_log_get_log_mode(void);
+void connsys_dedicated_log_dump_emi(int offset, int size);
 
 /* Debug Utility API */
 int connsys_log_init(int conn_type);
