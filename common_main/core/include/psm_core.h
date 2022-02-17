@@ -180,6 +180,7 @@ typedef struct mtk_stp_psm {
 	INT32 (*stp_tx_cb)(PUINT8 buffer, UINT32 length, UINT8 type);
 	MTK_WCN_BOOL (*is_wmt_quick_ps_support)(VOID);
 	UINT8 out_buf[STP_PSM_TX_SIZE];
+	struct osal_op_history op_history;
 } MTKSTP_PSM_T;
 
 typedef struct {
@@ -262,6 +263,8 @@ MTK_WCN_BOOL stp_psm_is_quick_ps_support(VOID);
 INT32 stp_psm_set_sleep_enable(MTKSTP_PSM_T *stp_psm);
 INT32 stp_psm_set_sleep_disable(MTKSTP_PSM_T *stp_psm);
 INT32 stp_psm_check_sleep_enable(MTKSTP_PSM_T *stp_psm);
+
+VOID stp_psm_print_op_history(VOID);
 
 /*******************************************************************************
 *                              F U N C T I O N S
