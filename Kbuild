@@ -1,3 +1,4 @@
+ccflags-y :=
 ifeq ($(MTK_PLATFORM),)
 ifneq ($(MTK_PLATFORM_WMT),)
 MTK_PLATFORM := $(shell echo $(MTK_PLATFORM_WMT) | tr A-Z a-z)
@@ -6,7 +7,7 @@ endif
 
 ifeq ($(MTK_PLATFORM),)
 ifneq ($(CONFIG_MTK_PLATFORM),)
-MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+MTK_PLATFORM := $(subst $(quote),,$(CONFIG_MTK_PLATFORM))
 endif
 endif
 
@@ -87,7 +88,7 @@ ccflags-y += -I$(srctree)/drivers/gpu/drm/mediatek/mediatek_v2
 ###############################################################################
 
 
-ccflags-y += -Werror
+ccflags-y += -Werror $(call cc-disable-warning,unused-but-set-variable)
 
 ifeq ($(CONFIG_MTK_COMBO_CHIP_MT6628),y)
     ccflags-y += -D MT6628
