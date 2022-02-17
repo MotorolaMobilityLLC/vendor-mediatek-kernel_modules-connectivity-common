@@ -3362,7 +3362,7 @@ INT32 mtk_wcn_stp_wakeup_consys(VOID)
 * RETURNS
 *  always 0
 *****************************************************************************/
-INT32 mtk_wcn_stp_dpidle_ctrl(enum _ENUM_BTIF_DPIDLE_ en_flag)
+INT32 mtk_wcn_stp_dpidle_ctrl(UINT32 en_flag)
 {
 	mtk_wcn_consys_stp_btif_dpidle_ctrl(en_flag);
 
