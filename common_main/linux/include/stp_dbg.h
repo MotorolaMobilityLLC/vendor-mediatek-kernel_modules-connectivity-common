@@ -122,7 +122,7 @@ static PINT8 const socStpDbgType[] = {
 	"<WiFi>",
 	"<WMT>",
 	"<STP>",
-	"<DBG>",
+	"<GPSL5>",
 	"<WAKEINT>",
 	"<UNKNOWN>"
 };
