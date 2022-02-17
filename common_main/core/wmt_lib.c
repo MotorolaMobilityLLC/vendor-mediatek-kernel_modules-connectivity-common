@@ -2900,12 +2900,6 @@ INT32 wmt_lib_met_ctrl(INT32 met_ctrl, INT32 log_ctrl)
 	return 0;
 }
 
-INT32 wmt_lib_fdb_ctrl(struct wmt_fdb_ctrl *fdb_ctrl)
-{
-	return mtk_wcn_consys_reg_ctrl(fdb_ctrl->is_write, fdb_ctrl->base_index, fdb_ctrl->offset,
-			&(fdb_ctrl->value));
-}
-
 VOID wmt_lib_set_ext_ldo(UINT32 flag)
 {
 	gDevWmt.ext_ldo_flag = flag;
