@@ -423,7 +423,7 @@ UINT32 mtk_wcn_consys_soc_chipid(VOID)
 	if (wmt_consys_ic_ops == NULL)
 		wmt_consys_ic_ops = mtk_wcn_get_consys_ic_ops();
 
-	if (wmt_consys_ic_ops->consys_ic_soc_chipid_get)
+	if (wmt_consys_ic_ops && wmt_consys_ic_ops->consys_ic_soc_chipid_get)
 		return wmt_consys_ic_ops->consys_ic_soc_chipid_get();
 	else
 		return 0;
@@ -529,11 +529,19 @@ INT32 mtk_wcn_consys_hw_rst(UINT32 co_clock_type)
 	if (wmt_consys_ic_ops->consys_ic_set_dl_rom_patch_flag)
 		wmt_consys_ic_ops->consys_ic_set_dl_rom_patch_flag(1);
 
+	/* write 0x5000_0154.Bit[1] = 1 (pdma_axi_rready_force_high) to prevent pdma block slpprot */
+	if (wmt_consys_ic_ops->consys_ic_set_pdma_axi_rready_force_high)
+		wmt_consys_ic_ops->consys_ic_set_pdma_axi_rready_force_high(1);
+
 	/*1. do whole hw power off flow */
 	iRet += mtk_wcn_consys_hw_reg_ctrl(0, co_clock_type);
 
 	/*2. do whole hw power on flow */
 	iRet += mtk_wcn_consys_hw_reg_ctrl(1, co_clock_type);
+
+	/* Make sure pdma_axi_rready_force_high set to 0 after reset */
+	if (wmt_consys_ic_ops->consys_ic_set_pdma_axi_rready_force_high)
+		wmt_consys_ic_ops->consys_ic_set_pdma_axi_rready_force_high(0);
 
 	WMT_PLAT_PR_INFO("CONSYS-HW, hw_rst finish, eirq should be enabled after this step\n");
 	return iRet;
@@ -648,7 +656,7 @@ INT32 mtk_wcn_consys_co_clock_type(VOID)
 	if (wmt_consys_ic_ops == NULL)
 		wmt_consys_ic_ops = mtk_wcn_get_consys_ic_ops();
 
-	if (wmt_consys_ic_ops->consys_ic_co_clock_type)
+	if (wmt_consys_ic_ops && wmt_consys_ic_ops->consys_ic_co_clock_type)
 		return wmt_consys_ic_ops->consys_ic_co_clock_type();
 	else
 		return -1;
