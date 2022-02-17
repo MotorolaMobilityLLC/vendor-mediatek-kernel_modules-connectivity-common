@@ -202,6 +202,8 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 	g_paged_dump_len = 0;
 	p_ecsi = wmt_plat_get_emi_phy_add();
 	osal_assert(p_ecsi);
+	if (p_ecsi == NULL)
+		return -1;
 
 	issue_type = STP_FW_ASSERT_ISSUE;
 	if (chip_reset_only) {
@@ -417,6 +419,11 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_trace(VOID)
 	INT32 dump_len = 0;
 
 	p_ecsi = wmt_plat_get_emi_phy_add();
+	if (p_ecsi == NULL) {
+		STP_DBG_PR_ERR("get EMI info failed.\n");
+		return -1;
+	}
+
 	do {
 		ctrl_val = 0;
 		loop_cnt1 = 0;
@@ -531,7 +538,7 @@ UINT32 stp_dbg_soc_read_debug_crs(ENUM_CONNSYS_DEBUG_CR cr)
 	emi_phy_addr = mtk_wcn_consys_soc_get_emi_phy_add();
 
 	if (cr == CONNSYS_EMI_REMAP) {
-		if (emi_phy_addr->emi_remap_offset)
+		if (emi_phy_addr != NULL && emi_phy_addr->emi_remap_offset)
 			return CONSYS_REG_READ(conn_reg.topckgen_base +
 					emi_phy_addr->emi_remap_offset);
 		else
