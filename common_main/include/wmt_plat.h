@@ -285,6 +285,7 @@ typedef VOID(*irq_cb) (VOID);
 typedef INT32(*device_audio_if_cb) (enum CMB_STUB_AIF_X aif, MTK_WCN_BOOL share);
 typedef VOID(*func_ctrl_cb) (UINT32 on, UINT32 type);
 typedef long (*thermal_query_ctrl_cb) (VOID);
+typedef INT32(*trigger_assert_cb) (UINT32 type, UINT32 reason);
 typedef INT32(*deep_idle_ctrl_cb) (UINT32);
 
 /*******************************************************************************
@@ -335,6 +336,7 @@ VOID wmt_plat_irq_cb_reg(irq_cb bgf_irq_cb);
 VOID wmt_plat_aif_cb_reg(device_audio_if_cb aif_ctrl_cb);
 VOID wmt_plat_func_ctrl_cb_reg(func_ctrl_cb subsys_func_ctrl);
 VOID wmt_plat_thermal_ctrl_cb_reg(thermal_query_ctrl_cb thermal_query_ctrl);
+VOID wmt_plat_trigger_assert_cb_reg(trigger_assert_cb trigger_assert);
 VOID wmt_plat_deep_idle_ctrl_cb_reg(deep_idle_ctrl_cb deep_idle_ctrl);
 
 INT32 wmt_plat_soc_paldo_ctrl(ENUM_PALDO_TYPE ePt, ENUM_PALDO_OP ePo);
