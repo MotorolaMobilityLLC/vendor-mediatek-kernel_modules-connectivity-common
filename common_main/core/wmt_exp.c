@@ -81,6 +81,7 @@ MTK_WCN_BOOL g_pwr_off_flag = MTK_WCN_BOOL_TRUE;
 
 static MTK_WCN_BOOL mtk_wcn_wmt_pwr_on(VOID);
 static MTK_WCN_BOOL mtk_wcn_wmt_func_ctrl(ENUM_WMTDRV_TYPE_T type, ENUM_WMT_OPID_T opId);
+static MTK_WCN_BOOL mtk_wmt_gps_suspend_ctrl_by_type(MTK_WCN_BOOL gps_l1, MTK_WCN_BOOL gps_l5, MTK_WCN_BOOL suspend);
 
 /*******************************************************************************
 *                              F U N C T I O N S
@@ -709,12 +710,13 @@ MTK_WCN_BOOL mtk_wcn_wmt_do_reset(ENUM_WMTDRV_TYPE_T type)
 {
 	INT32 iRet = -1;
 	UINT8 *drv_name[] = {
-		"DRV_TYPE_BT",
-		"DRV_TYPE_FM",
-		"DRV_TYPE_GPS",
-		"DRV_TYPE_WIFI",
-		"DRV_TYPE_WMT",
-		"DRV_TYPE_ANT"
+		[0] = "DRV_TYPE_BT",
+		[1] = "DRV_TYPE_FM",
+		[2] = "DRV_TYPE_GPS",
+		[3] = "DRV_TYPE_WIFI",
+		[4] = "DRV_TYPE_WMT",
+		[5] = "DRV_TYPE_ANT",
+		[11] = "DRV_TYPE_GPSL5",
 	};
 
 	if ((type < WMTDRV_TYPE_BT) || (type > WMTDRV_TYPE_ANT)) {
@@ -798,7 +800,7 @@ VOID mtk_wcn_wmt_set_mcif_mpu_protection(MTK_WCN_BOOL enable)
 }
 EXPORT_SYMBOL(mtk_wcn_wmt_set_mcif_mpu_protection);
 
-MTK_WCN_BOOL mtk_wmt_gps_suspend_ctrl(MTK_WCN_BOOL suspend)
+static MTK_WCN_BOOL mtk_wmt_gps_suspend_ctrl_by_type(MTK_WCN_BOOL gps_l1, MTK_WCN_BOOL gps_l5, MTK_WCN_BOOL suspend)
 {
 	P_OSAL_OP pOp;
 	MTK_WCN_BOOL bRet;
@@ -814,6 +816,8 @@ MTK_WCN_BOOL mtk_wmt_gps_suspend_ctrl(MTK_WCN_BOOL suspend)
 
 	pOp->op.opId = WMT_OPID_GPS_SUSPEND;
 	pOp->op.au4OpData[0] = (MTK_WCN_BOOL_FALSE == suspend ? 0 : 1);
+	pOp->op.au4OpData[1] = (MTK_WCN_BOOL_FALSE == gps_l1 ? 0 : 1);
+	pOp->op.au4OpData[2] = (MTK_WCN_BOOL_FALSE == gps_l5 ? 0 : 1);
 	pSignal->timeoutValue = (MTK_WCN_BOOL_FALSE == suspend) ? MAX_FUNC_ON_TIME : MAX_FUNC_OFF_TIME;
 
 	WMT_INFO_FUNC("wmt-exp: OPID(%d) type(%zu) start\n", pOp->op.opId, pOp->op.au4OpData[0]);
@@ -839,7 +843,24 @@ MTK_WCN_BOOL mtk_wmt_gps_suspend_ctrl(MTK_WCN_BOOL suspend)
 
 	return bRet;
 }
+
+MTK_WCN_BOOL mtk_wmt_gps_suspend_ctrl(MTK_WCN_BOOL suspend)
+{
+	return mtk_wmt_gps_suspend_ctrl_by_type(MTK_WCN_BOOL_TRUE, MTK_WCN_BOOL_TRUE, suspend);
+}
 EXPORT_SYMBOL(mtk_wmt_gps_suspend_ctrl);
+
+MTK_WCN_BOOL mtk_wmt_gps_l1_suspend_ctrl(MTK_WCN_BOOL suspend)
+{
+	return mtk_wmt_gps_suspend_ctrl_by_type(MTK_WCN_BOOL_TRUE, MTK_WCN_BOOL_FALSE, suspend);
+}
+EXPORT_SYMBOL(mtk_wmt_gps_l1_suspend_ctrl);
+
+MTK_WCN_BOOL mtk_wmt_gps_l5_suspend_ctrl(MTK_WCN_BOOL suspend)
+{
+	return mtk_wmt_gps_suspend_ctrl_by_type(MTK_WCN_BOOL_FALSE, MTK_WCN_BOOL_TRUE, suspend);
+}
+EXPORT_SYMBOL(mtk_wmt_gps_l5_suspend_ctrl);
 
 INT32 mtk_wcn_wmt_mpu_lock_aquire(VOID)
 {
