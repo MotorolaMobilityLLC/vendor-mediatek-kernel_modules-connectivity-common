@@ -307,6 +307,9 @@ static void _wmt_step_init_register_base_size(struct device_node *node, int inde
 {
 	int flag;
 
+	if (step_index < 0)
+		return;
+
 	g_step_env.reg_base[step_index].vir_addr = addr;
 	if (addr != 0)
 		of_get_address(node, index, &(g_step_env.reg_base[step_index].size), &flag);
@@ -592,7 +595,8 @@ static int wmt_step_access_line_state_at_op(char *tok,
 	struct step_target_act_list_info *p_parse_info,
 	struct step_parse_line_data_param_info *p_parse_line_info)
 {
-	p_parse_line_info->act_params[p_parse_line_info->param_index] = tok;
+	if (p_parse_line_info->param_index >= 0)
+		p_parse_line_info->act_params[p_parse_line_info->param_index] = tok;
 	(p_parse_line_info->param_index)++;
 
 	if (p_parse_line_info->param_index >= STEP_PARAMETER_SIZE) {
@@ -756,6 +760,9 @@ static struct step_pd_entry *wmt_step_create_periodic_dump_entry(unsigned int ex
 static void wmt_step_print_trigger_time(enum step_trigger_point_id tp_id, char *reason)
 {
 	const char *p_trigger_name = NULL;
+
+	if (tp_id < 0)
+		return;
 
 	p_trigger_name = STEP_TRIGGER_TIME_NAME[tp_id];
 	if (reason != NULL)
@@ -1710,11 +1717,13 @@ static int wmt_step_do_read_register_action(struct step_reigster_info *p_reg_inf
 
 		p_addr = ioremap_nocache(phy_addr, 0x4);
 		if (p_addr) {
-			snprintf(buf, WMT_STEP_REGISTER_ACTION_BUF_LEN,
+			if (snprintf(buf, WMT_STEP_REGISTER_ACTION_BUF_LEN,
 				"STEP show: reg read Phy addr(0x%08x): 0x%08x\n",
-				(unsigned int)phy_addr, CONSYS_REG_READ(p_addr));
-			_wmt_step_do_read_register_action(p_reg_info, func_do_extra, buf,
-				CONSYS_REG_READ(p_addr));
+				(unsigned int)phy_addr, CONSYS_REG_READ(p_addr)) < 0)
+				WMT_INFO_FUNC("snprintf buf fail\n");
+			else
+				_wmt_step_do_read_register_action(p_reg_info, func_do_extra, buf,
+					CONSYS_REG_READ(p_addr));
 			iounmap(p_addr);
 		} else {
 			WMT_ERR_FUNC("STEP failed: ioremap(0x%08x) is NULL\n",
@@ -1729,12 +1738,14 @@ static int wmt_step_do_read_register_action(struct step_reigster_info *p_reg_inf
 			return -1;
 		}
 
-		snprintf(buf, WMT_STEP_REGISTER_ACTION_BUF_LEN,
+		if (snprintf(buf, WMT_STEP_REGISTER_ACTION_BUF_LEN,
 			"STEP show: reg read (symbol, offset)(%d, 0x%08x): 0x%08x\n",
 			p_reg_info->address_type, p_reg_info->offset,
-			CONSYS_REG_READ(vir_addr));
-		_wmt_step_do_read_register_action(p_reg_info, func_do_extra, buf,
-			CONSYS_REG_READ(vir_addr));
+			CONSYS_REG_READ(vir_addr)) < 0)
+			WMT_INFO_FUNC("snprintf buf fail\n");
+		else
+			_wmt_step_do_read_register_action(p_reg_info, func_do_extra, buf,
+				CONSYS_REG_READ(vir_addr));
 	}
 
 	return 0;
@@ -2159,7 +2170,7 @@ int wmt_step_do_condition_action(struct step_action *p_act, STEP_DO_EXTRA func_d
 	else
 		r_val = p_cond_act->value;
 
-	if (wmt_step_operator_result_map[p_cond_act->operator_id]) {
+	if ((p_cond_act->operator_id >= 0) && wmt_step_operator_result_map[p_cond_act->operator_id]) {
 		result = wmt_step_operator_result_map[p_cond_act->operator_id] (l_val, r_val);
 		g_step_env.temp_register[p_cond_act->result_temp_reg_id] = result;
 
