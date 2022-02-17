@@ -48,6 +48,8 @@ static atomic_t log_mode  = ATOMIC_INIT(PRINT_TO_KERNEL_LOG);
 #define CONNLOG_ALARM_STATE_ENABLE	0x01
 #define CONNLOG_ALARM_STATE_RUNNING	0x03
 
+#define CONNLOG_LOG_BUFFER_SIZE		(64*1024)
+
 struct connlog_alarm {
 	struct alarm alarm_timer;
 	unsigned int alarm_state;
@@ -60,11 +62,13 @@ struct connlog_alarm {
 struct connlog_dev {
 	phys_addr_t phyAddrEmiBase;
 	void __iomem *virAddrEmiLogBase;
+	struct connlog_emi_config emi_config;
 	int conn2ApIrqId;
 	bool eirqOn;
 	spinlock_t irq_lock;
 	unsigned long flags;
 	unsigned int irq_counter;
+	CONNLOG_IRQ_CB irq_callback;
 	struct timer_list workTimer;
 	struct work_struct logDataWorker;
 	/* alarm timer for suspend */
@@ -90,36 +94,13 @@ struct connlog_offset {
 	unsigned int emi_buf;
 };
 
-#define INIT_EMI_OFFSET(base, size, read, write, buf) {\
-	.emi_base_offset = base, \
-	.emi_size = size, \
-	.emi_read = read, \
-	.emi_write = write, \
-	.emi_buf = buf}
-static struct connlog_offset emi_offset_table[CONNLOG_TYPE_END] = {
-	INIT_EMI_OFFSET(CONNLOG_EMI_WIFI_BASE_OFFESET, CONNLOG_EMI_WIFI_SIZE,
-			CONNLOG_EMI_WIFI_READ, CONNLOG_EMI_WIFI_WRITE,
-			CONNLOG_EMI_WIFI_BUF),
-	INIT_EMI_OFFSET(CONNLOG_EMI_BT_BASE_OFFESET, CONNLOG_EMI_BT_SIZE,
-			CONNLOG_EMI_BT_READ, CONNLOG_EMI_BT_WRITE,
-			CONNLOG_EMI_BT_BUF),
-	INIT_EMI_OFFSET(CONNLOG_EMI_GPS_BASE_OFFESET, CONNLOG_EMI_GPS_SIZE,
-			CONNLOG_EMI_GPS_READ, CONNLOG_EMI_GPS_WRITE,
-			CONNLOG_EMI_GPS_BUF),
-	INIT_EMI_OFFSET(CONNLOG_EMI_MCU_BASE_OFFESET, CONNLOG_EMI_MCU_SIZE,
-			CONNLOG_EMI_MCU_READ, CONNLOG_EMI_MCU_WRITE,
-			CONNLOG_EMI_MCU_BUF),
-};
-
+static struct connlog_offset emi_offset_table[CONNLOG_TYPE_END];
 
 static char *type_to_title[CONNLOG_TYPE_END] = {
 	"wifi_fw", "bt_fw", "gps_fw", "mcu_fw"
 };
 
-static size_t cache_size_table[CONNLOG_TYPE_END] = {
-	CONNLOG_EMI_WIFI_SIZE * 2, CONNLOG_EMI_BT_SIZE * 2,
-	CONNLOG_EMI_GPS_SIZE, CONNLOG_EMI_MCU_SIZE
-};
+static size_t cache_size_table[CONNLOG_TYPE_END];
 
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S
@@ -127,7 +108,7 @@ static size_t cache_size_table[CONNLOG_TYPE_END] = {
 */
 static int connlog_eirq_init(unsigned int irq_id, unsigned int irq_flag);
 static void connlog_eirq_deinit(void);
-static int connlog_emi_init(phys_addr_t emiaddr);
+static int connlog_emi_init(phys_addr_t emi_base, const struct connlog_emi_config *emi_config);
 static void connlog_emi_deinit(void);
 static int connlog_ring_buffer_init(void);
 static void connlog_ring_buffer_deinit(void);
@@ -146,6 +127,7 @@ static void work_timer_handler(struct timer_list *t);
 static void work_timer_handler(unsigned long data);
 #endif
 static void connlog_do_schedule_work(bool count);
+static void connlog_emi_status_dump(void);
 
 /* connlog when suspend */
 static int connlog_alarm_init(void);
@@ -159,6 +141,26 @@ static int connlog_cancel_alarm_timer(void);
 ********************************************************************************
 */
 static void connlog_set_ring_ready(void);
+
+
+/*****************************************************************************
+* FUNCTION
+*  connlog_emi_status_dump
+* DESCRIPTION
+*  Dump emi control block .
+*****************************************************************************/
+void connlog_emi_status_dump(void)
+{
+	/* Dump header (0x40) and MCU read/write pointer */
+	connsys_dedicated_log_dump_emi(0x0, 0x60);
+	/* 32 byte wifi read/write pointer */
+	connsys_dedicated_log_dump_emi(emi_offset_table[CONNLOG_TYPE_WIFI].emi_base_offset, 0x20);
+	/* 32 byte bt read/write pointer */
+	connsys_dedicated_log_dump_emi(emi_offset_table[CONNLOG_TYPE_BT].emi_base_offset, 0x20);
+	/* 32 byte gps read/write pointer */
+	connsys_dedicated_log_dump_emi(emi_offset_table[CONNLOG_TYPE_GPS].emi_base_offset, 0x20);
+}
+
 
 /*****************************************************************************
 * FUNCTION
@@ -280,14 +282,7 @@ static void connlog_ring_emi_to_cache(int conn_type)
 		EMI_READ32(ring_emi->write) > emi_offset_table[conn_type].emi_size) {
 		if (__ratelimit(&_rs))
 			pr_err("%s read/write pointer out-of-bounds.\n", type_to_title[conn_type]);
-		/* 64 byte ring_emi buffer setting & 32 byte mcu read/write pointer */
-		connsys_dedicated_log_dump_emi(0x0, 0x60);
-		/* 32 byte wifi read/write pointer */
-		connsys_dedicated_log_dump_emi(CONNLOG_EMI_WIFI_BASE_OFFESET, 0x20);
-		/* 32 byte bt read/write pointer */
-		connsys_dedicated_log_dump_emi(CONNLOG_EMI_BT_BASE_OFFESET, 0x20);
-		/* 32 byte gps read/write pointer */
-		connsys_dedicated_log_dump_emi(CONNLOG_EMI_GPS_BASE_OFFESET, 0x20);
+		connlog_emi_status_dump();
 		/* Trigger Connsys Assert */
 		mtk_wcn_wmt_assert(WMTDRV_TYPE_WMT, 46);
 		return;
@@ -430,20 +425,13 @@ static void connlog_ring_print(int conn_type)
 		return;
 	}
 	buf_size = ring_emi_seg.remain;
-	memset(gDev.log_data, 0, CONNLOG_EMI_BT_SIZE);
+	memset(gDev.log_data, 0, CONNLOG_LOG_BUFFER_SIZE);
 
 	/* Check ring_emi buffer memory. Dump EMI data if it's corruption. */
 	if (EMI_READ32(ring_emi->read) > emi_offset_table[conn_type].emi_size ||
 	    EMI_READ32(ring_emi->write) > emi_offset_table[conn_type].emi_size) {
 		pr_err("%s read/write pointer out-of-bounds.\n", type_to_title[conn_type]);
-		/* 64 byte ring_emi buffer setting & 32 byte mcu read/write pointer */
-		connsys_dedicated_log_dump_emi(0x0, 0x60);
-		/* 32 byte wifi read/write pointer */
-		connsys_dedicated_log_dump_emi(CONNLOG_EMI_WIFI_BASE_OFFESET, 0x20);
-		/* 32 byte bt read/write pointer */
-		connsys_dedicated_log_dump_emi(CONNLOG_EMI_BT_BASE_OFFESET, 0x20);
-		/* 32 byte gps read/write pointer */
-		connsys_dedicated_log_dump_emi(CONNLOG_EMI_GPS_BASE_OFFESET, 0x20);
+		connlog_emi_status_dump();
 		/* Trigger Connsys Assert */
 		mtk_wcn_wmt_assert(WMTDRV_TYPE_WMT, 46);
 		return;
@@ -836,14 +824,14 @@ static int connlog_set_ring_buffer_base_addr(void)
 		return -1;
 
 	/* set up subsys base address */
-	EMI_WRITE32(gDev.virAddrEmiLogBase + 0,  CONNLOG_EMI_MCU_BASE_OFFESET);
-	EMI_WRITE32(gDev.virAddrEmiLogBase + 4,  CONNLOG_EMI_MCU_SIZE);
-	EMI_WRITE32(gDev.virAddrEmiLogBase + 8,  CONNLOG_EMI_WIFI_BASE_OFFESET);
-	EMI_WRITE32(gDev.virAddrEmiLogBase + 12, CONNLOG_EMI_WIFI_SIZE);
-	EMI_WRITE32(gDev.virAddrEmiLogBase + 16, CONNLOG_EMI_BT_BASE_OFFESET);
-	EMI_WRITE32(gDev.virAddrEmiLogBase + 20, CONNLOG_EMI_BT_SIZE);
-	EMI_WRITE32(gDev.virAddrEmiLogBase + 24, CONNLOG_EMI_GPS_BASE_OFFESET);
-	EMI_WRITE32(gDev.virAddrEmiLogBase + 28, CONNLOG_EMI_GPS_SIZE);
+	EMI_WRITE32(gDev.virAddrEmiLogBase + 0,  emi_offset_table[CONNLOG_TYPE_MCU].emi_base_offset);
+	EMI_WRITE32(gDev.virAddrEmiLogBase + 4,  emi_offset_table[CONNLOG_TYPE_MCU].emi_size);
+	EMI_WRITE32(gDev.virAddrEmiLogBase + 8,  emi_offset_table[CONNLOG_TYPE_WIFI].emi_base_offset);
+	EMI_WRITE32(gDev.virAddrEmiLogBase + 12, emi_offset_table[CONNLOG_TYPE_WIFI].emi_size);
+	EMI_WRITE32(gDev.virAddrEmiLogBase + 16, emi_offset_table[CONNLOG_TYPE_BT].emi_base_offset);
+	EMI_WRITE32(gDev.virAddrEmiLogBase + 20, emi_offset_table[CONNLOG_TYPE_BT].emi_size);
+	EMI_WRITE32(gDev.virAddrEmiLogBase + 24, emi_offset_table[CONNLOG_TYPE_GPS].emi_base_offset);
+	EMI_WRITE32(gDev.virAddrEmiLogBase + 28, emi_offset_table[CONNLOG_TYPE_GPS].emi_size);
 	return 0;
 }
 
@@ -857,9 +845,11 @@ static int connlog_set_ring_buffer_base_addr(void)
 * RETURNS
 *  void
 *****************************************************************************/
-static int connlog_emi_init(phys_addr_t emiaddr)
+static int connlog_emi_init(phys_addr_t emi_base, const struct connlog_emi_config *emi_config)
 {
-	if (emiaddr == 0) {
+	unsigned int mcu_base, wifi_base, bt_base, gps_base;
+
+	if (emi_config == 0) {
 		pr_err("consys emi memory address gPhyAddrEmiBase invalid\n");
 		return -1;
 	}
@@ -869,23 +859,64 @@ static int connlog_emi_init(phys_addr_t emiaddr)
 		return -2;
 	}
 
-	gDev.phyAddrEmiBase = emiaddr;
+	gDev.phyAddrEmiBase = emi_base;
 	gDev.virAddrEmiLogBase = ioremap_nocache(gDev.phyAddrEmiBase +
-		CONNLOG_EMI_LOG_BASE_OFFSET, CONNLOG_EMI_SIZE);
+		emi_config->emi_offset, emi_config->emi_size_total);
 	if (gDev.virAddrEmiLogBase) {
 		pr_info("EMI mapping OK virtual(0x%p) physical(0x%x)\n",
 				gDev.virAddrEmiLogBase, (unsigned int) gDev.phyAddrEmiBase +
-				CONNLOG_EMI_LOG_BASE_OFFSET);
-		memset_io(gDev.virAddrEmiLogBase, 0, CONNLOG_EMI_SIZE);
+				emi_config->emi_offset);
+		memset_io(gDev.virAddrEmiLogBase, 0, emi_config->emi_size_total);
 	} else
 		pr_err("EMI mapping fail\n");
+
+	memcpy(&gDev.emi_config, emi_config, sizeof(struct connlog_emi_config));
+
+	mcu_base = CONNLOG_CONTROL_RING_BUFFER_BASE_SIZE;
+	wifi_base =
+		mcu_base + gDev.emi_config.emi_size_mcu + CONNLOG_CONTROL_RING_BUFFER_RESERVE_SIZE +
+		CONNLOG_EMI_32_BYTE_ALIGNED;
+	bt_base =
+		wifi_base + gDev.emi_config.emi_size_wifi + CONNLOG_CONTROL_RING_BUFFER_RESERVE_SIZE +
+		CONNLOG_EMI_32_BYTE_ALIGNED;
+	gps_base =
+		bt_base + gDev.emi_config.emi_size_bt + CONNLOG_CONTROL_RING_BUFFER_RESERVE_SIZE +
+		CONNLOG_EMI_32_BYTE_ALIGNED;
+
+#define INIT_EMI_OFFSET_TABLE(index, base, size, read_offset, write_offset, buf_offset) \
+	emi_offset_table[index].emi_base_offset = base; \
+	emi_offset_table[index].emi_size = size; \
+	emi_offset_table[index].emi_read = read_offset; \
+	emi_offset_table[index].emi_write = write_offset; \
+	emi_offset_table[index].emi_buf = buf_offset
+
+	INIT_EMI_OFFSET_TABLE(
+		CONNLOG_TYPE_MCU,
+		mcu_base, gDev.emi_config.emi_size_mcu,
+		mcu_base + 0, mcu_base + 4,
+		mcu_base + CONNLOG_EMI_32_BYTE_ALIGNED);
+	INIT_EMI_OFFSET_TABLE(
+		CONNLOG_TYPE_WIFI,
+		wifi_base, gDev.emi_config.emi_size_wifi,
+		wifi_base + 0, wifi_base + 4,
+		wifi_base + CONNLOG_EMI_32_BYTE_ALIGNED);
+	INIT_EMI_OFFSET_TABLE(
+		CONNLOG_TYPE_BT,
+		bt_base, gDev.emi_config.emi_size_bt,
+		bt_base + 0, bt_base + 4,
+		bt_base + CONNLOG_EMI_32_BYTE_ALIGNED);
+	INIT_EMI_OFFSET_TABLE(
+		CONNLOG_TYPE_GPS,
+		gps_base, gDev.emi_config.emi_size_gps,
+		gps_base + 0, gps_base + 4,
+		gps_base + CONNLOG_EMI_32_BYTE_ALIGNED);
 
 	return 0;
 }
 
 /*****************************************************************************
 * FUNCTION
-*  connlog_emi_init
+*  connlog_emi_deinit
 * DESCRIPTION
 *  Do iounmap for log buffer on EMI
 * PARAMETERS
@@ -916,11 +947,17 @@ static int connlog_ring_buffer_init(void)
 	}
 
 	connlog_set_ring_buffer_base_addr();
+	/* cache table size init */
+	cache_size_table[CONNLOG_TYPE_WIFI] = (emi_offset_table[CONNLOG_TYPE_WIFI].emi_size * 2);
+	cache_size_table[CONNLOG_TYPE_BT] = (emi_offset_table[CONNLOG_TYPE_BT].emi_size * 2);
+	cache_size_table[CONNLOG_TYPE_GPS] = emi_offset_table[CONNLOG_TYPE_GPS].emi_size;
+	cache_size_table[CONNLOG_TYPE_MCU] = emi_offset_table[CONNLOG_TYPE_MCU].emi_size;
+
 	connlog_buffer_init(CONNLOG_TYPE_WIFI);
 	connlog_buffer_init(CONNLOG_TYPE_BT);
 	connlog_buffer_init(CONNLOG_TYPE_GPS);
 	connlog_buffer_init(CONNLOG_TYPE_MCU);
-	gDev.log_data = connlog_cache_allocate(CONNLOG_EMI_BT_SIZE);
+	gDev.log_data = connlog_cache_allocate(CONNLOG_LOG_BUFFER_SIZE);
 	connlog_set_ring_ready();
 
 	return 0;
@@ -961,15 +998,20 @@ static void connlog_ring_buffer_deinit(void)
 * RETURNS
 *  void
 *****************************************************************************/
-int connsys_dedicated_log_path_apsoc_init(phys_addr_t emiaddr, unsigned int irq_num, unsigned int irq_flag)
+int connsys_dedicated_log_path_apsoc_init(
+	phys_addr_t emi_base,
+	const struct connlog_emi_config *emi_config,
+	const struct connlog_irq_config *irq_config)
 {
 	gDev.phyAddrEmiBase = 0;
 	gDev.virAddrEmiLogBase = 0;
 	gDev.conn2ApIrqId = 0;
 	gDev.eirqOn = false;
 	gDev.irq_counter = 0;
+	gDev.irq_callback = NULL;
+	memset(&gDev.emi_config, 0, sizeof(struct connlog_emi_config));
 
-	if (connlog_emi_init(emiaddr)) {
+	if (connlog_emi_init(emi_base, emi_config)) {
 		pr_err("EMI init failed\n");
 		return -1;
 	}
@@ -987,7 +1029,7 @@ int connsys_dedicated_log_path_apsoc_init(phys_addr_t emiaddr, unsigned int irq_
 	gDev.workTimer.function = work_timer_handler;
 	spin_lock_init(&gDev.irq_lock);
 	INIT_WORK(&gDev.logDataWorker, connlog_log_data_handler);
-	if (connlog_eirq_init(irq_num, irq_flag)) {
+	if (connlog_eirq_init(irq_config->irq_num, irq_config->irq_flag)) {
 		pr_err("EIRQ init failed\n");
 		return -3;
 	}
