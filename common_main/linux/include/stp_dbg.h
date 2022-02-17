@@ -302,7 +302,7 @@ typedef enum _ENUM_DMA_ISSUE_TYPE_ {
 #define STP_PATCH_BRANCH_SZIE 8
 #define STP_ASSERT_INFO_SIZE 164
 #define STP_DBG_ROM_VER_SIZE 4
-#define STP_ASSERT_TYPE_SIZE 32
+#define STP_ASSERT_TYPE_SIZE 64
 
 typedef struct stp_dbg_host_assert_t {
 	UINT32 drv_type;
