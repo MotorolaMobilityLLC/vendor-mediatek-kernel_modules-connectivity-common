@@ -239,8 +239,6 @@ void wmt_step_test_check_emi_act(unsigned int len, ...)
 	if (g_step_test_check.step_check_result == TEST_FAIL)
 		return;
 
-	va_start(args, len);
-	value = va_arg(args, unsigned int);
 	offset = g_step_test_check.step_check_emi_offset[g_step_test_check.step_check_index];
 	p_virtual_addr = wmt_plat_get_emi_virt_add(offset);
 	if (!p_virtual_addr) {
@@ -250,6 +248,8 @@ void wmt_step_test_check_emi_act(unsigned int len, ...)
 	}
 	check_result = CONSYS_REG_READ(p_virtual_addr);
 
+	va_start(args, len);
+	value = va_arg(args, unsigned int);
 	if (check_result == value) {
 		g_step_test_check.step_check_result = TEST_PASS;
 	} else {
