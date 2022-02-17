@@ -93,6 +93,7 @@ typedef enum _ENUM_WMTRSTRET_TYPE_T {
 #define MAX_GPIO_CTRL_TIME (2000)	/* [FixMe][GeorgeKuo] a temp value */
 
 #define MAX_PATCH_NUM 10
+#define UTC_SYNC_TIME (60 * 60 * 1000)
 
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
@@ -235,6 +236,9 @@ typedef struct _DEV_WMT_ {
 	/* MET thread information */
 	OSAL_THREAD met_thread;
 	INT32 met_log_ctrl;
+	/* Timer to sync UTC time with connsys */
+	OSAL_TIMER utc_sync_timer;
+	struct work_struct utcSyncWorker;
 } DEV_WMT, *P_DEV_WMT;
 
 
