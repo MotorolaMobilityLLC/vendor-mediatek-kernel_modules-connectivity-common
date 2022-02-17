@@ -337,7 +337,11 @@ static ssize_t wmt_dev_proc_for_aee_read(struct file *filp, char __user *buf, si
 
 	WMT_INFO_FUNC("%s: count %d pos %lld\n", __func__, count, *f_pos);
 
-	osal_lock_sleepable_lock(&g_aee_read_lock);
+	if (osal_lock_sleepable_lock(&g_aee_read_lock)) {
+		WMT_ERR_FUNC("lock failed\n");
+		return 0;
+	}
+
 	if (*f_pos == 0) {
 		pBuf = wmt_lib_get_cpupcr_xml_format(&len);
 		g_buf_len = len;
