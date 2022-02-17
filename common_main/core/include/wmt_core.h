@@ -179,6 +179,7 @@ typedef enum _ENUM_WMT_OPID_T {
 	WMT_OPID_WLAN_REMOVE = 33,
 	WMT_OPID_GPS_MCU_CTRL = 34,
 	WMT_OPID_TRY_PWR_OFF = 35,
+	WMT_OPID_BLANK_STATUS_CTRL = 36,
 	WMT_OPID_MAX
 } ENUM_WMT_OPID_T, *P_ENUM_WMT_OPID_T;
 
@@ -357,6 +358,7 @@ typedef struct _WMT_CTX_ {
 	 * WMT-IC module only.
 	 */
 	P_WMT_IC_OPS p_ic_ops;
+	UINT32 wmtBlankStatus;	/* Controlled blank status */
 } WMT_CTX, *P_WMT_CTX;
 
 /* TODO:[ChangeFeature][George] remove WMT_PKT. replace it with hardcoded arrays. */
@@ -511,6 +513,9 @@ extern WMT_IC_OPS wmt_ic_ops_soc;
 #endif
 
 extern P_WMT_GEN_CONF wmt_get_gen_conf_pointer(VOID);
+
+VOID wmt_core_set_blank_status(UINT32 on_off_flag);
+extern UINT32 wmt_core_get_blank_status(VOID);
 
 /*******************************************************************************
 *                              F U N C T I O N S
