@@ -121,7 +121,7 @@ static INT32 wmt_plat_dump_pin_conf(VOID);
 INT32 gWmtMergeIfSupport;
 UINT32 gCoClockFlag;
 BGF_IRQ_BALANCE g_bgf_irq_lock;
-UINT32 wmtPlatLogLvl = WMT_PLAT_LOG_INFO;
+INT32 wmtPlatLogLvl = WMT_PLAT_LOG_INFO;
 
 /*******************************************************************************
 *                           P R I V A T E   D A T A
