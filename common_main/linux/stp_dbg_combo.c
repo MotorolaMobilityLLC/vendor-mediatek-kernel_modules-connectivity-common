@@ -30,7 +30,8 @@ static PUINT8 combo_task_str[STP_DBG_TASK_ID_MAX] = {
 	"Task_DrvStp",
 	"Task_DrvSdio",
 	"Task_NatBt",
-	"Task_DrvWifi"
+	"Task_DrvWifi",
+	"Task_GPS"
 };
 
 INT32 const combo_legacy_task_id_adapter[STP_DBG_TASK_ID_MAX] = {
@@ -46,7 +47,8 @@ INT32 const combo_legacy_task_id_adapter[STP_DBG_TASK_ID_MAX] = {
 	STP_DBG_TASK_DRVSTP,
 	STP_DBG_TASK_BUS,
 	STP_DBG_TASK_NATBT,
-	STP_DBG_TASK_DRVWIFI
+	STP_DBG_TASK_DRVWIFI,
+	STP_DBG_TASK_DRVGPS
 };
 
 static _osal_inline_ INT32 stp_dbg_combo_put_dump_to_aee(VOID)
