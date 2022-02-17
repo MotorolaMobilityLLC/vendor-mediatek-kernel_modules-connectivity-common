@@ -772,3 +772,9 @@ INT32 mtk_wmt_gps_mcu_ctrl(PUINT8 p_tx_data_buf, UINT32 tx_data_len, PUINT8 p_rx
 				    p_rx_data_len);
 }
 EXPORT_SYMBOL(mtk_wmt_gps_mcu_ctrl);
+
+VOID mtk_wcn_wmt_set_mcif_mpu_protection(MTK_WCN_BOOL enable)
+{
+	mtk_consys_set_mcif_mpu_protection(enable);
+}
+EXPORT_SYMBOL(mtk_wcn_wmt_set_mcif_mpu_protection);
