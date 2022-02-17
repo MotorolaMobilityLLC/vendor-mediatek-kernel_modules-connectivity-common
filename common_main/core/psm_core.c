@@ -1134,7 +1134,7 @@ static inline INT32 _stp_psm_notify_wmt(MTKSTP_PSM_T *stp_psm, const MTKSTP_PSM_
 {
 	INT32 ret = STP_PSM_OPERATION_SUCCESS;
 
-	if (stp_psm == NULL)
+	if (stp_psm == NULL || action < 0 || action >= STP_PSM_MAX_ACTION)
 		return STP_PSM_OPERATION_FAIL;
 
 	switch (_stp_psm_get_state(stp_psm)) {
