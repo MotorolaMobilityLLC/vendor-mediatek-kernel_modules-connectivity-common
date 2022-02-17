@@ -1057,7 +1057,7 @@ INT32 osal_fifo_init(P_OSAL_FIFO pFifo, UINT8 *buffer, UINT32 size)
 
 	if (pFifo->pFifoBody != NULL) {
 		pr_err("%s:Because pFifo room is avialable, we clear the room and allocate them again.\n", __func__);
-		pFifo->FifoDeInit(pFifo->pFifoBody);
+		pFifo->FifoDeInit(pFifo);
 		pFifo->pFifoBody = NULL;
 	}
 
@@ -1075,6 +1075,7 @@ VOID osal_fifo_deinit(P_OSAL_FIFO pFifo)
 		return;
 	}
 	kfree(pFifo->pFifoBody);
+	pFifo->pFifoBody = NULL;
 }
 
 INT32 osal_fifo_reset(P_OSAL_FIFO pFifo)
