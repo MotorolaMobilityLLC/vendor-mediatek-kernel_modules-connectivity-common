@@ -1426,7 +1426,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		do {
 			UINT32 i = 0, j = 0, k = 0;
 			PUINT8 pBuf = NULL;
-			UINT32 int_buf[10];
+			UINT32 int_buf[10] = {0};
 			INT8 Buffer[10][11];
 
 			pBuf = kmalloc(DYNAMIC_DUMP_BUF + 1, GFP_KERNEL);
