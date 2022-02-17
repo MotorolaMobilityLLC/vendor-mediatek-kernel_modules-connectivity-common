@@ -35,6 +35,7 @@
 
 #include <wmt_exp.h>
 #include <wmt_lib.h>
+#include <wmt_detect.h>
 #include <psm_core.h>
 #include <hif_sdio.h>
 #include <stp_dbg.h>
@@ -75,12 +76,49 @@ MTK_WCN_BOOL g_pwr_off_flag = MTK_WCN_BOOL_TRUE;
 ********************************************************************************
 */
 
+static MTK_WCN_BOOL mtk_wcn_wmt_pwr_on(VOID);
 static MTK_WCN_BOOL mtk_wcn_wmt_func_ctrl(ENUM_WMTDRV_TYPE_T type, ENUM_WMT_OPID_T opId);
 
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
 */
+
+static MTK_WCN_BOOL mtk_wcn_wmt_pwr_on(VOID)
+{
+	P_OSAL_OP pOp;
+	MTK_WCN_BOOL bRet;
+	P_OSAL_SIGNAL pSignal;
+
+	pOp = wmt_lib_get_free_op();
+	if (!pOp) {
+		WMT_DBG_FUNC("get_free_lxop fail\n");
+		return MTK_WCN_BOOL_FALSE;
+	}
+	pSignal = &pOp->signal;
+
+	pOp->op.opId = WMT_OPID_PWR_ON;
+	pSignal->timeoutValue = MAX_FUNC_ON_TIME;
+	pOp->op.au4OpData[0] = WMTDRV_TYPE_WMT;
+
+	wmt_lib_host_awake_get();
+	if (DISABLE_PSM_MONITOR()) {
+		WMT_ERR_FUNC("wake up failed,OPID(%d) type(%zu) abort\n", pOp->op.opId, pOp->op.au4OpData[0]);
+		wmt_lib_put_op_to_free_queue(pOp);
+		wmt_lib_host_awake_put();
+		return MTK_WCN_BOOL_FALSE;
+	}
+
+	bRet = wmt_lib_put_act_op(pOp);
+
+	ENABLE_PSM_MONITOR();
+	wmt_lib_host_awake_put();
+
+	if (bRet == MTK_WCN_BOOL_FALSE)
+		WMT_WARN_FUNC("OPID(%d) type(%zu) fail\n", pOp->op.opId, pOp->op.au4OpData[0]);
+
+	return bRet;
+}
 
 static MTK_WCN_BOOL mtk_wcn_wmt_func_ctrl(ENUM_WMTDRV_TYPE_T type, ENUM_WMT_OPID_T opId)
 {
@@ -89,6 +127,12 @@ static MTK_WCN_BOOL mtk_wcn_wmt_func_ctrl(ENUM_WMTDRV_TYPE_T type, ENUM_WMT_OPID
 	P_OSAL_SIGNAL pSignal;
 	PUINT8 pbuf = NULL;
 	INT32 len = 0;
+	MTK_WCN_BOOL bOffload = (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC && type == WMTDRV_TYPE_WIFI);
+
+	/* WIFI on no need to disable psm and prevent WIFI on blocked by psm lock. */
+	/* So we power on connsys separately from function on flow. */
+	if (bOffload)
+		mtk_wcn_wmt_pwr_on();
 
 	pOp = wmt_lib_get_free_op();
 	if (!pOp) {
@@ -100,27 +144,33 @@ static MTK_WCN_BOOL mtk_wcn_wmt_func_ctrl(ENUM_WMTDRV_TYPE_T type, ENUM_WMT_OPID
 
 	pOp->op.opId = opId;
 	pOp->op.au4OpData[0] = type;
-	pSignal->timeoutValue = (pOp->op.opId == WMT_OPID_FUNC_ON) ? MAX_FUNC_ON_TIME : MAX_FUNC_OFF_TIME;
+	if (type == WMTDRV_TYPE_WIFI)
+		pSignal->timeoutValue = 4000;
+	else
+		pSignal->timeoutValue = (pOp->op.opId == WMT_OPID_FUNC_ON) ? MAX_FUNC_ON_TIME : MAX_FUNC_OFF_TIME;
 
 	WMT_INFO_FUNC("wmt-exp: OPID(%d) type(%zu) start\n", pOp->op.opId, pOp->op.au4OpData[0]);
 
 	/*do not check return value, we will do this either way */
 	wmt_lib_host_awake_get();
-	/*wake up chip first */
-	if (DISABLE_PSM_MONITOR()) {
-		WMT_ERR_FUNC("wake up failed,OPID(%d) type(%zu) abort\n", pOp->op.opId, pOp->op.au4OpData[0]);
-		wmt_lib_put_op_to_free_queue(pOp);
-		wmt_lib_host_awake_put();
-		return MTK_WCN_BOOL_FALSE;
+	/* wake up chip first */
+	if (!bOffload) {
+		if (DISABLE_PSM_MONITOR()) {
+			WMT_ERR_FUNC("wake up failed,OPID(%d) type(%zu) abort\n", pOp->op.opId, pOp->op.au4OpData[0]);
+			wmt_lib_put_op_to_free_queue(pOp);
+			wmt_lib_host_awake_put();
+			return MTK_WCN_BOOL_FALSE;
+		}
 	}
 
 	bRet = wmt_lib_put_act_op(pOp);
-	ENABLE_PSM_MONITOR();
+	if (!bOffload)
+		ENABLE_PSM_MONITOR();
 	wmt_lib_host_awake_put();
 
 	if (bRet == MTK_WCN_BOOL_FALSE) {
 		WMT_WARN_FUNC("OPID(%d) type(%zu) fail\n", pOp->op.opId, pOp->op.au4OpData[0]);
-		if (pOp->op.opId == WMT_OPID_FUNC_ON && type == WMTDRV_TYPE_WIFI) {
+		if (pOp->op.opId == WMT_OPID_FUNC_ON && type == WMTDRV_TYPE_WIFI && !bOffload) {
 			pbuf = "turn on wifi fail, just collect SYS_FTRACE to DB";
 			len = osal_strlen(pbuf);
 			stp_dbg_trigger_collect_ftrace(pbuf, len);
