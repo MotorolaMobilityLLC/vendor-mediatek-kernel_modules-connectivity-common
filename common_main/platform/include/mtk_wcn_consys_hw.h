@@ -209,6 +209,7 @@ typedef VOID(*CONSYS_IC_SET_MCIF_EMI_MPU_PROTECTION)(MTK_WCN_BOOL enable);
 typedef INT32(*CONSYS_IC_CALIBRATION_BACKUP_RESTORE) (VOID);
 typedef VOID(*CONSYS_IC_REGISTER_DEVAPC_CB) (VOID);
 typedef VOID(*CONSYS_IC_INFRA_REG_DUMP)(VOID);
+typedef INT32(*CONSYS_IC_IS_ANT_SWAP_ENABLE_BY_HWID) (INT32 pin_num);
 
 typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_CLOCK_BUFFER_CTRL consys_ic_clock_buffer_ctrl;
@@ -257,6 +258,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_CALIBRATION_BACKUP_RESTORE consys_ic_calibration_backup_restore;
 	CONSYS_IC_REGISTER_DEVAPC_CB consys_ic_register_devapc_cb;
 	CONSYS_IC_INFRA_REG_DUMP consys_ic_infra_reg_dump;
+	CONSYS_IC_IS_ANT_SWAP_ENABLE_BY_HWID consys_ic_is_ant_swap_enable_by_hwid;
 } WMT_CONSYS_IC_OPS, *P_WMT_CONSYS_IC_OPS;
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -331,7 +333,7 @@ VOID mtk_consys_set_mcif_mpu_protection(MTK_WCN_BOOL enable);
 INT32 mtk_consys_is_calibration_backup_restore_support(VOID);
 VOID mtk_consys_set_chip_reset_status(INT32 status);
 INT32 mtk_consys_chip_reset_status(VOID);
-INT32 mtk_consys_get_wifi_ant_swap_gpio_value(VOID);
+INT32 mtk_consys_is_ant_swap_enable_by_hwid(VOID);
 INT32 mtk_consys_resume_dump_info(VOID);
 #endif /* _MTK_WCN_CONSYS_HW_H_ */
 

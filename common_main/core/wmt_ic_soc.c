@@ -767,8 +767,8 @@ static UINT8 WMT_POWER_CTRL_DLM_CMD3[] = {
 static UINT8 WMT_POWER_CTRL_DLM_EVT[] = { 0x02, 0x08, 0x04, 0x00, 0x00, 0x00, 0x00, 0x01 };
 #endif
 
-static UINT8 WMT_WIFI_ANT_SWAP_CMD[] = { 0x01, 0x14, 0x03, 0x00, 0x06, 0x02, 0x00 };
-static UINT8 WMT_WIFI_ANT_SWAP_EVT[] = { 0x02, 0x14, 0x02, 0x00, 0x00, 0x06 };
+static UINT8 WMT_WIFI_ANT_SWAP_CMD[] = { 0x01, 0x14, 0x04, 0x00, 0x07, 0x02, 0x00, 0x00 };
+static UINT8 WMT_WIFI_ANT_SWAP_EVT[] = { 0x02, 0x14, 0x02, 0x00, 0x00, 0x07 };
 
 #if (!CFG_IC_SOC)
 
@@ -2501,16 +2501,19 @@ static INT32 wmt_stp_init_wifi_ant_swap(VOID)
 
 	ant_swap_mode = pWmtGenConf->wifi_ant_swap_mode;
 
-	WMT_INFO_FUNC("ant swap mode = %d, main_polarity = %d\n",
-		ant_swap_mode, pWmtGenConf->wifi_main_ant_polarity);
+	WMT_INFO_FUNC("ant swap mode = %d, main_polarity = %d, ant_sel = %d\n",
+		ant_swap_mode, pWmtGenConf->wifi_main_ant_polarity,
+		pWmtGenConf->wifi_ant_swap_ant_sel_gpio);
 
 	if (ant_swap_mode <= 0 || ant_swap_mode > 2)
 		return 0;
 
-	if (ant_swap_mode == 2 && mtk_consys_get_wifi_ant_swap_gpio_value() != 0)
+	if (ant_swap_mode == 2 &&
+		mtk_consys_is_ant_swap_enable_by_hwid() == 0)
 		return 0;
 
 	wifi_ant_swap_table[0].cmd[6] = pWmtGenConf->wifi_main_ant_polarity;
+	wifi_ant_swap_table[0].cmd[7] = pWmtGenConf->wifi_ant_swap_ant_sel_gpio;
 
 	iRet = wmt_core_init_script(wifi_ant_swap_table, ARRAY_SIZE(wifi_ant_swap_table));
 
