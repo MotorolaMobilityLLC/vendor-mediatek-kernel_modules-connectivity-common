@@ -58,6 +58,7 @@ endif
 # set for module Makefile
 export AUTOCONF_H=$(KERNEL_OUT)/include/generated/autoconf.h
 
+ifneq ($(filter yes,$(MTK_COMBO_SUPPORT)),)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := wmt_drv.ko
@@ -92,6 +93,8 @@ $(LOCAL_BUILT_MODULE): $(KERNEL_OUT)/scripts/sign-file
 	@echo $@: $^
 	$(MAKE) -C $(KOUT) $(KOPTS)
 	$(hide) $(call sign-kernel-module,$(KOUT)/scripts/sign-file,$(CERT_PATH)/ko_prvk.pem,$(CERT_PATH)/ko_pubk.x509.der)
-
+else
+        $(warning wmt_drv-MTK_COMBO_SUPPORT: [$(MTK_COMBO_SUPPORT)])
+endif
 endif
 endif
