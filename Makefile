@@ -1,4 +1,14 @@
+ifeq ($(MTK_PLATFORM),)
+ifneq ($(MTK_PLATFORM_WMT),)
+MTK_PLATFORM := $(shell echo $(MTK_PLATFORM_WMT) | tr A-Z a-z)
+endif
+endif
+
+ifeq ($(MTK_PLATFORM),)
+ifneq ($(CONFIG_MTK_PLATFORM),)
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+endif
+endif
 ###############################################################################
 # Necessary Check
 
