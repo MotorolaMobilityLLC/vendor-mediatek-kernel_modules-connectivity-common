@@ -381,11 +381,11 @@ static _osal_inline_ INT32 stp_dbg_core_dump_post_handle(P_WCN_CORE_DUMP_T dmp)
 	ENUM_STP_FW_ISSUE_TYPE issue_type;
 
 	if ((dmp->p_head != NULL)
-	    && ((osal_strnstr(dmp->p_head, "<ASSERT>", dmp->head_len)) != NULL)) {
+	    && ((osal_strnstr(dmp->p_head, "<ASSERT>", dmp->head_len)) != NULL ||
+		stp_dbg_get_host_trigger_assert())) {
 		PINT8 pStr = dmp->p_head;
 		PINT8 pDtr = NULL;
 
-		STP_DBG_PR_INFO(" <ASSERT> string found\n");
 		if (stp_dbg_get_host_trigger_assert())
 			issue_type = STP_HOST_TRIGGER_FW_ASSERT;
 		else
@@ -419,10 +419,9 @@ static _osal_inline_ INT32 stp_dbg_core_dump_post_handle(P_WCN_CORE_DUMP_T dmp)
 			}
 		}
 	} else if ((dmp->p_head != NULL)
-		   && ((osal_strnstr(dmp->p_head, "ABT", dmp->head_len)) != NULL)) {
-		STP_DBG_PR_ERR("fw ABT happens, set to Fw ABT Exception\n");
-		stp_dbg_set_fw_info("Fw ABT Exception", osal_strlen("Fw ABT Exception"),
-				    STP_FW_ABT);
+			&& ((osal_strnstr(dmp->p_head, "<EXCEPTION>", dmp->head_len) != NULL)
+			|| (osal_strnstr(dmp->p_head, "ABT", dmp->head_len) != NULL))) {
+		stp_dbg_set_fw_info(dmp->p_head, dmp->head_len, STP_FW_ABT);
 		osal_strcpy(&dmp->info[0], INFO_HEAD);
 		osal_memcpy(&dmp->info[osal_strlen(INFO_HEAD)], "Fw ABT Exception...",
 			    osal_strlen("Fw ABT Exception..."));
@@ -2441,8 +2440,10 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 	if ((issue_type == STP_FW_ASSERT_ISSUE) ||
 	    (issue_type == STP_HOST_TRIGGER_FW_ASSERT) ||
 	    (issue_type == STP_HOST_TRIGGER_ASSERT_TIMEOUT) ||
-	    (issue_type == STP_HOST_TRIGGER_COLLECT_FTRACE)) {
-		if ((issue_type == STP_FW_ASSERT_ISSUE) || (issue_type == STP_HOST_TRIGGER_FW_ASSERT)) {
+	    (issue_type == STP_HOST_TRIGGER_COLLECT_FTRACE) ||
+	    (issue_type == STP_FW_ABT)) {
+		if ((issue_type == STP_FW_ASSERT_ISSUE) || (issue_type == STP_HOST_TRIGGER_FW_ASSERT)
+			|| (issue_type == STP_FW_ABT)) {
 			tempbuf = osal_malloc(len + 1);
 			if (!tempbuf)
 				return -2;
@@ -2457,11 +2458,12 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 			tempbuf[len] = '\0';
 
 			for (type_index = STP_DBG_ASSERT_INFO; type_index < STP_DBG_PARSER_TYPE_MAX;
-					type_index++)
-				iRet += stp_dbg_parser_assert_str(&tempbuf[0], type_index);
-
-			if (iRet)
-				STP_DBG_PR_ERR("passert assert infor fail(%d)\n", iRet);
+					type_index++) {
+				iRet = stp_dbg_parser_assert_str(&tempbuf[0], type_index);
+				if (iRet)
+					STP_DBG_PR_INFO("fail to parse assert str %s, type = %d, ret = %d\n",
+						&tempbuf[0], type_index, iRet);
+			}
 
 		}
 		if ((issue_type == STP_HOST_TRIGGER_FW_ASSERT) ||
@@ -2515,8 +2517,17 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 			g_stp_dbg_cpupcr->host_assert_info.assert_from_host = 0;
 			osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 
+		} else if (issue_type == STP_FW_ABT) {
+			INT32 copyLen = (len <= STP_ASSERT_INFO_SIZE ? len : STP_ASSERT_INFO_SIZE);
+
+			osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
+			osal_memcpy(&g_stp_dbg_cpupcr->assert_info[0], tempbuf, copyLen);
+			g_stp_dbg_cpupcr->assert_info[copyLen] = '\0';
+			osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 		}
-		osal_free(tempbuf);
+
+		if (tempbuf)
+			osal_free(tempbuf);
 	} else if (issue_type == STP_FW_NOACK_ISSUE) {
 		osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 		osal_memcpy(&g_stp_dbg_cpupcr->assert_info[0], issue_info, len);
@@ -2538,19 +2549,12 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 		g_stp_dbg_cpupcr->fwRrq = 0;
 		g_stp_dbg_cpupcr->fwIsr = 0;
 		osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
-	} else if (issue_type == STP_FW_ABT) {
-		osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
-		osal_memcpy(&g_stp_dbg_cpupcr->assert_info[0], issue_info, len);
-		g_stp_dbg_cpupcr->fwTaskId = STP_DBG_TASK_WMT;
-		g_stp_dbg_cpupcr->fwRrq = 0;
-		g_stp_dbg_cpupcr->fwIsr = 0;
-		osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 	} else {
 		STP_DBG_PR_ERR("invalid issue type(%d)\n", issue_type);
 		return -3;
 	}
 
-	return iRet;
+	return 0;
 }
 
 INT32 stp_dbg_cpupcr_infor_format(PUINT8 buf, UINT32 max_len)
