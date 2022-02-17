@@ -345,7 +345,7 @@ static void wmt_step_init_register_base_size(void)
 
 static void wmt_step_clear_action_list(struct step_action_list *action_list)
 {
-	struct step_action *p_act, *p_act_next;
+	struct step_action *p_act = NULL, *p_act_next = NULL;
 
 	list_for_each_entry_safe(p_act, p_act_next, &(action_list->list), list) {
 		list_del_init(&p_act->list);
@@ -555,7 +555,7 @@ static int wmt_step_access_line_state_tp(char *tok,
 	struct step_target_act_list_info *p_parse_info,
 	struct step_parse_line_data_param_info *p_parse_line_info)
 {
-	char *pch;
+	char *pch = NULL;
 
 	if (p_parse_info->p_pd_entry != NULL) {
 		WMT_ERR_FUNC("STEP failed: Please add [PD-] after [PD+], tok = %s\n", tok);
@@ -674,7 +674,7 @@ static void wmt_step_parse_line_data(char *line, struct step_target_act_list_inf
 
 static void _wmt_step_do_actions(struct step_action_list *action_list)
 {
-	struct step_action *p_act, *p_act_next;
+	struct step_action *p_act = NULL, *p_act_next = NULL;
 
 	list_for_each_entry_safe(p_act, p_act_next, &action_list->list, list) {
 		if (p_act->action_id <= STEP_ACTION_INDEX_NO_DEFINE || p_act->action_id >= STEP_ACTION_INDEX_MAX) {
@@ -712,8 +712,8 @@ static void wmt_step_start_work(struct step_pd_entry *p_entry)
 
 static void wmt_step_pd_work(struct work_struct *work)
 {
-	struct step_pd_entry *p_entry;
-	struct delayed_work *delayed_work;
+	struct step_pd_entry *p_entry = NULL;
+	struct delayed_work *delayed_work = NULL;
 	int result = 0;
 
 	if (down_read_trylock(&g_step_env.init_rwsem)) {
@@ -798,7 +798,7 @@ static VOID wmt_step_do_actions_from_tp(enum step_trigger_point_id tp_id, char *
 static int wmt_step_write_action(struct step_action_list *p_list, enum step_action_id act_id,
 	int param_num, char *params[])
 {
-	struct step_action *p_action;
+	struct step_action *p_action = NULL;
 
 	if (p_list == NULL) {
 		WMT_ERR_FUNC("STEP failed: p_list is null\n");
@@ -1260,7 +1260,7 @@ static int _wmt_step_create_register_action(struct step_reigster_info *p_reg_inf
 static struct step_action *wmt_step_create_register_action(int param_num, char *params[])
 {
 	struct step_register_action *p_reg_act = NULL;
-	struct step_reigster_info *p_reg_info;
+	struct step_reigster_info *p_reg_info = NULL;
 	int ret;
 
 	p_reg_act = kzalloc(sizeof(struct step_register_action), GFP_KERNEL);
@@ -1296,7 +1296,7 @@ static struct step_action *wmt_step_create_register_action(int param_num, char *
 static struct step_action *wmt_step_create_condition_register_action(int param_num, char *params[])
 {
 	struct step_condition_register_action *p_cond_reg_act = NULL;
-	struct step_reigster_info *p_reg_info;
+	struct step_reigster_info *p_reg_info = NULL;
 	unsigned int reg_id;
 	char buf[128] = "";
 	int ret;
@@ -2236,8 +2236,8 @@ int wmt_step_init_pd_env(void)
 
 int wmt_step_deinit_pd_env(void)
 {
-	struct step_pd_entry *p_current;
-	struct step_pd_entry *p_next;
+	struct step_pd_entry *p_current = NULL;
+	struct step_pd_entry *p_next = NULL;
 
 	if (!g_step_env.pd_struct.step_pd_wq)
 		return -1;
@@ -2253,7 +2253,7 @@ int wmt_step_deinit_pd_env(void)
 
 struct step_pd_entry *wmt_step_get_periodic_dump_entry(unsigned int expires)
 {
-	struct step_pd_entry *p_current;
+	struct step_pd_entry *p_current = NULL;
 
 	if (expires <= 0)
 		return NULL;
@@ -2275,8 +2275,8 @@ int wmt_step_parse_data(const char *in_buf, unsigned int size,
 	STEP_WRITE_ACT_TO_LIST func_act_to_list)
 {
 	struct step_target_act_list_info parse_info;
-	char *buf, *tmp_buf;
-	char *line;
+	char *buf = NULL, *tmp_buf = NULL;
+	char *line = NULL;
 
 	buf = osal_malloc(size + 1);
 	if (!buf) {
