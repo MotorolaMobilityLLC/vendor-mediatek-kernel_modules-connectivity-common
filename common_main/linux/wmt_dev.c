@@ -875,6 +875,11 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			P_OSAL_SIGNAL pSignal = NULL;
 			P_WMT_HIF_CONF pHif = NULL;
 
+			if (hif_info == 1) {
+				WMT_INFO_FUNC("hif_info had been set!\n");
+				break;
+			}
+
 			iRet = wmt_lib_set_hif(arg);
 			if (iRet != 0) {
 				WMT_INFO_FUNC("wmt_lib_set_hif fail (%lu)\n", arg);
