@@ -42,7 +42,7 @@
 #include "stp_core.h"
 #include "stp_dbg.h"
 #include "wmt_ic.h"
-
+#include "wmt_step.h"
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -256,12 +256,14 @@ INT32 wmt_ctrl_rx(P_WMT_CTRL_DATA pWmtCtrlData /*UINT8 *pBuff, UINT32 buffLen, U
 
 			if (leftCnt <= 0) {
 				stp_dbg_poll_cpupcr(5, 1, 1);
+				WMT_STEP_COMMAND_TIMEOUT_DO_ACTIONS_FUNC("STP RX timeout");
 				WMT_ERR_FUNC("wmt_dev_rx_timeout: timeout,jiffies(%lu),timeoutvalue(%d)\n",
 				     jiffies, pDev->rWmtRxWq.timeoutValue);
 				return -1;
 			}
 		} else if (waitRet < 0) {
 			WMT_WARN_FUNC("wmt_dev_rx_timeout: interrupted by signal (%d)\n", waitRet);
+			WMT_STEP_COMMAND_TIMEOUT_DO_ACTIONS_FUNC("STP RX timeout");
 			return waitRet;
 		}
 		readLen = mtk_wcn_stp_receive_data(pBuff, buffLen, WMT_TASK_INDX);
