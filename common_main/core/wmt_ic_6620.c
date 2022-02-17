@@ -1172,7 +1172,7 @@ static INT32 mt6620_ver_check(VOID)
 	UINT32 hw_ver = 0;
 	UINT32 fw_ver = 0;
 	INT32 iret;
-	const WMT_IC_INFO_S *p_info;
+	const WMT_IC_INFO_S *p_info = NULL;
 	ULONG ctrlPa1;
 	ULONG ctrlPa2;
 
@@ -1270,7 +1270,7 @@ static INT32 wmt_stp_init_coex(VOID)
 {
 	INT32 iRet;
 	ULONG addr = 0;
-	WMT_GEN_CONF *pWmtGenConf;
+	WMT_GEN_CONF *pWmtGenConf = NULL;
 
 #define COEX_WMT  0
 #define COEX_BT   1
