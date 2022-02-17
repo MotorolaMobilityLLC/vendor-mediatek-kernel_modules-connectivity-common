@@ -81,6 +81,10 @@
 #define COMPAT_WMT_IOCTL_DYNAMIC_DUMP_CTRL	_IOR(WMT_IOC_MAGIC, 30, compat_uptr_t)
 #define COMPAT_WMT_IOCTL_SET_ROM_PATCH_INFO	_IOW(WMT_IOC_MAGIC, 31, compat_uptr_t)
 #define COMPAT_WMT_IOCTL_FDB_CTRL		_IOW(WMT_IOC_MAGIC, 32, compat_uptr_t)
+#define COMPAT_WMT_IOCTL_GET_VENDOR_PATCH_VERSION	_IOR(WMT_IOC_MAGIC, 36, compat_uptr_t)
+#define COMPAT_WMT_IOCTL_SET_VENDOR_PATCH_VERSION	_IOW(WMT_IOC_MAGIC, 37, compat_uptr_t)
+#define COMPAT_WMT_IOCTL_SET_ACTIVE_PATCH_VERSION	_IOR(WMT_IOC_MAGIC, 40, compat_uptr_t)
+#define COMPAT_WMT_IOCTL_GET_ACTIVE_PATCH_VERSION	_IOR(WMT_IOC_MAGIC, 41, compat_uptr_t)
 #endif
 
 #define WMT_IOC_MAGIC        0xa0
@@ -107,6 +111,13 @@
 #define WMT_IOCTL_FDB_CTRL		_IOW(WMT_IOC_MAGIC, 32, char*)
 #define WMT_IOCTL_GET_EMI_PHY_SIZE  _IOR(WMT_IOC_MAGIC, 33, unsigned int)
 #define WMT_IOCTL_FW_PATCH_UPDATE_RST	_IOR(WMT_IOC_MAGIC, 34, int)
+#define WMT_IOCTL_GET_VENDOR_PATCH_NUM		_IOW(WMT_IOC_MAGIC, 35, int)
+#define WMT_IOCTL_GET_VENDOR_PATCH_VERSION	_IOR(WMT_IOC_MAGIC, 36, char*)
+#define WMT_IOCTL_SET_VENDOR_PATCH_VERSION	_IOW(WMT_IOC_MAGIC, 37, char*)
+#define WMT_IOCTL_GET_CHECK_PATCH_STATUS	_IOR(WMT_IOC_MAGIC, 38, int)
+#define WMT_IOCTL_SET_CHECK_PATCH_STATUS	_IOW(WMT_IOC_MAGIC, 39, int)
+#define WMT_IOCTL_SET_ACTIVE_PATCH_VERSION	_IOR(WMT_IOC_MAGIC, 40, char*)
+#define WMT_IOCTL_GET_ACTIVE_PATCH_VERSION	_IOR(WMT_IOC_MAGIC, 41, char*)
 #define WMT_IOCTL_GET_DIRECT_PATH_EMI_SIZE	_IOR(WMT_IOC_MAGIC, 42, unsigned int)
 
 #define MTK_WMT_VERSION  "Consys WMT Driver - v1.0"
@@ -1409,6 +1420,83 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			WMT_INFO_FUNC("Direct path emi size=%d\n", emiInfo->emi_direct_path_size);
 			return (UINT32)emiInfo->emi_direct_path_size;
 		} while (0);
+		break;
+	case WMT_IOCTL_GET_VENDOR_PATCH_NUM:
+		iRet = wmt_lib_get_vendor_patch_num();
+		break;
+	case WMT_IOCTL_SET_VENDOR_PATCH_VERSION:
+		do {
+			struct wmt_vendor_patch patch;
+
+			if (copy_from_user(&patch, (PVOID)arg,
+				sizeof(struct wmt_vendor_patch))) {
+				WMT_ERR_FUNC("copy_from_user failed at %d\n", __LINE__);
+				iRet = -EFAULT;
+				break;
+			}
+
+			iRet = wmt_lib_set_vendor_patch_version(&patch);
+			if (iRet) {
+				iRet = -EFAULT;
+				break;
+			}
+		} while (0);
+		break;
+	case WMT_IOCTL_GET_VENDOR_PATCH_VERSION:
+		do {
+			struct wmt_vendor_patch patch;
+
+			if (copy_from_user(&patch, (PVOID)arg, sizeof(struct wmt_vendor_patch))) {
+				WMT_ERR_FUNC("copy_from_user failed at %d\n", __LINE__);
+				iRet = -EFAULT;
+				break;
+			}
+
+			iRet = wmt_lib_get_vendor_patch_version(&patch);
+			if (iRet) {
+				iRet = -EFAULT;
+				break;
+			}
+
+			if (copy_to_user((PVOID)arg, &patch, sizeof(struct wmt_vendor_patch)))
+				iRet = -EFAULT;
+		} while (0);
+		break;
+	case WMT_IOCTL_SET_ACTIVE_PATCH_VERSION:
+		do {
+			UINT8 version[WMT_FIRMWARE_VERSION_LENGTH + 1];
+
+			if (copy_from_user(version, (PVOID)arg,
+				WMT_FIRMWARE_VERSION_LENGTH + 1)) {
+				WMT_ERR_FUNC("copy_from_user failed at %d\n",
+					 __LINE__);
+				iRet = -EFAULT;
+				break;
+			}
+
+			iRet = wmt_lib_set_active_patch_version(version);
+		} while (0);
+		break;
+	case WMT_IOCTL_GET_ACTIVE_PATCH_VERSION:
+		do {
+			UINT8 version[WMT_FIRMWARE_VERSION_LENGTH + 1];
+
+			iRet = wmt_lib_get_active_patch_version(version);
+			if (iRet) {
+				iRet = -EFAULT;
+				break;
+			}
+
+			if (copy_to_user((PVOID)arg, version,
+				osal_strlen(version) + 1))
+				iRet = -EFAULT;
+		} while (0);
+		break;
+	case WMT_IOCTL_SET_CHECK_PATCH_STATUS:
+		iRet = wmt_lib_set_check_patch_status(arg);
+		break;
+	case WMT_IOCTL_GET_CHECK_PATCH_STATUS:
+		iRet = wmt_lib_get_check_patch_status();
 		break;
 	default:
 		iRet = -EINVAL;
