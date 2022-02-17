@@ -3018,7 +3018,7 @@ INT32 mtk_wcn_soc_rom_patch_dwn(UINT32 ip_ver)
 			WMT_INFO_FUNC("[Rom Patch]Name=%s,EmiOffset=0x%x,Size=0x%x\n",
 					gFullPatchName, patchEmiOffset, patchSize);
 
-			patchAddr = ioremap_nocache(emiInfo->emi_phy_addr + patchEmiOffset, patchSize);
+			patchAddr = ioremap_nocache(emiInfo->emi_ap_phy_addr + patchEmiOffset, patchSize);
 			if (patchAddr) {
 				osal_memcpy_toio(patchAddr, pPatchBuf, patchSize);
 				iounmap(patchAddr);
