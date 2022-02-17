@@ -749,6 +749,10 @@ INT32 osal_bit_op_unlock(P_OSAL_UNSLEEPABLE_LOCK pLock)
 #endif
 INT32 osal_clear_bit(UINT32 bitOffset, P_OSAL_BIT_OP_VAR pData)
 {
+	if (bitOffset >= BITS_PER_LONG) {
+		pr_info("bitOffset(%d) is out of range.\n", bitOffset);
+		return -1;
+	}
 	osal_bit_op_lock(&(pData->opLock));
 	clear_bit(bitOffset, &pData->data);
 	osal_bit_op_unlock(&(pData->opLock));
@@ -757,6 +761,10 @@ INT32 osal_clear_bit(UINT32 bitOffset, P_OSAL_BIT_OP_VAR pData)
 
 INT32 osal_set_bit(UINT32 bitOffset, P_OSAL_BIT_OP_VAR pData)
 {
+	if (bitOffset >= BITS_PER_LONG) {
+		pr_info("bitOffset(%d) is out of range.\n", bitOffset);
+		return -1;
+	}
 	osal_bit_op_lock(&(pData->opLock));
 	set_bit(bitOffset, &pData->data);
 	osal_bit_op_unlock(&(pData->opLock));
@@ -767,6 +775,10 @@ INT32 osal_test_bit(UINT32 bitOffset, P_OSAL_BIT_OP_VAR pData)
 {
 	UINT32 iRet = 0;
 
+	if (bitOffset >= BITS_PER_LONG) {
+		pr_info("bitOffset(%d) is out of range.\n", bitOffset);
+		return -1;
+	}
 	osal_bit_op_lock(&(pData->opLock));
 	iRet = test_bit(bitOffset, &pData->data);
 	osal_bit_op_unlock(&(pData->opLock));
@@ -777,6 +789,10 @@ INT32 osal_test_and_clear_bit(UINT32 bitOffset, P_OSAL_BIT_OP_VAR pData)
 {
 	UINT32 iRet = 0;
 
+	if (bitOffset >= BITS_PER_LONG) {
+		pr_info("bitOffset(%d) is out of range.\n", bitOffset);
+		return -1;
+	}
 	osal_bit_op_lock(&(pData->opLock));
 	iRet = test_and_clear_bit(bitOffset, &pData->data);
 	osal_bit_op_unlock(&(pData->opLock));
@@ -788,6 +804,10 @@ INT32 osal_test_and_set_bit(UINT32 bitOffset, P_OSAL_BIT_OP_VAR pData)
 {
 	UINT32 iRet = 0;
 
+	if (bitOffset >= BITS_PER_LONG) {
+		pr_info("bitOffset(%d) is out of range.\n", bitOffset);
+		return -1;
+	}
 	osal_bit_op_lock(&(pData->opLock));
 	iRet = test_and_set_bit(bitOffset, &pData->data);
 	osal_bit_op_unlock(&(pData->opLock));
