@@ -237,6 +237,8 @@ static const char * const STEP_TRIGGER_TIME_NAME[] = {
 		"[TP 27] Power on sequence(5): After BT and Wi-Fi calibration",
 	[STEP_TRIGGER_POINT_AFTER_RESTORE_CAL_CMD] =
 		"[TP 28] After send calibration restore command",
+	[STEP_TRIGGER_POINT_WHEN_CLOCK_FAIL] =
+		"[TP 29] When clock fail",
 };
 
 static const int wmt_step_func_ctrl_id[WMTDRV_TYPE_MAX][2] = {
