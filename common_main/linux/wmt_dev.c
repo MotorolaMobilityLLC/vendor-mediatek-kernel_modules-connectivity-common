@@ -1489,6 +1489,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		} while (0);
 		break;
 	case WMT_IOCTL_FDB_CTRL:
+#if WMT_DBG_SUPPORT
 		do {
 			struct wmt_fdb_ctrl fdb_ctrl;
 
@@ -1516,6 +1517,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 				break;
 			}
 		} while (0);
+#endif
 		break;
 	case WMT_IOCTL_GET_EMI_PHY_SIZE:
 		do {
