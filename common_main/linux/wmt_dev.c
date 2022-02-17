@@ -681,7 +681,7 @@ LONG wmt_dev_tm_temp_query(VOID)
 			query_cond = 1;
 
 			WMT_INFO_FUNC
-				("It is long time (prev(%lu), now(%lu), > %d sec) not to query, query temp again..\n",
+				("It is long time (prev(%llu), now(%llu), > %d sec) not to query, query temp again..\n",
 				 query_time.tv_sec, now_time.tv_sec, REFRESH_TIME);
 			for (index = 0; index < HISTORY_NUM; index++)
 				temp_table[index] = 99;
