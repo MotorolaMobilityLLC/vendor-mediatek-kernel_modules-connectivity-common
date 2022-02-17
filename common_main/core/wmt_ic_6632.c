@@ -1177,7 +1177,7 @@ static MTK_WCN_BOOL mt6632_deep_sleep_ctrl(INT32 value)
 
 static INT32 wmt_stp_get_deep_sleep_flag_from_cfg(VOID)
 {
-	WMT_GEN_CONF *pWmtGenConf;
+	WMT_GEN_CONF *pWmtGenConf = NULL;
 	ULONG addr;
 	INT32 ret;
 
@@ -1225,7 +1225,7 @@ static INT32 mt6632_ver_check(VOID)
 	UINT32 hw_ver = 0;
 	UINT32 fw_ver = 0;
 	INT32 iret;
-	const WMT_IC_INFO_S *p_info;
+	const WMT_IC_INFO_S *p_info = NULL;
 	ULONG ctrlPa1;
 	ULONG ctrlPa2;
 
@@ -1328,7 +1328,7 @@ static INT32 wmt_stp_init_coex(VOID)
 {
 	INT32 iRet;
 	ULONG addr = 0;
-	WMT_GEN_CONF *pWmtGenConf;
+	WMT_GEN_CONF *pWmtGenConf = NULL;
 
 #define COEX_WMT  0
 
@@ -1955,7 +1955,7 @@ static INT32 wmt_stp_wifi_lte_coex(VOID)
 {
 	INT32 iRet;
 	ULONG addr = 0;
-	WMT_GEN_CONF *pWmtGenConf;
+	WMT_GEN_CONF *pWmtGenConf = NULL;
 
 	/*Get wmt config */
 	iRet = wmt_core_ctrl(WMT_CTRL_GET_WMT_CONF, &addr, 0);

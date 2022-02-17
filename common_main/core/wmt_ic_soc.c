@@ -1972,7 +1972,7 @@ static INT32 mtk_wcn_soc_ver_check(VOID)
 	UINT32 hw_ver = 0;
 	UINT32 fw_ver = 0;
 	INT32 iret;
-	const WMT_IC_INFO_S *p_info;
+	const WMT_IC_INFO_S *p_info = NULL;
 	unsigned long ctrlPa1;
 	unsigned long ctrlPa2;
 
@@ -2066,7 +2066,7 @@ static INT32 wmt_stp_wifi_lte_coex(VOID)
 {
 	INT32 iRet;
 	unsigned long addr = 0;
-	WMT_GEN_CONF *pWmtGenConf;
+	WMT_GEN_CONF *pWmtGenConf = NULL;
 
 	/*Get wmt config */
 	iRet = wmt_core_ctrl(WMT_CTRL_GET_WMT_CONF, &addr, 0);
@@ -2123,7 +2123,7 @@ static INT32 wmt_stp_init_coex(VOID)
 {
 	INT32 iRet;
 	unsigned long addr = 0;
-	WMT_GEN_CONF *pWmtGenConf;
+	WMT_GEN_CONF *pWmtGenConf = NULL;
 
 #define COEX_WMT  0
 
@@ -2299,7 +2299,7 @@ static INT32 wmt_stp_init_epa(VOID)
 {
 	INT32 iRet;
 	unsigned long addr = 0;
-	WMT_GEN_CONF *pWmtGenConf;
+	WMT_GEN_CONF *pWmtGenConf = NULL;
 
 	/*Get wmt config */
 	iRet = wmt_core_ctrl(WMT_CTRL_GET_WMT_CONF, &addr, 0);
@@ -2335,9 +2335,9 @@ static INT32 wmt_stp_init_epa_elna(VOID)
 {
 	INT32 iRet;
 	unsigned long addr = 0;
-	WMT_GEN_CONF *pWmtGenConf;
+	WMT_GEN_CONF *pWmtGenConf = NULL;
 	struct init_script script[1];
-	struct WMT_BYTE_ARRAY *ba;
+	struct WMT_BYTE_ARRAY *ba = NULL;
 	INT32 cmd_size;
 	INT32 data_size;
 	PUINT8 cmd;
@@ -2409,7 +2409,7 @@ static INT32 wmt_stp_init_epa_elna_invert_cr(VOID)
 	INT32 iRet;
 	UINT32 uVal = 0;
 	unsigned long addr = 0;
-	WMT_GEN_CONF *pWmtGenConf;
+	WMT_GEN_CONF *pWmtGenConf = NULL;
 	UINT32 default_invert_cr[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 	UINT32 default_invert_bit[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 	PINT8 pbuf;
@@ -2537,7 +2537,7 @@ static INT32 wmt_stp_init_wifi_ant_swap(VOID)
 {
 	INT32 iRet;
 	unsigned long addr = 0;
-	WMT_GEN_CONF *pWmtGenConf;
+	WMT_GEN_CONF *pWmtGenConf = NULL;
 	UINT8 ant_swap_mode, polarity, ant_sel;
 
 	/*Get wmt config */
@@ -2592,9 +2592,9 @@ static INT32 wmt_init_wifi_config(VOID)
 {
 	INT32 iRet;
 	unsigned long addr = 0;
-	WMT_GEN_CONF *pWmtGenConf;
+	WMT_GEN_CONF *pWmtGenConf = NULL;
 	struct init_script script[1];
-	struct WMT_BYTE_ARRAY *ba;
+	struct WMT_BYTE_ARRAY *ba = NULL;
 	INT32 cmd_size;
 	INT32 data_size;
 	PUINT8 cmd;
@@ -2671,7 +2671,7 @@ static INT32 mtk_wcn_soc_set_sdio_driving(void)
 	INT32 ret = 0;
 
 	unsigned long addr = 0;
-	WMT_GEN_CONF *pWmtGenConf;
+	WMT_GEN_CONF *pWmtGenConf = NULL;
 	UINT32 drv_val = 0;
 
 	/*Get wmt config */
