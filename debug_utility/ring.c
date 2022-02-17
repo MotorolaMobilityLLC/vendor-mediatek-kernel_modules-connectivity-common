@@ -1,29 +1,31 @@
 #include "ring.h"
+#include <linux/string.h>
+#include <linux/kernel.h>
+#include <linux/bug.h>
 
 
-void ring_init(void *base, unsigned int max_size, void *read, void *write, struct ring *ring)
+
+void ring_init(void *base, unsigned int max_size, unsigned int read,
+	unsigned int write, struct ring *ring)
 {
-	WARN_ON(!base || !read || !write);
+	WARN_ON(!base);
 
 	/* making sure max_size is power of 2 */
 	WARN_ON(!max_size || (max_size & (max_size - 1)));
 
-	/* making sure read & write pointers are 4 bytes aligned */
-	WARN_ON(((long)read & 0x3) != 0 || ((long)write & 0x3) != 0);
+	/* making sure write largger than read */
+	WARN_ON(read > write);
 
 	ring->base = base;
 	ring->read = read;
 	ring->write = write;
-	EMI_WRITE32(ring->write, 0);
-	EMI_WRITE32(ring->read, 0);
 	ring->max_size = max_size;
-	pr_info("base: %p, read: %p, write: %p, max_size: %d\n", base, read, write, max_size);
 }
 
 void ring_dump(const char *title, struct ring *ring)
 {
-	pr_info("[%s] ring:{base=0x%p, write=%d, read=%d, max_size=%d}\n",
-			title, ring->base, EMI_READ32(ring->write), EMI_READ32(ring->read), ring->max_size);
+	pr_info("[%s] ring:{write=%d, read=%d, max_size=%d}\n",
+			title, ring->write, ring->read, ring->max_size);
 }
 
 void ring_dump_segment(const char *title, struct ring_segment *seg)
@@ -37,25 +39,13 @@ void ring_dump_segment(const char *title, struct ring_segment *seg)
  */
 unsigned int ring_read_prepare(unsigned int sz, struct ring_segment *seg, struct ring *ring)
 {
-	unsigned int wt = EMI_READ32(ring->write);
-	unsigned int rd = EMI_READ32(ring->read);
+	unsigned int wt = ring->write;
+	unsigned int rd = ring->read;
 
 	memset(seg, 0, sizeof(struct ring_segment));
-#ifdef ROUND_REPEAT
-	if (wt >= rd) {
-		if (sz > wt - rd)
-			sz = wt - rd;
-		seg->remain = sz;
-	} else {
-		if (sz > ring->max_size - (rd - wt))
-			sz = ring->max_size - (rd - wt);
-		seg->remain = sz;
-	}
-#else
 	if (sz > wt - rd)
 		sz = wt - rd;
 	seg->remain = sz;
-#endif
 	/* ring_dump(__func__, ring); */
 	/* ring_dump_segment(__func__, seg); */
 	return seg->remain;
@@ -66,65 +56,71 @@ unsigned int ring_read_prepare(unsigned int sz, struct ring_segment *seg, struct
  */
 unsigned int ring_write_prepare(unsigned int sz, struct ring_segment *seg, struct ring *ring)
 {
-	unsigned int wt = EMI_READ32(ring->write);
-	unsigned int rd = EMI_READ32(ring->read);
+	unsigned int wt = ring->write;
+	unsigned int rd = ring->read;
 
 	memset(seg, 0, sizeof(struct ring_segment));
-#ifdef ROUND_REPEAT
-	if (wt >= rd)
-		seg->remain = ring->max_size - (wt - rd + 1);
-	else
-		seg->remain = ring->max_size - (rd - wt + 1);
-
-	if (sz <= seg->remain)
-		seg->remain = sz;
-#else
 	if (sz > ring->max_size - (wt - rd))
 		sz = ring->max_size - (wt - rd);
 	seg->remain = sz;
-#endif
 	/* ring_dump(__func__, ring); */
 	/* ring_dump_segment(__func__, seg); */
 	return seg->remain;
 }
 
-void _ring_segment_prepare(unsigned int from, struct ring_segment *seg, struct ring *ring)
+unsigned int ring_overwrite_prepare(unsigned int sz, struct ring_segment *seg,
+						      struct ring *ring)
 {
-#ifndef ROUND_REPEAT
+	unsigned int wt = ring->write;
+	unsigned int rd = ring->read;
+
+	memset(seg, 0, sizeof(struct ring_segment));
+	if (sz > ring->max_size - (wt - rd))
+		ring->read += sz - (ring->max_size - (wt - rd));
+	seg->remain = sz;
+	/* ring_dump(__func__, ring); */
+	/* ring_dump_segment(__func__, seg); */
+	return seg->remain;
+}
+
+void __ring_segment_prepare(unsigned int from, unsigned int sz, struct ring_segment *seg,
+					      struct ring *ring)
+{
 	unsigned int ring_pos = from & (ring->max_size - 1);
 
 	seg->ring_pt = ring->base + ring_pos;
-#else
-	seg->ring_pt = ring->base + from;
-#endif
 	seg->data_pos = (seg->sz ? seg->data_pos + seg->sz : 0);
-	if (from + seg->remain <= ring->max_size)
-		seg->sz = seg->remain;
+	if (ring_pos + sz <= ring->max_size)
+		seg->sz = sz;
 	else
-		seg->sz = ring->max_size - from;
+		seg->sz = ring->max_size - ring_pos;
 	seg->remain -= seg->sz;
 	/* ring_dump(__func__, ring); */
 	/* ring_dump_segment(__func__, seg); */
 }
 
+void _ring_segment_prepare(unsigned int from, struct ring_segment *seg, struct ring *ring)
+{
+	__ring_segment_prepare(from, seg->remain, seg, ring);
+}
+
+void _ring_segment_prepare_item(unsigned int from, struct ring_segment *seg, struct ring *ring)
+{
+	unsigned int size;
+
+	size = (seg->remain ? 1 : 0);
+	__ring_segment_prepare(from, size, seg, ring);
+}
+
 void _ring_read_commit(struct ring_segment *seg, struct ring *ring)
 {
-#ifdef ROUND_REPEAT
-	EMI_WRITE32(ring->read, (EMI_READ32(ring->read) + seg->sz) & (ring->max_size - 1));
-#else
-	EMI_WRITE32(ring->read, EMI_READ32(ring->read) + seg->sz);
-#endif
-	/* *(ring->read) += seg->sz; */
+	ring->read += seg->sz;
 	/* ring_dump(__func__, ring); */
 	/* ring_dump_segment(__func__, seg); */
 }
 void _ring_write_commit(struct ring_segment *seg, struct ring *ring)
 {
-#ifdef ROUND_REPEAT
-	EMI_WRITE32(ring->write, (EMI_READ32(ring->write) + seg->sz) & (ring->max_size - 1));
-#else
-	EMI_WRITE32(ring->write, EMI_READ32(ring->write) + seg->sz);
-#endif
+	ring->write += seg->sz;
 	/* ring_dump(__func__, ring); */
 	/* ring_dump_segment(__func__, seg); */
 }
