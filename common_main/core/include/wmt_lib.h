@@ -93,6 +93,9 @@ typedef enum _ENUM_WMTRSTRET_TYPE_T {
 /*1000->WMT_LIB_RX_TIMEOUT + 1000, logical judgement */
 #define MAX_EACH_WMT_CMD (WMT_LIB_RX_TIMEOUT + 1000)
 
+/* For WMT OP who will have trouble if timeout really happens */
+#define MAX_WMT_OP_TIMEOUT (30000)
+
 #define MAX_GPIO_CTRL_TIME (2000)	/* [FixMe][GeorgeKuo] a temp value */
 
 #define UTC_SYNC_TIME (60 * 60 * 1000)
