@@ -166,6 +166,9 @@ static const struct parse_data wmtcfg_fields[] = {
 	CHAR(coex_config_addjust_ble_scan_time_ratio),
 	CHAR(coex_config_addjust_ble_scan_time_ratio_bt_slot),
 	CHAR(coex_config_addjust_ble_scan_time_ratio_wifi_slot),
+
+	CHAR(wifi_ant_swap_mode),
+	CHAR(wifi_main_ant_polarity),
 };
 
 #define NUM_WMTCFG_FIELDS (osal_sizeof(wmtcfg_fields) / osal_sizeof(wmtcfg_fields[0]))
