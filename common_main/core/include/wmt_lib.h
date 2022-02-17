@@ -358,6 +358,7 @@ extern INT32 wmt_lib_psm_lock_aquire(VOID);
 extern VOID wmt_lib_idc_lock_release(VOID);
 extern INT32 wmt_lib_idc_lock_aquire(VOID);
 extern VOID wmt_lib_wlan_lock_release(VOID);
+extern INT32 wmt_lib_wlan_lock_trylock(VOID);
 extern INT32 wmt_lib_wlan_lock_aquire(VOID);
 extern INT32 wmt_lib_set_stp_wmt_last_close(UINT32 value);
 
