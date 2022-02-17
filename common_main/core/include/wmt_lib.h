@@ -306,7 +306,7 @@ extern MTK_WCN_BOOL wmt_lib_get_cmd_status(VOID);
 
 /* GeorgeKuo: replace set_chip_gpio() with more specific ones */
 #if 0				/* moved to wmt_exp.h */
-extern INT32 wmt_lib_set_aif(enum CMB_STUB_AIF_X aif, MTK_WCN_BOOL share);	/* set AUDIO interface options */
+extern INT32 wmt_lib_set_aif(CMB_STUB_AIF_X aif, MTK_WCN_BOOL share);	/* set AUDIO interface options */
 #endif
 extern INT32 wmt_lib_host_awake_get(VOID);
 extern INT32 wmt_lib_host_awake_put(VOID);

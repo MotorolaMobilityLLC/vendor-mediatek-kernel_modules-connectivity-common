@@ -276,7 +276,7 @@ typedef struct _GPIO_TDM_REQ_INFO_ {
 } GPIO_TDM_REQ_INFO, *P_GPIO_TDM_REQ_INFO;
 
 typedef VOID(*irq_cb) (VOID);
-typedef INT32(*device_audio_if_cb) (enum CMB_STUB_AIF_X aif, MTK_WCN_BOOL share);
+typedef INT32(*device_audio_if_cb) (CMB_STUB_AIF_X aif, MTK_WCN_BOOL share);
 typedef VOID(*func_ctrl_cb) (UINT32 on, UINT32 type);
 typedef long (*thermal_query_ctrl_cb) (VOID);
 typedef INT32(*deep_idle_ctrl_cb) (UINT32);
@@ -321,7 +321,7 @@ INT32 wmt_plat_eirq_ctrl(ENUM_PIN_ID id, ENUM_PIN_STATE state);
 INT32 wmt_plat_wake_lock_ctrl(ENUM_WL_OP opId);
 INT32 wmt_plat_sdio_ctrl(UINT32 sdioPortNum, ENUM_FUNC_STATE on);
 
-INT32 wmt_plat_audio_ctrl(enum CMB_STUB_AIF_X state, enum CMB_STUB_AIF_CTRL ctrl);
+INT32 wmt_plat_audio_ctrl(CMB_STUB_AIF_X state, CMB_STUB_AIF_CTRL ctrl);
 VOID wmt_lib_plat_irq_cb_reg(irq_cb bgf_irq_cb);
 VOID wmt_lib_plat_aif_cb_reg(device_audio_if_cb aif_ctrl_cb);
 
