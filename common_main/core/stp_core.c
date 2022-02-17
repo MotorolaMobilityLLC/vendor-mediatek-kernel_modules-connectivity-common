@@ -19,6 +19,7 @@
 #include "stp_sdio.h"
 #include "stp_btif.h"
 #include "wmt_lib.h"
+#include "wmt_step.h"
 
 #define PFX                         "[STP] "
 #define STP_LOG_DBG                  4
@@ -739,6 +740,7 @@ VOID stp_do_tx_timeout(VOID)
 #if STP_RETRY_OPTIMIZE
 			g_retry_times = 0;
 #endif
+			WMT_STEP_COMMAND_TIMEOUT_DO_ACTIONS_FUNC("STP TX no ack timeout");
 			osal_timer_stop(&stp_core_ctx.tx_timer);
 			stp_ctx_unlock(&stp_core_ctx);
 
@@ -3423,6 +3425,7 @@ INT32 mtk_wcn_stp_assert_timeout_handle(VOID)
 
 	/*host trigger assert but no coredump data will polling fw cpupcr*/
 	STP_INFO_FUNC("host trigger fw assert timeout!\n");
+	WMT_STEP_COMMAND_TIMEOUT_DO_ACTIONS_FUNC("Trigger assert timeout");
 	stp_dbg_poll_cpupcr(5, 1, 1);
 	pbuf = "Trigger assert timeout ,just collect SYS_FTRACE to DB";
 	len = osal_strlen(pbuf);
@@ -3440,6 +3443,7 @@ INT32 mtk_wcn_stp_assert_timeout_handle(VOID)
 INT32 mtk_wcn_stp_coredump_timeout_handle(VOID)
 {
 	stp_core_ctx.assert_info_cnt = 0;
+	WMT_STEP_COMMAND_TIMEOUT_DO_ACTIONS_FUNC("Coredump timeout");
 	stp_psm_set_sleep_enable(stp_core_ctx.psm);
 	stp_btm_reset_btm_wq(STP_BTM_CORE(stp_core_ctx));
 	if (STP_IS_ENABLE_RST(stp_core_ctx))
