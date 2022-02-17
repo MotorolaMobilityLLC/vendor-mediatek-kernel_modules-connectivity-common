@@ -98,12 +98,8 @@ static void connlog_emi_deinit(void);
 static int connlog_ring_buffer_init(void);
 static void connlog_ring_buffer_deinit(void);
 static int connlog_set_ring_buffer_base_addr(void);
-#ifdef CONN_LOG_TEST
-static void connlog_softirq_isr(struct softirq_action *act);
-#else
 static void connlog_clear_irq_reg(void);
 static irqreturn_t connlog_eirq_isr(int irq, void *arg);
-#endif
 static void connlog_set_ring_ready(void);
 static void connlog_buffer_init(int conn_type);
 #ifdef EMI_TO_CACHE_SUPPORT
@@ -448,28 +444,11 @@ static void connlog_log_data_handler(struct work_struct *work)
 				pr_info("%s emi ring is empty!!\n", type_to_title[i]);
 		}
 	} while (ret);
-#ifndef CONN_LOG_TEST
+
 	connlog_clear_irq_reg();
 	enable_irq(gConn2ApIrqId);
-#endif
 }
 
-#ifdef CONN_LOG_TEST
-/*****************************************************************************
-* FUNCTION
-*  connlog_softirq_isr
-* DESCRIPTION
-*  To simulate IRQ behavior
-* PARAMETERS
-*  act      [IN]        irq action
-* RETURNS
-*  void
-*****************************************************************************/
-static void connlog_softirq_isr(struct softirq_action *act)
-{
-	schedule_work(&gLogDataWorker);
-}
-#else
 /*****************************************************************************
 * FUNCTION
 *  connlog_clear_irq_reg
@@ -508,7 +487,6 @@ static irqreturn_t connlog_eirq_isr(int irq, void *arg)
 	disable_irq_nosync(gConn2ApIrqId);
 	return IRQ_HANDLED;
 }
-#endif
 
 /*****************************************************************************
 * FUNCTION
@@ -533,14 +511,9 @@ static int connlog_eirq_init(void *irq_reg_base, unsigned int irq_id, unsigned i
 		return -1;
 	}
 
-#ifdef CONN_LOG_TEST
-	/* need to add CONN_LOG_SOFTIRQ in include/linux/interrupt.h */
-	open_softirq(gConn2ApIrqId, connlog_softirq_isr);
-#else
 	iret = request_irq(gConn2ApIrqId, connlog_eirq_isr, irq_flag, "CONN_LOG_IRQ", NULL);
 	if (iret)
 		pr_err("EINT IRQ(%d) NOT AVAILABLE!!\n", gConn2ApIrqId);
-#endif
 	return iret;
 }
 
@@ -556,9 +529,7 @@ static int connlog_eirq_init(void *irq_reg_base, unsigned int irq_id, unsigned i
 *****************************************************************************/
 static void connlog_eirq_deinit(void)
 {
-#ifndef CONN_LOG_TEST
 	free_irq(gConn2ApIrqId, NULL);
-#endif
 }
 
 /*****************************************************************************
@@ -830,20 +801,18 @@ EXPORT_SYMBOL(connsys_log_register_event_cb);
 
 /*****************************************************************************
 * FUNCTION
-*  connlog_copy_buf
+*  connsys_log_read
 * DESCRIPTION
 *  Copy EMI ring buffer data to the buffer that provided by sub-module.
 * PARAMETERS
 *  conn_type      [IN]        subsys type
-*  to             [IN]        copy data to user buffer or driver buffer
-*  buf            [IN]        buffer from user or driver
+*  buf            [IN]        buffer from driver
 *  count          [IN]        buffer length
 * RETURNS
 *  ssize_t    read buffer size
 *****************************************************************************/
-static int connlog_copy_buf(int conn_type, int to, char *buf, size_t count)
+ssize_t connsys_log_read(int conn_type, char *buf, size_t count)
 {
-	int retval = 0;
 	unsigned int written = 0;
 #ifdef EMI_TO_CACHE_SUPPORT
 	unsigned int cache_buf_size;
@@ -875,6 +844,7 @@ static int connlog_copy_buf(int conn_type, int to, char *buf, size_t count)
 			pr_err("copy to user buffer failed, ret:%d\n", retval);
 			goto done;
 		}
+		memcpy(buf + written, ring_seg.ring_cache_pt, ring_seg.sz);
 		cache_buf_size -= ring_seg.sz;
 		written += ring_seg.sz;
 	}
@@ -890,44 +860,13 @@ static int connlog_copy_buf(int conn_type, int to, char *buf, size_t count)
 	buf_size = ring_seg.remain;
 
 	RING_READ_ALL_FOR_EACH(ring_seg, ring) {
-		switch (to) {
-		case 0:
-			retval = copy_to_user(buf + written, ring_seg.ring_pt, ring_seg.sz);
-			break;
-		case 1:
-			memcpy(buf + written, ring_seg.ring_pt, ring_seg.sz);
-			break;
-		default:
-			goto done;
-		}
-
-		if (retval) {
-			pr_err("copy to user buffer failed, ret:%d\n", retval);
-			goto done;
-		}
+		memcpy(buf + written, ring_seg.ring_pt, ring_seg.sz);
 		buf_size -= ring_seg.sz;
 		written += ring_seg.sz;
 	}
 #endif
 done:
 	return written;
-}
-
-/*****************************************************************************
-* FUNCTION
-*  connsys_log_read
-* DESCRIPTION
-*  Copy EMI ring buffer data to the buffer that provided by sub-module.
-* PARAMETERS
-*  conn_type      [IN]        subsys type
-*  buf            [IN]        buffer from driver
-*  count          [IN]        buffer length
-* RETURNS
-*  ssize_t    read buffer size
-*****************************************************************************/
-ssize_t connsys_log_read(int conn_type, char *buf, size_t count)
-{
-	return connlog_copy_buf(conn_type, 1, buf, count);
 }
 EXPORT_SYMBOL(connsys_log_read);
 
@@ -945,7 +884,53 @@ EXPORT_SYMBOL(connsys_log_read);
 *****************************************************************************/
 ssize_t connsys_log_read_to_user(int conn_type, char __user *buf, size_t count)
 {
-	return connlog_copy_buf(conn_type, 0, buf, count);
+	int retval;
+	unsigned int written = 0;
+#ifdef EMI_TO_CACHE_SUPPORT
+	unsigned int cache_buf_size;
+	struct ring_cache_segment ring_seg;
+	struct ring_cache *ring = &connlog_buffer_table[conn_type].ring_cache;
+	unsigned int size = 0;
+
+	size = count < RING_CACHE_SIZE(ring) ? count : RING_CACHE_SIZE(ring);
+	if (RING_CACHE_EMPTY(ring) || !ring_cache_read_prepare(size, &ring_seg, ring)) {
+		pr_err("type(%d) no data, possibly taken by concurrent reader.\n", conn_type);
+		goto done;
+	}
+	cache_buf_size = ring_seg.remain;
+
+	RING_CACHE_READ_ALL_FOR_EACH(ring_seg, ring) {
+		retval = copy_to_user(buf + written, ring_seg.ring_cache_pt, ring_seg.sz);
+		if (retval) {
+			pr_err("copy to user buffer failed, ret:%d\n", retval);
+			goto done;
+		}
+		cache_buf_size -= ring_seg.sz;
+		written += ring_seg.sz;
+	}
+#else
+	unsigned int buf_size;
+	struct ring_segment ring_seg;
+	struct ring *ring = &connlog_buffer_table[conn_type].ring_emi;
+
+	if (RING_EMPTY(ring) || !ring_read_all_prepare(&ring_seg, ring)) {
+		pr_err("type(%d) no data, possibly taken by concurrent reader.\n", conn_type);
+		goto done;
+	}
+	buf_size = ring_seg.remain;
+
+	RING_READ_ALL_FOR_EACH(ring_seg, ring) {
+		retval = copy_to_user(buf + written, ring_seg.ring_pt, ring_seg.sz);
+		if (retval) {
+			pr_err("copy to user buffer failed, ret:%d\n", retval);
+			goto done;
+		}
+		buf_size -= ring_seg.sz;
+		written += ring_seg.sz;
+	}
+#endif
+done:
+	return written;
 }
 EXPORT_SYMBOL(connsys_log_read_to_user);
 
@@ -965,6 +950,17 @@ void __iomem *connsys_log_get_emi_log_base_vir_addr(void)
 }
 EXPORT_SYMBOL(connsys_log_get_emi_log_base_vir_addr);
 
+/*****************************************************************************
+* FUNCTION
+*  connlog_dump_emi
+* DESCRIPTION
+*  dump EMI buffer for debug.
+* PARAMETERS
+*  offset          [IN]        buffer offset
+*  size            [IN]        dump buffer size
+* RETURNS
+*  void
+*****************************************************************************/
 void connlog_dump_emi(int offset, int size)
 {
 	connlog_dump_buf("emi", gVirAddrEmiLogBase + offset, size);
