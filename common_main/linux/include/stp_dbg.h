@@ -39,6 +39,8 @@
 #define STP_DBG_LOG_ENTRY_SZ 64
 
 #endif
+#define EMICOREDUMP_CMD "emicoredump"
+#define FAKECOREDUMPEND "coredump end - fake"
 
 #define PFX_STP_DBG                      "[STPDbg]"
 #define STP_DBG_LOG_LOUD                 4
@@ -198,6 +200,7 @@ typedef struct mtkstp_dbg_t {
 /* extern void aed_combo_exception(const int *, int, const int *, int, const char *); */
 
 #define STP_CORE_DUMP_TIMEOUT (1*60*1000)	/* default 1 minutes */
+#define STP_EMI_DUMP_TIMEOUT  (30*1000)
 #define STP_OJB_NAME_SZ 20
 #define STP_CORE_DUMP_INFO_SZ 500
 #define STP_CORE_DUMP_INIT_SIZE 512
@@ -256,6 +259,10 @@ typedef struct core_dump_t {
 	LONG dmp_num;
 	UINT32 count;
 	OSAL_SLEEPABLE_LOCK dmp_lock;
+
+	/* timer for monitor emi dump */
+	OSAL_TIMER dmp_emi_timer;
+	UINT32 emi_timeout;
 
 	/* state machine for core dump flow */
 	CORE_DUMP_STA sm;
@@ -380,4 +387,7 @@ VOID stp_dbg_reset(VOID);
 MTKSTP_DBG_T *stp_dbg_init(PVOID btm_half);
 INT32 stp_dbg_deinit(MTKSTP_DBG_T *stp_dbg);
 INT32 stp_dbg_start_coredump_timer(VOID);
+INT32 stp_dbg_start_emi_dump(VOID);
+INT32 stp_dbg_stop_emi_dump(VOID);
+INT32 stp_dbg_nl_send_data(const PINT8 buf, INT32 len);
 #endif /* end of _STP_DEBUG_H_ */
