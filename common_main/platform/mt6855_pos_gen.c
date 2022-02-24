@@ -11,7 +11,7 @@
  * It should not be modified by hand.
  *
  * Reference POS file,
- * - Pxxxe_connsys_power_on_sequence_20211117.xlsx
+ * - Pxxxe_connsys_power_on_sequence_20220217.xlsx
  */
 
 
@@ -643,6 +643,19 @@ void consys_bus_timeout_config_mt6855_gen(void)
 	/* connsys bus time out configure */
 	CONSYS_REG_WRITE(conn_reg.mcu_base +
 		CONSYS_GEN_BUSHANGCR_OFFSET_ADDR, 0x90000002);
+}
+
+void consys_bus_config_gps_access_tia_mt6855_gen(void)
+{
+	if (conn_reg.mcu_base == 0) {
+		pr_notice("conn_reg.mcu_base is not defined\n");
+		return;
+	}
+
+	/* connsys bus configure for not request apsrc_req/ddr_en when connsys gps access TIA */
+	/* (Infra_bus by 0X78xx_xxxx) */
+	CONSYS_REG_WRITE_MASK(conn_reg.mcu_base +
+		CONSYS_GEN_TO_INFRA_CR_CTL_OFFSET_ADDR, 0x4, 0x6);
 }
 
 int consys_polling_goto_idle_mt6855_gen(unsigned int *pconsys_ver_id)

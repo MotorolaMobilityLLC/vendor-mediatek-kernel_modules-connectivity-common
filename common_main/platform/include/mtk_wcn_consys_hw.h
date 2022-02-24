@@ -318,6 +318,7 @@ typedef INT32(*CONSYS_IC_PC_LOG_DUMP) (VOID);
 typedef VOID(*CONSYS_IC_SET_VCN33_1_VOLTAGE) (UINT32 voltage);
 typedef INT32(*CONSYS_IC_CR_REMAPPING) (UINT32 enable);
 typedef UINT32(*CONSYS_IC_WAKEUP_BTIF_IRQ_PULL_LOW) (VOID);
+typedef VOID(*CONSYS_IC_BUS_CONFIG_GPS_ACCESS_TIA) (VOID);
 
 typedef INT32(*CONSYS_IC_JTAG_SET_FOR_MCU) (VOID);
 typedef UINT32(*CONSYS_IC_JTAG_FLAG_CTRL) (UINT32 enable);
@@ -445,6 +446,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_SET_VCN33_1_VOLTAGE consys_ic_set_vcn33_1_voltage;
 	CONSYS_IC_CR_REMAPPING consys_ic_cr_remapping;
 	CONSYS_IC_WAKEUP_BTIF_IRQ_PULL_LOW consys_ic_wakeup_btif_irq_pull_low;
+	CONSYS_IC_BUS_CONFIG_GPS_ACCESS_TIA consys_ic_bus_config_gps_access_tia;
 
 	CONSYS_IC_JTAG_SET_FOR_MCU consys_ic_jtag_set_for_mcu;
 	CONSYS_IC_JTAG_FLAG_CTRL consys_ic_jtag_flag_ctrl;
