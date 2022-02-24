@@ -54,6 +54,7 @@
 #define ALLOCATE_CONNSYS_EMI_FROM_KO 1
 #endif
 
+#include <linux/suspend.h>
 #include <linux/thermal.h>
 #include "connsys_debug_utility.h"
 
@@ -73,8 +74,8 @@
 */
 static INT32 mtk_wmt_probe(struct platform_device *pdev);
 static INT32 mtk_wmt_remove(struct platform_device *pdev);
-static INT32 mtk_wmt_suspend(struct device *dev);
-static INT32 mtk_wmt_resume(struct device *dev);
+static int mtk_wmt_suspend(void);
+static int mtk_wmt_resume(void);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -105,6 +106,8 @@ static atomic64_t g_sleep_counter_enable = ATOMIC64_INIT(1);
 static OSAL_UNSLEEPABLE_LOCK g_sleep_counter_spinlock;
 
 static atomic_t g_probe_called = ATOMIC_INIT(0);
+
+static struct notifier_block connsys_pm_notifier;
 
 #ifdef CONFIG_OF
 
@@ -147,11 +150,6 @@ const struct of_device_id apwmt_of_ids[] = {
 struct CONSYS_BASE_ADDRESS conn_reg;
 #endif
 
-static const struct dev_pm_ops wmt_drv_pm_ops = {
-	.suspend_noirq = mtk_wmt_suspend,
-	.resume_noirq = mtk_wmt_resume,
-};
-
 static struct platform_driver mtk_wmt_dev_drv = {
 	.probe = mtk_wmt_probe,
 	.remove = mtk_wmt_remove,
@@ -161,7 +159,6 @@ static struct platform_driver mtk_wmt_dev_drv = {
 #ifdef CONFIG_OF
 		   .of_match_table = apwmt_of_ids,
 #endif
-		   .pm = &wmt_drv_pm_ops,
 		   },
 };
 
@@ -509,7 +506,7 @@ static INT32 mtk_wmt_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static INT32 mtk_wmt_suspend(struct device *dev)
+static int mtk_wmt_suspend(void)
 {
 	WMT_PLAT_PR_INFO(" mtk_wmt_suspend !!");
 
@@ -564,13 +561,29 @@ static void plat_resume_handler(struct work_struct *work)
 	}
 }
 
-static INT32 mtk_wmt_resume(struct device *dev)
+static int mtk_wmt_resume(void)
 {
 	WMT_PLAT_PR_INFO(" mtk_wmt_resume !!");
 	schedule_work(&plt_resume_worker);
 	connsys_dedicated_log_set_ap_state(1);
 
 	return 0;
+}
+
+static int connsys_pm_notifier_callback(struct notifier_block *nb,
+		unsigned long event, void *dummy)
+{
+	switch (event) {
+	case PM_SUSPEND_PREPARE:
+		mtk_wmt_suspend();
+		break;
+	case PM_POST_SUSPEND:
+		mtk_wmt_resume();
+		break;
+	default:
+		break;
+	}
+	return NOTIFY_DONE;
 }
 
 INT32 mtk_wcn_consys_sleep_info_read_all_ctrl(P_CONSYS_STATE state)
@@ -1060,6 +1073,12 @@ INT32 mtk_wcn_consys_hw_init(VOID)
 #if WMT_DBG_SUPPORT
 	mtk_wcn_dump_util_init(mtk_wcn_consys_soc_chipid());
 #endif
+
+	connsys_pm_notifier.notifier_call = connsys_pm_notifier_callback;
+	iRet = register_pm_notifier(&connsys_pm_notifier);
+	if (iRet < 0)
+		pr_notice("[%s] register_pm_notifier fail %d\n", __func__, iRet);
+
 	return iRet;
 
 }
@@ -1080,6 +1099,7 @@ INT32 mtk_wcn_consys_hw_deinit(VOID)
 #endif
 
 	platform_driver_unregister(&mtk_wmt_dev_drv);
+	unregister_pm_notifier(&connsys_pm_notifier);
 
 	if (wmt_consys_ic_ops)
 		wmt_consys_ic_ops = NULL;
