@@ -168,6 +168,7 @@ static UINT32 consys_jtag_flag_ctrl(UINT32 enable);
 
 static INT32 consys_cr_remapping(UINT32 enable);
 static UINT32 consys_wakeup_btif_irq_pull_low(VOID);
+static VOID consys_bus_config_gps_access_tia(VOID);
 
 #if CONSYS_PMIC_CTRL_ENABLE
 static int consys_pmic_mt6363_probe(struct platform_device *pdev);
@@ -311,6 +312,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops_mt6855 = {
 
 	.consys_ic_cr_remapping = consys_cr_remapping,
 	.consys_ic_wakeup_btif_irq_pull_low = consys_wakeup_btif_irq_pull_low,
+	.consys_ic_bus_config_gps_access_tia = consys_bus_config_gps_access_tia,
 
 	.consys_ic_get_debug_reg_ary_size = &g_mapped_reg_table_sz_mt6855,
 	.consys_ic_get_debug_reg_ary = g_mapped_reg_table_mt6855,
@@ -764,6 +766,11 @@ static INT32 consys_clock_buffer_ctrl(MTK_WCN_BOOL enable)
 static VOID consys_set_if_pinmux(MTK_WCN_BOOL enable)
 {
 	consys_set_if_pinmux_mt6855_gen(enable);
+}
+
+static VOID consys_bus_config_gps_access_tia(VOID)
+{
+	consys_bus_config_gps_access_tia_mt6855_gen();
 }
 
 static VOID consys_hw_reset_bit_set(MTK_WCN_BOOL enable)

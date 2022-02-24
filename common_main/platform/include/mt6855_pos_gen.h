@@ -11,7 +11,7 @@
  * It should not be modified by hand.
  *
  * Reference POS file,
- * - Pxxxe_connsys_power_on_sequence_20211117.xlsx
+ * - Pxxxe_connsys_power_on_sequence_20220217.xlsx
  */
 
 
@@ -29,6 +29,7 @@ void consys_set_xo_osc_ctrl_mt6855_gen(void);
 void consys_identify_adie_mt6855_gen(void);
 void consys_wifi_ctrl_setting_mt6855_gen(void);
 void consys_bus_timeout_config_mt6855_gen(void);
+void consys_bus_config_gps_access_tia_mt6855_gen(void);
 int consys_polling_goto_idle_mt6855_gen(unsigned int *pconsys_ver_id);
 void consys_wifi_ctrl_switch_conn_mode_mt6855_gen(void);
 
@@ -85,6 +86,7 @@ void consys_wifi_ctrl_switch_conn_mode_mt6855_gen(void);
 /*********************************************************************************/
 #define CONSYS_GEN_HW_VER_OFFSET_ADDR                                    0x0
 #define CONSYS_GEN_FW_VER_OFFSET_ADDR                                    0x4
+#define CONSYS_GEN_TO_INFRA_CR_CTL_OFFSET_ADDR                           0x17C
 #define CONSYS_GEN_BUSHANGCR_OFFSET_ADDR                                 0x440
 #define CONSYS_GEN_BT_EMI_ENTRY_ADDR_OFFSET_ADDR                         0x504
 #define CONSYS_GEN_WF_EMI_ENTRY_ADDR_OFFSET_ADDR                         0x508

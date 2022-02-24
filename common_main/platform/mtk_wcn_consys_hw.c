@@ -754,6 +754,8 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 			wmt_consys_ic_ops->consys_ic_bus_timeout_config();
 		if (wmt_consys_ic_ops->consys_ic_set_mcu_mem_pdn_delay)
 			wmt_consys_ic_ops->consys_ic_set_mcu_mem_pdn_delay();
+		if (wmt_consys_ic_ops->consys_ic_bus_config_gps_access_tia)
+			wmt_consys_ic_ops->consys_ic_bus_config_gps_access_tia();
 		if (wmt_consys_ic_ops->consys_ic_hw_reset_bit_set)
 			wmt_consys_ic_ops->consys_ic_hw_reset_bit_set(DISABLE);
 
