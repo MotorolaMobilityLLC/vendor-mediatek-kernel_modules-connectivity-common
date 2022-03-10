@@ -1364,7 +1364,8 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 					PMIC_RG_LDO_VCN18_LP_ADDR,
 					PMIC_RG_LDO_VCN18_LP_MASK << PMIC_RG_LDO_VCN18_LP_SHIFT,
 					0 << PMIC_RG_LDO_VCN18_LP_SHIFT);
-			}
+			} else
+				WMT_PLAT_PR_INFO("g_regmap is NULL!!! Please contact WMT owner\n");
 #endif
 
 			/*Set VCN18_SW_EN as 1 and set votage as 1V8*/

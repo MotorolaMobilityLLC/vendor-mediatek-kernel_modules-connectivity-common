@@ -1424,7 +1424,8 @@ static VOID consys_hw_vcn18_rc_mode_enable(VOID)
 			PMIC_RG_LDO_VCN18_LP_ADDR,
 			PMIC_RG_LDO_VCN18_LP_MASK << PMIC_RG_LDO_VCN18_LP_SHIFT,
 			0 << PMIC_RG_LDO_VCN18_LP_SHIFT);
-		}
+	} else
+		WMT_PLAT_PR_INFO("g_regmap is NULL!!! Please contact WMT owner\n");
 #else
 	/*  PMRC_EN[7][6][5][4] HW_OP_EN = 1, HW_OP_CFG = 0 */
 	KERNEL_pmic_ldo_vcn18_lp(SRCLKEN7, 0, 1, HW_OFF);
