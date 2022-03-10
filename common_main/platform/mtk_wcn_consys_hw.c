@@ -122,6 +122,7 @@ WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6779 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6768 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6785 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6781 = {};
+WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6789 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6833 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6853 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6855 = {};
@@ -140,6 +141,7 @@ const struct of_device_id apwmt_of_ids[] = {
 	{.compatible = "mediatek,mt6768-consys", .data = &consys_ic_ops_mt6768},
 	{.compatible = "mediatek,mt6785-consys", .data = &consys_ic_ops_mt6785},
 	{.compatible = "mediatek,mt6781-consys", .data = &consys_ic_ops_mt6781},
+	{.compatible = "mediatek,mt6789-consys", .data = &consys_ic_ops_mt6789},
 	{.compatible = "mediatek,mt6833-consys", .data = &consys_ic_ops_mt6833},
 	{.compatible = "mediatek,mt6853-consys", .data = &consys_ic_ops_mt6853},
 	{.compatible = "mediatek,mt6855-consys", .data = &consys_ic_ops_mt6855},
