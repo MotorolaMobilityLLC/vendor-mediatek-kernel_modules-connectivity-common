@@ -67,7 +67,6 @@ int connsys_dedicated_log_path_apsoc_init(
 	const struct connlog_emi_config *emi_config,
 	const struct connlog_irq_config *irq_config);
 void connsys_dedicated_log_path_apsoc_deinit(void);
-void connsys_dedicated_log_path_apsoc_enable(bool en);
 void __iomem *connsys_log_get_emi_log_base_vir_addr(void);
 void connsys_dedicated_log_get_utc_time(unsigned int *second, unsigned int *usecond);
 void connsys_dedicated_log_flush_emi(void);

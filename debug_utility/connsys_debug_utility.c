@@ -111,7 +111,6 @@ static int connlog_eirq_init(const struct connlog_irq_config *irq_config);
 static void connlog_eirq_deinit(void);
 static int connlog_emi_init(phys_addr_t emi_base, const struct connlog_emi_config *emi_config);
 static void connlog_emi_deinit(void);
-static void connlog_eirq_enable(bool en);
 static int connlog_ring_buffer_init(void);
 static void connlog_ring_buffer_deinit(void);
 static int connlog_set_ring_buffer_base_addr(void);
@@ -816,28 +815,6 @@ static int connlog_eirq_init(const struct connlog_irq_config *irq_config)
 
 /*****************************************************************************
 * FUNCTION
-*  connlog_eirq_enable
-* DESCRIPTION
-*  enable / disable consys_log_irq
-* PARAMETERS
-*  en      [IN]        enable or disable
-* RETURNS
-*  void
-*****************************************************************************/
-static void connlog_eirq_enable(bool en)
-{
-	int iret = 0;
-
-	if (en) {
-		iret = enable_irq_wake(gDev.conn2ApIrqId);
-		if (iret)
-			pr_notice("[%s] enable irq wake fail,irq_no(%d),iret(%d)\n", __func__, gDev.conn2ApIrqId, iret);
-	} else
-		disable_irq_nosync(gDev.conn2ApIrqId);
-}
-
-/*****************************************************************************
-* FUNCTION
 *  connlog_eirq_deinit
 * DESCRIPTION
 *  unrigester irq
@@ -1103,22 +1080,6 @@ void connsys_dedicated_log_path_apsoc_deinit(void)
 	connlog_ring_buffer_deinit();
 }
 EXPORT_SYMBOL(connsys_dedicated_log_path_apsoc_deinit);
-
-/*****************************************************************************
-* FUNCTION
-*  connsys_dedicated_log_path_apsoc_enable
-* DESCRIPTION
-*  enable / disable consys_log_irq
-* PARAMETERS
-*  en      [IN]        enable or disable
-* RETURNS
-*  void
-*****************************************************************************/
-void connsys_dedicated_log_path_apsoc_enable(bool en)
-{
-	connlog_eirq_enable(en);
-}
-EXPORT_SYMBOL(connsys_dedicated_log_path_apsoc_enable);
 
 /*****************************************************************************
 * FUNCTION
