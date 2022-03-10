@@ -882,10 +882,12 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 #endif /* CONSYS_PWR_ON_OFF_API_AVAILABLE */
 
 		atomic_set(&g_power_on, 1);
+		connsys_dedicated_log_path_apsoc_enable(true);
 		/*wait 5ms*/
 		mdelay(5);
 	} else {
 		osal_lock_unsleepable_lock(&g_pwr_off_lock);
+		connsys_dedicated_log_path_apsoc_enable(false);
 		atomic_set(&g_power_on, 0);
 		osal_unlock_unsleepable_lock(&g_pwr_off_lock);
 
