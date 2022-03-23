@@ -957,13 +957,12 @@ static VOID consys_vcn28_hw_mode_ctrl(UINT32 enable)
 
 	if (enable) {
 		if (g_regmap) {
-			regmap_write(g_regmap, PMIC_RG_LDO_VCN28_HW0_OP_EN_ADDR,
-					1 << PMIC_RG_LDO_VCN28_HW0_OP_EN_SHIFT);
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN28_OP_EN_SET, 1);
 			regmap_write(g_regmap, PMIC_RG_LDO_VCN28_HW0_OP_CFG_ADDR, 0);
 		}
 	} else {
 		if (g_regmap) {
-			regmap_write(g_regmap, PMIC_RG_LDO_VCN28_HW0_OP_EN_ADDR,  0);
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN28_OP_EN_CLR,  1);
 			regmap_write(g_regmap, PMIC_RG_LDO_VCN28_HW0_OP_CFG_ADDR, 0);
 		}
 	}
@@ -979,12 +978,20 @@ static INT32 consys_hw_vcn28_ctrl(UINT32 enable)
 
 	if (enable) {
 		WMT_PLAT_PR_INFO("Turn on reg_VCN28 in legacy mode\n");
+		if (g_regmap) {
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN28_HW0_OP_EN_ADDR, 3); /* b0=1,b1=1 */
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN28_HW0_OP_CFG_ADDR, 0);
+		}
 		if (reg_VCN28) {
 			regulator_set_voltage(reg_VCN28, 2800000, 2800000);
 			if (regulator_enable(reg_VCN28))
 				WMT_PLAT_PR_INFO("WMT do VCN28 PMIC on fail!\n");
 		}
 	} else {
+		if (g_regmap) {
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN28_HW0_OP_EN_ADDR, 0); /* b0=0,b1=0 */
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN28_HW0_OP_CFG_ADDR, 0);
+		}
 		if (reg_VCN28)
 			regulator_disable(reg_VCN28);
 		WMT_PLAT_PR_INFO("turn off vcn28\n");

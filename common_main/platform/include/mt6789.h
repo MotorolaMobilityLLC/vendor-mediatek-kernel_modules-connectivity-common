@@ -201,6 +201,9 @@
 #define PMIC_RG_LDO_VCN28_HW0_OP_EN_MASK            0x1
 #define PMIC_RG_LDO_VCN28_HW0_OP_EN_SHIFT           1
 
+#define PMIC_RG_LDO_VCN28_OP_EN_SET                 0x1d8c
+#define PMIC_RG_LDO_VCN28_OP_EN_CLR                 0x1d8e
+
 #define PMIC_RG_LDO_VCN28_HW0_OP_CFG_ADDR           0x1d90
 #define PMIC_RG_LDO_VCN28_HW0_OP_CFG_MASK           0x1
 #define PMIC_RG_LDO_VCN28_HW0_OP_CFG_SHIFT          1
