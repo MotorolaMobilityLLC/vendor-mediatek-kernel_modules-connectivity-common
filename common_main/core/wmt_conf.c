@@ -171,7 +171,7 @@ static moto_product products_list[] = {
         {"tonga",    "NA",  "TONGA_EPA"},
         {"tonga",    "NA_CARRIERS",  "TONGA_IPA"},
         {"milan",    "all",  "MILAN_FEM"},
-
+        {"maui",    "NA",  "MAUI_EPA"},
         {{0},        {0},   {0}},
 };
 
