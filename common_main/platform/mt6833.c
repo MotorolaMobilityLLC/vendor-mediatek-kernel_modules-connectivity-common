@@ -182,6 +182,9 @@ static INT32 consys_polling_goto_idle(VOID);
 static INT32 consys_jtag_set_for_mcu(VOID);
 static UINT32 consys_jtag_flag_ctrl(UINT32 enable);
 
+static INT32 consys_cr_remapping(UINT32 enable);
+static UINT32 consys_wakeup_btif_irq_pull_low(VOID);
+
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -204,6 +207,8 @@ static struct regulator *reg_VCN33_1_BT;
 static struct regulator *reg_VCN33_1_WIFI;
 static struct regulator *reg_VCN33_2_WIFI;
 #endif
+
+static void __iomem *g_conn_mcu_btif_0_base;
 
 extern int g_mapped_reg_table_sz_mt6833;
 extern REG_MAP_ADDR g_mapped_reg_table_mt6833[];
@@ -315,6 +320,9 @@ WMT_CONSYS_IC_OPS consys_ic_ops_mt6833 = {
 
 	.consys_ic_jtag_set_for_mcu = consys_jtag_set_for_mcu,
 	.consys_ic_jtag_flag_ctrl = consys_jtag_flag_ctrl,
+
+	.consys_ic_cr_remapping = consys_cr_remapping,
+	.consys_ic_wakeup_btif_irq_pull_low = consys_wakeup_btif_irq_pull_low,
 
 	.consys_ic_get_debug_reg_ary_size = &g_mapped_reg_table_sz_mt6833,
 	.consys_ic_get_debug_reg_ary = g_mapped_reg_table_mt6833,
@@ -457,6 +465,39 @@ static UINT32 consys_jtag_flag_ctrl(UINT32 enable)
 	gJtagCtrl = enable;
 
 	return 0;
+}
+
+static INT32 consys_cr_remapping(UINT32 enable)
+{
+	WMT_PLAT_PR_INFO("%s consys_cr_remapping\n", enable ? "enable" : "disable");
+
+	if (enable) {
+		g_conn_mcu_btif_0_base = ioremap(CONN_MCU_BTIF_0_BASE, 0x100);
+		if (!g_conn_mcu_btif_0_base) {
+			pr_notice("g_conn_mcu_btif_0_base(%x) ioremap fail\n",
+				CONN_MCU_BTIF_0_BASE);
+			return -1;
+		}
+	} else {
+		if (g_conn_mcu_btif_0_base) {
+			iounmap(g_conn_mcu_btif_0_base);
+			g_conn_mcu_btif_0_base = NULL;
+		}
+	}
+
+	return 0;
+}
+
+static UINT32 consys_wakeup_btif_irq_pull_low(VOID)
+{
+	if (g_conn_mcu_btif_0_base) {
+		/* write 0x180a2064[31:0] = 0x1 */
+		CONSYS_REG_WRITE(g_conn_mcu_btif_0_base +
+			BTIF_WAK_ADDR_OFFSET, 0x1);
+		return 0;
+	}
+
+	return 1;
 }
 
 static INT32 consys_clk_get_from_dts(struct platform_device *pdev)
