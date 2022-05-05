@@ -2285,8 +2285,43 @@ static INT32 consys_calibration_backup_restore_support(VOID)
 }
 
 #if IS_ENABLED(CONFIG_MTK_DEVAPC)
+static VOID consys_devapc_dump_debug_info(VOID)
+{
+	if (osal_trylock_unsleepable_lock(&g_pwr_off_lock) == 0) {
+		WMT_PLAT_PR_INFO("fail to get pwr off lock\n");
+		return;
+	}
+
+	if (atomic_read(&g_power_on) == 1) {
+		if (conn_reg.topckgen_base) {
+			WMT_PLAT_PR_INFO("CONSYS_EMI_MAPPING dump in restore cb(0x%08x)\n",
+				CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_MAPPING_OFFSET));
+
+			WMT_PLAT_PR_INFO("GPS_MAPPING dump in restore cb(0x%08x)\n",
+				CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_GPS_MAPPING_OFFSET));
+
+			WMT_PLAT_PR_INFO("PERISYS_MAPPING dump in restore cb(0x%08x)\n",
+				CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_PERI_MAPPING_OFFSET));
+
+#if IS_ENABLED(CONFIG_MTK_ECCCI_DRIVER)
+			WMT_PLAT_PR_INFO("MD_MAPPING dump in restore cb(0x%08x)\n",
+				CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_AP_MD_OFFSET));
+#endif
+		} else
+			WMT_PLAT_PR_INFO("conn_reg.topckgen_base=[NULL]\n");
+		dump_conn_debug_dump_mt6855("DEVAPC_Violation");
+	} else
+		WMT_PLAT_PR_INFO("g_power_on=[0]\n");
+
+	osal_unlock_unsleepable_lock(&g_pwr_off_lock);
+}
+#endif
+
+#if IS_ENABLED(CONFIG_MTK_DEVAPC)
 static VOID consys_devapc_violation_cb(VOID)
 {
+	consys_devapc_dump_debug_info();
+
 	/**
 	 * Don't use wmt_lib_trigger_assert() because it will invoke vmalloc and then cause KE since
 	 * this callback is supposed to be invoked in DEVAPC exception hanlder.
