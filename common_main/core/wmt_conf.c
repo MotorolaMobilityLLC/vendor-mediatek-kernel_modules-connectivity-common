@@ -104,7 +104,7 @@ static INT32 wmt_conf_parse(P_DEV_WMT pWmtDev, const PINT8 pInBuf, UINT32 size);
 #define ARRAY_VALUE_MAX  72
 
 /* use moto bootargs to get device name & radio parameters */
-static char *bootargs_str;
+static char *bootargs_str = NULL;
 
 static int mmi_get_bootarg_dt(char *key, char **value, char *prop, char *spl_flag)
 {
@@ -191,10 +191,14 @@ static moto_product products_list[] = {
 	if (mmi_get_bootarg("androidboot.device=", &s) == 0) {
 		memcpy(device, s, strlen(s));
 		WMT_INFO_FUNC("[WMT-MOTO]bootargs get device: %s\n", device);
+		kfree(bootargs_str);
+		bootargs_str = NULL;
 	}
 	if (mmi_get_bootarg("androidboot.radio=", &s) == 0) {
 		memcpy(radio, s, strlen(s));
 		WMT_INFO_FUNC("[WMT-MOTO]bootargs get radio: %s\n", radio);
+		kfree(bootargs_str);
+		bootargs_str = NULL;
 	}
 
 	num = sizeof(products_list) / sizeof(moto_product);
