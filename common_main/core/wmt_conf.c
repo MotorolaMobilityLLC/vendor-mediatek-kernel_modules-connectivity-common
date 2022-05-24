@@ -162,25 +162,30 @@ typedef struct moto_product {
         char hw_device[ARRAY_VALUE_MAX];
         char hw_radio[ARRAY_VALUE_MAX];
         char moto_filename[ARRAY_VALUE_MAX];
+        char rev[ARRAY_VALUE_MAX];
 } moto_product;
 
 static moto_product products_list[] = {
-        {"austin",    "all", "AUSTIN_FEM"},
-        {"ellis",    "NCA", "ELLIS"},
-        {"ellis",    "CA",  "ELLIS_EPA"},
-        {"tonga",    "NA",  "TONGA_EPA"},
-        {"tonga",    "NA_CARRIERS",  "TONGA_IPA"},
-        {"milan",    "all",  "MILAN_FEM"},
-        {"maui",    "NA",  "MAUI_EPA"},
+        {"austin",   "all",           "AUSTIN_FEM", "all"},
+        {"ellis",    "NCA",           "ELLIS",      "all"},
+        {"ellis",    "CA",            "ELLIS_EPA",  "all"},
+        {"tonga",    "NA",            "TONGA_EPA",  "all"},
+        {"tonga",    "NA_CARRIERS",   "TONGA_IPA",  "all"},
+        {"milan",    "all",           "MILAN_FEM",  "all"},
+        {"maui",     "NA",            "MAUI_EPAO",  "EVT1"},
+        {"maui",     "NA",            "MAUI_EPAO",  "EVT2"},
+        {"maui",     "NA",            "MAUI_EPA",   "all"},
+        {"maui",     "NA_CARRIERS",   "MAUI_IPA",   "all"},
         {{0},        {0},   {0}},
 };
 
 
- void get_moto_wmt_soc_file_name(char *name)
+void get_moto_wmt_soc_file_name(char *name)
 {
 	char device[ARRAY_VALUE_MAX] = {0};
 	char radio[ARRAY_VALUE_MAX] = {0};
-        char prefix[ARRAY_VALUE_MAX] = "WMT_SOC";
+	char rev[ARRAY_VALUE_MAX] = {0};
+	char prefix[ARRAY_VALUE_MAX] = "WMT_SOC";
 	int num = 0;
 	int i = 0;
 	char *s;
@@ -197,22 +202,30 @@ static moto_product products_list[] = {
 		kfree(bootargs_str);
 		bootargs_str = NULL;
 	}
+	if (mmi_get_bootarg("androidboot.revision=", &s) == 0) {
+		memcpy(rev, s, strlen(s));
+		WMT_INFO_FUNC("[WMT-MOTO]bootargs get revision: %s\n", rev);
+		kfree(bootargs_str);
+		bootargs_str = NULL;
+	}
 
 	num = sizeof(products_list) / sizeof(moto_product);
 	for (i=0; i<num; i++) {
 		if (strncmp(device, (products_list+i)->hw_device, ARRAY_VALUE_MAX) == 0) {
-			if (strncmp(radio, (products_list+i)->hw_radio, ARRAY_VALUE_MAX) == 0 ||
-				strncmp((products_list+i)->hw_radio, "all", ARRAY_VALUE_MAX) == 0) {
+			if (strncmp(radio, (products_list+i)->hw_radio, ARRAY_VALUE_MAX) == 0
+				|| strncmp((products_list+i)->hw_radio, "all", ARRAY_VALUE_MAX) == 0) {
 
-                                snprintf(name, ARRAY_VALUE_MAX, "%s_%s.cfg", prefix, (products_list+i)->moto_filename);
-                                WMT_INFO_FUNC("[WMT-MOTO]Use moto WMT_SOC file name: %s\n", name);
-                                return;
-                        }
-                }
-        }
+				if ((strncmp((products_list+i)->rev, "all", ARRAY_VALUE_MAX) == 0)
+					|| (strncmp(rev, (products_list+i)->rev, ARRAY_VALUE_MAX) == 0)) {
+					snprintf(name, ARRAY_VALUE_MAX, "%s_%s.cfg", prefix, (products_list+i)->moto_filename);
+					WMT_INFO_FUNC("[WMT-MOTO]Use moto WMT_SOC file name: %s\n", name);
+					return;
+				}
+			}
+		}
+	}
 
- 	WMT_INFO_FUNC("[WMT-MOTO]Use default WMT_SOC file name: %s\n", CUST_CFG_WMT_SOC);
-
+	WMT_INFO_FUNC("[WMT-MOTO]Use default WMT_SOC file name: %s\n", CUST_CFG_WMT_SOC);
 }
 
 static const struct parse_data wmtcfg_fields[] = {
