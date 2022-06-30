@@ -514,7 +514,7 @@ static INT32 mtk_wmt_remove(struct platform_device *pdev)
 
 static int mtk_wmt_suspend(void)
 {
-	WMT_PLAT_PR_INFO(" mtk_wmt_suspend !!");
+	WMT_PLAT_PR_DBG(" mtk_wmt_suspend !!");
 
 	mtk_wcn_consys_sleep_info_clear();
 	connsys_dedicated_log_set_ap_state(0);
@@ -569,7 +569,7 @@ static void plat_resume_handler(struct work_struct *work)
 
 static int mtk_wmt_resume(void)
 {
-	WMT_PLAT_PR_INFO(" mtk_wmt_resume !!");
+	WMT_PLAT_PR_DBG(" mtk_wmt_resume !!");
 	schedule_work(&plt_resume_worker);
 	connsys_dedicated_log_set_ap_state(1);
 
