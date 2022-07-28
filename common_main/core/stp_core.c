@@ -3385,8 +3385,9 @@ INT32 mtk_wcn_stp_wakeup_consys(VOID)
 *****************************************************************************/
 INT32 mtk_wcn_stp_dpidle_ctrl(UINT32 en_flag)
 {
+#ifdef CONFIG_MTK_BTIF
 	mtk_wcn_consys_stp_btif_dpidle_ctrl(en_flag);
-
+#endif
 	return 0;
 }
 
