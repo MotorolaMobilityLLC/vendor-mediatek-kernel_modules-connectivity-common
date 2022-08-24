@@ -24,6 +24,14 @@
 *                         C O M P I L E R   F L A G S
 ********************************************************************************
 */
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0))
+#define COMMON_KERNEL_PMIC_SUPPORT	1
+#define COMMON_KERNEL_CLK_SUPPORT	1
+#else
+#define COMMON_KERNEL_PMIC_SUPPORT	0
+#define COMMON_KERNEL_CLK_SUPPORT	0
+#endif
+
 
 #define CONSYS_BT_WIFI_SHARE_V33	0
 #define CONSYS_PMIC_CTRL_ENABLE		1
@@ -194,6 +202,26 @@
 #define CONN_CFG_ON_CONN_ON_DBGSEL_ADDR                     (conn_reg.mcu_top_misc_on_base + 0x310)
 #define CONN_CFG_ON_CONN_ON_MON_FLAG_RECORD_ADDR            (conn_reg.mcu_top_misc_on_base + 0x340)
 #define CONN_CFG_ON_CONN_ON_MON_FLAG_RECORD_MAPPING_AP_ADDR (0x180c1340)
+
+#if COMMON_KERNEL_PMIC_SUPPORT
+#define MT6358_PMIC_REG_BASE (0x0)
+#define MT6358_LDO_VCN18_OP_EN_SET            ((unsigned int)(MT6358_PMIC_REG_BASE+0x1c5c))
+#define MT6358_LDO_VCN28_OP_EN                ((unsigned int)(MT6358_PMIC_REG_BASE+0x1d8a))
+#define MT6358_LDO_VCN28_OP_CFG               ((unsigned int)(MT6358_PMIC_REG_BASE+0x1d90))
+
+#define MT6358_LDO_VCN33_OP_EN_SET            ((unsigned int)(MT6358_PMIC_REG_BASE+0x1d20))
+#define PMIC_RG_LDO_VCN18_OP_EN_SET_ADDR                     MT6358_LDO_VCN18_OP_EN_SET
+
+#define PMIC_RG_LDO_VCN28_HW0_OP_EN_ADDR                     MT6358_LDO_VCN28_OP_EN
+#define PMIC_RG_LDO_VCN28_HW0_OP_EN_MASK                     0x1
+#define PMIC_RG_LDO_VCN28_HW0_OP_EN_SHIFT                    1
+
+#define PMIC_RG_LDO_VCN28_HW0_OP_CFG_ADDR                    MT6358_LDO_VCN28_OP_CFG
+#define PMIC_RG_LDO_VCN28_HW0_OP_CFG_MASK                    0x1
+#define PMIC_RG_LDO_VCN28_HW0_OP_CFG_SHIFT                   1
+
+#define PMIC_RG_LDO_VCN33_OP_EN_SET_ADDR                     MT6358_LDO_VCN33_OP_EN_SET
+#endif
 
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
