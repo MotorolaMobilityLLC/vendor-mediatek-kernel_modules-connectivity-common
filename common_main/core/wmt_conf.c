@@ -172,6 +172,7 @@ static moto_product products_list[] = {
         {"tonga",    "NA_CARRIERS",  "TONGA_IPA"},
         {"milan",    "all",  "MILAN_FEM"},
         {"devonn",    "all",  "devonn_epa"},
+	{"gnevan",    "all",  "GNEVAN_FEM"},
 
         {{0},        {0},   {0}},
 };
