@@ -786,6 +786,8 @@ static INT32 mtk_wcn_stp_uart_init(VOID)
 	memset(&stp_uart_ldisc, 0, sizeof(stp_uart_ldisc));
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
 	stp_uart_ldisc.magic = TTY_LDISC_MAGIC;
+#else
+	stp_uart_ldisc.num = N_MTKSTP;
 #endif
 	stp_uart_ldisc.name = "n_mtkstp";
 	stp_uart_ldisc.open = stp_uart_tty_open;

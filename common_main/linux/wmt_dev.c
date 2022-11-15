@@ -624,6 +624,11 @@ LONG wmt_dev_tm_temp_query(VOID)
 	LONG return_temp = 0;
 	INT8 query_cond = 0;
 
+	if (gWmtInitStatus != WMT_INIT_DONE) {
+		WMT_INFO_FUNC("WMT_init is not finished yet, return 0 directly.\n");
+		return 0;
+	}
+
 	/* Let us work on the copied version of function static variables */
 	osal_lock_unsleepable_lock(&g_temp_query_spinlock);
 	osal_memcpy(temp_table, s_temp_table, sizeof(s_temp_table));
