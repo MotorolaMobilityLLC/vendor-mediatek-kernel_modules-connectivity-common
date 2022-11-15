@@ -3675,6 +3675,64 @@ done:
 	return iRet;
 }
 
+INT32 mtk_wcn_soc_set_patch_info(UINT32 ip_ver, UINT32 fw_ver)
+{
+	INT32 iRet = -1;
+	struct wmt_rom_patch *patchHdr = NULL;
+	PUINT8 pBuf = NULL;
+	PUINT8 pPatchBuf = NULL;
+	UINT32 patchSize;
+	UINT8 addressByte[4];
+	UINT32 type;
+	WMT_CTRL_DATA ctrlData;
+
+	for (type = WMTDRV_TYPE_BT; type < WMTDRV_TYPE_ANT; type++) {
+		osal_memset(gFullPatchName, 0, osal_sizeof(gFullPatchName));
+
+		ctrlData.ctrlId = WMT_CTRL_GET_ROM_PATCH_INFO;
+		ctrlData.au4CtrlData[0] = type;
+		ctrlData.au4CtrlData[1] = (SIZE_T)&gFullPatchName;
+		ctrlData.au4CtrlData[2] = (SIZE_T)&addressByte;
+		ctrlData.au4CtrlData[3] = ip_ver;
+		ctrlData.au4CtrlData[4] = fw_ver;
+		iRet = wmt_ctrl(&ctrlData);
+		if (iRet > 0) {
+			WMT_INFO_FUNC("There is no need to download (%d) type patch!\n", type);
+			continue;
+		} else if (iRet < 0) {
+			WMT_ERR_FUNC("failed to get patch (type: %d, ret: %d)\n", type, iRet);
+			goto done;
+		}
+
+		/* <2.2> read patch content */
+		ctrlData.ctrlId = WMT_CTRL_GET_PATCH;
+		ctrlData.au4CtrlData[0] = (SIZE_T)NULL;
+		ctrlData.au4CtrlData[1] = (SIZE_T)&gFullPatchName;
+		ctrlData.au4CtrlData[2] = (SIZE_T)&pBuf;
+		ctrlData.au4CtrlData[3] = (SIZE_T)&patchSize;
+		iRet = wmt_ctrl(&ctrlData);
+		if (iRet) {
+			WMT_ERR_FUNC("wmt_core: WMT_CTRL_GET_PATCH fail:%d\n", iRet);
+			iRet = -1;
+			goto done;
+		}
+done:
+		if (patchHdr != NULL) {
+			osal_free(patchHdr);
+			pPatchBuf = NULL;
+			patchHdr = NULL;
+		}
+
+		/* WMT_CTRL_FREE_PATCH always return 0 */
+		ctrlData.ctrlId = WMT_CTRL_FREE_PATCH;
+		ctrlData.au4CtrlData[0] = type;
+		wmt_ctrl(&ctrlData);
+		if (iRet)
+			break;
+	}
+
+	return iRet;
+}
 
 VOID mtk_wcn_soc_restore_wifi_cal_result(VOID)
 {

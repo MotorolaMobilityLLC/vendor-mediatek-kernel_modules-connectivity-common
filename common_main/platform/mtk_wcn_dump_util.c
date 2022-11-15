@@ -79,6 +79,11 @@ extern int g_mapped_reg_table_sz_mt6833;
 extern REG_MAP_ADDR g_mapped_reg_table_mt6833[];
 #endif
 
+#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6835)
+extern int g_mapped_reg_table_sz_mt6835;
+extern REG_MAP_ADDR g_mapped_reg_table_mt6835[];
+#endif
+
 #if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6853)
 extern int g_mapped_reg_table_sz_mt6853;
 extern REG_MAP_ADDR g_mapped_reg_table_mt6853[];
@@ -242,6 +247,12 @@ VOID init_dump_util_variable(UINT32 chipid)
 #if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6833)
 		g_mapped_reg_table_sz = g_mapped_reg_table_sz_mt6833;
 		g_mapped_reg_table = g_mapped_reg_table_mt6833;
+#endif
+		break;
+	case 0x6835:
+#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6835)
+		g_mapped_reg_table_sz = g_mapped_reg_table_sz_mt6835;
+		g_mapped_reg_table = g_mapped_reg_table_mt6835;
 #endif
 		break;
 	case 0x6853:
