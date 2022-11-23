@@ -30,6 +30,11 @@
 #endif
 #define DFT_TAG "[WMT-CONSYS-HW]"
 
+#define	REGION_CONN	25
+
+#define	DOMAIN_AP	0
+#define	DOMAIN_CONN	2
+
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
@@ -59,7 +64,12 @@
 #endif
 #endif
 
-#ifdef CONFIG_MTK_EMI
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0))
+#if IS_ENABLED(CONFIG_MTK_EMI_LEGACY)
+#include "soc/mediatek/emi.h"
+#endif
+#endif
+#if IS_ENABLED(CONFIG_MTK_EMI)
 #include <mt_emi_api.h>
 #endif
 
@@ -1178,7 +1188,23 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 
 static INT32 consys_emi_mpu_set_region_protection(VOID)
 {
-#ifdef CONFIG_MTK_EMI
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0))
+#if IS_ENABLED(CONFIG_MTK_EMI_LEGACY)
+	struct emimpu_region_t region;
+	unsigned long long start = gConEmiPhyBase;
+	unsigned long long end = gConEmiPhyBase + gConEmiSize - 1;
+
+	mtk_emimpu_init_region(&region, REGION_CONN);
+	mtk_emimpu_set_addr(&region, start, end);
+	mtk_emimpu_set_apc(&region, DOMAIN_AP, MTK_EMIMPU_NO_PROTECTION);
+	mtk_emimpu_set_apc(&region, DOMAIN_CONN, MTK_EMIMPU_NO_PROTECTION);
+	mtk_emimpu_set_protection(&region);
+	mtk_emimpu_free_region(&region);
+
+	WMT_PLAT_PR_INFO("setting MPU for EMI share memory\n");
+#endif
+#else
+#if IS_ENABLED(CONFIG_MTK_EMI)
 	struct emi_region_info_t region_info;
 
 	/*set MPU for EMI share Memory */
@@ -1192,6 +1218,7 @@ static INT32 consys_emi_mpu_set_region_protection(VOID)
 			FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
 			NO_PROTECTION, FORBIDDEN, NO_PROTECTION);
 	emi_mpu_set_protection(&region_info);
+#endif
 #endif
 	return 0;
 }
