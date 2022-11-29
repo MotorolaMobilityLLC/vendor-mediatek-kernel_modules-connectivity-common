@@ -3535,3 +3535,40 @@ INT32 wmt_lib_before_chip_reset_dump(VOID)
 
 	return ret;
 }
+
+INT32 wmt_lib_get_firmware_version(char *buffer, UINT32 buffer_len)
+{
+	P_CONSYS_EMI_ADDR_INFO info;
+	void __iomem *virt_addr;
+
+	if (buffer == NULL || buffer_len == 0) {
+		WMT_INFO_FUNC("invalid parameter buffer(%x) len(%u).\n", buffer, buffer_len);
+		return -1;
+	}
+
+	info = mtk_wcn_consys_soc_get_emi_phy_add();
+	if (!info) {
+		WMT_INFO_FUNC("get EMI info failed.\n");
+		return -2;
+	}
+
+	WMT_INFO_FUNC("emi_ap_phy_addr (%x) emi_fw_version_offset(%u)",
+		info->emi_ap_phy_addr, info->emi_fw_ver_offset);
+
+	if (info->emi_ap_phy_addr == 0 || info->emi_fw_ver_offset == 0) {
+		WMT_INFO_FUNC("invalid EMI info setting.\n");
+		return -3;
+	}
+
+	virt_addr = ioremap(info->emi_ap_phy_addr + info->emi_fw_ver_offset, buffer_len);
+	if (virt_addr == NULL) {
+		WMT_INFO_FUNC("ioremap failed.\n");
+		return -4;
+	}
+	memcpy_fromio(buffer, virt_addr, buffer_len);
+	iounmap(virt_addr);
+	buffer[buffer_len - 1] = '\0';
+
+	return 0;
+}
+

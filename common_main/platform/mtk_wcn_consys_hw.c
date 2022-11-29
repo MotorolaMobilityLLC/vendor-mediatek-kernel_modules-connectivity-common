@@ -876,6 +876,9 @@ INT32 mtk_wcn_consys_detect_adie_chipid(UINT32 co_clock_type)
 		if (chipid > 0) {
 			g_adie_chipid = chipid;
 			WMT_PLAT_PR_INFO("Set a-die chipid = %x\n", chipid);
+			/* update emi_ap_phy_addr according to a-die chip */
+			if (wmt_consys_ic_ops->consys_ic_emi_set_remapping_reg)
+				wmt_consys_ic_ops->consys_ic_emi_set_remapping_reg();
 		} else
 			WMT_PLAT_PR_INFO("Detect a-die chipid = %x failed!\n", chipid);
 		wmt_lib_set_adie_workable((chipid > 0) ? 1 : 0);

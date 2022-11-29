@@ -319,6 +319,7 @@ typedef struct _CONSYS_EMI_ADDR_INFO_ {
 	UINT32 emi_ram_wifi_buildtime_offset;
 	UINT32 emi_ram_mcu_buildtime_offset;
 	UINT32 emi_patch_mcu_buildtime_offset;
+	UINT32 emi_fw_ver_offset;
 } CONSYS_EMI_ADDR_INFO, *P_CONSYS_EMI_ADDR_INFO;
 
 typedef struct _GPIO_TDM_REQ_INFO_ {
