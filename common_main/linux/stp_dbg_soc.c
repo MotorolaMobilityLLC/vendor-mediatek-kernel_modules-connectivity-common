@@ -195,6 +195,8 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 	ULONG start_nsec = 0;
 	UINT64 elapsed_time = 0;
 	INT32 abort = 0;
+	INT32 left_size = 0;
+	INT32 fw_ver_len = 0;
 #if WMT_DBG_SUPPORT
 	static DEFINE_RATELIMIT_STATE(_rs, 10 * HZ, 1);
 #endif
@@ -292,7 +294,7 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 			break;
 		}
 
-		dump_vir_addr = wmt_plat_get_emi_virt_add(dump_phy_addr - p_ecsi->emi_phy_addr);
+		dump_vir_addr = wmt_plat_get_emi_virt_add(dump_phy_addr);
 		if (!dump_vir_addr) {
 			STP_DBG_PR_ERR("get paged dump phy address fail\n");
 			ret = -2;
@@ -308,6 +310,21 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 
 		/*move dump info according to dump_addr & dump_len */
 		osal_memcpy_fromio(&g_paged_dump_buffer[0], dump_vir_addr, dump_len);
+
+		left_size = sizeof(g_paged_dump_buffer) - dump_len;
+		if (left_size > 32) {
+			g_paged_dump_buffer[dump_len] = '\n';
+			if (wmt_lib_get_firmware_version(&g_paged_dump_buffer[dump_len + 1],
+				left_size - 1) == 0) {
+				fw_ver_len = strlen(&g_paged_dump_buffer[dump_len + 1]);
+				if (fw_ver_len > 0 && fw_ver_len < left_size)
+					dump_len += (fw_ver_len + 1);
+				else
+					STP_DBG_PR_INFO("error!dump_len %d, fw_ver_len %d\n",
+						dump_len, fw_ver_len);
+			}
+		} else
+			STP_DBG_PR_INFO("left size (%d) is not enough\n", left_size);
 
 		if (dump_len <= 32 * 1024) {
 			STP_DBG_PR_DBG("coredump mode: %d!\n", dump_sink);
@@ -455,7 +472,7 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_trace(VOID)
 		g_paged_trace_len = buffer_idx;
 		STP_DBG_PR_INFO("paged trace buffer addr(%08x),buffer_len(%d)\n", buffer_start,
 				buffer_idx);
-		dump_vir_addr = wmt_plat_get_emi_virt_add(buffer_start - p_ecsi->emi_phy_addr);
+		dump_vir_addr = wmt_plat_get_emi_virt_add(buffer_start);
 		if (!dump_vir_addr) {
 			STP_DBG_PR_ERR("get vir dump address fail\n");
 			ret = -2;

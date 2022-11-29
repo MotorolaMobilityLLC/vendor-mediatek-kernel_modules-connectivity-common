@@ -93,6 +93,8 @@
 #define COMPAT_WMT_IOCTL_SET_VENDOR_PATCH_VERSION	_IOW(WMT_IOC_MAGIC, 37, compat_uptr_t)
 #define COMPAT_WMT_IOCTL_SET_ACTIVE_PATCH_VERSION	_IOR(WMT_IOC_MAGIC, 40, compat_uptr_t)
 #define COMPAT_WMT_IOCTL_GET_ACTIVE_PATCH_VERSION	_IOR(WMT_IOC_MAGIC, 41, compat_uptr_t)
+#define COMPAT_WMT_IOCTL_GET_DIRECT_PATH_EMI_SIZE	_IOR(WMT_IOC_MAGIC, 42, compat_uptr_t)
+#define COMPAT_WMT_IOCTL_GET_FIRMWARE_VERSION		_IOR(WMT_IOC_MAGIC, 43, compat_uptr_t)
 #endif
 
 #define WMT_IOC_MAGIC        0xa0
@@ -125,6 +127,7 @@
 #define WMT_IOCTL_SET_ACTIVE_PATCH_VERSION	_IOR(WMT_IOC_MAGIC, 40, char*)
 #define WMT_IOCTL_GET_ACTIVE_PATCH_VERSION	_IOR(WMT_IOC_MAGIC, 41, char*)
 #define WMT_IOCTL_GET_DIRECT_PATH_EMI_SIZE	_IOR(WMT_IOC_MAGIC, 42, unsigned int)
+#define WMT_IOCTL_GET_FIRMWARE_VERSION		_IOR(WMT_IOC_MAGIC, 43, char*)
 
 #define MTK_WMT_VERSION  "Consys WMT Driver - v1.0"
 #define MTK_WMT_DATE     "2013/01/20"
@@ -1442,6 +1445,21 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		break;
 	case WMT_IOCTL_GET_CHECK_PATCH_STATUS:
 		iRet = wmt_lib_get_check_patch_status();
+		break;
+
+	case WMT_IOCTL_GET_FIRMWARE_VERSION:
+		do {
+			char version[128];
+
+			iRet = wmt_lib_get_firmware_version(version, sizeof(version));
+			if (iRet) {
+				iRet = -EFAULT;
+				break;
+			}
+
+			if (copy_to_user((PVOID)arg, version, strlen(version)))
+				iRet = -EFAULT;
+		} while (0);
 		break;
 	default:
 		iRet = -EINVAL;
