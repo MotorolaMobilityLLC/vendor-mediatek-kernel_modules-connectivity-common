@@ -1540,21 +1540,9 @@ VOID osal_op_raise_signal(P_OSAL_OP pOp, INT32 result)
 
 INT32 osal_ftrace_print(const PINT8 str, ...)
 {
-	int ret = 0;
-#ifdef CONFIG_TRACING
-	va_list args;
-	INT8 tempString[DBG_LOG_STR_SIZE];
+	/* disable trace_printk */
 
-	if (ftrace_flag) {
-		va_start(args, str);
-		ret = vsnprintf(tempString, DBG_LOG_STR_SIZE, str, args);
-		va_end(args);
-
-		if (ret > 0)
-			trace_printk("%s\n", tempString);
-	}
-#endif
-	return ret;
+	return 0;
 }
 
 INT32 osal_ftrace_print_ctrl(INT32 flag)
