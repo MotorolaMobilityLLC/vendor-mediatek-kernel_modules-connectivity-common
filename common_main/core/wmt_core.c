@@ -152,6 +152,7 @@ static INT32 opfunc_trigger_stp_assert(P_WMT_OP pWmtOp);
 static INT32 opfunc_flash_patch_down(P_WMT_OP pWmtOp);
 static INT32 opfunc_flash_patch_ver_get(P_WMT_OP pWmtOp);
 static INT32 opfunc_utc_time_sync(P_WMT_OP pWmtOp);
+static INT32 opfunc_fw_log_ctrl(P_WMT_OP pWmtOp);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -264,6 +265,13 @@ static UINT8 WMT_UTC_SYNC_EVT[] = { 0x02, 0xF0, 0x01, 0x00, 0x02
 };
 #endif
 
+static UINT8 WMT_FW_LOG_CTRL_CMD[] = { 0x01, 0xF0, 0x04, 0x00, 0x01
+	, 0x00 /* subsys type */
+	, 0x00 /* on/off */
+	, 0x00 /* level (subsys-specific) */
+};
+static UINT8 WMT_FW_LOG_CTRL_EVT[] = { 0x02, 0xF0, 0x01, 0x00, 0x01 };
+
 /* GeorgeKuo: Use designated initializers described in
  * http://gcc.gnu.org/onlinedocs/gcc-4.0.4/gcc/Designated-Inits.html
  */
@@ -302,7 +310,7 @@ static const WMT_OPID_FUNC wmt_core_opfunc[] = {
 	[WMT_OPID_FLASH_PATCH_DOWN] = opfunc_flash_patch_down,
 	[WMT_OPID_FLASH_PATCH_VER_GET] = opfunc_flash_patch_ver_get,
 	[WMT_OPID_UTC_TIME_SYNC] = opfunc_utc_time_sync,
-
+	[WMT_OPID_FW_LOG_CTRL] = opfunc_fw_log_ctrl,
 };
 
 /*******************************************************************************
@@ -3195,6 +3203,49 @@ static INT32 opfunc_utc_time_sync(P_WMT_OP pWmtOp)
 #else
 	return -1;
 #endif
+}
+
+static INT32 opfunc_fw_log_ctrl(P_WMT_OP pWmtOp)
+{
+	INT32 iRet;
+	UINT32 u4Res;
+	UINT32 evtLen;
+	UINT8 evtBuf[osal_sizeof(WMT_FW_LOG_CTRL_EVT)];
+
+	/* fill command parameters  */
+	WMT_FW_LOG_CTRL_CMD[5] = (UINT8)pWmtOp->au4OpData[0]; /* type */
+	WMT_FW_LOG_CTRL_CMD[6] = (UINT8)pWmtOp->au4OpData[1]; /* on/off */
+	WMT_FW_LOG_CTRL_CMD[7] = (UINT8)pWmtOp->au4OpData[2]; /* log level */
+
+	/* send command */
+	iRet = wmt_core_tx(WMT_FW_LOG_CTRL_CMD, sizeof(WMT_FW_LOG_CTRL_CMD), &u4Res, MTK_WCN_BOOL_FALSE);
+	if (iRet) {
+		WMT_ERR_FUNC("Tx WMT_FW_LOG_CTRL_CMD fail!(%d) len (%d, %zu)\n", iRet, u4Res,
+				sizeof(WMT_FW_LOG_CTRL_CMD));
+		return -1;
+	}
+
+	/* receive event */
+	evtLen = osal_sizeof(WMT_FW_LOG_CTRL_EVT);
+	iRet = wmt_core_rx(evtBuf, evtLen, &u4Res);
+	if (iRet || (u4Res != evtLen)) {
+		WMT_ERR_FUNC("WMT-CORE: read WMT_FW_LOG_CTRL_EVT fail(%d) len(%d, %d)\n", iRet, u4Res, evtLen);
+		osal_assert(0);
+		return iRet;
+	}
+
+	if (osal_memcmp(evtBuf, WMT_FW_LOG_CTRL_EVT, evtLen) != 0) {
+		WMT_ERR_FUNC("WMT-CORE: compare WMT_FW_LOG_CTRL_EVT error\n");
+		WMT_ERR_FUNC("WMT-CORE: tx(%zu):[%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x]\n",
+				osal_sizeof(WMT_FW_LOG_CTRL_CMD), WMT_FW_LOG_CTRL_CMD[0], WMT_FW_LOG_CTRL_CMD[1],
+				WMT_FW_LOG_CTRL_CMD[2], WMT_FW_LOG_CTRL_CMD[3], WMT_FW_LOG_CTRL_CMD[4],
+				WMT_FW_LOG_CTRL_CMD[5], WMT_FW_LOG_CTRL_CMD[6], WMT_FW_LOG_CTRL_CMD[7]);
+		WMT_ERR_FUNC("WMT-CORE: rx(%u):[%02x,%02x,%02x,%02x,%02x]\n",
+				u4Res, evtBuf[0], evtBuf[1], evtBuf[2], evtBuf[3], evtBuf[4]);
+	} else {
+		WMT_INFO_FUNC("Send WMT_FW_LOG_CTRL_EVT command OK!\n");
+	}
+	return 0;
 }
 
 P_WMT_GEN_CONF wmt_get_gen_conf_pointer(VOID)
