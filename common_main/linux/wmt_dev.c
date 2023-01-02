@@ -1315,6 +1315,12 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 				break;
 			}
 
+			if (fdb_ctrl.base_index < MCU_BASE_INDEX ||
+			    fdb_ctrl.base_index > MCU_CIRQ_BASE_INDEX) {
+				WMT_ERR_FUNC("base index abnormal(%d)\n", fdb_ctrl.base_index);
+				iRet = -EFAULT;
+				break;
+			}
 			iRet = wmt_lib_fdb_ctrl(&fdb_ctrl);
 			if (iRet) {
 				WMT_ERR_FUNC("wmt_lib_fdb_ctrl fail(%d)\n", iRet);
