@@ -371,7 +371,7 @@ static unsigned char *mtk_step_get_emi_virt_addr(unsigned char *emi_base_addr, u
 	unsigned char *p_virtual_addr = NULL;
 
 	if (offset > gConEmiSize) {
-		WMT_ERR_FUNC("STEP failed: offset size %d over MAX size(%d)\n", offset,
+		WMT_ERR_FUNC("STEP failed: offset size %d over MAX size(%llu)\n", offset,
 			gConEmiSize);
 		return NULL;
 	}
@@ -1631,7 +1631,8 @@ static int wmt_step_do_write_register_action(struct step_reigster_info *p_reg_in
 	if (p_reg_info->address_type == STEP_REGISTER_PHYSICAL_ADDRESS) {
 		phy_addr = p_reg_info->address + p_reg_info->offset;
 		if (phy_addr & 0x3) {
-			WMT_ERR_FUNC("STEP failed: phy_addr(0x%08x) page failed\n", phy_addr);
+			WMT_ERR_FUNC("STEP failed: phy_addr(0x%08x) page failed\n",
+					(unsigned int)phy_addr);
 			return -1;
 		}
 
@@ -1645,13 +1646,15 @@ static int wmt_step_do_write_register_action(struct step_reigster_info *p_reg_in
 				func_do_extra(1, CONSYS_REG_READ(p_addr));
 			iounmap(p_addr);
 		} else {
-			WMT_ERR_FUNC("STEP failed: ioremap(0x%08x) is NULL\n", phy_addr);
+			WMT_ERR_FUNC("STEP failed: ioremap(0x%08x) is NULL\n",
+					(unsigned int)phy_addr);
 			return -1;
 		}
 	} else {
 		vir_addr = p_reg_info->address + p_reg_info->offset;
 		if (vir_addr & 0x3) {
-			WMT_ERR_FUNC("STEP failed: vir_addr(0x%08x) page failed\n", vir_addr);
+			WMT_ERR_FUNC("STEP failed: vir_addr(0x%08x) page failed\n",
+					(unsigned int)vir_addr);
 			return -1;
 		}
 
@@ -1697,7 +1700,8 @@ static int wmt_step_do_read_register_action(struct step_reigster_info *p_reg_inf
 	if (p_reg_info->address_type == STEP_REGISTER_PHYSICAL_ADDRESS) {
 		phy_addr = p_reg_info->address + p_reg_info->offset;
 		if (phy_addr & 0x3) {
-			WMT_ERR_FUNC("STEP failed: phy_addr(0x%08x) page failed\n", phy_addr);
+			WMT_ERR_FUNC("STEP failed: phy_addr(0x%08x) page failed\n",
+					(unsigned int)phy_addr);
 			return -1;
 		}
 
@@ -1709,13 +1713,15 @@ static int wmt_step_do_read_register_action(struct step_reigster_info *p_reg_inf
 				CONSYS_REG_READ(p_addr));
 			iounmap(p_addr);
 		} else {
-			WMT_ERR_FUNC("STEP failed: ioremap(0x%08x) is NULL\n", phy_addr);
+			WMT_ERR_FUNC("STEP failed: ioremap(0x%08x) is NULL\n",
+					(unsigned int)phy_addr);
 			return -1;
 		}
 	} else {
 		vir_addr = p_reg_info->address + p_reg_info->offset;
 		if (vir_addr & 0x3) {
-			WMT_ERR_FUNC("STEP failed: vir_addr(0x%08x) page failed\n", vir_addr);
+			WMT_ERR_FUNC("STEP failed: vir_addr(0x%08x) page failed\n",
+					(unsigned int)vir_addr);
 			return -1;
 		}
 
