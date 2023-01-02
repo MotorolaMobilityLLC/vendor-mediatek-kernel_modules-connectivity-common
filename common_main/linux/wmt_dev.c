@@ -990,7 +990,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			WMT_DBG_FUNC("len = %d\n", effectiveLen);
 
 			u4Wait = 2000;
-			if (copy_from_user(&gLpbkBuf[0], (PVOID)arg + sizeof(ULONG), effectiveLen)) {
+			if (copy_from_user(&gLpbkBuf[0], (PVOID)arg + sizeof(effectiveLen), effectiveLen)) {
 				WMT_ERR_FUNC("copy_from_user failed at %d\n", __LINE__);
 				iRet = -EFAULT;
 				break;
@@ -1031,7 +1031,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 				WMT_ERR_FUNC("length is too long\n");
 				break;
 			}
-			if (copy_to_user((PVOID)arg + sizeof(SIZE_T) + sizeof(UINT8[2048]), gLpbkBuf, iRet)) {
+			if (copy_to_user((PVOID)arg + sizeof(effectiveLen) + sizeof(UINT8[2048]), gLpbkBuf, iRet)) {
 				iRet = -EFAULT;
 				break;
 			}
@@ -1426,6 +1426,9 @@ LONG WMT_compat_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			break;
 		case COMPAT_WMT_IOCTL_SEND_BGW_DS_CMD:
 			ret = WMT_unlocked_ioctl(filp, WMT_IOCTL_SEND_BGW_DS_CMD, (ULONG)compat_ptr(arg));
+			break;
+		case COMPAT_WMT_IOCTL_ADIE_LPBK_TEST:
+			ret = WMT_unlocked_ioctl(filp, WMT_IOCTL_ADIE_LPBK_TEST, (ULONG)compat_ptr(arg));
 			break;
 		case COMPAT_WMT_IOCTL_DYNAMIC_DUMP_CTRL:
 			ret = WMT_unlocked_ioctl(filp, WMT_IOCTL_DYNAMIC_DUMP_CTRL, (ULONG)compat_ptr(arg));
