@@ -22,6 +22,7 @@
 #define STP_SDIO      0x04
 
 #define CFG_WMT_PROC_FOR_AEE 1
+#define CFG_WMT_PROC_FOR_DUMP_INFO 1
 
 VOID wmt_dev_rx_event_cb(VOID);
 INT32 wmt_dev_rx_timeout(P_OSAL_EVENT pEvent);
