@@ -28,6 +28,7 @@
 #include "psm_core.h"
 #include "stp_core.h"
 #include "stp_dbg.h"
+#include "connsys_debug_utility.h"
 
 #ifdef DFT_TAG
 #undef DFT_TAG
@@ -104,6 +105,7 @@ static INT32 wmt_dbg_stp_sdio_reg_read(INT32 par1, INT32 address, INT32 value);
 static INT32 wmt_dbg_stp_sdio_reg_write(INT32 par1, INT32 address, INT32 value);
 static INT32 wmt_dbg_show_thread_debug_info(INT32 par1, INT32 address, INT32 value);
 static INT32 wmt_dbg_met_ctrl(INT32 par1, INT32 met_ctrl, INT32 log_ctrl);
+static INT32 wmt_dbg_emi_dump(INT32 par1, INT32 offset, INT32 size);
 
 static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x0] = wmt_dbg_psm_ctrl,
@@ -152,6 +154,7 @@ static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x25] = wmt_dbg_stp_sdio_reg_write,
 	[0x26] = wmt_dbg_met_ctrl,
 	[0x30] = wmt_dbg_show_thread_debug_info,
+	[0x99] = wmt_dbg_emi_dump,
 };
 
 static VOID wmt_dbg_fwinfor_print_buff(UINT32 len)
@@ -643,6 +646,12 @@ static INT32 wmt_dbg_ap_reg_write(INT32 par1, INT32 par2, INT32 par3)
 	} else
 		WMT_ERR_FUNC("AP register ioremap fail!\n");
 
+	return 0;
+}
+
+static INT32 wmt_dbg_emi_dump(INT32 par1, INT32 offset, INT32 size)
+{
+	connlog_dump_emi(offset, size);
 	return 0;
 }
 
