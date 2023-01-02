@@ -717,6 +717,11 @@ MTK_WCN_BOOL mtk_wcn_wmt_do_reset(ENUM_WMTDRV_TYPE_T type)
 		"DRV_TYPE_ANT"
 	};
 
+	if ((type < WMTDRV_TYPE_BT) || (type > WMTDRV_TYPE_ANT)) {
+		WMT_INFO_FUNC("Wrong driver type: %d, do not trigger reset.\n", type);
+		return MTK_WCN_BOOL_FALSE;
+	}
+
 	WMT_INFO_FUNC("Subsystem trigger whole chip reset, reset source: %s\n", drv_name[type]);
 	if (mtk_wcn_stp_get_wmt_trg_assert() == 0)
 		iRet = wmt_lib_trigger_reset();
