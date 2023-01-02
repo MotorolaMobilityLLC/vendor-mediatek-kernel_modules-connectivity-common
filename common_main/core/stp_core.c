@@ -1576,6 +1576,9 @@ INT32 mtk_wcn_stp_init(const mtkstp_callback * const cb_func)
 
 	mtk_wcn_stp_dbg_enable();
 
+	/* set coredump flag for debugging earlier */
+	mtk_wcn_stp_coredump_flag_ctrl(1);
+
 	goto RETURN;
 
 ERROR:
