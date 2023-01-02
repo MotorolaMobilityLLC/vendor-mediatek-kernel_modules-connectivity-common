@@ -1169,7 +1169,7 @@ static INT32 mt6628_ver_check(VOID)
 	UINT32 hw_ver = 0;
 	UINT32 fw_ver = 0;
 	INT32 iret;
-	const WMT_IC_INFO_S *p_info;
+	const WMT_IC_INFO_S *p_info = NULL;
 	unsigned long ctrlPa1;
 	unsigned long ctrlPa2;
 
@@ -1268,7 +1268,7 @@ static INT32 wmt_stp_init_coex(VOID)
 {
 	INT32 iRet;
 	ULONG addr = 0;
-	WMT_GEN_CONF *pWmtGenConf;
+	WMT_GEN_CONF *pWmtGenConf = NULL;
 
 #define COEX_WMT  0
 
@@ -1385,7 +1385,7 @@ static INT32 mt6628_set_sdio_driving(VOID)
 	INT32 ret = 0;
 
 	ULONG addr = 0;
-	WMT_GEN_CONF *pWmtGenConf;
+	WMT_GEN_CONF *pWmtGenConf = NULL;
 	UINT32 drv_val = 0;
 
 	/*Get wmt config */
