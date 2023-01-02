@@ -1459,18 +1459,20 @@ VOID osal_set_op_result(P_OSAL_OP pOp, INT32 result)
 
 VOID osal_opq_dump(const char *qName, P_OSAL_OP_Q pOpQ)
 {
-	/* Line format: [LogicalIdx(PhysicalIdx)]Address:OpId(Result)-Info-OpData0,OpData1,OpData2,OpData3,OpData5_
+	/* Line format:
+	 * [LogicalIdx(PhysicalIdx)]Address:OpId(Ref)(Result)-Info-OpData0,OpData1,OpData2,OpData3,OpData5_
 	 *	[LogicalIdx]	max 10+2=12 chars (decimal)
 	 *	(PhysicalIdx)	max 10+2=12 chars (decimal)
 	 *	Address:	max 16+1=17 chars (hex)
 	 *	OpId		max 10 chars (decimal)
+	 *	(Ref)		max 2+2=4 chars (should only be 1 digit, reserve 2 in case of negative number)
 	 *	(Result)	max 11+2=13 chars (signed decimal)
 	 *	-Info-		max 8+2=10 chars (hex)
 	 *	OpData,		max 16+1=17 chars (hex)
 	 */
 #define OPQ_DUMP_OP_PER_LINE 1
 #define OPQ_DUMP_OPDATA_PER_OP 6
-#define OPQ_DUMP_OP_BUF_SIZE (12 + 12 + 17 + 10 + 13 + 10 + (17 * (OPQ_DUMP_OPDATA_PER_OP)) + 1)
+#define OPQ_DUMP_OP_BUF_SIZE (12 + 12 + 17 + 10 + 4 + 13 + 10 + (17 * (OPQ_DUMP_OPDATA_PER_OP)) + 1)
 #define OPQ_DUMP_LINE_BUF_SIZE ((OPQ_DUMP_OP_BUF_SIZE * OPQ_DUMP_OP_PER_LINE) + 1)
 	UINT32 rd;
 	UINT32 wt;
@@ -1502,11 +1504,12 @@ VOID osal_opq_dump(const char *qName, P_OSAL_OP_Q pOpQ)
 		}
 
 		if (op) {
-			printed += sprintf(buf + printed, "[%u(%u)]%p:%u(%d)-%u-",
+			printed += sprintf(buf + printed, "[%u(%u)]%p:%u(%d)(%d)-%u-",
 						idx,
 						(rd & RB_MASK(pOpQ)),
 						op,
 						op->op.opId,
+						atomic_read(&op->ref_count),
 						op->result,
 						op->op.u4InfoBit);
 			for (opDataIdx = 0; opDataIdx < OPQ_DUMP_OPDATA_PER_OP; opDataIdx++)
