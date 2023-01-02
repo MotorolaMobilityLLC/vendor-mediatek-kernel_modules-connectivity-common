@@ -76,6 +76,9 @@
 #define COMPAT_WMT_IOCTL_WMT_CFG_NAME		_IOWR(WMT_IOC_MAGIC, 21, compat_uptr_t)
 #define COMPAT_WMT_IOCTL_SEND_BGW_DS_CMD	_IOW(WMT_IOC_MAGIC, 25, compat_uptr_t)
 #define COMPAT_WMT_IOCTL_ADIE_LPBK_TEST		_IOWR(WMT_IOC_MAGIC, 26, compat_uptr_t)
+#define COMPAT_WMT_IOCTL_DYNAMIC_DUMP_CTRL	_IOR(WMT_IOC_MAGIC, 30, compat_uptr_t)
+#define COMPAT_WMT_IOCTL_SET_ROM_PATCH_INFO	_IOW(WMT_IOC_MAGIC, 31, compat_uptr_t)
+#define COMPAT_WMT_IOCTL_FDB_CTRL		_IOW(WMT_IOC_MAGIC, 32, compat_uptr_t)
 #endif
 
 #define WMT_IOC_MAGIC        0xa0
@@ -1386,7 +1389,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		break;
 	default:
 		iRet = -EINVAL;
-		WMT_WARN_FUNC("unknown cmd (%d)\n", cmd);
+		WMT_WARN_FUNC("unknown cmd (0x%x)\n", cmd);
 		break;
 	}
 
@@ -1417,6 +1420,15 @@ LONG WMT_compat_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			break;
 		case COMPAT_WMT_IOCTL_SEND_BGW_DS_CMD:
 			ret = WMT_unlocked_ioctl(filp, WMT_IOCTL_SEND_BGW_DS_CMD, (ULONG)compat_ptr(arg));
+			break;
+		case COMPAT_WMT_IOCTL_DYNAMIC_DUMP_CTRL:
+			ret = WMT_unlocked_ioctl(filp, WMT_IOCTL_DYNAMIC_DUMP_CTRL, (ULONG)compat_ptr(arg));
+			break;
+		case COMPAT_WMT_IOCTL_SET_ROM_PATCH_INFO:
+			ret = WMT_unlocked_ioctl(filp, WMT_IOCTL_SET_ROM_PATCH_INFO, (ULONG)compat_ptr(arg));
+			break;
+		case COMPAT_WMT_IOCTL_FDB_CTRL:
+			ret = WMT_unlocked_ioctl(filp, WMT_IOCTL_FDB_CTRL, (ULONG)compat_ptr(arg));
 			break;
 		default: {
 			ret = WMT_unlocked_ioctl(filp, cmd, arg);
