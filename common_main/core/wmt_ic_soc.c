@@ -1423,6 +1423,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	ctrlPa2 = PALDO_ON;
 	iRet = wmt_core_ctrl(WMT_CTRL_SOC_PALDO_CTRL, &ctrlPa1, &ctrlPa2);
 
+#if 0
 	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_BEFORE_BT_WIFI_CALIBRATION);
 	iRet = wmt_core_init_script(calibration_table, osal_array_size(calibration_table));
 	if (iRet) {
@@ -1432,6 +1433,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		WMT_ERR_FUNC("calibration_table fail(%d)\n", iRet);
 		return -9;
 	}
+#endif
 
 	ctrlPa1 = BT_PALDO;
 	ctrlPa2 = PALDO_OFF;
