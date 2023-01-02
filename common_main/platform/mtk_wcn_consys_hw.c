@@ -196,21 +196,8 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 			wmt_consys_ic_ops->consys_ic_emi_mpu_set_region_protection();
 		if (wmt_consys_ic_ops->consys_ic_emi_set_remapping_reg)
 			wmt_consys_ic_ops->consys_ic_emi_set_remapping_reg();
-#if 1
-		pEmibaseaddr = ioremap_nocache(gConEmiPhyBase + 0x68000, CONSYS_EMI_MEM_SIZE);
-#else
-		pEmibaseaddr = ioremap_nocache(CONSYS_EMI_AP_PHY_BASE, CONSYS_EMI_MEM_SIZE);
-#endif
-		/* pEmibaseaddr = ioremap_nocache(0x80090400,270*KBYTE); */
-		if (pEmibaseaddr) {
-			WMT_PLAT_INFO_FUNC("EMI mapping OK virtual(0x%p) physical(0x%pa)\n",
-					pEmibaseaddr, &gConEmiPhyBase);
-			memset_io(pEmibaseaddr, 0, CONSYS_EMI_MEM_SIZE);
-			iRet = 0;
-		} else {
-			WMT_PLAT_ERR_FUNC("EMI mapping fail\n");
-		}
-
+		if (wmt_consys_ic_ops->consys_ic_emi_coredump_remapping)
+			wmt_consys_ic_ops->consys_ic_emi_coredump_remapping(&pEmibaseaddr, 1);
 		if (wmt_consys_ic_ops->consys_ic_dedicated_log_path_init)
 			wmt_consys_ic_ops->consys_ic_dedicated_log_path_init(pdev);
 	} else {
@@ -264,6 +251,8 @@ static INT32 mtk_wmt_remove(struct platform_device *pdev)
 
 	if (wmt_consys_ic_ops->consys_ic_dedicated_log_path_deinit)
 		wmt_consys_ic_ops->consys_ic_dedicated_log_path_deinit();
+	if (wmt_consys_ic_ops->consys_ic_emi_coredump_remapping)
+		wmt_consys_ic_ops->consys_ic_emi_coredump_remapping(&pEmibaseaddr, 0);
 
 	if (g_pdev)
 		g_pdev = NULL;
@@ -293,6 +282,9 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 
 	if (on) {
 		WMT_PLAT_DBG_FUNC("++\n");
+		if (wmt_consys_ic_ops->consys_ic_reset_emi_coredump)
+			wmt_consys_ic_ops->consys_ic_reset_emi_coredump(pEmibaseaddr);
+
 		if (wmt_consys_ic_ops->consys_ic_hw_vcn18_ctrl)
 			wmt_consys_ic_ops->consys_ic_hw_vcn18_ctrl(ENABLE);
 
@@ -540,17 +532,8 @@ INT32 mtk_wcn_consys_hw_restore(struct device *device)
 			wmt_consys_ic_ops->consys_ic_emi_mpu_set_region_protection();
 		if (wmt_consys_ic_ops->consys_ic_emi_set_remapping_reg)
 			wmt_consys_ic_ops->consys_ic_emi_set_remapping_reg();
-#if 1
-		pEmibaseaddr = ioremap_nocache(gConEmiPhyBase + SZ_1M / 2, CONSYS_EMI_MEM_SIZE);
-#else
-		pEmibaseaddr = ioremap_nocache(CONSYS_EMI_AP_PHY_BASE, CONSYS_EMI_MEM_SIZE);
-#endif
-		if (pEmibaseaddr) {
-			WMT_PLAT_WARN_FUNC("EMI mapping OK(0x%p)\n", pEmibaseaddr);
-			memset_io(pEmibaseaddr, 0, CONSYS_EMI_MEM_SIZE);
-		} else {
-			WMT_PLAT_ERR_FUNC("EMI mapping fail\n");
-		}
+		if (wmt_consys_ic_ops->consys_ic_emi_coredump_remapping)
+			wmt_consys_ic_ops->consys_ic_emi_coredump_remapping(&pEmibaseaddr, 1);
 	} else {
 		WMT_PLAT_ERR_FUNC("consys emi memory address gConEmiPhyBase invalid\n");
 	}
@@ -576,9 +559,10 @@ INT32 mtk_wcn_consys_hw_init(VOID)
 
 INT32 mtk_wcn_consys_hw_deinit(VOID)
 {
+
 	if (pEmibaseaddr) {
-		iounmap(pEmibaseaddr);
-		pEmibaseaddr = NULL;
+		if (wmt_consys_ic_ops->consys_ic_emi_coredump_remapping)
+			wmt_consys_ic_ops->consys_ic_emi_coredump_remapping(&pEmibaseaddr, 0);
 	}
 #ifdef CONFIG_MTK_HIBERNATION
 	unregister_swsusp_restore_noirq_func(ID_M_CONNSYS);
