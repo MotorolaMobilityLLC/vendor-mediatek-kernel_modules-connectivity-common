@@ -169,10 +169,16 @@ ssize_t wmt_user_proc_write(struct file *filp, const char __user *buffer, size_t
 
 INT32 wmt_dev_user_proc_setup(VOID)
 {
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(5, 6, 0))
 	static const struct file_operations wmt_user_proc_fops = {
 		.owner = THIS_MODULE,
 		.write = wmt_user_proc_write,
 	};
+#else
+	static const struct proc_ops wmt_user_proc_fops = {
+		.proc_write = wmt_user_proc_write,
+	};
+#endif
 	INT32 i_ret = 0;
 
 	gWmtUserProcEntry = proc_create(WMT_USER_PROCNAME, 0664, NULL, &wmt_user_proc_fops);
