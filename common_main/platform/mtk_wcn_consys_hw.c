@@ -55,6 +55,7 @@
 #endif
 
 #include <linux/thermal.h>
+#include "connsys_debug_utility.h"
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -473,6 +474,8 @@ static INT32 mtk_wmt_suspend(struct device *dev)
 	WMT_PLAT_PR_INFO(" mtk_wmt_suspend !!");
 
 	mtk_wcn_consys_sleep_info_clear();
+	connsys_dedicated_log_set_ap_state(0);
+
 	return 0;
 }
 
@@ -525,6 +528,7 @@ static INT32 mtk_wmt_resume(struct device *dev)
 {
 	WMT_PLAT_PR_INFO(" mtk_wmt_resume !!");
 	schedule_work(&plt_resume_worker);
+	connsys_dedicated_log_set_ap_state(1);
 
 	return 0;
 }
