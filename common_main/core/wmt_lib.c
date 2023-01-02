@@ -1728,7 +1728,10 @@ UINT32 wmt_lib_get_icinfo(ENUM_WMT_CHIPINFO_TYPE_T index)
 	UINT32 chip_id = 0;
 
 	if (index == WMTCHIN_CHIPID) {
-		chip_id = mtk_wcn_consys_soc_chipid();
+		if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_COMBO)
+			chip_id = gDevWmt.chip_id;
+		else
+			chip_id = mtk_wcn_consys_soc_chipid();
 		WMT_INFO_FUNC("chip_id=[%x]", chip_id);
 		return chip_id;
 	} else if (index == WMTCHIN_HWVER)
