@@ -21,7 +21,7 @@
 #define _OSAL_H_
 
 #include "osal_typedef.h"
-#include "../../debug_utility/ring_cache.h"
+#include "../../debug_utility/ring.h"
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
 ********************************************************************************
@@ -250,7 +250,7 @@ struct osal_op_history_entry {
 };
 
 struct osal_op_history {
-	struct ring_cache ring_buffer;
+	struct ring ring_buffer;
 	struct osal_op_history_entry *queue;
 	spinlock_t lock;
 };
