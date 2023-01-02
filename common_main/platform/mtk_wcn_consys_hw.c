@@ -1034,32 +1034,39 @@ UINT32 mtk_consys_get_gps_lna_pin_num(VOID)
 INT32 mtk_wcn_consys_reg_ctrl(UINT32 is_write, enum CONSYS_BASE_ADDRESS_INDEX index, UINT32 offset,
 		PUINT32 value)
 {
-	UINT32 reg_info[index*4 + 4];
+	INT32 iRet = -1;
+	PUINT32 reg_info = NULL;
+	UINT32 reg_info_size = index * 4 + 4;
 	struct device_node *node;
 	PVOID remap_addr = NULL;
 
+	reg_info = osal_malloc(reg_info_size * sizeof(UINT32));
+	if (!reg_info) {
+		WMT_PLAT_PR_ERR("reg_info osal_malloc fail\n");
+		goto fail;
+	}
 
 	node = g_pdev->dev.of_node;
 	if (node) {
-		if (of_property_read_u32_array(node, "reg", reg_info, ARRAY_SIZE(reg_info))) {
+		if (of_property_read_u32_array(node, "reg", reg_info, reg_info_size)) {
 			WMT_PLAT_PR_ERR("get reg from DTS fail!!\n");
-			return -1;
+			goto fail;
 		}
 	} else {
 		WMT_PLAT_PR_ERR("[%s] can't find CONSYS compatible node\n", __func__);
-		return -1;
+		goto fail;
 	}
 
 	if (reg_info[index*4 + 3] < offset) {
 		WMT_PLAT_PR_ERR("Access overflow of address(0x%x), offset(0x%x)!\n",
 				reg_info[index*4 + 1], reg_info[index*4 + 3]);
-		return -1;
+		goto fail;
 	}
 
 	remap_addr = ioremap(reg_info[index*4 + 1] + offset, 0x4);
 	if (remap_addr == NULL) {
 		WMT_PLAT_PR_ERR("ioremap fail!\n");
-		return -1;
+		goto fail;
 	}
 
 	if (is_write)
@@ -1070,9 +1077,13 @@ INT32 mtk_wcn_consys_reg_ctrl(UINT32 is_write, enum CONSYS_BASE_ADDRESS_INDEX in
 	if (remap_addr)
 		iounmap(remap_addr);
 
-	return 0;
-}
+	iRet = 0;
 
+fail:
+	if (reg_info)
+		osal_free(reg_info);
+	return iRet;
+}
 
 /* Who call this?
  *	- wmt_step
