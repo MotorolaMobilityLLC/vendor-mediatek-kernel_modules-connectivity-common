@@ -285,6 +285,7 @@ static const STEP_OPERATOR_RESULT wmt_step_operator_result_map[] = {
 /*******************************************************************************
  *                      I N T E R N A L   F U N C T I O N S
 ********************************************************************************/
+#ifdef CFG_WMT_STEP
 static void wmt_step_init_list(void)
 {
 	unsigned int i = 0;
@@ -292,6 +293,7 @@ static void wmt_step_init_list(void)
 	for (i = 0; i < STEP_TRIGGER_POINT_MAX; i++)
 		INIT_LIST_HEAD(&(g_step_env.actions[i].list));
 }
+#endif
 
 static unsigned char __iomem *wmt_step_get_emi_base_address(void)
 {
@@ -2363,6 +2365,7 @@ void wmt_step_print_version(void)
 ********************************************************************************/
 void wmt_step_init(void)
 {
+#ifdef CFG_WMT_STEP
 	wmt_step_setup();
 	wmt_step_init_list();
 	if (wmt_step_read_file(STEP_CONFIG_NAME) == 0) {
@@ -2371,6 +2374,7 @@ void wmt_step_init(void)
 		g_step_env.is_enable = 1;
 		up_write(&g_step_env.init_rwsem);
 	}
+#endif
 }
 
 void wmt_step_deinit(void)
