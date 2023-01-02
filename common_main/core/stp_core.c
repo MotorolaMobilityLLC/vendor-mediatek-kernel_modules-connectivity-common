@@ -366,6 +366,8 @@ static LONG stp_parser_dmp_num(PUINT8 str)
 static VOID stp_sdio_trace32_dump(VOID)
 {
 	LONG dmp_num = 0;
+	int coredump_end_str_len = osal_strlen("coredump end");
+	int len;
 
 	if (STP_IS_ENABLE_DBG(stp_core_ctx) && (stp_core_ctx.parser.type == STP_TASK_INDX) &&
 			(mtk_wcn_stp_coredump_flag_get() != 0)) {
@@ -396,11 +398,12 @@ static VOID stp_sdio_trace32_dump(VOID)
 		else if (stp_core_ctx.assert_info_cnt < 20)
 			osal_err_print("[len=%d][type=%d]counter[%d]\n%s\n", stp_core_ctx.rx_counter,
 					stp_core_ctx.parser.type, stp_core_ctx.assert_info_cnt, stp_core_ctx.rx_buf);
-		if ((stp_core_ctx.rx_counter - osal_strlen("coredump end") - 2 >= 0) &&
+
+		len = stp_core_ctx.rx_counter - coredump_end_str_len - 2;
+		if ((len >= 0) &&
 				(stp_core_ctx.rx_counter < MTKSTP_BUFFER_SIZE) &&
 				(osal_strncmp("coredump end", stp_core_ctx.rx_buf
-				+ stp_core_ctx.rx_counter - osal_strlen("coredump end") - 2,
-				osal_strlen("coredump end")) == 0)) {
+				+ len, coredump_end_str_len) == 0)) {
 			STP_INFO_FUNC("%d coredump packets received\n", stp_core_ctx.assert_info_cnt);
 			STP_ERR_FUNC("coredump end\n");
 			mtk_wcn_stp_ctx_restore();
