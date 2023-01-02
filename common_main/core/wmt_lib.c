@@ -123,7 +123,8 @@ static INT32 met_thread(PVOID pvData);
 
 static INT32 wmt_lib_pin_ctrl(WMT_IC_PIN_ID id, WMT_IC_PIN_STATE stat, UINT32 flag);
 static MTK_WCN_BOOL wmt_lib_hw_state_show(VOID);
-
+static VOID wmt_lib_utc_sync_timeout_handler(ULONG data);
+static VOID wmt_lib_utc_sync_worker_handler(struct work_struct *work);
 
 /*******************************************************************************
 *                              F U N C T I O N S
@@ -223,6 +224,12 @@ INT32 wmt_lib_init(VOID)
 		WMT_ERR_FUNC("osal_thread_create(0x%p) fail(%d)\n", pThread, iRet);
 		return -2;
 	}
+
+	/* init timer */
+	pDevWmt->utc_sync_timer.timeoutHandler = wmt_lib_utc_sync_timeout_handler;
+	osal_timer_create(&pDevWmt->utc_sync_timer);
+	osal_timer_start(&pDevWmt->utc_sync_timer, UTC_SYNC_TIME);
+	INIT_WORK(&pDevWmt->utcSyncWorker, wmt_lib_utc_sync_worker_handler);
 
 	/* 2. initialize */
 	/* Initialize wmt_core */
@@ -1584,8 +1591,37 @@ INT32 wmt_lib_efuse_rw(UINT32 isWrite, UINT32 offset, PUINT32 pvalue, UINT32 mas
 	return -1;
 }
 
+INT32 wmt_lib_utc_time_sync(VOID)
+{
+	P_OSAL_OP pOp;
+	MTK_WCN_BOOL bRet;
+	P_OSAL_SIGNAL pSignal;
 
+	pOp = wmt_lib_get_free_op();
+	if (!pOp) {
+		WMT_WARN_FUNC("get_free_lxop fail\n");
+		return -1;
+	}
 
+	pSignal = &pOp->signal;
+	pSignal->timeoutValue = MAX_EACH_WMT_CMD;
+	pOp->op.opId = WMT_OPID_UTC_TIME_SYNC;
+	if (DISABLE_PSM_MONITOR()) {
+		WMT_ERR_FUNC("wake up failed\n");
+		wmt_lib_put_op_to_free_queue(pOp);
+		return -2;
+	}
+
+	bRet = wmt_lib_put_act_op(pOp);
+	ENABLE_PSM_MONITOR();
+	if (bRet == MTK_WCN_BOOL_FALSE) {
+		WMT_WARN_FUNC("WMT_OPID_UTC_TIME_SYNC fail(%d)\n", bRet);
+		return -3;
+	}
+	WMT_DBG_FUNC("wmt_lib_utc_time_sync OPID(%d) ok\n", pOp->op.opId);
+
+	return 0;
+}
 
 /*!
  * \brief update combo chip AUDIO Interface (AIF) settings
@@ -2342,4 +2378,14 @@ INT32 wmt_lib_fdb_ctrl(struct wmt_fdb_ctrl *fdb_ctrl)
 {
 	return mtk_wcn_consys_reg_ctrl(fdb_ctrl->is_write, fdb_ctrl->base_index, fdb_ctrl->offset,
 			&(fdb_ctrl->value));
+}
+
+static VOID wmt_lib_utc_sync_timeout_handler(ULONG data)
+{
+	schedule_work(&gDevWmt.utcSyncWorker);
+}
+
+static VOID wmt_lib_utc_sync_worker_handler(struct work_struct *work)
+{
+	wmt_lib_utc_time_sync();
 }
