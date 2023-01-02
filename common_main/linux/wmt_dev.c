@@ -66,6 +66,7 @@
 #include "wmt_idc.h"
 #include "wmt_detect.h"
 #include "hif_sdio.h"
+#include "wmt_step.h"
 
 #ifdef CONFIG_COMPAT
 #define COMPAT_WMT_IOCTL_SET_PATCH_NAME		_IOW(WMT_IOC_MAGIC, 4, compat_uptr_t)
@@ -1500,6 +1501,8 @@ static INT32 WMT_init(VOID)
 #if CFG_WMT_PROC_FOR_AEE
 	wmt_dev_proc_for_aee_setup();
 #endif
+
+	WMT_STEP_INIT_FUNC();
 
 	chip_type = wmt_detect_get_chip_type();
 	if (chip_type == WMT_CHIP_TYPE_COMBO)
