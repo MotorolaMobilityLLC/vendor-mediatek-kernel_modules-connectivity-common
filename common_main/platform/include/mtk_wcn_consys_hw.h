@@ -56,6 +56,11 @@
 	SET_BIT_RANGE(&val, data, end, begin); \
 	CONSYS_REG_WRITE(reg, val); \
 }
+#define CONSYS_REG_WRITE_MASK(reg, data, mask) {\
+	UINT32 val = CONSYS_REG_READ(reg); \
+	SET_BIT_MASK(&val, data, mask); \
+	CONSYS_REG_WRITE(reg, val); \
+}
 
 /*
  * Write value with value_offset bits of right shift and size bits,
@@ -186,6 +191,7 @@ typedef INT32(*CONSYS_IC_CHECK_REG_READABLE) (VOID);
 typedef INT32(*CONSYS_IC_EMI_COREDUMP_REMAPPING) (UINT8 __iomem **addr, UINT32 enable);
 typedef INT32(*CONSYS_IC_RESET_EMI_COREDUMP) (UINT8 __iomem *addr);
 typedef VOID(*CONSYS_IC_CLOCK_FAIL_DUMP) (VOID);
+typedef INT32(*CONSYS_IC_IS_CONNSYS_REG) (UINT32 addr);
 
 typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_CLOCK_BUFFER_CTRL consys_ic_clock_buffer_ctrl;
@@ -227,6 +233,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_EMI_COREDUMP_REMAPPING consys_ic_emi_coredump_remapping;
 	CONSYS_IC_RESET_EMI_COREDUMP consys_ic_reset_emi_coredump;
 	CONSYS_IC_CLOCK_FAIL_DUMP consys_ic_clock_fail_dump;
+	CONSYS_IC_IS_CONNSYS_REG consys_ic_is_connsys_reg;
 } WMT_CONSYS_IC_OPS, *P_WMT_CONSYS_IC_OPS;
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -294,5 +301,6 @@ VOID mtk_wcn_consys_hang_debug(VOID);
 UINT32 mtk_consys_get_gps_lna_pin_num(VOID);
 INT32 mtk_consys_check_reg_readable(VOID);
 VOID mtk_wcn_consys_clock_fail_dump(VOID);
+INT32 mtk_consys_is_connsys_reg(UINT32 addr);
 #endif /* _MTK_WCN_CONSYS_HW_H_ */
 
