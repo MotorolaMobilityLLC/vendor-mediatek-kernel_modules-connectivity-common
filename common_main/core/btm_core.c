@@ -84,8 +84,11 @@ const PINT8 g_btm_op_name[] = {
 	"STP_OPID_BTM_EXIT"
 };
 
-static VOID stp_btm_trigger_assert_timeout_handler(ULONG data)
+static VOID stp_btm_trigger_assert_timeout_handler(timer_handler_arg arg)
 {
+	ULONG data;
+
+	GET_HANDLER_DATA(arg, data);
 	if (mtk_wcn_stp_coredump_start_get() == 0)
 		stp_btm_notify_assert_timeout_wq((MTKSTP_BTM_T *)data);
 }
