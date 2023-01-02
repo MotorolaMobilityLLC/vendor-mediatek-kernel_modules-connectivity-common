@@ -103,32 +103,35 @@ INT32 wmt_idc_msg_to_lte_handing(VOID)
 	PUINT8 p_data = NULL;
 	UINT8 opcode = 0;
 	UINT16 msg_len = 0;
-	UINT32 handle_len = 0;
 #if	CFG_WMT_LTE_ENABLE_MSGID_MAPPING
 	MTK_WCN_BOOL unknown_msgid = MTK_WCN_BOOL_FALSE;
 #endif
 
-	readlen = mtk_wcn_stp_receive_data(&gWmtIdcInfo.buffer[0], LTE_IDC_BUFFER_MAX_SIZE, COEX_TASK_INDX);
+	readlen = mtk_wcn_stp_receive_data(&gWmtIdcInfo.buffer[0], 4, COEX_TASK_INDX);
 	if (readlen == 0) {
 		osal_sleep_ms(5);
-		readlen = mtk_wcn_stp_receive_data(&gWmtIdcInfo.buffer[0], LTE_IDC_BUFFER_MAX_SIZE, COEX_TASK_INDX);
+		readlen = mtk_wcn_stp_receive_data(&gWmtIdcInfo.buffer[0], 4, COEX_TASK_INDX);
 	}
 
 	if (readlen > 0) {
 		WMT_DBG_FUNC("read data len from fw(%d)\n", readlen);
 		wmt_idc_dump_debug_msg("WMT->LTE from STP buffer", &gWmtIdcInfo.buffer[0], readlen);
-		p_data = &gWmtIdcInfo.buffer[0];
 
-		while (handle_len < readlen) {
+		while (readlen) {
+			p_data = &gWmtIdcInfo.buffer[0];
 			p_data += 2;	/*omit direction & opcode 2 bytes */
 			osal_memcpy(&msg_len, p_data, 2);
+			WMT_DBG_FUNC("current raw data len(%d) from connsys firmware\n", msg_len);
+
+			msg_len = msg_len > LTE_IDC_BUFFER_MAX_SIZE ? LTE_IDC_BUFFER_MAX_SIZE : msg_len;
+			osal_memset(&gWmtIdcInfo.buffer[0], 0, LTE_IDC_BUFFER_MAX_SIZE);
+			readlen = mtk_wcn_stp_receive_data(&gWmtIdcInfo.buffer[0], msg_len, COEX_TASK_INDX);
+			p_data = &gWmtIdcInfo.buffer[0];
+
 			if (msg_len > 0)
 				msg_len -= 1;	/*flag byte */
 			else
 				WMT_ERR_FUNC("msg_len is ERROR!");
-			WMT_DBG_FUNC("current raw data len(%d) from connsys firmware\n", msg_len);
-
-			p_data += 2;	/*length: 2 bytes */
 
 			/*how to handle flag(msg type) need to Scott comment */
 			/************************************************/
@@ -204,9 +207,9 @@ INT32 wmt_idc_msg_to_lte_handing(VOID)
 				osal_free(p_lps);
 			}
 
-			p_data += msg_len;	/*point to next package header */
-
-			handle_len += (msg_len + 5);
+			osal_memset(&gWmtIdcInfo.buffer[0], 0, LTE_IDC_BUFFER_MAX_SIZE);
+			readlen = mtk_wcn_stp_receive_data(&gWmtIdcInfo.buffer[0], 4, COEX_TASK_INDX);
+			WMT_DBG_FUNC("read data len from fw(%d)\n", readlen);
 		}
 
 	} else
@@ -224,25 +227,28 @@ UINT32 wmt_idc_msg_to_lte_handing_for_test(PUINT8 p_buf, UINT32 len)
 	PUINT8 p_data = NULL;
 	UINT8 opcode = 0;
 	UINT16 msg_len = 0;
-	UINT32 handle_len = 0;
 	MTK_WCN_BOOL unknown_msgid = MTK_WCN_BOOL_FALSE;
 
 	osal_memcpy(&gWmtIdcInfo.buffer[0], p_buf, len);
 
 	if (readlen > 0) {
 		WMT_DBG_FUNC("read data len from fw(%d)\n", readlen);
-		p_data = &gWmtIdcInfo.buffer[0];
 
-		while (handle_len < readlen) {
+		while (readlen) {
+			p_data = &gWmtIdcInfo.buffer[0];
 			p_data += 2;	/*omit direction & opcode 2 bytes */
 			osal_memcpy(&msg_len, p_data, 2);
+
+			msg_len = msg_len > LTE_IDC_BUFFER_MAX_SIZE ? LTE_IDC_BUFFER_MAX_SIZE : msg_len;
+			osal_memset(&gWmtIdcInfo.buffer[0], 0, LTE_IDC_BUFFER_MAX_SIZE);
+			readlen = mtk_wcn_stp_receive_data(&gWmtIdcInfo.buffer[0], msg_len, COEX_TASK_INDX);
+			p_data = &gWmtIdcInfo.buffer[0];
+
 			if (msg_len > 0)
 				msg_len -= 1;	/*flag byte */
 			else
 				WMT_ERR_FUNC("msg_len is ERROR!");
 			WMT_DBG_FUNC("current raw data len(%d) from connsys firmware\n", msg_len);
-
-			p_data += 2;	/*length: 2 bytes */
 
 			/*how to handle flag(msg type) need to Scott comment */
 			/************************************************/
@@ -293,9 +299,8 @@ UINT32 wmt_idc_msg_to_lte_handing_for_test(PUINT8 p_buf, UINT32 len)
 				osal_free(p_lps);
 			}
 
-			p_data += msg_len;	/*point to next package header */
-
-			handle_len += (msg_len + 5);
+			osal_memset(&gWmtIdcInfo.buffer[0], 0, LTE_IDC_BUFFER_MAX_SIZE);
+			readlen = mtk_wcn_stp_receive_data(&gWmtIdcInfo.buffer[0], 4, COEX_TASK_INDX);
 		}
 
 	} else
@@ -303,6 +308,6 @@ UINT32 wmt_idc_msg_to_lte_handing_for_test(PUINT8 p_buf, UINT32 len)
 
 	osal_memset(&gWmtIdcInfo.buffer[0], 0, LTE_IDC_BUFFER_MAX_SIZE);
 
-	return handle_len;
+	return 0;
 }
 #endif /* CFG_WMT_LTE_COEX_HANDLING */
