@@ -247,7 +247,7 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("MediaTek Inc WCN_SE_CS3");
 MODULE_DESCRIPTION("Read-Copy Update tracing for hierarchical implementation");
 
-UINT32 gStpSdioDbgLvl = STPSDIO_LOG_INFO;
+INT32 gStpSdioDbgLvl = STPSDIO_LOG_INFO;
 /*******************************************************************************
 *                                 M A C R O S
 ********************************************************************************
