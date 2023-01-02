@@ -170,6 +170,10 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 
 	if (pdev)
 		g_pdev = pdev;
+	else {
+		WMT_PLAT_PR_ERR("pdev is NULL\n");
+		return -1;
+	}
 
 	if (wmt_consys_ic_ops->consys_ic_need_store_pdev) {
 		if (wmt_consys_ic_ops->consys_ic_need_store_pdev() == MTK_WCN_BOOL_TRUE) {
@@ -555,6 +559,10 @@ INT32 mtk_wcn_consys_hw_rst(UINT32 co_clock_type)
 
 	if (wmt_consys_ic_ops->consys_ic_set_dl_rom_patch_flag)
 		wmt_consys_ic_ops->consys_ic_set_dl_rom_patch_flag(1);
+
+	/* Dump infra register for debug purpose */
+	if (wmt_consys_ic_ops->consys_ic_infra_reg_dump)
+		wmt_consys_ic_ops->consys_ic_infra_reg_dump();
 
 	/* write 0x5000_0154.Bit[1] = 1 (pdma_axi_rready_force_high) to prevent pdma block slpprot */
 	if (wmt_consys_ic_ops->consys_ic_set_pdma_axi_rready_force_high)
