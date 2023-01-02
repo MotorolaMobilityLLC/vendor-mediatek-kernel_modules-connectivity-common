@@ -434,6 +434,9 @@ extern INT32 mtk_wmt_gps_mcu_ctrl(PUINT8 p_tx_data_buf, UINT32 tx_data_len, PUIN
 extern VOID mtk_wcn_wmt_set_mcif_mpu_protection(MTK_WCN_BOOL enable);
 extern MTK_WCN_BOOL mtk_wmt_gps_suspend_ctrl(MTK_WCN_BOOL suspend);
 
+extern INT32 mtk_wcn_wmt_mpu_lock_aquire(VOID);
+extern VOID mtk_wcn_wmt_mpu_lock_release(VOID);
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

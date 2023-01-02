@@ -3653,8 +3653,11 @@ INT32 mtk_wcn_soc_rom_patch_dwn(UINT32 ip_ver, UINT32 fw_ver)
 			WMT_INFO_FUNC("[Rom Patch]Name=%s,EmiOffset=0x%x,Size=0x%x\n",
 					gFullPatchName, patchEmiOffset, patchSize);
 
-			if (type == WMTDRV_TYPE_WIFI && mtk_wcn_wlan_emi_mpu_set_protection)
-				(*mtk_wcn_wlan_emi_mpu_set_protection)(false);
+			if (type == WMTDRV_TYPE_WIFI) {
+				wmt_lib_mpu_lock_aquire();
+				if (mtk_wcn_wlan_emi_mpu_set_protection)
+					(*mtk_wcn_wlan_emi_mpu_set_protection)(false);
+			}
 
 			patchAddr = ioremap_nocache(emiInfo->emi_ap_phy_addr + patchEmiOffset, patchSize);
 			WMT_INFO_FUNC("physAddr=0x%x, size=%d virAddr=0x%p\n",
@@ -3683,8 +3686,11 @@ INT32 mtk_wcn_soc_rom_patch_dwn(UINT32 ip_ver, UINT32 fw_ver)
 					WMT_ERR_FUNC("ioremap_nocache fail\n");
 			}
 
-			if (type == WMTDRV_TYPE_WIFI && mtk_wcn_wlan_emi_mpu_set_protection)
-				(*mtk_wcn_wlan_emi_mpu_set_protection)(true);
+			if (type == WMTDRV_TYPE_WIFI) {
+				if (mtk_wcn_wlan_emi_mpu_set_protection)
+					(*mtk_wcn_wlan_emi_mpu_set_protection)(true);
+				wmt_lib_mpu_lock_release();
+			}
 		} else
 			WMT_ERR_FUNC("The rom patch is too big to overflow on EMI\n");
 
