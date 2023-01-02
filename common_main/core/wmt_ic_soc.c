@@ -1432,7 +1432,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		ctrlPa1 = 0;
 		ctrlPa2 = 0;
 		wmt_core_ctrl(WMT_CTRL_GET_TDM_REQ_ANTSEL, &ctrlPa1, &ctrlPa2);
-		WMT_INFO_FUNC("get GPIO TDM REQ ANTSEL number(%d)\n", ctrlPa1);
+		WMT_INFO_FUNC("get GPIO TDM REQ ANTSEL number(%lu)\n", ctrlPa1);
 		/*set gpio tdm req antsel number to firmware */
 		WMT_COEX_TDM_REQ_ANTSEL_NUM_CMD[5] = ctrlPa1;
 		iRet = wmt_core_init_script(get_tdm_req_antsel_num_table,
@@ -2838,7 +2838,7 @@ static UINT32 mtk_wcn_soc_get_patch_num(VOID)
 	ULONG ctrlPa2 = 0;
 
 	wmt_core_ctrl(WMT_CTRL_GET_PATCH_NUM, &ctrlPa1, &ctrlPa2);
-	WMT_DBG_FUNC("patch total num = [%d]\n", ctrlPa1);
+	WMT_DBG_FUNC("patch total num = [%lu]\n", ctrlPa1);
 	return ctrlPa1;
 }
 
@@ -3026,7 +3026,7 @@ patch_download:
 			wmt_core_tx(pPatchBuf + offset - sizeof(WMT_PATCH_CMD), fragSize + sizeof(WMT_PATCH_CMD),
 				&u4Res, MTK_WCN_BOOL_FALSE);
 		if (iRet || (u4Res != fragSize + sizeof(WMT_PATCH_CMD))) {
-			WMT_ERR_FUNC("wmt_core: write fragSeq(%d) size(%d, %d) fail(%d)\n", fragSeq,
+			WMT_ERR_FUNC("wmt_core: write fragSeq(%d) size(%lu, %d) fail(%d)\n", fragSeq,
 				     fragSize + sizeof(WMT_PATCH_CMD), u4Res, iRet);
 			iRet = -1;
 			break;
@@ -3038,7 +3038,7 @@ patch_download:
 		/* iRet = (*kal_stp_rx)(evtBuf, sizeof(WMT_PATCH_EVT), &u4Res); */
 		iRet = wmt_core_rx(evtBuf, sizeof(WMT_PATCH_EVT), &u4Res);
 		if (iRet || (u4Res != sizeof(WMT_PATCH_EVT))) {
-			WMT_ERR_FUNC("wmt_core: read WMT_PATCH_EVT length(%d, %d) fail(%d)\n", sizeof(WMT_PATCH_EVT),
+			WMT_ERR_FUNC("wmt_core: read WMT_PATCH_EVT length(%lu, %d) fail(%d)\n", sizeof(WMT_PATCH_EVT),
 				     u4Res, iRet);
 			mtk_wcn_stp_dbg_dump_package();
 			iRet = -1;
@@ -3586,7 +3586,7 @@ INT32 mtk_wcn_soc_rom_patch_dwn(UINT32 ip_ver, UINT32 fw_ver)
 					gFullPatchName, patchEmiOffset, patchSize);
 
 			patchAddr = ioremap_nocache(emiInfo->emi_ap_phy_addr + patchEmiOffset, patchSize);
-			WMT_INFO_FUNC("physAddr=0x%x, size=%d virAddr=0x%x\n",
+			WMT_INFO_FUNC("physAddr=0x%x, size=%d virAddr=0x%p\n",
 				emiInfo->emi_ap_phy_addr + patchEmiOffset, patchSize, patchAddr);
 			if (patchAddr) {
 				osal_memcpy_toio(patchAddr, pPatchBuf, patchSize);
@@ -3718,7 +3718,7 @@ static INT32 mtk_wcn_soc_calibration_restore(void)
 		iRet = wmt_core_rx(evtBuf, CALIBRATION_BACKUP_RESTORE_BUFFER_SIZE, &u4Res);
 		WMT_INFO_FUNC("Send calibration data end\n");
 		if (iRet || u4Res != sizeof(WMT_CORE_SEND_RF_CALIBRATION_EVT_OK)) {
-			WMT_ERR_FUNC("Send calibration data event failed(%d), %d bytes get, expect %d\n",
+			WMT_ERR_FUNC("Send calibration data event failed(%d), %d bytes get, expect %lu\n",
 				iRet, u4Res, sizeof(WMT_CORE_SEND_RF_CALIBRATION_EVT_OK));
 			iRet = -5;
 			goto restore_end;
@@ -3741,7 +3741,7 @@ static INT32 mtk_wcn_soc_calibration_restore(void)
 			goto restore_end;
 		}
 	} else {
-		WMT_ERR_FUNC("Did not restore calibration data. Buf=0x%x, size=%d\n",
+		WMT_ERR_FUNC("Did not restore calibration data. Buf=0x%p, size=%d\n",
 			gBTCalResult, gBTCalResultSize);
 		iRet = -6;
 		goto restore_end;
@@ -3789,7 +3789,7 @@ static INT32 mtk_wcn_soc_calibration_backup(void)
 			sizeof(WMT_CORE_GET_RF_CALIBRATION_CMD),
 			&u4Res, MTK_WCN_BOOL_FALSE);
 	if (iRet || u4Res != sizeof(WMT_CORE_GET_RF_CALIBRATION_CMD)) {
-		WMT_ERR_FUNC("Write get calibration cmd failed(%d), exp: %d but write %d\n",
+		WMT_ERR_FUNC("Write get calibration cmd failed(%d), exp: %lu but write %d\n",
 			iRet, sizeof(WMT_CORE_GET_RF_CALIBRATION_CMD), u4Res);
 		goto get_calibration_fail;
 	}
@@ -3870,7 +3870,7 @@ static INT32 mtk_wcn_soc_calibration_backup(void)
 	/* Enable Wi-Fi MPU after finished. */
 	if (mtk_wcn_wlan_emi_mpu_set_protection)
 		(*mtk_wcn_wlan_emi_mpu_set_protection)(true);
-	WMT_INFO_FUNC("gBTCalResultSize=%d gWiFiCalResult=0x%x gWiFiCalSize=%d gWiFiCalAddrOffset=0x%x\n",
+	WMT_INFO_FUNC("gBTCalResultSize=%d gWiFiCalResult=0x%p gWiFiCalSize=%d gWiFiCalAddrOffset=0x%x\n",
 		gBTCalResultSize,
 		gWiFiCalResult,
 		gWiFiCalSize,
