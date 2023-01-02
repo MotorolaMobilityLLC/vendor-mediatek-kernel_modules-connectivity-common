@@ -67,6 +67,22 @@
 	SET_BIT_MASK(&val, data, mask); \
 	CONSYS_REG_WRITE(reg, val); \
 }
+#define CONSYS_REG_READ_BIT(addr, BITVAL) (CONSYS_REG_READ(addr) & ((unsigned int)(BITVAL)))
+#define CONSYS_REG_BIT_POLLING(addr, bit_index, exp_val, loop, delay, success) {\
+	unsigned int polling_count = 0; \
+	unsigned int reg_value = 0; \
+	success = 0; \
+	reg_value = (CONSYS_REG_READ_BIT(addr, (0x1 << bit_index)) >> bit_index); \
+	while (reg_value != exp_val) { \
+		if (polling_count > loop) { \
+			success = -1; \
+			break; \
+		} \
+		reg_value = (CONSYS_REG_READ_BIT(addr, (0x1 << bit_index)) >> bit_index); \
+		udelay(delay); \
+		polling_count++; \
+	} \
+}
 
 /*
  * Write value with value_offset bits of right shift and size bits,
@@ -278,6 +294,7 @@ typedef VOID(*CONSYS_IC_IDENTIFY_ADIE) (VOID);
 typedef VOID(*CONSYS_IC_WIFI_CTRL_SETTING) (VOID);
 typedef VOID(*CONSYS_IC_WIFI_CTRL_SWITCH_CONN_MODE) (VOID);
 typedef VOID(*CONSYS_IC_BUS_TIMEOUT_CONFIG) (VOID);
+typedef VOID(*CONSYS_IC_SET_MCU_MEM_PDN_DELAY) (VOID);
 typedef VOID(*CONSYS_IC_SET_ACCESS_EMI_HW_MODE) (VOID);
 typedef INT32(*CONSYS_IC_DUMP_GATING_STATE) (P_CONSYS_STATE state);
 typedef INT32(*CONSYS_IC_SLEEP_INFO_ENABLE_CTRL) (UINT32 enable);
@@ -319,6 +336,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_WIFI_CTRL_SETTING consys_ic_wifi_ctrl_setting;
 	CONSYS_IC_WIFI_CTRL_SWITCH_CONN_MODE consys_ic_wifi_ctrl_switch_conn_mode;
 	CONSYS_IC_BUS_TIMEOUT_CONFIG consys_ic_bus_timeout_config;
+	CONSYS_IC_SET_MCU_MEM_PDN_DELAY consys_ic_set_mcu_mem_pdn_delay;
 
 	/* POS - AFE */
 	CONSYS_IC_AFE_REG_SETTING consys_ic_afe_reg_setting;
