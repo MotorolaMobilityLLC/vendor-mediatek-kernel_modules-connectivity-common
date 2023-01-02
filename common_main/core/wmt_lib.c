@@ -977,15 +977,7 @@ static INT32 wmt_lib_ps_handler(MTKSTP_PSM_ACTION_T action)
 				ret = -1;
 			}
 
-			/* Here we set ret to 0 directly */
-			ret = 0;
-			if (!ret) {
-				mtk_wcn_stp_psm_notify_stp(HOST_AWAKE);
-			} else {
-				mtk_wcn_stp_psm_notify_stp(HOST_AWAKE);
-				WMT_ERR_FUNC
-				    ("========[SDIO-PS]set own back fails! =======%%\n");
-			}
+			mtk_wcn_stp_psm_notify_stp(HOST_AWAKE);
 		}
 
 		WMT_DBG_FUNC("send op<--------------------------------- host awake job\n");
