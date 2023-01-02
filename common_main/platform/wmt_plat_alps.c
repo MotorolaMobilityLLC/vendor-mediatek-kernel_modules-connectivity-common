@@ -286,7 +286,7 @@ static VOID wmt_plat_bgf_eirq_cb(VOID)
 	if (wmt_plat_bgf_irq_cb != NULL)
 		(*(wmt_plat_bgf_irq_cb))();
 	else
-		WMT_PLAT_WARN_FUNC("WMT-PLAT: wmt_plat_bgf_irq_cb not registered\n");
+		WMT_PLAT_PR_WARN("WMT-PLAT: wmt_plat_bgf_irq_cb not registered\n");
 }
 #endif
 
@@ -296,7 +296,7 @@ irqreturn_t wmt_plat_bgf_irq_isr(INT32 irq, PVOID arg)
 	wmt_plat_eirq_ctrl(PIN_BGF_EINT, PIN_STA_EINT_DIS);
 	wmt_plat_bgf_eirq_cb();
 #else
-	WMT_PLAT_INFO_FUNC("skip irq handing because psm is disable");
+	WMT_PLAT_PR_INFO("skip irq handing because psm is disable");
 #endif
 
 	return IRQ_HANDLED;
@@ -617,7 +617,7 @@ INT32 wmt_plat_eirq_ctrl(ENUM_PIN_ID id, ENUM_PIN_STATE state)
 				iret = request_irq(bgf_irq_num, wmt_plat_bgf_irq_isr, bgf_irq_flag,
 						   "BTIF_WAKEUP_IRQ", NULL);
 				if (iret) {
-					WMT_PLAT_ERR_FUNC("request_irq fail,irq_no(%d),iret(%d)\n",
+					WMT_PLAT_PR_ERR("request_irq fail,irq_no(%d),iret(%d)\n",
 							  bgf_irq_num, iret);
 					return iret;
 				}
@@ -643,7 +643,7 @@ INT32 wmt_plat_eirq_ctrl(ENUM_PIN_ID id, ENUM_PIN_STATE state)
 		} else if (state == PIN_STA_EINT_EN) {
 			spin_lock_irqsave(&g_bgf_irq_lock.lock, g_bgf_irq_lock.flags);
 			if (g_bgf_irq_lock.counter) {
-				WMT_PLAT_DBG_FUNC("BGF INT has been enabled,counter(%d)\n",
+				WMT_PLAT_PR_DBG("BGF INT has been enabled,counter(%d)\n",
 						  g_bgf_irq_lock.counter);
 			} else {
 				enable_irq(bgf_irq_num);
@@ -654,7 +654,7 @@ INT32 wmt_plat_eirq_ctrl(ENUM_PIN_ID id, ENUM_PIN_STATE state)
 		} else if (state == PIN_STA_EINT_DIS) {
 			spin_lock_irqsave(&g_bgf_irq_lock.lock, g_bgf_irq_lock.flags);
 			if (!g_bgf_irq_lock.counter) {
-				WMT_PLAT_DBG_FUNC("BGF INT has been disabled,counter(%d)\n",
+				WMT_PLAT_PR_DBG("BGF INT has been disabled,counter(%d)\n",
 						  g_bgf_irq_lock.counter);
 			} else {
 				disable_irq_nosync(bgf_irq_num);
@@ -1265,7 +1265,7 @@ static INT32 wmt_plat_cmb_i2s_ctrl(ENUM_PIN_STATE state)
 
 static INT32 wmt_plat_soc_i2s_ctrl(ENUM_PIN_STATE state)
 {
-	WMT_PLAT_WARN_FUNC("host i2s pin not defined!!!\n");
+	WMT_PLAT_PR_WARN("host i2s pin not defined!!!\n");
 
 	return 0;
 }
@@ -1314,7 +1314,7 @@ static INT32 wmt_plat_cmb_gps_sync_ctrl(ENUM_PIN_STATE state)
 
 static INT32 wmt_plat_soc_gps_sync_ctrl(ENUM_PIN_STATE state)
 {
-	WMT_PLAT_WARN_FUNC("host gps sync pin not defined!!!\n");
+	WMT_PLAT_PR_WARN("host gps sync pin not defined!!!\n");
 
 	return 0;
 }
@@ -1339,18 +1339,18 @@ static INT32 wmt_plat_soc_gps_lna_ctrl(ENUM_PIN_STATE state)
 	case PIN_STA_DEINIT:
 		KERNEL_mt6306_set_gpio_dir(MT6306_GPIO_01, MT6306_GPIO_DIR_OUT);
 		KERNEL_mt6306_set_gpio_out(MT6306_GPIO_01, MT6306_GPIO_OUT_LOW);
-		WMT_PLAT_DBG_FUNC("set gps lna to init\n");
+		WMT_PLAT_PR_DBG("set gps lna to init\n");
 		break;
 	case PIN_STA_OUT_H:
 		KERNEL_mt6306_set_gpio_out(MT6306_GPIO_01, MT6306_GPIO_OUT_HIGH);
-		WMT_PLAT_DBG_FUNC("set gps lna to oh\n");
+		WMT_PLAT_PR_DBG("set gps lna to oh\n");
 		break;
 	case PIN_STA_OUT_L:
 		KERNEL_mt6306_set_gpio_out(MT6306_GPIO_01, MT6306_GPIO_OUT_LOW);
-		WMT_PLAT_DBG_FUNC("set gps lna to ol\n");
+		WMT_PLAT_PR_DBG("set gps lna to ol\n");
 		break;
 	default:
-		WMT_PLAT_WARN_FUNC("%d mode not defined for  gps lna pin !!!\n", state);
+		WMT_PLAT_PR_WARN("%d mode not defined for  gps lna pin !!!\n", state);
 		break;
 	}
 #else
@@ -1359,28 +1359,28 @@ static INT32 wmt_plat_soc_gps_lna_ctrl(ENUM_PIN_STATE state)
 	struct pinctrl_state *gps_lna_ol;
 	struct pinctrl *consys_pinctrl;
 
-	WMT_PLAT_DBG_FUNC("ENTER++\n");
+	WMT_PLAT_PR_DBG("ENTER++\n");
 	consys_pinctrl = mtk_wcn_consys_get_pinctrl();
 	if (!consys_pinctrl) {
-		WMT_PLAT_ERR_FUNC("get consys pinctrl fail\n");
+		WMT_PLAT_PR_ERR("get consys pinctrl fail\n");
 		return 0;
 	}
 
 	gps_lna_init = pinctrl_lookup_state(consys_pinctrl, "gps_lna_state_init");
 	if (IS_ERR(gps_lna_init)) {
-		WMT_PLAT_ERR_FUNC("Cannot find gps lna pin init state!\n");
+		WMT_PLAT_PR_ERR("Cannot find gps lna pin init state!\n");
 		return 0;
 	}
 
 	gps_lna_oh = pinctrl_lookup_state(consys_pinctrl, "gps_lna_state_oh");
 	if (IS_ERR(gps_lna_oh)) {
-		WMT_PLAT_ERR_FUNC("Cannot find gps lna pin oh state!\n");
+		WMT_PLAT_PR_ERR("Cannot find gps lna pin oh state!\n");
 		return 0;
 	}
 
 	gps_lna_ol = pinctrl_lookup_state(consys_pinctrl, "gps_lna_state_ol");
 	if (IS_ERR(gps_lna_ol)) {
-		WMT_PLAT_ERR_FUNC("Cannot find gps lna pin ol state!\n");
+		WMT_PLAT_PR_ERR("Cannot find gps lna pin ol state!\n");
 		return 0;
 	}
 
@@ -1388,18 +1388,18 @@ static INT32 wmt_plat_soc_gps_lna_ctrl(ENUM_PIN_STATE state)
 	case PIN_STA_INIT:
 	case PIN_STA_DEINIT:
 		pinctrl_select_state(consys_pinctrl, gps_lna_init);
-		WMT_PLAT_DBG_FUNC("set gps lna to init\n");
+		WMT_PLAT_PR_DBG("set gps lna to init\n");
 		break;
 	case PIN_STA_OUT_H:
 		pinctrl_select_state(consys_pinctrl, gps_lna_oh);
-		WMT_PLAT_DBG_FUNC("set gps lna to oh\n");
+		WMT_PLAT_PR_DBG("set gps lna to oh\n");
 		break;
 	case PIN_STA_OUT_L:
 		pinctrl_select_state(consys_pinctrl, gps_lna_ol);
-		WMT_PLAT_DBG_FUNC("set gps lna to ol\n");
+		WMT_PLAT_PR_DBG("set gps lna to ol\n");
 		break;
 	default:
-		WMT_PLAT_WARN_FUNC("%d mode not defined for  gps lna pin !!!\n", state);
+		WMT_PLAT_PR_WARN("%d mode not defined for  gps lna pin !!!\n", state);
 		break;
 	}
 #endif
@@ -1622,11 +1622,11 @@ INT32 wmt_plat_soc_paldo_ctrl(ENUM_PALDO_TYPE ePt, ENUM_PALDO_OP ePo)
 		if (wmt_plat_soc_co_clock_flag_get())
 			mtk_wcn_consys_hw_vcn28_ctrl(ePo);
 		else
-			WMT_PLAT_INFO_FUNC("co_clock_type = %d, no need to turn on/off VCN28\n",
+			WMT_PLAT_PR_INFO("co_clock_type = %d, no need to turn on/off VCN28\n",
 					wmt_plat_soc_co_clock_flag_get());
 		break;
 	default:
-		WMT_PLAT_WARN_FUNC("WMT-PLAT:Warnning, invalid type(%d) in palod_ctrl\n", ePt);
+		WMT_PLAT_PR_WARN("WMT-PLAT:Warnning, invalid type(%d) in palod_ctrl\n", ePt);
 		break;
 	}
 
@@ -1662,7 +1662,7 @@ VOID wmt_plat_BGF_irq_dump_status(VOID)
 {
 	mt_irq_dump_status(269);/*tag3 wujun rainier is enabled */
 
-	WMT_PLAT_INFO_FUNC("this function is null in MT6735\n");
+	WMT_PLAT_PR_INFO("this function is null in MT6735\n");
 }
 
 MTK_WCN_BOOL wmt_plat_dump_BGF_irq_status(VOID)
@@ -1704,7 +1704,7 @@ INT32 wmt_plat_set_host_dump_state(ENUM_HOST_DUMP_STATE state)
 
 	p_virtual_addr = wmt_plat_get_emi_virt_add(EXP_APMEM_CTRL_HOST_SYNC_STATE);
 	if (!p_virtual_addr) {
-		WMT_PLAT_ERR_FUNC("get virtual address fail\n");
+		WMT_PLAT_PR_ERR("get virtual address fail\n");
 		return -1;
 	}
 
@@ -1720,21 +1720,21 @@ UINT32 wmt_plat_force_trigger_assert(ENUM_FORCE_TRG_ASSERT_T type)
 	switch (type) {
 	case STP_FORCE_TRG_ASSERT_EMI:
 
-		WMT_PLAT_INFO_FUNC("[Force Assert] stp_trigger_firmware_assert_via_emi -->\n");
+		WMT_PLAT_PR_INFO("[Force Assert] stp_trigger_firmware_assert_via_emi -->\n");
 		p_virtual_addr = wmt_plat_get_emi_virt_add(EXP_APMEM_CTRL_HOST_OUTBAND_ASSERT_W1);
 		if (!p_virtual_addr) {
-			WMT_PLAT_ERR_FUNC("get virtual address fail\n");
+			WMT_PLAT_PR_ERR("get virtual address fail\n");
 			return -1;
 		}
 
 		CONSYS_REG_WRITE(p_virtual_addr, EXP_APMEM_HOST_OUTBAND_ASSERT_MAGIC_W1);
-		WMT_PLAT_INFO_FUNC("[Force Assert] stp_trigger_firmware_assert_via_emi <--\n");
+		WMT_PLAT_PR_INFO("[Force Assert] stp_trigger_firmware_assert_via_emi <--\n");
 		break;
 	case STP_FORCE_TRG_ASSERT_DEBUG_PIN:
 		mtk_wcn_force_trigger_assert_debug_pin();
 		break;
 	default:
-		WMT_PLAT_ERR_FUNC("unknown force trigger assert type\n");
+		WMT_PLAT_PR_ERR("unknown force trigger assert type\n");
 		break;
 	}
 
@@ -1748,7 +1748,7 @@ INT32 wmt_plat_update_host_sync_num(VOID)
 
 	p_virtual_addr = wmt_plat_get_emi_virt_add(EXP_APMEM_CTRL_HOST_SYNC_NUM);
 	if (!p_virtual_addr) {
-		WMT_PLAT_ERR_FUNC("get virtual address fail\n");
+		WMT_PLAT_PR_ERR("get virtual address fail\n");
 		return -1;
 	}
 
@@ -1764,10 +1764,10 @@ INT32 wmt_plat_get_dump_info(UINT32 offset)
 
 	p_virtual_addr = wmt_plat_get_emi_virt_add(offset);
 	if (!p_virtual_addr) {
-		WMT_PLAT_ERR_FUNC("get virtual address fail\n");
+		WMT_PLAT_PR_ERR("get virtual address fail\n");
 		return -1;
 	}
-	WMT_PLAT_DBG_FUNC("connsys_reg_read (0x%x), (0x%p), (0x%x)\n", CONSYS_REG_READ(p_virtual_addr), p_virtual_addr,
+	WMT_PLAT_PR_DBG("connsys_reg_read (0x%x), (0x%p), (0x%x)\n", CONSYS_REG_READ(p_virtual_addr), p_virtual_addr,
 			   offset);
 	return CONSYS_REG_READ(p_virtual_addr);
 }
@@ -1778,7 +1778,7 @@ INT32 wmt_plat_write_emi_l(UINT32 offset, UINT32 value)
 
 	p_virtual_addr = wmt_plat_get_emi_virt_add(offset);
 	if (!p_virtual_addr) {
-		WMT_PLAT_ERR_FUNC("get virtual address fail\n");
+		WMT_PLAT_PR_ERR("get virtual address fail\n");
 		return -1;
 	}
 
@@ -1790,7 +1790,7 @@ UINT32 wmt_plat_get_soc_chipid(VOID)
 {
 	UINT32 chipId = mtk_wcn_consys_soc_chipid();
 
-	WMT_PLAT_INFO_FUNC("current SOC chip:0x%x\n", chipId);
+	WMT_PLAT_PR_INFO("current SOC chip:0x%x\n", chipId);
 
 	return chipId;
 }
@@ -1799,7 +1799,7 @@ EXPORT_SYMBOL(wmt_plat_get_soc_chipid);
 #if CFG_WMT_LTE_COEX_HANDLING
 INT32 wmt_plat_get_tdm_antsel_index(VOID)
 {
-	WMT_PLAT_INFO_FUNC("not support LTE in this platform\n");
+	WMT_PLAT_PR_INFO("not support LTE in this platform\n");
 	return 0;
 }
 #endif
@@ -1811,7 +1811,7 @@ INT32 wmt_plat_set_dbg_mode(UINT32 flag)
 
 	vir_addr = mtk_wcn_consys_emi_virt_addr_get(EXP_APMEM_CTRL_CHIP_FW_DBGLOG_MODE);
 	if (!vir_addr) {
-		WMT_PLAT_ERR_FUNC("get vir address fail\n");
+		WMT_PLAT_PR_ERR("get vir address fail\n");
 		return ret;
 	}
 	if (flag) {
@@ -1821,7 +1821,7 @@ INT32 wmt_plat_set_dbg_mode(UINT32 flag)
 		CONSYS_REG_WRITE(vir_addr, 0x0);
 		ret = 1;
 	}
-	WMT_PLAT_ERR_FUNC("fw dbg mode register value(0x%08x)\n", CONSYS_REG_READ(vir_addr));
+	WMT_PLAT_PR_INFO("fw dbg mode register value(0x%08x)\n", CONSYS_REG_READ(vir_addr));
 
 	return ret;
 }
@@ -1832,11 +1832,11 @@ INT32 wmt_plat_set_dynamic_dumpmem(PUINT32 str_buf)
 
 	vir_addr = mtk_wcn_consys_emi_virt_addr_get(EXP_APMEM_CTRL_CHIP_DYNAMIC_DUMP);
 	if (!vir_addr) {
-		WMT_PLAT_ERR_FUNC("get vir address fail\n");
+		WMT_PLAT_PR_ERR("get vir address fail\n");
 		return -1;
 	}
 	memcpy(vir_addr, str_buf, DYNAMIC_DUMP_GROUP_NUM*8);
-	WMT_PLAT_INFO_FUNC("dynamic dump register value(0x%08x)\n", CONSYS_REG_READ(vir_addr));
+	WMT_PLAT_PR_INFO("dynamic dump register value(0x%08x)\n", CONSYS_REG_READ(vir_addr));
 
 	return 0;
 }
