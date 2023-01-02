@@ -35,7 +35,6 @@
 UINT32 gStpDbgLvl = STP_LOG_INFO;
 unsigned int chip_reset_only;
 INT32 wmt_dbg_sdio_retry_ctrl = 1;
-INT32 gCrcErrorCount;
 
 #define STP_POLL_CPUPCR_NUM 5
 #define STP_POLL_CPUPCR_DELAY 1
@@ -2130,17 +2129,18 @@ static INT32 stp_parser_data_in_full_mode(UINT32 length, UINT8 *p_data)
 			break;
 
 		case MTKSTP_CHECKSUM:
+			if ((stp_core_ctx.parser.type == STP_TASK_INDX) ||
+			    (stp_core_ctx.parser.type == INFO_TASK_INDX)) {
+				stp_change_rx_state(MTKSTP_FW_MSG);
+				stp_core_ctx.rx_counter = 0;
+				i -= 1;
+				if (i != 0)
+					p_data += 1;
+
+				continue;
+			}
 			if (((stp_core_ctx.rx_buf[0] +
 					stp_core_ctx.rx_buf[1] + stp_core_ctx.rx_buf[2]) & 0xff) == *p_data) {
-				if ((stp_core_ctx.parser.type == STP_TASK_INDX) ||
-				    (stp_core_ctx.parser.type == INFO_TASK_INDX)) {
-					stp_change_rx_state(MTKSTP_FW_MSG);
-					stp_core_ctx.rx_counter = 0;
-					i -= 1;
-					if (i != 0)
-						p_data += 1;
-					continue;
-				}
 				/* header only packet */
 				stp_process_header_only_packet();
 			} else {
@@ -2208,7 +2208,7 @@ static INT32 stp_parser_data_in_full_mode(UINT32 length, UINT8 *p_data)
 				else
 					STP_WARN_FUNC("inband reset state,drop the packet\n");
 			} else {
-				STP_ERR_FUNC("[%d]CRC error, drop the packet\n", gCrcErrorCount++);
+				STP_ERR_FUNC("CRC error, drop the packet\n");
 				osal_buffer_dump(&stp_core_ctx.rx_buf[0], "CRC data", stp_core_ctx.rx_counter, 0);
 				stp_change_rx_state(MTKSTP_SYNC);
 				stp_core_ctx.rx_counter = 0;
@@ -2270,8 +2270,6 @@ static INT32 stp_parser_data_in_full_mode(UINT32 length, UINT8 *p_data)
 				STP_INFO_FUNC("++ start to read paged dump and paged trace ++\n");
 				stp_btm_notify_wmt_dmp_wq(stp_core_ctx.btm);
 				STP_INFO_FUNC("++ start to read paged dump and paged trace --\n");
-				/* Dump CRC error count for debug only */
-				STP_INFO_FUNC("gCrcErrorCount = %d\n", gCrcErrorCount);
 			}
 
 			remain_length = stp_core_ctx.parser.length - stp_core_ctx.rx_counter;
