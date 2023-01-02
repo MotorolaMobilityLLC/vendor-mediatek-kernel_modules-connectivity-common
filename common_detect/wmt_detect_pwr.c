@@ -15,10 +15,12 @@
 /* ALPS header files */
 #include <linux/version.h>
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0))
 #ifndef CONFIG_RTC_DRV_MT6397
 #include <mtk_rtc.h>
-#elif (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0))
+#else
 #include <linux/mfd/mt6397/rtc_misc.h>
+#endif
 #endif
 
 #ifdef DFT_TAG
