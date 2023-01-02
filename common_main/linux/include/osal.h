@@ -21,6 +21,7 @@
 #define _OSAL_H_
 
 #include "osal_typedef.h"
+#include "../../debug_utility/ring_cache.h"
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
 ********************************************************************************
@@ -229,6 +230,26 @@ typedef struct _OSAL_BIT_OP_VAR_ {
 
 #endif
 typedef UINT32(*P_OSAL_EVENT_CHECKER) (P_OSAL_THREAD pThread);
+
+struct osal_op_history_entry {
+	VOID *opbuf_address;
+	UINT32 op_id;
+	UINT32 opbuf_ref_count;
+	UINT32 op_info_bit;
+	SIZE_T param_0;
+	SIZE_T param_1;
+	SIZE_T param_2;
+	SIZE_T param_3;
+	UINT64 ts;
+	ULONG usec;
+};
+
+struct osal_op_history {
+	struct ring_cache ring_buffer;
+	struct osal_op_history_entry *queue;
+	spinlock_t lock;
+};
+
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -375,7 +396,9 @@ INT32 osal_ftrace_print(const PINT8 str, ...);
 INT32 osal_ftrace_print_ctrl(INT32 flag);
 
 VOID osal_dump_thread_state(const PUINT8 name);
-
+VOID osal_op_history_init(struct osal_op_history *log_history, INT32 queue_size);
+VOID osal_op_history_save(struct osal_op_history *log_history, P_OSAL_OP pOp);
+VOID osal_op_history_print(struct osal_op_history *log_history, PINT8 name);
 
 /*******************************************************************************
 *                              F U N C T I O N S
