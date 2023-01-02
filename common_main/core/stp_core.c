@@ -3419,12 +3419,12 @@ INT32 mtk_wcn_stp_wmt_trg_assert(VOID)
 
 INT32 mtk_wcn_stp_assert_timeout_handle(VOID)
 {
-	INT32 ret = -1;
+	INT32 ret = 0;
 	P_CONSYS_EMI_ADDR_INFO p_ecsi;
 
 	if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_COMBO) {
 		mtk_wcn_stp_ctx_restore();
-		return 0;
+		return ret;
 	}
 
 	p_ecsi = wmt_plat_get_emi_phy_add();
@@ -3440,7 +3440,10 @@ INT32 mtk_wcn_stp_assert_timeout_handle(VOID)
 		/*host trigger assert timeout and no coredump packet. To dump EMI data*/
 		STP_INFO_FUNC("host trigger fw assert timeout!\n");
 		WMT_STEP_COMMAND_TIMEOUT_DO_ACTIONS_FUNC("Trigger assert timeout");
-		stp_dbg_start_emi_dump();
+		if (mtk_wcn_stp_coredump_flag_get() != 0)
+			ret = stp_dbg_start_emi_dump();
+		else
+			mtk_wcn_stp_ctx_restore();
 	}
 	return ret;
 }
