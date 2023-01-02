@@ -347,7 +347,8 @@ static _osal_inline_ INT32 hif_sdio_deep_sleep_info_dmp(MTK_WCN_HIF_SDIO_DS_INFO
 
 	mutex_lock(&p_ds_info->lock);
 	HIF_SDIO_DBG_FUNC("p_ds_info: 0x%08x, chipid:0x%x, reg_offset:0x%x, value:0x%x\n",
-			   p_ds_info, p_ds_info->chip_id, p_ds_info->reg_offset, p_ds_info->value);
+			(unsigned int)p_ds_info, p_ds_info->chip_id, p_ds_info->reg_offset,
+			p_ds_info->value);
 
 	for (i = 0; i < ctl_info_array_size; i++) {
 		ctl_info = &p_ds_info->clt_info[i];
