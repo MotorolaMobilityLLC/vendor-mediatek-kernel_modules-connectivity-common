@@ -69,6 +69,12 @@ static INT32 wmt_conf_parse_int(P_DEV_WMT pWmtDev, const struct parse_data *data
 
 static PINT8 wmt_conf_write_int(P_DEV_WMT pWmtDev, const struct parse_data *data);
 
+static INT32 wmt_conf_parse_byte_array(P_DEV_WMT pWmtDev, const struct parse_data *data,
+					const PINT8 pos);
+
+static PINT8 wmt_conf_write_byte_array(P_DEV_WMT pWmtDev, const struct parse_data *data);
+
+
 static INT32 wmt_conf_parse_pair(P_DEV_WMT pWmtDev, const PINT8 pKey, const PINT8 pVal);
 
 static INT32 wmt_conf_parse(P_DEV_WMT pWmtDev, const PINT8 pInBuf, UINT32 size);
@@ -80,6 +86,9 @@ static INT32 wmt_conf_parse(P_DEV_WMT pWmtDev, const PINT8 pInBuf, UINT32 size);
 #define SHORT(f) {#f, wmt_conf_parse_short, wmt_conf_write_short, OFFSET(rWmtGenConf.f), NULL, NULL}
 
 #define INT(f) {#f, wmt_conf_parse_int, wmt_conf_write_int, OFFSET(rWmtGenConf.f), NULL, NULL}
+
+#define BYTE_ARRAY(f) {#f, wmt_conf_parse_byte_array, wmt_conf_write_byte_array, \
+		OFFSET(rWmtGenConf.f), NULL, NULL}
 
 /*******************************************************************************
 *                          F U N C T I O N S
@@ -140,6 +149,8 @@ static const struct parse_data wmtcfg_fields[] = {
 	INT(coex_wmt_ext_elna_gain_p1_D1),
 	INT(coex_wmt_ext_elna_gain_p1_D2),
 	INT(coex_wmt_ext_elna_gain_p1_D3),
+
+	BYTE_ARRAY(coex_wmt_epa_elna),
 
 	CHAR(bt_tssi_from_wifi),
 	SHORT(bt_tssi_target),
@@ -280,6 +291,82 @@ static PINT8 wmt_conf_write_int(P_DEV_WMT pWmtDev, const struct parse_data *data
 		return NULL;
 	}
 	value[20 - 1] = '\0';
+	return value;
+}
+
+static INT32 wmt_conf_parse_byte_array(P_DEV_WMT pWmtDev,
+		const struct parse_data *data, const PINT8 pos)
+{
+	PUINT8 *dst;
+	struct WMT_BYTE_ARRAY *ba;
+	PUINT8 buffer;
+	INT32 size = osal_strlen(pos) / 2;
+	UINT8 temp[3];
+	INT32 i;
+	long value;
+
+	if (size <= 1) {
+		WMT_ERR_FUNC("wmtcfg==> %s has no value assigned\n",
+			data->name);
+		return -1;
+	} else if (size & 0x1) {
+		WMT_ERR_FUNC("wmtcfg==> %s, length should be even\n", data->name);
+		return -1;
+	}
+
+	ba = (struct WMT_BYTE_ARRAY *)osal_malloc(sizeof(struct WMT_BYTE_ARRAY));
+	if (ba == NULL) {
+		WMT_ERR_FUNC("wmtcfg==> %s malloc fail\n", data->name);
+		return -1;
+	}
+
+	buffer = osal_malloc(size);
+	if (buffer == NULL) {
+		osal_free(ba);
+		WMT_ERR_FUNC("wmtcfg==> %s malloc fail, size %d\n", data->name, size);
+		return -1;
+	}
+
+	temp[2] = '\0';
+	for (i = 0; i < size; i++) {
+		osal_memcpy(temp, &pos[i * 2], 2);
+		if (osal_strtol(temp, 16, &value) < 0) {
+			WMT_ERR_FUNC("wmtcfg==> %s should be hexadecimal format\n", data->name);
+			osal_free(ba);
+			osal_free(buffer);
+			return -1;
+		}
+		buffer[i] = (UINT8)value;
+	}
+	ba->data = buffer;
+	ba->size = size;
+
+	dst = (PUINT8 *)(((PUINT8) pWmtDev) + (long)data->param1);
+	*dst = (PUINT8)ba;
+
+	return 0;
+}
+
+static PINT8 wmt_conf_write_byte_array(P_DEV_WMT pWmtDev, const struct parse_data *data)
+{
+	PUINT8 *src;
+	PINT8 value;
+	struct WMT_BYTE_ARRAY *ba;
+	INT32 i;
+
+	src = (PUINT8 *) (((PUINT8) pWmtDev) + (long)data->param1);
+	if (*src == NULL)
+		return NULL;
+
+	ba = (struct WMT_BYTE_ARRAY *)*src;
+
+	value = osal_malloc(ba->size * 2 + 1);
+	if (value == NULL)
+		return NULL;
+
+	for (i = 0; i < ba->size; i++)
+		osal_snprintf(&value[i * 2], 3, "%x", ba->data[i]);
+
 	return value;
 }
 
@@ -513,3 +600,22 @@ P_WMT_GEN_CONF wmt_conf_get_cfg(VOID)
 
 	return &gDevWmt.rWmtGenConf;
 }
+
+INT32 wmt_conf_deinit(VOID)
+{
+	P_WMT_GEN_CONF pWmtGenConf = wmt_conf_get_cfg();
+
+	if (pWmtGenConf == NULL)
+		return -1;
+
+	if (pWmtGenConf->coex_wmt_epa_elna != NULL) {
+		if (pWmtGenConf->coex_wmt_epa_elna->data != NULL) {
+			osal_free(pWmtGenConf->coex_wmt_epa_elna->data);
+			pWmtGenConf->coex_wmt_epa_elna->data = NULL;
+		}
+		osal_free(pWmtGenConf->coex_wmt_epa_elna);
+		pWmtGenConf->coex_wmt_epa_elna = NULL;
+	}
+	return 0;
+}
+
