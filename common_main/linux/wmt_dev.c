@@ -186,6 +186,7 @@ static atomic_t g_es_lr_flag_for_lpbk_onoff = ATOMIC_INIT(0); /* for ctrl lpbk o
 
 /*BLANK on/off ctrl for wmt varabile*/
 static atomic_t g_es_lr_flag_for_blank = ATOMIC_INIT(0); /* for ctrl blank flag */
+static atomic_t g_late_pwr_on_for_blank = ATOMIC_INIT(0); /* PwrOnOff Late flag */
 
 /* Prevent race condition when wmt_dev_tm_temp_query is called concurrently */
 static OSAL_UNSLEEPABLE_LOCK g_temp_query_spinlock;
@@ -244,8 +245,10 @@ static INT32 wmt_fb_notifier_callback(struct notifier_block *self, ULONG event, 
 		atomic_set(&g_es_lr_flag_for_lpbk_onoff, 1);
 		atomic_set(&g_es_lr_flag_for_blank, 1);
 		WMT_WARN_FUNC("@@@@@@@@@@wmt enter UNBLANK @@@@@@@@@@@@@@\n");
-		if (hif_info == 0)
+		if (hif_info == 0) {
+			atomic_set(&g_late_pwr_on_for_blank, 1);
 			break;
+		}
 		schedule_work(&gPwrOnOffWork);
 		break;
 	case FB_BLANK_POWERDOWN:
@@ -1042,6 +1045,12 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			if (iRet == 0) {
 				WMT_INFO_FUNC("luncher set STP mode success!\n");
 				hif_info = 1;
+
+				if (atomic_read(&g_late_pwr_on_for_blank) &&
+					atomic_read(&g_es_lr_flag_for_blank)) {
+					atomic_set(&g_late_pwr_on_for_blank, 0);
+					schedule_work(&gPwrOnOffWork);
+				}
 			}
 		} while (0);
 		break;
