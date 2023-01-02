@@ -161,6 +161,7 @@ static INT32 opfunc_try_pwr_off(P_WMT_OP pWmtOp);
 static INT32 opfunc_gps_mcu_ctrl(P_WMT_OP pWmtOp);
 static INT32 opfunc_blank_status_ctrl(P_WMT_OP pWmtOp);
 static INT32 opfunc_met_ctrl(P_WMT_OP pWmtOp);
+static INT32 opfunc_gps_suspend(P_WMT_OP pWmtOp);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -328,6 +329,7 @@ static const WMT_OPID_FUNC wmt_core_opfunc[] = {
 	[WMT_OPID_TRY_PWR_OFF] = opfunc_try_pwr_off,
 	[WMT_OPID_BLANK_STATUS_CTRL] = opfunc_blank_status_ctrl,
 	[WMT_OPID_MET_CTRL] = opfunc_met_ctrl,
+	[WMT_OPID_GPS_SUSPEND] = opfunc_gps_suspend,
 };
 
 /*******************************************************************************
@@ -1390,6 +1392,81 @@ static INT32 opfunc_func_off(P_WMT_OP pWmtOp)
 	/* check all sub-func and do power off */
 	opfunc_try_pwr_off(pWmtOp);
 	wmt_core_dump_func_state("AF FUNC OFF");
+	return iRet;
+}
+
+static INT32 opfunc_gps_suspend(P_WMT_OP pWmtOp)
+{
+	INT32 iRet = -1;
+	P_WMT_GEN_CONF pWmtGenConf = NULL;
+	MTK_WCN_BOOL suspend = (pWmtOp->au4OpData[0] != 0);
+
+	pWmtGenConf = wmt_conf_get_cfg();
+
+	if (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPS] != DRV_STS_FUNC_ON) {
+		WMT_WARN_FUNC("WMT-CORE: GPS driver non-FUN_ON in opfunc_gps_suspend\n");
+		return 0;
+	}
+
+	if (MTK_WCN_BOOL_TRUE == suspend) {
+		if (osal_test_bit(WMT_GPS_SUSPEND, &gGpsFmState)) {
+			WMT_WARN_FUNC("WMT-CORE: gps already suspend\n");
+			return 0;
+		}
+	} else {
+		if (!osal_test_bit(WMT_GPS_SUSPEND, &gGpsFmState)) {
+			WMT_WARN_FUNC("WMT-CORE: gps already resume on\n");
+			return 0;
+		}
+	}
+
+	if (MTK_WCN_BOOL_TRUE == suspend) {
+		if (gpWmtFuncOps[WMTDRV_TYPE_GPS] && gpWmtFuncOps[WMTDRV_TYPE_GPS]->func_off) {
+			if (pWmtGenConf != NULL)
+				pWmtGenConf->wmt_gps_suspend_ctrl = 1;
+			iRet = (*(gpWmtFuncOps[WMTDRV_TYPE_GPS]->func_off)) (gMtkWmtCtx.p_ic_ops, wmt_conf_get_cfg());
+			if (pWmtGenConf != NULL)
+				pWmtGenConf->wmt_gps_suspend_ctrl = 0;
+		} else {
+			WMT_WARN_FUNC("WMT-CORE: gps suspend ops not found\n");
+			iRet = -3;
+		}
+	} else {
+		/*enable power off flag, if flag=0, power off connsys will not be executed */
+		mtk_wcn_set_connsys_power_off_flag(MTK_WCN_BOOL_TRUE);
+		/* check if chip power on is needed */
+		if (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WMT] != DRV_STS_FUNC_ON) {
+			iRet = opfunc_pwr_on(pWmtOp);
+			if (iRet) {
+				WMT_ERR_FUNC("WMT-CORE: func(WMTDRV_TYPE_GPS) hw resume fail(%d)\n", iRet);
+				osal_assert(0);
+
+				/* check all sub-func and do power off */
+				return -5;
+			}
+		}
+
+		if (gpWmtFuncOps[WMTDRV_TYPE_GPS] && gpWmtFuncOps[WMTDRV_TYPE_GPS]->func_on) {
+			if (pWmtGenConf != NULL)
+				pWmtGenConf->wmt_gps_suspend_ctrl = 1;
+			iRet = (*(gpWmtFuncOps[WMTDRV_TYPE_GPS]->func_on)) (gMtkWmtCtx.p_ic_ops, wmt_conf_get_cfg());
+			if (pWmtGenConf != NULL)
+				pWmtGenConf->wmt_gps_suspend_ctrl = 0;
+		} else {
+			WMT_WARN_FUNC("WMT-CORE: gps resume ops not found\n");
+			iRet = -7;
+		}
+	}
+
+	if (iRet) {
+		WMT_ERR_FUNC("WMT-CORE: gps %s function failed, ret(%d)\n",
+			((pWmtOp->au4OpData[0] != 0) ? "suspend" : "resume"), iRet);
+		osal_assert(0);
+	}
+
+	if (MTK_WCN_BOOL_FALSE == suspend)
+		opfunc_utc_time_sync(NULL);
+
 	return iRet;
 }
 

@@ -126,6 +126,8 @@ static INT32 wmt_dbg_thermal_query(INT32 par1, INT32 count, INT32 interval);
 static INT32 wmt_dbg_thermal_ctrl(INT32 par1, INT32 par2, INT32 par3);
 static INT32 wmt_dbg_step_ctrl(INT32 par1, INT32 par2, INT32 par3);
 
+static INT32 wmt_dbg_gps_suspend(INT32 par1, INT32 par2, INT32 par3);
+
 static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x0] = wmt_dbg_psm_ctrl,
 	[0x1] = wmt_dbg_quick_sleep_ctrl,
@@ -183,6 +185,7 @@ static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 #endif
 	[0x2e] = wmt_dbg_suspend_debug,
 	[0x30] = wmt_dbg_show_thread_debug_info,
+	[0x31] = wmt_dbg_gps_suspend,
 #ifdef CONFIG_MTK_ENG_BUILD
 	[0xa0] = wmt_dbg_step_test,
 #endif
@@ -1508,5 +1511,14 @@ INT32 wmt_dev_dbg_remove(VOID)
 #if CFG_WMT_PS_SUPPORT
 	wmt_lib_ps_deinit();
 #endif
+	return 0;
+}
+
+INT32 wmt_dbg_gps_suspend(INT32 par1, INT32 par2, INT32 par3)
+{
+	MTK_WCN_BOOL suspend = (par2 != 0) ? MTK_WCN_BOOL_TRUE : MTK_WCN_BOOL_FALSE;
+
+	WMT_INFO_FUNC("GPS %s mode test\n", (par2 != 0) ? "suspend" : "resume");
+	mtk_wmt_gps_suspend_ctrl(suspend);
 	return 0;
 }
