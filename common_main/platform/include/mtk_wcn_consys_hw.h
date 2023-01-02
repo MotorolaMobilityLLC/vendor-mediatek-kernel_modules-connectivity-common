@@ -212,6 +212,7 @@ typedef VOID(*CONSYS_IC_VCN28_HW_MODE_CTRL) (UINT32 enable);
 typedef INT32(*CONSYS_IC_HW_VCN28_CTRL) (UINT32 enable);
 typedef INT32(*CONSYS_IC_HW_WIFI_VCN33_CTRL) (UINT32 enable);
 typedef INT32(*CONSYS_IC_HW_BT_VCN33_CTRL) (UINT32 enable);
+typedef INT32(*CONSYS_IC_HW_VCN_CTRL_AFTER_IDLE) (VOID);
 typedef UINT32(*CONSYS_IC_SOC_CHIPID_GET) (VOID);
 typedef INT32(*CONSYS_IC_ADIE_CHIPID_DETECT) (VOID);
 typedef INT32(*CONSYS_IC_EMI_MPU_SET_REGION_PROTECTION) (VOID);
@@ -275,6 +276,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_HW_VCN28_CTRL consys_ic_hw_vcn28_ctrl;
 	CONSYS_IC_HW_WIFI_VCN33_CTRL consys_ic_hw_wifi_vcn33_ctrl;
 	CONSYS_IC_HW_BT_VCN33_CTRL consys_ic_hw_bt_vcn33_ctrl;
+	CONSYS_IC_HW_VCN_CTRL_AFTER_IDLE consys_ic_hw_vcn_ctrl_after_idle;
 	CONSYS_IC_SOC_CHIPID_GET consys_ic_soc_chipid_get;
 	CONSYS_IC_ADIE_CHIPID_DETECT consys_ic_adie_chipid_detect;
 	CONSYS_IC_EMI_MPU_SET_REGION_PROTECTION consys_ic_emi_mpu_set_region_protection;
