@@ -370,12 +370,6 @@ static void connlog_ring_print(int conn_type)
 	buf_size = ring_seg.remain;
 	memset(gLog_data, 0, CONNLOG_EMI_BT_SIZE);
 
-	/* for debugging, must be removed before SQC { */
-	if (conn_type == CONNLOG_TYPE_MCU) {
-		pr_err("It's impossible that MCU ring buffer has data.\n");
-		connlog_dump_emi(0x0, 0x200);
-	}
-	/* for debugging, must be removed before SQC } */
 	/* Check ring buffer memory. Dump EMI data if it's corruption. */
 	if (EMI_READ32(ring->read) > emi_offset_table[conn_type].emi_size ||
 		EMI_READ32(ring->write) > emi_offset_table[conn_type].emi_size) {
@@ -831,22 +825,6 @@ ssize_t connsys_log_read(int conn_type, char *buf, size_t count)
 	cache_buf_size = ring_seg.remain;
 
 	RING_CACHE_READ_ALL_FOR_EACH(ring_seg, ring) {
-		switch (to) {
-		case 0:
-			retval = copy_to_user(buf + written, ring_seg.ring_cache_pt,
-				ring_seg.sz);
-			break;
-		case 1:
-			memcpy(buf + written, ring_seg.ring_cache_pt, ring_seg.sz);
-			break;
-		default:
-			goto done;
-		}
-
-		if (retval) {
-			pr_err("copy to user buffer failed, ret:%d\n", retval);
-			goto done;
-		}
 		memcpy(buf + written, ring_seg.ring_cache_pt, ring_seg.sz);
 		cache_buf_size -= ring_seg.sz;
 		written += ring_seg.sz;
