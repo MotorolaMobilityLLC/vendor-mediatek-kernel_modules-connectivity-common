@@ -1143,7 +1143,9 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		}
 	}
 #if CFG_WMT_POWER_ON_DLM
-	if (wmt_ic_ops_soc.icId != 0x6765 && wmt_ic_ops_soc.icId != 0x3967) {
+	if (wmt_ic_ops_soc.icId != 0x6765 &&
+	    wmt_ic_ops_soc.icId != 0x3967 &&
+	    wmt_ic_ops_soc.icId != 0x6761) {
 		iRet = wmt_core_init_script(wmt_power_on_dlm_table,
 				osal_array_size(wmt_power_on_dlm_table));
 		if (iRet)
@@ -1167,7 +1169,9 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		patch_num = mtk_wcn_soc_get_patch_num();
 	}
 #if CFG_WMT_PATCH_DL_OPTM
-	if (wmt_ic_ops_soc.icId != 0x6765 && wmt_ic_ops_soc.icId != 0x3967) {
+	if (wmt_ic_ops_soc.icId != 0x6765 &&
+	    wmt_ic_ops_soc.icId != 0x3967 &&
+	    wmt_ic_ops_soc.icId != 0x6761) {
 		if (wmt_ic_ops_soc.icId == 0x0279 ||
 		    wmt_ic_ops_soc.icId == 0x0507 ||
 		    wmt_ic_ops_soc.icId == 0x0713 ||
@@ -1202,7 +1206,9 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	}
 
 #if CFG_WMT_PATCH_DL_OPTM
-	if (wmt_ic_ops_soc.icId != 0x6765 && wmt_ic_ops_soc.icId != 0x3967) {
+	if (wmt_ic_ops_soc.icId != 0x6765 &&
+	    wmt_ic_ops_soc.icId != 0x3967 &&
+	    wmt_ic_ops_soc.icId != 0x6761) {
 		if (wmt_ic_ops_soc.icId == 0x0279 ||
 		    wmt_ic_ops_soc.icId == 0x0507 ||
 		    wmt_ic_ops_soc.icId == 0x0713 ||
@@ -1310,6 +1316,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		(wmt_ic_ops_soc.icId == 0x0337) ||
 		(wmt_ic_ops_soc.icId == 0x6765) ||
 		(wmt_ic_ops_soc.icId == 0x3967) ||
+		(wmt_ic_ops_soc.icId == 0x6761) ||
 		(wmt_ic_ops_soc.icId == 0x0633)) {
 		wmt_stp_wifi_lte_coex();
 		WMT_DBG_FUNC("wmt_stp_wifi_lte_coex done!\n");
@@ -1334,6 +1341,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		if (wmt_ic_ops_soc.icId == 0x0713 ||
 		    wmt_ic_ops_soc.icId == 0x6765 ||
 		    wmt_ic_ops_soc.icId == 0x3967 ||
+		    wmt_ic_ops_soc.icId == 0x6761 ||
 		    wmt_ic_ops_soc.icId == 0x0788)
 			WMT_BT_TSSI_FROM_WIFI_CONFIG_CMD[4] = 0x10;
 
@@ -1383,7 +1391,9 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	ctrlPa2 = PALDO_OFF;
 	iRet = wmt_core_ctrl(WMT_CTRL_SOC_PALDO_CTRL, &ctrlPa1, &ctrlPa2);
 
-	if (wmt_ic_ops_soc.icId != 0x6765 && wmt_ic_ops_soc.icId != 0x3967) {
+	if (wmt_ic_ops_soc.icId != 0x6765 &&
+	    wmt_ic_ops_soc.icId != 0x3967 &&
+	    wmt_ic_ops_soc.icId != 0x6761) {
 		iRet = wmt_stp_init_coex();
 		if (iRet) {
 			WMT_ERR_FUNC("init_coex fail(%d)\n", iRet);
@@ -1440,7 +1450,9 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	mtk_wcn_soc_set_sdio_driving();
 #endif
 
-	if (wmt_ic_ops_soc.icId != 0x6765 && wmt_ic_ops_soc.icId != 0x3967) {
+	if (wmt_ic_ops_soc.icId != 0x6765 &&
+	    wmt_ic_ops_soc.icId != 0x3967 &&
+	    wmt_ic_ops_soc.icId != 0x6761) {
 		if (mtk_wcn_soc_co_clock_get() == WMT_CO_CLOCK_EN) {
 			WMT_INFO_FUNC("co-clock enabled.\n");
 
@@ -1483,7 +1495,9 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	/*Open Core Dump Function @QC begin */
 	mtk_wcn_stp_coredump_flag_ctrl(1);
 #endif
-	if (wmt_ic_ops_soc.icId != 0x6765 && wmt_ic_ops_soc.icId != 0x3967) {
+	if (wmt_ic_ops_soc.icId != 0x6765 &&
+	    wmt_ic_ops_soc.icId != 0x3967 &&
+	    wmt_ic_ops_soc.icId != 0x6761) {
 		if (mtk_wcn_stp_coredump_flag_get() != 0) {
 			iRet = wmt_core_init_script(init_table_6, osal_array_size(init_table_6));
 			if (iRet) {
@@ -1758,6 +1772,7 @@ static INT32 mtk_wcn_soc_gps_sync_ctrl(WMT_IC_PIN_STATE state, UINT32 flag)
 		wmt_ic_ops_soc.icId != 0x0788 &&
 		wmt_ic_ops_soc.icId != 0x6765 &&
 		wmt_ic_ops_soc.icId != 0x3967 &&
+		wmt_ic_ops_soc.icId != 0x6761 &&
 		wmt_ic_ops_soc.icId != 0x0688) {
 		if (state == WMT_IC_PIN_MUX)
 			uVal = 0x1 << 28;
@@ -2011,7 +2026,9 @@ static INT32 wmt_stp_wifi_lte_coex(VOID)
 			iRet =
 			    wmt_core_init_script(set_wifi_lte_coex_table_2, osal_array_size(set_wifi_lte_coex_table_2));
 			WMT_DBG_FUNC("wmt_core:set_wifi_lte_coex_table_2 %s(%d)\n", iRet ? "fail" : "ok", iRet);
-		} else if (wmt_ic_ops_soc.icId == 0x6765 || wmt_ic_ops_soc.icId == 0x3967) {
+		} else if (wmt_ic_ops_soc.icId == 0x6765 ||
+			   wmt_ic_ops_soc.icId == 0x3967 ||
+			   wmt_ic_ops_soc.icId == 0x6761) {
 			iRet =
 			    wmt_core_init_script(set_wifi_lte_coex_table_3,
 					    osal_array_size(set_wifi_lte_coex_table_3));
@@ -2419,7 +2436,9 @@ static INT32 mtk_wcn_soc_normal_patch_dwn(PUINT8 pPatchBuf, UINT32 patchSize, PU
 		WMT_PATCH_P_ADDRESS_CMD[9] = 0x0b;
 	}
 
-	if (wmt_ic_ops_soc.icId == 0x6765 || wmt_ic_ops_soc.icId == 0x3967) {
+	if (wmt_ic_ops_soc.icId == 0x6765 ||
+	    wmt_ic_ops_soc.icId == 0x3967 ||
+	    wmt_ic_ops_soc.icId == 0x6761) {
 		/*send part patch address command */
 		WMT_PATCH_ADDRESS_CMD_NEW[5] = addressByte[0];
 		WMT_PATCH_ADDRESS_CMD_NEW[6] = addressByte[1];
@@ -2737,7 +2756,9 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 	patchSize -= sizeof(WMT_PATCH);
 	pPatchBuf += sizeof(WMT_PATCH);
 
-	if (wmt_ic_ops_soc.icId == 0x6765 || wmt_ic_ops_soc.icId == 0x3967) {
+	if (wmt_ic_ops_soc.icId == 0x6765 ||
+	    wmt_ic_ops_soc.icId == 0x3967 ||
+	    wmt_ic_ops_soc.icId == 0x6761) {
 		/* remove patch checksum:
 		 * |<-patch checksum: 2Bytes->|<-patch body: X Bytes (X=patchSize)--->|
 		 */
