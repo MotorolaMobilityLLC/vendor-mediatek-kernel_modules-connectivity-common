@@ -251,19 +251,11 @@ INT32 mtk_wcn_hif_sdio_irq_flag_set(INT32 flag)
 	if (flag == 0) {
 		atomic_dec(&hif_sdio_irq_enable_flag);
 		if (atomic_read(&hif_sdio_irq_enable_flag) == 0)
-#ifdef MTK_WCN_REMOVE_KERNEL_MODULE
-			mtk_wcn_sdio_irq_flag_set(0);
-#else
 			wmt_export_mtk_wcn_sdio_irq_flag_set(0);
-#endif
 	} else {
 		atomic_inc(&hif_sdio_irq_enable_flag);
 		if (atomic_read(&hif_sdio_irq_enable_flag) == 1)
-#ifdef MTK_WCN_REMOVE_KERNEL_MODULE
-			mtk_wcn_sdio_irq_flag_set(1);
-#else
 			wmt_export_mtk_wcn_sdio_irq_flag_set(1);
-#endif
 	}
 
 	return 0;
