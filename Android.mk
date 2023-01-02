@@ -7,15 +7,15 @@ LOCAL_MODULE := wmt_drv.ko
 LOCAL_PROPRIETARY_MODULE := true
 LOCAL_MODULE_OWNER := mtk
 
-LOCAL_INIT_RC := init.wmt_drv.rc
-LOCAL_SRC_FILES := $(patsubst $(LOCAL_PATH)/%,%,$(shell find $(LOCAL_PATH) -type f -name '*.[cho]')) Makefile
-LOCAL_REQUIRED_MODULES :=
+#LOCAL_INIT_RC := init.wmt_drv.rc
+#LOCAL_SRC_FILES := $(patsubst $(LOCAL_PATH)/%,%,$(shell find $(LOCAL_PATH) -type f -name '*.[cho]')) Makefile
+#LOCAL_REQUIRED_MODULES :=
 
-include $(MTK_KERNEL_MODULE)
+include $(MTK_KERNEL_MODULE_SYMBOL)
 
-WMT_OPTS := MTK_CONSYS_ADIE=$(MTK_CONSYS_ADIE)
-WMT_OPTS += MTK_PLATFORM_WMT=$(MTK_PLATFORM)
-WMT_OPTS += TARGET_BOARD_PLATFORM_WMT=$(TARGET_BOARD_PLATFORM)
+#WMT_OPTS := MTK_CONSYS_ADIE=$(MTK_CONSYS_ADIE)
+#WMT_OPTS += MTK_PLATFORM_WMT=$(MTK_PLATFORM)
+#WMT_OPTS += TARGET_BOARD_PLATFORM_WMT=$(TARGET_BOARD_PLATFORM)
 
-$(linked_module): OPTS += $(WMT_OPTS)
+#$(linked_module): OPTS += $(WMT_OPTS)
 endif
