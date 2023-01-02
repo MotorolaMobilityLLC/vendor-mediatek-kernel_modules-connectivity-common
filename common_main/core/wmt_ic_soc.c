@@ -1423,16 +1423,14 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	ctrlPa2 = PALDO_ON;
 	iRet = wmt_core_ctrl(WMT_CTRL_SOC_PALDO_CTRL, &ctrlPa1, &ctrlPa2);
 
-	if (wmt_ic_ops_soc.icId != 0x6779) {
-		WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_BEFORE_BT_WIFI_CALIBRATION);
-		iRet = wmt_core_init_script(calibration_table, osal_array_size(calibration_table));
-		if (iRet) {
-			/* pwrap_read(0x0210,&ctrlPa1); */
-			/* pwrap_read(0x0212,&ctrlPa2); */
-			/* WMT_ERR_FUNC("power status: 210:(%d),212:(%d)!\n", ctrlPa1, ctrlPa2); */
-			WMT_ERR_FUNC("calibration_table fail(%d)\n", iRet);
-			return -9;
-		}
+	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_BEFORE_BT_WIFI_CALIBRATION);
+	iRet = wmt_core_init_script(calibration_table, osal_array_size(calibration_table));
+	if (iRet) {
+		/* pwrap_read(0x0210,&ctrlPa1); */
+		/* pwrap_read(0x0212,&ctrlPa2); */
+		/* WMT_ERR_FUNC("power status: 210:(%d),212:(%d)!\n", ctrlPa1, ctrlPa2); */
+		WMT_ERR_FUNC("calibration_table fail(%d)\n", iRet);
+		return -9;
 	}
 
 	ctrlPa1 = BT_PALDO;
