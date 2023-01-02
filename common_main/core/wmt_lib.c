@@ -179,6 +179,21 @@ void wmt_lib_psm_lock_release(VOID)
 	osal_unlock_sleepable_lock(&gDevWmt.psm_lock);
 }
 
+INT32 wmt_lib_assert_lock_aquire(VOID)
+{
+	return osal_lock_sleepable_lock(&gDevWmt.assert_lock);
+}
+
+VOID wmt_lib_assert_lock_release(VOID)
+{
+	osal_unlock_sleepable_lock(&gDevWmt.assert_lock);
+}
+
+INT32 wmt_lib_assert_lock_trylock(VOID)
+{
+	return osal_trylock_sleepable_lock(&gDevWmt.assert_lock);
+}
+
 INT32 DISABLE_PSM_MONITOR(VOID)
 {
 	INT32 ret = 0;
@@ -291,6 +306,7 @@ INT32 wmt_lib_init(VOID)
 	osal_sleepable_lock_init(&pDevWmt->psm_lock);
 	osal_sleepable_lock_init(&pDevWmt->idc_lock);
 	osal_sleepable_lock_init(&pDevWmt->wlan_lock);
+	osal_sleepable_lock_init(&pDevWmt->assert_lock);
 	osal_sleepable_lock_init(&pDevWmt->rActiveOpQ.sLock);
 	osal_sleepable_lock_init(&pDevWmt->rWorkerOpQ.sLock);
 	osal_sleepable_lock_init(&pDevWmt->rFreeOpQ.sLock);
@@ -446,6 +462,7 @@ INT32 wmt_lib_deinit(VOID)
 	osal_sleepable_lock_deinit(&pDevWmt->rWorkerOpQ.sLock);
 	osal_sleepable_lock_deinit(&pDevWmt->idc_lock);
 	osal_sleepable_lock_deinit(&pDevWmt->wlan_lock);
+	osal_sleepable_lock_deinit(&pDevWmt->assert_lock);
 	osal_sleepable_lock_deinit(&pDevWmt->psm_lock);
 	osal_event_deinit(&pDevWmt->rWmtdWq);
 	osal_event_deinit(&pDevWmt->rWmtdWorkerWq);
@@ -2534,6 +2551,11 @@ INT32 wmt_lib_trigger_assert_keyword(ENUM_WMTDRV_TYPE_T type, UINT32 reason, PUI
 	INT32 iRet = -1;
 	WMT_CTRL_DATA ctrlData;
 
+	if (wmt_lib_assert_lock_trylock() == 0) {
+		WMT_INFO_FUNC("Can't lock assert mutex which might be held by another trigger assert procedure.\n");
+		return iRet;
+	}
+
 	wmt_core_set_coredump_state(DRV_STS_FUNC_ON);
 
 	ctrlData.ctrlId = (SIZE_T) WMT_CTRL_TRG_ASSERT;
@@ -2549,6 +2571,7 @@ INT32 wmt_lib_trigger_assert_keyword(ENUM_WMTDRV_TYPE_T type, UINT32 reason, PUI
 		     type, reason, keyword, iRet);
 		osal_assert(0);
 	}
+	wmt_lib_assert_lock_release();
 
 	return iRet;
 }
