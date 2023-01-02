@@ -94,8 +94,10 @@ static void nl_data_handler(struct sk_buff *__skb)
 	MSG("we got netlink message\n");
 	len = NLMSG_SPACE(MAX_NL_MSG_LEN);
 	skb = skb_get(__skb);
-	if (skb == NULL)
+	if (skb == NULL) {
 		ERR("skb_get return NULL");
+		return;
+	}
 	if (skb->len >= NLMSG_SPACE(0)) {	/*presume there is 5byte payload at leaset */
 		MSG("length is enough\n");
 		nlh = nlmsg_hdr(skb);	/* point to data which include in skb */
