@@ -56,6 +56,8 @@
 #define ALLOCATE_CONNSYS_EMI_FROM_KO 1
 #endif
 
+#include <linux/thermal.h>
+
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -163,6 +165,11 @@ static void plat_resume_handler(struct work_struct *work);
 struct regmap *g_regmap;
 #endif
 
+static int wmt_thermal_get_temp_cb(void *data, int *temp);
+static const struct thermal_zone_of_device_ops tz_wmt_thermal_ops = {
+	.get_temp = wmt_thermal_get_temp_cb,
+};
+
 /*******************************************************************************
 *                           P R I V A T E   D A T A
 ********************************************************************************
@@ -259,6 +266,33 @@ static INT32 wmt_allocate_connsys_emi(struct platform_device *pdev)
 	return 0;
 }
 
+static int wmt_thermal_get_temp_cb(void *data, int *temp)
+{
+	if (temp) {
+		*temp = wmt_lib_tm_temp_query() * 1000;
+		WMT_PLAT_PR_INFO("thermal = %d\n", *temp);
+	}
+	return 0;
+}
+
+static INT32 wmt_thermal_register(struct platform_device *pdev)
+{
+	struct thermal_zone_device *tz;
+	int ret;
+
+	/* register thermal zone */
+	tz = devm_thermal_zone_of_sensor_register(
+		&pdev->dev, 0, NULL, &tz_wmt_thermal_ops);
+
+	if (IS_ERR(tz)) {
+		ret = PTR_ERR(tz);
+		WMT_PLAT_PR_INFO("Failed to register thermal zone device %d\n", ret);
+		return -1;
+	}
+	WMT_PLAT_PR_INFO("Register thermal zone device.\n");
+	return 0;
+}
+
 static INT32 mtk_wmt_probe(struct platform_device *pdev)
 {
 	INT32 iRet = -1;
@@ -275,6 +309,7 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 	}
 
 	wmt_allocate_connsys_emi(pdev);
+	wmt_thermal_register(pdev);
 
 	if (wmt_consys_ic_ops->consys_ic_need_store_pdev) {
 		if (wmt_consys_ic_ops->consys_ic_need_store_pdev() == MTK_WCN_BOOL_TRUE) {
