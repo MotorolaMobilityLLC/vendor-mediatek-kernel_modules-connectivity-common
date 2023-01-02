@@ -256,7 +256,7 @@ static void connlog_ring_emi_to_cache(int conn_type)
 
 		ring_dump(__func__, ring);
 		ring_dump_segment(__func__, &ring_seg);
-		pr_warn("%s: count(%d), ring_seg.sz(%d)\n", type_to_title[conn_type], count, ring_seg.sz);
+		pr_info("%s: count(%d), ring_seg.sz(%d)\n", type_to_title[conn_type], count, ring_seg.sz);
 
 		ring_cache_write_prepare(ring_seg.sz, &ring_cache_seg, &connlog_buffer_table[conn_type].ring_cache);
 		RING_CACHE_WRITE_FOR_EACH(emi_buf_size, ring_cache_seg, &connlog_buffer_table[conn_type].ring_cache) {
@@ -464,7 +464,7 @@ static void connlog_log_data_handler(struct work_struct *work)
 				connlog_event_set(i);
 				/* ret++; */
 			} else
-				pr_info("%s emi ring is empty!!\n", type_to_title[i]);
+				pr_debug("%s emi ring is empty!!\n", type_to_title[i]);
 		}
 	} while (ret);
 
@@ -487,10 +487,10 @@ static void connlog_log_data_handler(struct work_struct *work)
 static void connlog_clear_irq_reg(void)
 {
 	if (gDev.irqRegBaseVirAddr) {
-		pr_info("BF: CONSYS IRQ CR VALUE(0x%x)\n", EMI_READ32(gDev.irqRegBaseVirAddr));
+		pr_debug("BF: CONSYS IRQ CR VALUE(0x%x)\n", EMI_READ32(gDev.irqRegBaseVirAddr));
 		/* 18002150[27:24] */
 		EMI_WRITE32(gDev.irqRegBaseVirAddr, EMI_READ32(gDev.irqRegBaseVirAddr) & (!0xF000000));
-		pr_info("AF: CONSYS IRQ CR VALUE(0x%x)\n", EMI_READ32(gDev.irqRegBaseVirAddr));
+		pr_debug("AF: CONSYS IRQ CR VALUE(0x%x)\n", EMI_READ32(gDev.irqRegBaseVirAddr));
 	} else
 		pr_err("irqRegBaseVirAddr is NULL!\n");
 }
