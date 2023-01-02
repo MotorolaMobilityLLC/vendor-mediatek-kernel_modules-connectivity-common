@@ -146,9 +146,9 @@ static INT32 wmtd_worker_thread(PVOID pvData);
 
 static INT32 wmt_lib_pin_ctrl(WMT_IC_PIN_ID id, WMT_IC_PIN_STATE stat, UINT32 flag);
 static MTK_WCN_BOOL wmt_lib_hw_state_show(VOID);
-static VOID wmt_lib_utc_sync_timeout_handler(ULONG data);
+static VOID wmt_lib_utc_sync_timeout_handler(timer_handler_arg arg);
 static VOID wmt_lib_utc_sync_worker_handler(struct work_struct *work);
-static VOID wmt_lib_wmtd_worker_thread_timeout_handler(ULONG data);
+static VOID wmt_lib_wmtd_worker_thread_timeout_handler(timer_handler_arg);
 static VOID wmt_lib_wmtd_worker_thread_work_handler(struct work_struct *work);
 
 static VOID wmt_lib_assert_work_cb(struct work_struct *work);
@@ -1373,7 +1373,7 @@ met_exit:
 	return 0;
 };
 
-static VOID wmt_lib_wmtd_worker_thread_timeout_handler(ULONG data)
+static VOID wmt_lib_wmtd_worker_thread_timeout_handler(timer_handler_arg arg)
 {
 	schedule_work(&gDevWmt.wmtd_worker_thread_work);
 }
@@ -2931,7 +2931,7 @@ UINT32 wmt_lib_get_ext_ldo(VOID)
 	return gDevWmt.ext_ldo_flag;
 }
 
-static VOID wmt_lib_utc_sync_timeout_handler(ULONG data)
+static VOID wmt_lib_utc_sync_timeout_handler(timer_handler_arg arg)
 {
 	schedule_work(&gDevWmt.utcSyncWorker);
 }
