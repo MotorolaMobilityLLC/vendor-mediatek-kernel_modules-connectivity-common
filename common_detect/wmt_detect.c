@@ -115,6 +115,10 @@ static long wmt_detect_unlocked_ioctl(struct file *filp, unsigned int cmd, unsig
 		/*get soc chipid by HAL interface */
 		break;
 
+	case COMBO_IOCTL_GET_ADIE_CHIP_ID:
+		retval = wmt_plat_get_adie_chipid();
+		break;
+
 	case COMBO_IOCTL_MODULE_CLEANUP:
 		retval = sdio_detect_exit();
 		break;
