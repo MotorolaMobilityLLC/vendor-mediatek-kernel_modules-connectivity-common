@@ -102,6 +102,7 @@ const struct of_device_id apwmt_of_ids[] = {
 	{.compatible = "mediatek,mt6761-consys",},
 	{.compatible = "mediatek,mt6779-consys",},
 	{.compatible = "mediatek,mt6768-consys",},
+	{.compatible = "mediatek,mt6785-consys",},
 	{}
 };
 struct CONSYS_BASE_ADDRESS conn_reg;
