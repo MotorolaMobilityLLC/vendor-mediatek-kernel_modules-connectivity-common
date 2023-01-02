@@ -1490,7 +1490,7 @@ ssize_t wmt_dbg_write(struct file *filp, const char __user *buffer, size_t count
 	 * 0x2e: enable catch connsys log
 	 * 0x2f: set bt link status
 	 */
-	if (0 == dbgEnabled && 0x15 != x && 0x2e != x && 0x2f != x) {
+	if (0 == dbgEnabled && 0x15 != x && 0x2e != x && 0x2f != x && 0x7 != x) {
 		WMT_INFO_FUNC("please enable WMT debug first\n\r");
 		return len;
 	}
