@@ -90,6 +90,7 @@ static PF_WMT_SDIO_DEEP_SLEEP sdio_deep_sleep_flag_set;
 #define WMT_STP_CPUPCR_BUF_SIZE 73728
 static UINT8 g_cpupcr_buf[WMT_STP_CPUPCR_BUF_SIZE] = { 0 };
 static UINT32 g_quick_sleep_ctrl = 1;
+static UINT32 g_fw_patch_update_rst;
 
 #define CONSYS_MET_WAIT	(1000*10) /* ms */
 #define MET_DUMP_MAX_NUM (1)
@@ -980,6 +981,26 @@ INT32 wmt_lib_ps_stp_cb(MTKSTP_PSM_ACTION_T action)
 #endif
 }
 
+INT32 wmt_lib_update_fw_patch_chip_rst(VOID)
+{
+	MTK_WCN_BOOL wifiDrvOwn = MTK_WCN_BOOL_FALSE;
+
+	if (wmt_lib_get_drv_status(WMTDRV_TYPE_WIFI) != DRV_STS_FUNC_ON)
+		wifiDrvOwn = MTK_WCN_BOOL_FALSE;
+	else if (mtk_wcn_wlan_is_wifi_drv_own != NULL)
+		wifiDrvOwn = ((*mtk_wcn_wlan_is_wifi_drv_own)() == 0) ? MTK_WCN_BOOL_FALSE : MTK_WCN_BOOL_TRUE;
+
+	if (wmt_dev_get_early_suspend_state() == MTK_WCN_BOOL_FALSE
+		|| wmt_lib_get_drv_status(WMTDRV_TYPE_FM) == DRV_STS_FUNC_ON
+		|| g_fw_patch_update_rst == 0 || mtk_wcn_stp_is_ready() == MTK_WCN_BOOL_FALSE
+		|| wifiDrvOwn == MTK_WCN_BOOL_TRUE)
+		return 0;
+
+	wmt_lib_fw_patch_update_rst_ctrl(0);
+	chip_reset_only = 1;
+	WMT_INFO_FUNC("Invoke whole chip reset from fw patch update!!!\n");
+	return wmt_lib_trigger_reset();
+}
 
 MTK_WCN_BOOL wmt_lib_is_quick_ps_support(VOID)
 {
@@ -2594,6 +2615,13 @@ UINT32 wmt_lib_quick_sleep_ctrl(UINT32 en)
 	return 0;
 }
 #endif
+
+UINT32 wmt_lib_fw_patch_update_rst_ctrl(UINT32 en)
+{
+	WMT_WARN_FUNC("%s fw patch update reset\n", en ? "enable" : "disable");
+	g_fw_patch_update_rst = en;
+	return 0;
+}
 
 #if CONSYS_ENALBE_SET_JTAG
 UINT32 wmt_lib_jtag_flag_set(UINT32 en)
