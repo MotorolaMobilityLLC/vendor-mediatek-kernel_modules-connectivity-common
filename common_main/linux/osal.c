@@ -1587,7 +1587,8 @@ static VOID _osal_opq_dump(const char *qName, P_OSAL_OP_Q pOpQ)
 			for (opDataIdx = 0; opDataIdx < OPQ_DUMP_OPDATA_PER_OP; opDataIdx++)
 				printed += snprintf(buf + printed, OPQ_DUMP_LINE_BUF_SIZE - printed,
 						"%zx,", op->op.au4OpData[opDataIdx]);
-			buf[printed-1] = ' ';
+			if (printed > 0)
+				buf[printed-1] = ' ';
 		} else {
 			printed += snprintf(buf + printed, OPQ_DUMP_LINE_BUF_SIZE - printed,
 						"[%u(%u)]%p ", idx, (rd & RB_MASK(pOpQ)), op);
