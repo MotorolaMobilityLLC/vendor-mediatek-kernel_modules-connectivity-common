@@ -67,6 +67,12 @@ P_WMT_FUNC_OPS gpWmtFuncOps[WMTDRV_TYPE_MAX] = {
 	[WMTDRV_TYPE_GPS] = NULL,
 #endif
 
+#if CFG_FUNC_GPSL5_SUPPORT
+	[WMTDRV_TYPE_GPSL5] = &wmt_func_gpsl5_ops,
+#else
+	[WMTDRV_TYPE_GPSL5] = NULL,
+#endif
+
 #if CFG_FUNC_WIFI_SUPPORT
 	[WMTDRV_TYPE_WIFI] = &wmt_func_wifi_ops,
 #else
@@ -977,9 +983,10 @@ deinit_ic_ops_done:
 static VOID wmt_core_dump_func_state(PINT8 pSource)
 {
 	WMT_INFO_FUNC
-	    ("[%s]status(b:%d f:%d g:%d w:%d lpbk:%d coredump:%d wmt:%d ant:%d sd1:%d sd2:%d stp:%d)\n",
+	    ("[%s]status(b:%d f:%d g:%d gl5:%d w:%d lpbk:%d coredump:%d wmt:%d ant:%d sd1:%d sd2:%d stp:%d)\n",
 	     (pSource == NULL ? (PINT8) "CORE" : pSource), gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_BT],
 	     gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_FM], gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPS],
+	     gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPSL5],
 	     gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WIFI], gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_LPBK],
 	     gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_COREDUMP], gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WMT],
 	     gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_ANT], gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_SDIO1],
@@ -1272,7 +1279,7 @@ static INT32 opfunc_func_on(P_WMT_OP pWmtOp)
 	UINT32 drvType = pWmtOp->au4OpData[0];
 
 	/* Check abnormal type */
-	if (drvType > WMTDRV_TYPE_COREDUMP) {
+	if (drvType >= WMTDRV_TYPE_MAX) {
 		WMT_ERR_FUNC("abnormal Fun(%d)\n", drvType);
 		osal_assert(0);
 		return -1;
@@ -1306,7 +1313,7 @@ static INT32 opfunc_func_on(P_WMT_OP pWmtOp)
 		}
 	}
 
-	if (WMTDRV_TYPE_WMT > drvType || WMTDRV_TYPE_ANT == drvType) {
+	if (WMTDRV_TYPE_WMT > drvType || WMTDRV_TYPE_ANT == drvType || WMTDRV_TYPE_GPSL5 == drvType) {
 		if (gpWmtFuncOps[drvType] && gpWmtFuncOps[drvType]->func_on) {
 
 			/* special handling for Wi-Fi */
@@ -1359,7 +1366,7 @@ static INT32 opfunc_func_off(P_WMT_OP pWmtOp)
 	UINT32 drvType = pWmtOp->au4OpData[0];
 
 	/* Check abnormal type */
-	if (drvType > WMTDRV_TYPE_COREDUMP) {
+	if (drvType >= WMTDRV_TYPE_MAX) {
 		WMT_ERR_FUNC("WMT-CORE: abnormal Fun(%d) in wmt_func_off\n", drvType);
 		osal_assert(0);
 		return -1;
@@ -1379,7 +1386,7 @@ static INT32 opfunc_func_off(P_WMT_OP pWmtOp)
 		     drvType, gMtkWmtCtx.eDrvStatus[drvType]);
 		/* needs to check 4 subsystem's state? */
 		return 0;
-	} else if (WMTDRV_TYPE_WMT > drvType || WMTDRV_TYPE_ANT == drvType) {
+	} else if (WMTDRV_TYPE_WMT > drvType || WMTDRV_TYPE_ANT == drvType || WMTDRV_TYPE_GPSL5 == drvType) {
 		if (gpWmtFuncOps[drvType] && gpWmtFuncOps[drvType]->func_off) {
 			/* special handling for Wi-Fi */
 			if (drvType == WMTDRV_TYPE_WIFI) {
@@ -1425,40 +1432,47 @@ static INT32 opfunc_func_off(P_WMT_OP pWmtOp)
 	return iRet;
 }
 
-static INT32 opfunc_gps_suspend(P_WMT_OP pWmtOp)
+static INT32 opfunc_gps_suspend_by_type(ENUM_WMTDRV_TYPE_T type, P_WMT_OP pWmtOp)
 {
 	INT32 iRet = -1;
 	P_WMT_GEN_CONF pWmtGenConf = NULL;
 	MTK_WCN_BOOL suspend = (pWmtOp->au4OpData[0] != 0);
+	UINT32 suspend_flag = WMT_GPS_SUSPEND;
+
+	if (WMTDRV_TYPE_GPS != type && WMTDRV_TYPE_GPSL5 != type)
+		return 0;
+
+	if (WMTDRV_TYPE_GPSL5 == type)
+		suspend_flag = WMT_GPSL5_SUSPEND;
 
 	pWmtGenConf = wmt_conf_get_cfg();
 
-	if (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPS] != DRV_STS_FUNC_ON) {
-		WMT_WARN_FUNC("WMT-CORE: GPS driver non-FUN_ON in opfunc_gps_suspend\n");
+	if (gMtkWmtCtx.eDrvStatus[type] != DRV_STS_FUNC_ON) {
+		WMT_WARN_FUNC("WMT-CORE: GPS(%d) driver non-FUN_ON in opfunc_gps_suspend\n", type);
 		return 0;
 	}
 
 	if (MTK_WCN_BOOL_TRUE == suspend) {
-		if (osal_test_bit(WMT_GPS_SUSPEND, &gGpsFmState)) {
-			WMT_WARN_FUNC("WMT-CORE: gps already suspend\n");
+		if (osal_test_bit(suspend_flag, &gGpsFmState)) {
+			WMT_WARN_FUNC("WMT-CORE: GPS(%d) already suspend\n", type);
 			return 0;
 		}
 	} else {
-		if (!osal_test_bit(WMT_GPS_SUSPEND, &gGpsFmState)) {
-			WMT_WARN_FUNC("WMT-CORE: gps already resume on\n");
+		if (!osal_test_bit(suspend_flag, &gGpsFmState)) {
+			WMT_WARN_FUNC("WMT-CORE: GPS(%d) already resume on\n", type);
 			return 0;
 		}
 	}
 
 	if (MTK_WCN_BOOL_TRUE == suspend) {
-		if (gpWmtFuncOps[WMTDRV_TYPE_GPS] && gpWmtFuncOps[WMTDRV_TYPE_GPS]->func_off) {
+		if (gpWmtFuncOps[type] && gpWmtFuncOps[type]->func_off) {
 			if (pWmtGenConf != NULL)
 				pWmtGenConf->wmt_gps_suspend_ctrl = 1;
-			iRet = (*(gpWmtFuncOps[WMTDRV_TYPE_GPS]->func_off)) (gMtkWmtCtx.p_ic_ops, wmt_conf_get_cfg());
+			iRet = (*(gpWmtFuncOps[type]->func_off)) (gMtkWmtCtx.p_ic_ops, wmt_conf_get_cfg());
 			if (pWmtGenConf != NULL)
 				pWmtGenConf->wmt_gps_suspend_ctrl = 0;
 		} else {
-			WMT_WARN_FUNC("WMT-CORE: gps suspend ops not found\n");
+			WMT_WARN_FUNC("WMT-CORE: GPS(%d) suspend ops not found\n", type);
 			iRet = -3;
 		}
 	} else {
@@ -1468,7 +1482,7 @@ static INT32 opfunc_gps_suspend(P_WMT_OP pWmtOp)
 		if (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WMT] != DRV_STS_FUNC_ON) {
 			iRet = opfunc_pwr_on(pWmtOp);
 			if (iRet) {
-				WMT_ERR_FUNC("WMT-CORE: func(WMTDRV_TYPE_GPS) hw resume fail(%d)\n", iRet);
+				WMT_ERR_FUNC("WMT-CORE: func(%d) hw resume fail(%d)\n", type, iRet);
 				osal_assert(0);
 
 				/* check all sub-func and do power off */
@@ -1476,21 +1490,21 @@ static INT32 opfunc_gps_suspend(P_WMT_OP pWmtOp)
 			}
 		}
 
-		if (gpWmtFuncOps[WMTDRV_TYPE_GPS] && gpWmtFuncOps[WMTDRV_TYPE_GPS]->func_on) {
+		if (gpWmtFuncOps[type] && gpWmtFuncOps[type]->func_on) {
 			if (pWmtGenConf != NULL)
 				pWmtGenConf->wmt_gps_suspend_ctrl = 1;
-			iRet = (*(gpWmtFuncOps[WMTDRV_TYPE_GPS]->func_on)) (gMtkWmtCtx.p_ic_ops, wmt_conf_get_cfg());
+			iRet = (*(gpWmtFuncOps[type]->func_on)) (gMtkWmtCtx.p_ic_ops, wmt_conf_get_cfg());
 			if (pWmtGenConf != NULL)
 				pWmtGenConf->wmt_gps_suspend_ctrl = 0;
 		} else {
-			WMT_WARN_FUNC("WMT-CORE: gps resume ops not found\n");
+			WMT_WARN_FUNC("WMT-CORE: GPS(%d) resume ops not found\n", type);
 			iRet = -7;
 		}
 	}
 
 	if (iRet) {
-		WMT_ERR_FUNC("WMT-CORE: gps %s function failed, ret(%d)\n",
-			((pWmtOp->au4OpData[0] != 0) ? "suspend" : "resume"), iRet);
+		WMT_ERR_FUNC("WMT-CORE: gps(%d) %s function failed, ret(%d)\n",
+			type, ((pWmtOp->au4OpData[0] != 0) ? "suspend" : "resume"), iRet);
 		osal_assert(0);
 	}
 
@@ -1498,6 +1512,17 @@ static INT32 opfunc_gps_suspend(P_WMT_OP pWmtOp)
 		opfunc_utc_time_sync(NULL);
 
 	return iRet;
+}
+
+static INT32 opfunc_gps_suspend(P_WMT_OP pWmtOp)
+{
+	if (pWmtOp->au4OpData[1] == 1)
+		opfunc_gps_suspend_by_type(WMTDRV_TYPE_GPS, pWmtOp);
+
+	if (pWmtOp->au4OpData[2] == 1)
+		opfunc_gps_suspend_by_type(WMTDRV_TYPE_GPSL5, pWmtOp);
+
+	return 0;
 }
 
 /* TODO:[ChangeFeature][George] is this OP obsoleted? */
@@ -2021,6 +2046,7 @@ static INT32 opfunc_hw_rst(P_WMT_OP pWmtOp)
 	/*gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_BT] = DRV_STS_POWER_OFF;*/
 	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_FM] = DRV_STS_POWER_OFF;
 	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPS] = DRV_STS_POWER_OFF;
+	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPSL5] = DRV_STS_POWER_OFF;
 	/* gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WIFI] = DRV_STS_POWER_OFF; */
 	/*gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_LPBK] = DRV_STS_POWER_OFF;*/
 	/* gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_SDIO1]= DRV_STS_POWER_OFF; */
@@ -3521,6 +3547,7 @@ static INT32 opfunc_try_pwr_off(P_WMT_OP pWmtOp)
 
 	if ((gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_BT] == DRV_STS_POWER_OFF) &&
 	    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPS] == DRV_STS_POWER_OFF) &&
+	    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPSL5] == DRV_STS_POWER_OFF) &&
 	    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_FM] == DRV_STS_POWER_OFF) &&
 	    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WIFI] == DRV_STS_POWER_OFF) &&
 	    (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_LPBK] == DRV_STS_POWER_OFF) &&
