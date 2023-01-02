@@ -1,4 +1,4 @@
-load("//kernel_device_modules-5.15:mgk_ko.bzl", "define_mgk_ko")
+load("//build/bazel_mgk_rules:mgk_ko.bzl", "define_mgk_ko")
 
 package(
     default_visibility = [
