@@ -116,6 +116,7 @@ typedef enum _ENUM_WMTDRV_TYPE_T {
 	WMTDRV_TYPE_SDIO2 = 8,
 	WMTDRV_TYPE_LPBK = 9,
 	WMTDRV_TYPE_COREDUMP = 10,
+	WMTDRV_TYPE_GPSL5 = 11,
 	WMTDRV_TYPE_MAX
 } ENUM_WMTDRV_TYPE_T, *P_ENUM_WMTDRV_TYPE_T;
 
@@ -275,6 +276,8 @@ typedef enum _ENUM_BT_GPS_ONOFF_STATE_T {
 	WMT_WIFI_ON = 2,
 	WMT_FM_ON = 3,
 	WMT_GPS_SUSPEND = 4,
+	WMT_GPSL5_ON = 5,
+	WMT_GPSL5_SUSPEND = 6,
 	WMT_BT_GPS_STATE_MAX,
 	WMT_BT_GPS_STATE_INVALID = 0xff
 } ENUM_BT_GPS_ONOFF_STATE_T, *P_ENUM_BT_GPS_ONOFF_STATE_T;
@@ -433,6 +436,8 @@ extern INT32 mtk_wmt_gps_mcu_ctrl(PUINT8 p_tx_data_buf, UINT32 tx_data_len, PUIN
 				  UINT32 rx_data_buf_len, PUINT32 p_rx_data_len);
 extern VOID mtk_wcn_wmt_set_mcif_mpu_protection(MTK_WCN_BOOL enable);
 extern MTK_WCN_BOOL mtk_wmt_gps_suspend_ctrl(MTK_WCN_BOOL suspend);
+extern MTK_WCN_BOOL mtk_wmt_gps_l1_suspend_ctrl(MTK_WCN_BOOL suspend);
+extern MTK_WCN_BOOL mtk_wmt_gps_l5_suspend_ctrl(MTK_WCN_BOOL suspend);
 
 extern INT32 mtk_wcn_wmt_mpu_lock_aquire(VOID);
 extern VOID mtk_wcn_wmt_mpu_lock_release(VOID);
