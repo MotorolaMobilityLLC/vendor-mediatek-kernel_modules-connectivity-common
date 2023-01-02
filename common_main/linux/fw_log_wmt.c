@@ -47,7 +47,7 @@ static ssize_t fw_log_wmt_read(struct file *filp, char __user *buf,
 {
 	ssize_t size = 0;
 
-	pr_info("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	size = connsys_log_read_to_user(CONNLOG_TYPE_MCU, buf, count);
 	return size;
 }
@@ -55,13 +55,13 @@ static ssize_t fw_log_wmt_read(struct file *filp, char __user *buf,
 static ssize_t fw_log_wmt_write(struct file *filp, const char __user *buf,
 	size_t count, loff_t *f_pos)
 {
-	pr_info("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	return 0;
 }
 
 static unsigned int fw_log_wmt_poll(struct file *filp, poll_table *wait)
 {
-	pr_info("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	poll_wait(filp, &wq, wait);
 	if (connsys_log_get_buf_size(CONNLOG_TYPE_MCU) > 0)
