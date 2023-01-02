@@ -361,6 +361,9 @@ extern MTK_WCN_BOOL wmt_lib_put_worker_op(P_OSAL_OP pOp);
 /* extern ENUM_WMTHWVER_TYPE_T wmt_lib_get_hwver (VOID); */
 extern UINT32 wmt_lib_get_icinfo(ENUM_WMT_CHIPINFO_TYPE_T type);
 
+extern UINT32 wmt_lib_get_adie_workable(VOID);
+extern VOID wmt_lib_set_adie_workable(UINT32 workable);
+
 extern MTK_WCN_BOOL wmt_lib_is_therm_ctrl_support(ENUM_WMTTHERM_TYPE_T eType);
 extern MTK_WCN_BOOL wmt_lib_is_dsns_ctrl_support(VOID);
 extern INT32 wmt_lib_trigger_cmd_signal(INT32 result);
