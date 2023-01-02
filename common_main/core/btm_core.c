@@ -408,15 +408,14 @@ static INT32 _stp_btm_proc(PVOID pvData)
 
 		id = osal_op_get_id(pOp);
 
-		STP_BTM_PR_DBG("======> lxop_get_opid = %d, %s, remaining count = *%d*\n",
-				 id, (id >= osal_array_size(g_btm_op_name)) ? ("???") : (g_btm_op_name[id]),
-				 RB_COUNT(&stp_btm->rActiveOpQ));
-
-		if (id >= STP_OPID_BTM_NUM) {
+		if ((id >= STP_OPID_BTM_NUM) || (id < 0)) {
 			STP_BTM_PR_WARN("abnormal opid id: 0x%x\n", id);
 			result = -1;
 			goto handler_done;
 		}
+
+		STP_BTM_PR_DBG("======> lxop_get_opid = %d, %s, remaining count = *%d*\n", id,
+				g_btm_op_name[id], RB_COUNT(&stp_btm->rActiveOpQ));
 
 		osal_lock_unsleepable_lock(&(stp_btm->wq_spinlock));
 		stp_btm_set_current_op(stp_btm, pOp);
@@ -426,12 +425,12 @@ static INT32 _stp_btm_proc(PVOID pvData)
 		stp_btm_set_current_op(stp_btm, NULL);
 		osal_unlock_unsleepable_lock(&(stp_btm->wq_spinlock));
 
-handler_done:
-
 		if (result) {
 			STP_BTM_PR_WARN("opid id(0x%x)(%s) error(%d)\n", id,
-				(id >= osal_array_size(g_btm_op_name)) ? ("???") : (g_btm_op_name[id]), result);
+					g_btm_op_name[id], result);
 		}
+
+handler_done:
 
 		if (atomic_dec_and_test(&pOp->ref_count)) {
 			_stp_btm_put_op(stp_btm, &stp_btm->rFreeOpQ, pOp);
