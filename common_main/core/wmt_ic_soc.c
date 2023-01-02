@@ -129,6 +129,9 @@ static UINT8 WMT_PATCH_EVT[] = { 0x02, 0x01, 0x01, 0x00, 0x00 };
 static UINT8 WMT_RESET_CMD[] = { 0x01, 0x07, 0x01, 0x00, 0x04 };
 static UINT8 WMT_RESET_EVT[] = { 0x02, 0x07, 0x01, 0x00, 0x00 };
 
+static UINT8 WMT_SET_CHIP_ID_CMD[] = { 0x01, 0x02, 0x05, 0x00, 0x11, 0x00, 0x00, 0x00, 0x00 };
+static UINT8 WMT_SET_CHIP_ID_EVT[] = { 0x02, 0x02, 0x01, 0x00, 0x00};
+
 #if CFG_WMT_BT_PORT2
 static UINT8 WMT_BTP2_CMD[] = { 0x01, 0x10, 0x03, 0x00, 0x01, 0x03, 0x01 };
 static UINT8 WMT_BTP2_EVT[] = { 0x02, 0x10, 0x01, 0x00, 0x00 };
@@ -760,6 +763,10 @@ static struct init_script init_table_3[] = {
 #endif
 };
 
+static struct init_script set_chipid_script[] = {
+	INIT_CMD(WMT_SET_CHIP_ID_CMD, WMT_SET_CHIP_ID_EVT, "wmt set chipid"),
+};
+
 #if CFG_WMT_CRYSTAL_TIMING_SET
 static struct init_script set_crystal_timing_script[] = {
 	INIT_CMD(WMT_SET_CRYSTAL_TRIMING_CMD, WMT_SET_CRYSTAL_TRIMING_EVT, "set crystal trim value"),
@@ -1067,6 +1074,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	unsigned long ctrlPa2;
 	UINT32 hw_ver;
 	WMT_CTRL_DATA ctrlData;
+	UINT32 chipid = 0;
 #ifdef CFG_WMT_READ_EFUSE_VCN33
 	UINT32 efuse_d3_vcn33 = 2; /*default voltage is 3.5V*/
 #endif
@@ -1227,6 +1235,12 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		return -8;
 	}
 #endif
+	chipid = wmt_plat_get_soc_chipid();
+	WMT_SET_CHIP_ID_CMD[5] = chipid & 0xff;
+	WMT_SET_CHIP_ID_CMD[6] = (chipid >> 8) & 0xff;
+	iRet = wmt_core_init_script(set_chipid_script, osal_array_size(set_chipid_script));
+	if (iRet)
+		WMT_ERR_FUNC("wmt_core:set_chipid_script %s(%d)\n", iRet ? "fail" : "ok", iRet);
 
 	if (wmt_ic_ops_soc.icId == 0x6765 || wmt_ic_ops_soc.icId == 0x3967) {
 		iRet = wmt_core_init_script_retry(get_a_die_script, osal_array_size(get_a_die_script), 1, 0);
