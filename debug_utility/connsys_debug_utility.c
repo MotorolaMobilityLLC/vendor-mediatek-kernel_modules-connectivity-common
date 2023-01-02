@@ -24,7 +24,7 @@
 #include "connsys_debug_utility.h"
 #include "ring_emi.h"
 #include "ring.h"
-
+#include "wmt_exp.h"
 #include <linux/alarmtimer.h>
 #include <linux/suspend.h>
 
@@ -274,6 +274,9 @@ static void connlog_ring_emi_to_cache(int conn_type)
 		connsys_dedicated_log_dump_emi(CONNLOG_EMI_BT_BASE_OFFESET, 0x20);
 		/* 32 byte gps read/write pointer */
 		connsys_dedicated_log_dump_emi(CONNLOG_EMI_GPS_BASE_OFFESET, 0x20);
+		/* Trigger Connsys Assert */
+		mtk_wcn_wmt_assert(WMTDRV_TYPE_WMT, 46);
+		return;
 	}
 
 	RING_EMI_READ_ALL_FOR_EACH(ring_emi_seg, ring_emi) {
@@ -420,6 +423,9 @@ static void connlog_ring_print(int conn_type)
 		connsys_dedicated_log_dump_emi(CONNLOG_EMI_BT_BASE_OFFESET, 0x20);
 		/* 32 byte gps read/write pointer */
 		connsys_dedicated_log_dump_emi(CONNLOG_EMI_GPS_BASE_OFFESET, 0x20);
+		/* Trigger Connsys Assert */
+		mtk_wcn_wmt_assert(WMTDRV_TYPE_WMT, 46);
+		return;
 	}
 
 	RING_EMI_READ_ALL_FOR_EACH(ring_emi_seg, ring_emi) {
