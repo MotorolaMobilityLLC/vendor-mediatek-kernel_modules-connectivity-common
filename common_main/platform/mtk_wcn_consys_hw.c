@@ -39,6 +39,7 @@
 #include "osal_typedef.h"
 #include "mtk_wcn_consys_hw.h"
 #include "wmt_step.h"
+#include "wmt_ic.h"
 #include <linux/of_reserved_mem.h>
 #include <linux/pinctrl/consumer.h>
 
@@ -548,6 +549,9 @@ INT32 mtk_wcn_consys_hw_rst(UINT32 co_clock_type)
 	/*1. do whole hw power off flow */
 	iRet += mtk_wcn_consys_hw_reg_ctrl(0, co_clock_type);
 
+	/* Write Wi-Fi calibration data back to EMI */
+	mtk_wcn_soc_restore_wifi_cal_result();
+
 	/*2. do whole hw power on flow */
 	iRet += mtk_wcn_consys_hw_reg_ctrl(1, co_clock_type);
 
@@ -783,4 +787,13 @@ VOID mtk_consys_set_mcif_mpu_protection(MTK_WCN_BOOL enable)
 {
 	if (wmt_consys_ic_ops->consys_ic_set_mcif_emi_mpu_protection)
 		wmt_consys_ic_ops->consys_ic_set_mcif_emi_mpu_protection(enable);
+}
+
+INT32 mtk_consys_is_calibration_backup_restore_support(VOID)
+{
+	if (wmt_consys_ic_ops->consys_ic_calibration_backup_restore)
+		return wmt_consys_ic_ops->consys_ic_calibration_backup_restore();
+	else
+		return 0;
+
 }
