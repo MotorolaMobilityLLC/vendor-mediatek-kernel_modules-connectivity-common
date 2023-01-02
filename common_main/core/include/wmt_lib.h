@@ -470,6 +470,7 @@ extern INT32 wmt_lib_get_need_update_patch_version(VOID);
 extern INT32 wmt_lib_set_need_update_patch_version(INT32 need);
 extern VOID wmt_lib_set_bt_link_status(INT32 type, INT32 value);
 VOID mtk_lib_set_mcif_mpu_protection(MTK_WCN_BOOL enable);
+INT32 wmt_lib_resume_dump_info(VOID);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
