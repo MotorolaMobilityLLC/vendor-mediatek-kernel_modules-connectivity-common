@@ -182,6 +182,12 @@ else
     ccflags-y += -D WMT_DBG_SUPPORT=0
 endif
 
+ifeq ($(CONFIG_MTK_DEVAPC),y)
+    ccflags-y += -D WMT_DEVAPC_DBG_SUPPORT=1
+else
+    ccflags-y += -D WMT_DEVAPC_DBG_SUPPORT=0
+endif
+
 ifeq ($(CONFIG_ARCH_MT6580), y)
 ccflags-y += -D CFG_WMT_READ_EFUSE_VCN33
 endif
