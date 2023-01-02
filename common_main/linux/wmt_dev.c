@@ -373,7 +373,7 @@ static ssize_t wmt_dev_proc_for_aee_read(struct file *filp, char __user *buf, si
 	INT32 retval = 0;
 	UINT32 len = 0;
 
-	WMT_INFO_FUNC("%s: count %lu pos %lld\n", __func__, count, *f_pos);
+	WMT_INFO_FUNC("%s: count %zu pos %lld\n", __func__, count, *f_pos);
 
 	if (osal_lock_sleepable_lock(&g_aee_read_lock)) {
 		WMT_ERR_FUNC("lock failed\n");
@@ -465,7 +465,7 @@ static ssize_t wmt_dev_proc_for_dump_info_read(struct file *filp, char __user *b
 	INT32 retval = 0;
 	UINT32 len = 0;
 
-	WMT_INFO_FUNC("%s: count %lu pos %lld\n", __func__, count, *f_pos);
+	WMT_INFO_FUNC("%s: count %zu pos %lld\n", __func__, count, *f_pos);
 
 	if (osal_lock_sleepable_lock(&g_dump_info_read_lock)) {
 		WMT_ERR_FUNC("lock failed\n");
@@ -911,7 +911,7 @@ ssize_t WMT_write(struct file *filp, const char __user *buf, size_t count, loff_
 	UINT8 wrBuf[NAME_MAX + 1] = { 0 };
 	INT32 copySize = (count < NAME_MAX) ? count : NAME_MAX;
 
-	WMT_LOUD_FUNC("count:%lu copySize:%d\n", count, copySize);
+	WMT_LOUD_FUNC("count:%zu copySize:%d\n", count, copySize);
 
 	if (copySize > 0) {
 		if (copy_from_user(wrBuf, buf, copySize)) {
@@ -1137,7 +1137,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			pOp->op.au4OpData[1] = (SIZE_T)&gLpbkBuf[0];	/* packet buffer pointer */
 			memcpy(&gLpbkBufLog, &gLpbkBuf[((effectiveLen >= 4) ? effectiveLen - 4 : 0)], 4);
 			pSignal->timeoutValue = MAX_EACH_WMT_CMD;
-			WMT_INFO_FUNC("OPID(%d) type(%lu) start\n", pOp->op.opId, pOp->op.au4OpData[0]);
+			WMT_INFO_FUNC("OPID(%d) type(%zu) start\n", pOp->op.opId, pOp->op.au4OpData[0]);
 			if (DISABLE_PSM_MONITOR()) {
 				WMT_ERR_FUNC("wake up failed,OPID(%d) type(%d) abort\n",
 					     pOp->op.opId, pOp->op.au4OpData[0]);
@@ -1412,7 +1412,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 				iRet = -1;
 				break;
 			}
-			WMT_INFO_FUNC("OPID(%d) length(%d) ok\n", pOp->op.opId, pOp->op.au4OpData[0]);
+			WMT_INFO_FUNC("OPID(%d) length(%zu) ok\n", pOp->op.opId, pOp->op.au4OpData[0]);
 			iRet = pOp->op.au4OpData[0];
 
 		} while (0);
