@@ -17,6 +17,7 @@
 #include <linux/device.h>
 #include <linux/module.h>
 #include <linux/poll.h>
+#include "wmt_lib.h"
 
 #define DRIVER_NAME "fw_log_wmt"
 #define WMT_FW_LOG_IOC_MAGIC         0xfc
@@ -76,10 +77,14 @@ static long fw_log_wmt_unlocked_ioctl(struct file *filp, unsigned int cmd,
 
 	switch (cmd) {
 	case WMT_FW_LOG_IOCTL_ON_OFF:
-		/*no action*/
+		pr_debug("ioctl: WMT_FW_LOG_IOCTL_ON_OFF(%lu)", arg);
+		if (arg == 0 || arg == 1)
+			wmt_lib_fw_log_ctrl(WMT_FWLOG_MCU, (unsigned char)arg, 0xFF);
 		break;
 	case WMT_FW_LOG_IOCTL_SET_LEVEL:
-		/*no action*/
+		pr_debug("ioctl: WMT_FW_LOG_IOCTL_SET_LEVEL(%lu)", arg);
+		if (arg <= 4)
+			wmt_lib_fw_log_ctrl(WMT_FWLOG_MCU, 0xFF, (unsigned char)arg);
 		break;
 	default:
 		/*no action*/
