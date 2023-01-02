@@ -238,6 +238,7 @@ typedef INT32(*CONSYS_IC_EMI_COREDUMP_REMAPPING) (UINT8 __iomem **addr, UINT32 e
 typedef INT32(*CONSYS_IC_RESET_EMI_COREDUMP) (UINT8 __iomem *addr);
 typedef VOID(*CONSYS_IC_CLOCK_FAIL_DUMP) (VOID);
 typedef INT32(*CONSYS_IC_IS_CONNSYS_REG) (UINT32 addr);
+typedef INT32(*CONSYS_IC_IS_HOST_CSR) (SIZE_T addr);
 typedef INT32(*CONSYS_IC_DUMP_OSC_STATE) (P_CONSYS_STATE state);
 typedef VOID(*CONSYS_IC_SET_PDMA_AXI_RREADY_FORCE_HIGH) (UINT32 enable);
 typedef VOID(*CONSYS_IC_SET_MCIF_EMI_MPU_PROTECTION)(MTK_WCN_BOOL enable);
@@ -300,6 +301,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_RESET_EMI_COREDUMP consys_ic_reset_emi_coredump;
 	CONSYS_IC_CLOCK_FAIL_DUMP consys_ic_clock_fail_dump;
 	CONSYS_IC_IS_CONNSYS_REG consys_ic_is_connsys_reg;
+	CONSYS_IC_IS_HOST_CSR consys_ic_is_host_csr;
 	CONSYS_IC_DUMP_OSC_STATE consys_ic_dump_osc_state;
 	CONSYS_IC_SET_PDMA_AXI_RREADY_FORCE_HIGH consys_ic_set_pdma_axi_rready_force_high;
 	CONSYS_IC_SET_MCIF_EMI_MPU_PROTECTION consys_ic_set_mcif_emi_mpu_protection;
@@ -394,6 +396,7 @@ INT32 mtk_wdt_swsysret_config(INT32 bit, INT32 set_value);
 VOID mtk_wcn_consys_hang_debug(VOID);
 UINT32 mtk_consys_get_gps_lna_pin_num(VOID);
 INT32 mtk_consys_check_reg_readable(VOID);
+INT32 mtk_consys_check_reg_readable_by_addr(SIZE_T addr);
 VOID mtk_wcn_consys_clock_fail_dump(VOID);
 INT32 mtk_consys_is_connsys_reg(UINT32 addr);
 VOID mtk_consys_set_mcif_mpu_protection(MTK_WCN_BOOL enable);
