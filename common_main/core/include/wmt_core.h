@@ -533,6 +533,8 @@ extern P_WMT_GEN_CONF wmt_get_gen_conf_pointer(VOID);
 VOID wmt_core_set_blank_status(UINT32 on_off_flag);
 extern UINT32 wmt_core_get_blank_status(VOID);
 
+INT32 wmt_blank_status_ctrl(UINT32 on_off_flag);
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
