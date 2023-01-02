@@ -622,7 +622,7 @@ void wmt_step_test_check_reg_write_act(unsigned int len, ...)
 
 void wmt_step_test_check_show_act(unsigned int len, ...)
 {
-	char *content;
+	char *content = NULL;
 	va_list args;
 
 	va_start(args, len);
@@ -4909,7 +4909,7 @@ void wmt_step_test_create_periodic_dump(struct step_test_report *p_report)
 	int usec_begin = 0;
 	int sec_end = 0;
 	int usec_end = 0;
-	struct step_pd_entry *p_current;
+	struct step_pd_entry *p_current = NULL;
 	bool is_thread_run_for_test = 0;
 
 	WMT_INFO_FUNC("STEP test: Create periodic dump start\n");
