@@ -476,6 +476,7 @@ INT32 wmt_lib_dmp_consys_state(P_CONSYS_STATE_DMP_INFO dmp_info,
 				UINT32 cpupcr_times, UINT32 slp_ms);
 
 extern INT32 wmt_lib_reg_readable(VOID);
+extern INT32 wmt_lib_reg_readable_by_addr(SIZE_T addr);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
