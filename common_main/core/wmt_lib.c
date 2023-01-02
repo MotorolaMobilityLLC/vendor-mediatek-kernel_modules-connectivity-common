@@ -1912,7 +1912,7 @@ INT32 wmt_lib_reg_rw(UINT32 isWrite, UINT32 offset, PUINT32 pvalue, UINT32 mask)
 	}
 
 	pSignal = &pOp->signal;
-	pSignal->timeoutValue = MAX_EACH_WMT_CMD;
+	pSignal->timeoutValue = MAX_WMT_OP_TIMEOUT;
 	value = *pvalue;
 	WMT_DBG_FUNC("OPID_REG_RW isWrite(%u) offset(0x%x) value(0x%x) mask(0x%x)\n\n",
 		     isWrite, offset, *pvalue, mask);
@@ -1963,7 +1963,7 @@ INT32 wmt_lib_efuse_rw(UINT32 isWrite, UINT32 offset, PUINT32 pvalue, UINT32 mas
 	}
 
 	pSignal = &pOp->signal;
-	pSignal->timeoutValue = MAX_EACH_WMT_CMD;
+	pSignal->timeoutValue = MAX_WMT_OP_TIMEOUT;
 	value = *pvalue;
 	WMT_DBG_FUNC("OPID_EFUSE_RW isWrite(%u) offset(0x%x) value(0x%x) mask(0x%x)\n\n",
 		     isWrite, offset, *pvalue, mask);
@@ -3024,7 +3024,7 @@ INT32 wmt_lib_gps_mcu_ctrl(PUINT8 p_tx_data_buf, UINT32 tx_data_len, PUINT8 p_rx
 	}
 
 	pSignal = &pOp->signal;
-	pSignal->timeoutValue = MAX_EACH_WMT_CMD;
+	pSignal->timeoutValue = MAX_WMT_OP_TIMEOUT;
 	pOp->op.opId = WMT_OPID_GPS_MCU_CTRL;
 	pOp->op.au4OpData[0] = (SIZE_T)p_tx_data_buf;
 	pOp->op.au4OpData[1] = tx_data_len;
