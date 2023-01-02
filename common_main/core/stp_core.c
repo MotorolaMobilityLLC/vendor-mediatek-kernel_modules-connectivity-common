@@ -2032,6 +2032,7 @@ static INT32 stp_parser_data_in_full_mode(UINT32 length, UINT8 *p_data)
 {
 	INT32 remain_length;	/* GeorgeKuo: sync from MAUI, change to unsigned */
 	INT32 i = length;
+	static DEFINE_RATELIMIT_STATE(_rs, 2 * HZ, 1);
 
 	while (i > 0) {
 		switch (stp_core_ctx.parser.state) {
@@ -2081,9 +2082,11 @@ static INT32 stp_parser_data_in_full_mode(UINT32 length, UINT8 *p_data)
 				/* do nothing for delimiter */
 			} else {	/* unexpected, drop them */
 				osal_assert(0);
-				STP_WARN_FUNC("error header(0x%x) detected, discard %d bytes\n",
-					      *p_data, i);
-				osal_buffer_dump(p_data, "full mode unexpected header", i, 0);
+				if (__ratelimit(&_rs)) {
+					STP_WARN_FUNC("error header(0x%x) detected, discard %d bytes\n",
+						  *p_data, i);
+					osal_buffer_dump(p_data, "full mode unexpected header", i, 0);
+				}
 				i = 0;
 				continue;
 			}
