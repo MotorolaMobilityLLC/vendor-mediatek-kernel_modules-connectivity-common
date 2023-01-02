@@ -18,6 +18,8 @@
 #include "osal.h"
 #include "wmt_plat.h"
 
+#define STP_DBG_PAGED_DUMP_BUFFER_SIZE (32*1024*sizeof(char))
+
 typedef enum {
 	SOC_TASK_ID_GEN2 = 0,
 	SOC_TASK_ID_GEN3,
