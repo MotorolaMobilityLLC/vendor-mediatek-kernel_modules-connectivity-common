@@ -2813,7 +2813,7 @@ INT32 wmt_lib_wifi_fem_cfg_report(PVOID pvInfoBuf)
 {
 	INT32 iRet = 0;
 	ULONG addr = 0;
-	WMT_GEN_CONF *pWmtGenConf;
+	WMT_GEN_CONF *pWmtGenConf = NULL;
 
 	/* sanity check */
 	ASSERT(pvInfoBuf);
