@@ -17,6 +17,7 @@
 #include "stp_core.h"
 #include "mtk_wcn_consys_hw.h"
 #include "wmt_step.h"
+#include <linux/ratelimit.h>
 
 #define STP_DBG_PAGED_TRACE_SIZE (2048*sizeof(char))
 #define SUB_PKT_SIZE 1024
@@ -145,6 +146,9 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 	ULONG start_nsec = 0;
 	UINT64 elapsed_time = 0;
 	INT32 abort = 0;
+#if WMT_DBG_SUPPORT
+	static DEFINE_RATELIMIT_STATE(_rs, 10 * HZ, 1);
+#endif
 
 	g_paged_dump_len = 0;
 	p_ecsi = wmt_plat_get_emi_phy_add();
@@ -164,8 +168,10 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 		packet_num = dump_num;
 		STP_DBG_WARN_FUNC("get consys dump num packet_num(%d)\n", packet_num);
 	} else {
-		STP_DBG_ERR_FUNC("can not get consys dump num and default num is 35\n");
+		dump_num = CORE_DUMP_NUM;
+		STP_DBG_ERR_FUNC("can not get consys dump num and default num is %d\n", CORE_DUMP_NUM);
 	}
+	stp_dbg_dump_num(dump_num);
 
 	if (dump_sink == 1 || dump_sink == 2)
 		stp_dbg_start_coredump_timer();
@@ -191,9 +197,13 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 				break;
 			}
 			STP_DBG_INFO_FUNC("waiting chip put done, chip_state: %d\n", chip_state);
+#if WMT_DBG_SUPPORT
+			if (chip_state == 0 && __ratelimit(&_rs))
+				stp_dbg_poll_cpupcr(5, 1, 1);
+#endif
 
 			if (elapsed_time > EMI_SYNC_TIMEOUT) {
-#ifndef CONFIG_MTK_ENG_BUILD
+#if !WMT_DBG_SUPPORT
 				STP_DBG_ERR_FUNC("Wait Timeout: %llu > %d\n", elapsed_time, EMI_SYNC_TIMEOUT);
 				/* Since customer's user/userdebug load get coredump via netlink(dump_sink==2). */
 				/* For UX, if get coredump timeout, skip it and do chip reset ASAP. */
@@ -288,7 +298,7 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 			}
 			STP_DBG_INFO_FUNC("waiting chip put end, chip_state: %d\n", chip_state);
 			if (elapsed_time > EMI_SYNC_TIMEOUT) {
-#ifndef CONFIG_MTK_ENG_BUILD
+#if !WMT_DBG_SUPPORT
 				STP_DBG_ERR_FUNC("Wait Timeout: %llu > %d\n", elapsed_time, EMI_SYNC_TIMEOUT);
 				/* Since customer's user/userdebug load get coredump via netlink(dump_sink==2). */
 				/* For UX, if wait sync state timeout, skip it and do chip reset ASAP. */
