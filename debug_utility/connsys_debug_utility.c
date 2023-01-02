@@ -828,6 +828,19 @@ int connsys_log_register_event_cb(int conn_type, CONNLOG_EVENT_CB func)
 }
 EXPORT_SYMBOL(connsys_log_register_event_cb);
 
+/*****************************************************************************
+* FUNCTION
+*  connlog_copy_buf
+* DESCRIPTION
+*  Copy EMI ring buffer data to the buffer that provided by sub-module.
+* PARAMETERS
+*  conn_type      [IN]        subsys type
+*  to             [IN]        copy data to user buffer or driver buffer
+*  buf            [IN]        buffer from user or driver
+*  count          [IN]        buffer length
+* RETURNS
+*  ssize_t    read buffer size
+*****************************************************************************/
 static int connlog_copy_buf(int conn_type, int to, char *buf, size_t count)
 {
 	int retval = 0;
@@ -846,7 +859,18 @@ static int connlog_copy_buf(int conn_type, int to, char *buf, size_t count)
 	cache_buf_size = ring_seg.remain;
 
 	RING_CACHE_READ_ALL_FOR_EACH(ring_seg, ring) {
-		retval = copy_to_user(buf + written, ring_seg.ring_cache_pt, ring_seg.sz);
+		switch (to) {
+		case 0:
+			retval = copy_to_user(buf + written, ring_seg.ring_cache_pt,
+				ring_seg.sz);
+			break;
+		case 1:
+			memcpy(buf + written, ring_seg.ring_cache_pt, ring_seg.sz);
+			break;
+		default:
+			goto done;
+		}
+
 		if (retval) {
 			pr_err("copy to user buffer failed, ret:%d\n", retval);
 			goto done;
@@ -896,12 +920,14 @@ done:
 *  Copy EMI ring buffer data to the buffer that provided by sub-module.
 * PARAMETERS
 *  conn_type      [IN]        subsys type
+*  buf            [IN]        buffer from driver
+*  count          [IN]        buffer length
 * RETURNS
 *  ssize_t    read buffer size
 *****************************************************************************/
 ssize_t connsys_log_read(int conn_type, char *buf, size_t count)
 {
-	return connlog_copy_buf(1, conn_type, buf, count);
+	return connlog_copy_buf(conn_type, 1, buf, count);
 }
 EXPORT_SYMBOL(connsys_log_read);
 
@@ -919,53 +945,7 @@ EXPORT_SYMBOL(connsys_log_read);
 *****************************************************************************/
 ssize_t connsys_log_read_to_user(int conn_type, char __user *buf, size_t count)
 {
-	int retval;
-	unsigned int written = 0;
-#ifdef EMI_TO_CACHE_SUPPORT
-	unsigned int cache_buf_size;
-	struct ring_cache_segment ring_seg;
-	struct ring_cache *ring = &connlog_buffer_table[conn_type].ring_cache;
-	unsigned int size = 0;
-
-	size = count < RING_CACHE_SIZE(ring) ? count : RING_CACHE_SIZE(ring);
-	if (RING_CACHE_EMPTY(ring) || !ring_cache_read_prepare(size, &ring_seg, ring)) {
-		pr_err("type(%d) no data, possibly taken by concurrent reader.\n", conn_type);
-		goto done;
-	}
-	cache_buf_size = ring_seg.remain;
-
-	RING_CACHE_READ_ALL_FOR_EACH(ring_seg, ring) {
-		retval = copy_to_user(buf + written, ring_seg.ring_cache_pt, ring_seg.sz);
-		if (retval) {
-			pr_err("copy to user buffer failed, ret:%d\n", retval);
-			goto done;
-		}
-		cache_buf_size -= ring_seg.sz;
-		written += ring_seg.sz;
-	}
-#else
-	unsigned int buf_size;
-	struct ring_segment ring_seg;
-	struct ring *ring = &connlog_buffer_table[conn_type].ring_emi;
-
-	if (RING_EMPTY(ring) || !ring_read_all_prepare(&ring_seg, ring)) {
-		pr_err("type(%d) no data, possibly taken by concurrent reader.\n", conn_type);
-		goto done;
-	}
-	buf_size = ring_seg.remain;
-
-	RING_READ_ALL_FOR_EACH(ring_seg, ring) {
-		retval = copy_to_user(buf + written, ring_seg.ring_pt, ring_seg.sz);
-		if (retval) {
-			pr_err("copy to user buffer failed, ret:%d\n", retval);
-			goto done;
-		}
-		buf_size -= ring_seg.sz;
-		written += ring_seg.sz;
-	}
-#endif
-done:
-	return written;
+	return connlog_copy_buf(conn_type, 0, buf, count);
 }
 EXPORT_SYMBOL(connsys_log_read_to_user);
 
