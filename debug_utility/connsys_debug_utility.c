@@ -306,7 +306,7 @@ static void connlog_dump_buf(const char *title, const char *buf, ssize_t sz)
 #define LOG_MAX_LEN 1024
 #define LOG_HEAD_LENG 16
 #define TIMESYNC_LENG 40
-const char log_head[] = {0x62, 0x00, 0x00, 0x00};
+const char log_head[] = {0x55, 0x00, 0x00, 0x62};
 const char timesync_head[] = {0x55, 0x00, 0x25, 0x62};
 static char log_line[LOG_MAX_LEN];
 static void connlog_fw_log_parser(int conn_type, const char *buf, ssize_t sz)
@@ -328,9 +328,8 @@ static void connlog_fw_log_parser(int conn_type, const char *buf, ssize_t sz)
 				sz -= (LOG_HEAD_LENG + buf_len);
 				buf += (LOG_HEAD_LENG + buf_len);
 				continue;
-			}
-		} else if (*buf == timesync_head[0] && sz >= TIMESYNC_LENG) {
-			if (!memcmp(buf, timesync_head, sizeof(timesync_head))) {
+			} else if (sz >= TIMESYNC_LENG &&
+				!memcmp(buf, timesync_head, sizeof(timesync_head))) {
 				memcpy(&systime, buf + 28, sizeof(systime));
 				memcpy(&utc_s, buf + 32, sizeof(utc_s));
 				memcpy(&utc_us, buf + 36, sizeof(utc_us));
