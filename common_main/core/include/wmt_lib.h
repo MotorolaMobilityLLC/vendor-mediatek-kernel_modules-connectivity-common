@@ -484,6 +484,7 @@ INT32 wmt_lib_dmp_consys_state(P_CONSYS_STATE_DMP_INFO dmp_info,
 
 extern INT32 wmt_lib_reg_readable(VOID);
 extern INT32 wmt_lib_reg_readable_by_addr(SIZE_T addr);
+extern INT32 wmt_lib_utc_time_sync(VOID);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
