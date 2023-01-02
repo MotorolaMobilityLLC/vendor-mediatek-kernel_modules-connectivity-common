@@ -560,10 +560,12 @@ LONG wmt_dev_tm_temp_query(VOID)
 {
 #define HISTORY_NUM       3
 #define REFRESH_TIME    300	/* sec */
+#define ONE_DAY_LONG    86400	/* sec */
 
 	static INT32 s_temp_table[HISTORY_NUM] = { 99 };	/* not query yet. */
 	static INT32 s_idx_temp_table;
 	static struct timeval s_query_time;
+	static struct timeval sync_log_last_time = {0, 0};
 
 	INT32 temp_table[HISTORY_NUM];
 	INT32 idx_temp_table;
@@ -638,6 +640,13 @@ LONG wmt_dev_tm_temp_query(VOID)
 				temp_table[index] = 99;
 
 		}
+	}
+
+	/* update utc time for fw once a day */
+	if ((now_time.tv_sec < sync_log_last_time.tv_sec) ||
+			((now_time.tv_sec - sync_log_last_time.tv_sec) > ONE_DAY_LONG)) {
+		sync_log_last_time.tv_sec = now_time.tv_sec;
+		wmt_lib_utc_time_sync();
 	}
 
 	if (query_cond) {
