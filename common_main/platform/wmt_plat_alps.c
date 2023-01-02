@@ -261,6 +261,8 @@ static INT32 wmt_plat_assert_ctrl(VOID)
 {
 	INT32 ret = 0;
 
+	mtk_wcn_consys_ipi_timeout_dump();
+
 	if (wmt_plat_trigger_assert_cb)
 		ret = (*wmt_plat_trigger_assert_cb)(WMTDRV_TYPE_WMT, 45);
 
