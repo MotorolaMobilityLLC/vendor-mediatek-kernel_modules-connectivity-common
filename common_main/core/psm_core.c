@@ -1590,7 +1590,7 @@ INT32 stp_psm_disable_by_tx_rx_density(MTKSTP_PSM_T *stp_psm, INT32 dir)
 	return 0;
 }
 #else
-static struct timeval tv_now, tv_end;
+static struct timespec64 tv_now, tv_end;
 static INT32 sample_start;
 static INT32 tx_sum_len;
 static INT32 rx_sum_len;
@@ -1608,7 +1608,7 @@ INT32 stp_psm_disable_by_tx_rx_density(MTKSTP_PSM_T *stp_psm, INT32 dir, INT32 l
 		/* STP_PSM_PR_INFO("tv_now:%d.%d tv_end:%d.%d\n", tv_now.tv_sec, tv_now.tv_usec,
 		 * tv_end.tv_sec,tv_end.tv_usec);
 		 */
-		if (((tv_now.tv_sec == tv_end.tv_sec) && (tv_now.tv_usec > tv_end.tv_usec)) ||
+		if (((tv_now.tv_sec == tv_end.tv_sec) && (tv_now.tv_nsec > tv_end.tv_nsec)) ||
 		    (tv_now.tv_sec > tv_end.tv_sec)) {
 			STP_PSM_PR_INFO("STP speed rx:%d tx:%d\n", rx_sum_len, tx_sum_len);
 			if ((rx_sum_len + tx_sum_len) > RTX_SPEED_THRESHOLD) {
@@ -1790,7 +1790,7 @@ INT32 stp_psm_check_sleep_enable(MTKSTP_PSM_T *stp_psm)
 static INT32 _stp_psm_dbg_dmp_in(STP_PSM_RECORD_T *stp_psm_dbg, UINT32 flag, UINT32 line_num)
 {
 	INT32 index = 0;
-	struct timeval now;
+	struct timespec64 now;
 
 	if (stp_psm_dbg) {
 		osal_lock_unsleepable_lock(&stp_psm_dbg->lock);
@@ -1803,7 +1803,7 @@ static INT32 _stp_psm_dbg_dmp_in(STP_PSM_RECORD_T *stp_psm_dbg, UINT32 flag, UIN
 		stp_psm_dbg->queue[stp_psm_dbg->in].line_num = line_num;
 		stp_psm_dbg->queue[stp_psm_dbg->in].package_no = g_record_num++;
 		stp_psm_dbg->queue[stp_psm_dbg->in].sec = now.tv_sec;
-		stp_psm_dbg->queue[stp_psm_dbg->in].usec = now.tv_usec;
+		stp_psm_dbg->queue[stp_psm_dbg->in].usec = now.tv_nsec / NSEC_PER_USEC;
 		stp_psm_dbg->size++;
 		STP_PSM_PR_DBG("pre_Flag = %d, cur_flag = %d\n", stp_psm_dbg->queue[stp_psm_dbg->in].prev_flag,
 				 stp_psm_dbg->queue[stp_psm_dbg->in].cur_flag);
@@ -1859,7 +1859,7 @@ static INT32 _stp_psm_dbg_out_printk(STP_PSM_RECORD_T *stp_psm_dbg)
 static INT32 _stp_psm_opid_dbg_dmp_in(P_STP_PSM_OPID_RECORD p_opid_dbg, UINT32 opid, UINT32 line_num)
 {
 	INT32 index = 0;
-	struct timeval now;
+	struct timespec64 now;
 	UINT64 ts;
 	ULONG nsec;
 
@@ -1875,7 +1875,7 @@ static INT32 _stp_psm_opid_dbg_dmp_in(P_STP_PSM_OPID_RECORD p_opid_dbg, UINT32 o
 		p_opid_dbg->queue[p_opid_dbg->in].line_num = line_num;
 		p_opid_dbg->queue[p_opid_dbg->in].package_no = g_opid_record_num++;
 		p_opid_dbg->queue[p_opid_dbg->in].sec = now.tv_sec;
-		p_opid_dbg->queue[p_opid_dbg->in].usec = now.tv_usec;
+		p_opid_dbg->queue[p_opid_dbg->in].usec = now.tv_nsec / NSEC_PER_USEC;
 		p_opid_dbg->queue[p_opid_dbg->in].pid = current->pid;
 		p_opid_dbg->queue[p_opid_dbg->in].l_sec = ts;
 		p_opid_dbg->queue[p_opid_dbg->in].l_nsec = nsec;
