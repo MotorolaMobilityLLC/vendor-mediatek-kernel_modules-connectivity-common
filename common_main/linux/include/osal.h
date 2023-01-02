@@ -357,6 +357,7 @@ INT32 osal_unsleepable_lock_init(P_OSAL_UNSLEEPABLE_LOCK);
 #endif
 INT32 osal_lock_unsleepable_lock(P_OSAL_UNSLEEPABLE_LOCK);
 INT32 osal_unlock_unsleepable_lock(P_OSAL_UNSLEEPABLE_LOCK);
+INT32 osal_trylock_unsleepable_lock(P_OSAL_UNSLEEPABLE_LOCK);
 INT32 osal_unsleepable_lock_deinit(P_OSAL_UNSLEEPABLE_LOCK);
 
 #if defined(CONFIG_PROVE_LOCKING)
