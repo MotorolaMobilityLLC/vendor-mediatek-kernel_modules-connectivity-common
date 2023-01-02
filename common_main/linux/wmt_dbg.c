@@ -449,7 +449,7 @@ INT32 wmt_dbg_func_ctrl(INT32 par1, INT32 par2, INT32 par3)
 {
 	MTK_WCN_BOOL ret = MTK_WCN_BOOL_FALSE;
 
-	if (par2 < WMTDRV_TYPE_WMT || par2 == WMTDRV_TYPE_LPBK) {
+	if (par2 < WMTDRV_TYPE_WMT || par2 == WMTDRV_TYPE_LPBK || par2 == WMTDRV_TYPE_GPSL5) {
 		if (par3 == 0) {
 			WMT_INFO_FUNC("function off test, type(%d)\n", par2);
 			ret = mtk_wcn_wmt_func_off(par2);
@@ -1010,6 +1010,10 @@ INT32 wmt_dbg_ut_test(INT32 par1, INT32 par2, INT32 par3)
 			iRet = mtk_wcn_wmt_func_on(WMTDRV_TYPE_GPS);
 			if (iRet == MTK_WCN_BOOL_FALSE)
 				break;
+			WMT_INFO_FUNC("#### GPSL5 On .... (%d, %d)\n", i, j);
+			iRet = mtk_wcn_wmt_func_on(WMTDRV_TYPE_GPSL5);
+			if (iRet == MTK_WCN_BOOL_FALSE)
+				break;
 			WMT_INFO_FUNC("#### FM  On .... (%d, %d)\n", i, j);
 			iRet = mtk_wcn_wmt_func_on(WMTDRV_TYPE_FM);
 			if (iRet == MTK_WCN_BOOL_FALSE)
@@ -1030,6 +1034,11 @@ INT32 wmt_dbg_ut_test(INT32 par1, INT32 par2, INT32 par3)
 
 			WMT_INFO_FUNC("#### GPS  Off ....(%d, %d)\n", i, j);
 			iRet = mtk_wcn_wmt_func_off(WMTDRV_TYPE_GPS);
+			if (iRet == MTK_WCN_BOOL_FALSE)
+				break;
+
+			WMT_INFO_FUNC("#### GPSL5  Off ....(%d, %d)\n", i, j);
+			iRet = mtk_wcn_wmt_func_off(WMTDRV_TYPE_GPSL5);
 			if (iRet == MTK_WCN_BOOL_FALSE)
 				break;
 
@@ -1603,7 +1612,16 @@ INT32 wmt_dbg_gps_suspend(INT32 par1, INT32 par2, INT32 par3)
 {
 	MTK_WCN_BOOL suspend = (par2 != 0) ? MTK_WCN_BOOL_TRUE : MTK_WCN_BOOL_FALSE;
 
-	WMT_INFO_FUNC("GPS %s mode test\n", (par2 != 0) ? "suspend" : "resume");
-	mtk_wmt_gps_suspend_ctrl(suspend);
+	WMT_INFO_FUNC("GPS %s mode test, type(%d, %s)\n",
+		(par2 != 0) ? "suspend" : "resume",
+		par3, (par3 == 0) ? "L1+L5" : ((par3 == 1) ? "L1" : "L5"));
+
+	if (par3 == 0)
+		mtk_wmt_gps_suspend_ctrl(suspend);
+	else if (par3 == 1)
+		mtk_wmt_gps_l1_suspend_ctrl(suspend);
+	else
+		mtk_wmt_gps_l5_suspend_ctrl(suspend);
+
 	return 0;
 }
