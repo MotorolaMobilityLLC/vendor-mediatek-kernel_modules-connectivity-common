@@ -28,6 +28,7 @@
 #include <linux/alarmtimer.h>
 #include <linux/suspend.h>
 #include <linux/version.h>
+#include <linux/rtc.h>
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -800,8 +801,15 @@ static int connlog_eirq_init(const struct connlog_irq_config *irq_config)
 	pr_info("EINT CONN_LOG_IRQ(%d, %d)\n", irq_config->irq_num, irq_config->irq_flag);
 
 	iret = request_irq(gDev.conn2ApIrqId, connlog_eirq_isr, irq_config->irq_flag, "CONN_LOG_IRQ", NULL);
-	if (iret)
+	if (iret) {
 		pr_err("EINT IRQ(%d) NOT AVAILABLE!!\n", gDev.conn2ApIrqId);
+	} else {
+		iret = enable_irq_wake(gDev.conn2ApIrqId);
+		if (iret)
+			pr_err("enable irq wake fail,irq_no(%d),iret(%d)\n", gDev.conn2ApIrqId, iret);
+		iret = 0;
+	}
+
 	return iret;
 }
 
@@ -1271,11 +1279,11 @@ EXPORT_SYMBOL(connsys_log_get_emi_log_base_vir_addr);
 void connsys_dedicated_log_get_utc_time(unsigned int *second,
 	unsigned int *usecond)
 {
-	struct timeval time;
+	struct timespec64 time;
 
-	do_gettimeofday(&time);
+	ktime_get_real_ts64(&time);
 	*second = (unsigned int)time.tv_sec; /* UTC time second unit */
-	*usecond = (unsigned int)time.tv_usec; /* UTC time microsecond unit */
+	*usecond = (unsigned int)(time.tv_nsec / NSEC_PER_USEC); /* UTC time microsecond unit */
 }
 EXPORT_SYMBOL(connsys_dedicated_log_get_utc_time);
 
