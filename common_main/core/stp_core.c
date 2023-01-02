@@ -944,8 +944,11 @@ static INT32 stp_add_to_rx_queue(UINT8 *buffer, UINT32 length, UINT8 type)
 
 	if (roomLeft < length) {
 		osal_unlock_unsleepable_lock(&stp_core_ctx.ring[type].mtx);
-		STP_ERR_FUNC("Queue full , type(%d), remain buffer len(%d), data len(%d), w_p(%d), r_p(%d)\n",
-			type, roomLeft, length, stp_core_ctx.ring[type].write_p, stp_core_ctx.ring[type].read_p);
+		STP_WARN_RATELIMITED_FUNC(
+				"Queue full, type(%d), remain buf(%d), len(%d), w_p(%d), r_p(%d)\n",
+				type, roomLeft, length,
+				stp_core_ctx.ring[type].write_p,
+				stp_core_ctx.ring[type].read_p);
 		osal_assert(0);
 		return -1;
 	}
@@ -1395,8 +1398,9 @@ static VOID stp_process_packet(VOID)
 				break;
 			}
 			/*enqueue fail, don't send ack and wait for peer retry */
-			STP_ERR_FUNC("Enqueue to Rx queue fail, maybe function %d queue is full\n",
-				     stp_core_ctx.parser.type);
+			STP_WARN_RATELIMITED_FUNC("%s %d queue is full\n",
+					"Enqueue to Rx queue fail, maybe function",
+					stp_core_ctx.parser.type);
 		}
 	}
 	/*sequence not match && previous packet enqueue successfully, send the previous ACK */
