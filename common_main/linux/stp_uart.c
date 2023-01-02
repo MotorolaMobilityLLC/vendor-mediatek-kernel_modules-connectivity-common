@@ -592,8 +592,14 @@ static INT32 stp_uart_tty_ioctl(struct tty_struct *tty, struct file *file, UINT3
 /*
  * We don't provide read/write/poll interface for user space.
  */
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 21))
 static ssize_t stp_uart_tty_read(struct tty_struct *tty, struct file *file,
-				 unsigned char __user *buf, size_t nr)
+				unsigned char *buf, size_t nr,
+				void **cookie, unsigned long offset)
+#else
+static ssize_t stp_uart_tty_read(struct tty_struct *tty, struct file *file,
+				unsigned char __user *buf, size_t nr)
+#endif
 {
 	return 0;
 }
