@@ -170,6 +170,8 @@ static INT32 opfunc_blank_status_ctrl(P_WMT_OP pWmtOp);
 static INT32 opfunc_met_ctrl(P_WMT_OP pWmtOp);
 static INT32 opfunc_gps_suspend(P_WMT_OP pWmtOp);
 static INT32 opfunc_get_consys_state(P_WMT_OP pWmtOp);
+static INT32 opfunc_dump_pc_log(P_WMT_OP pWmtOp);
+static INT32 opfunc_dump_cpupcr(P_WMT_OP pWmtOp);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -339,6 +341,8 @@ static const WMT_OPID_FUNC wmt_core_opfunc[] = {
 	[WMT_OPID_MET_CTRL] = opfunc_met_ctrl,
 	[WMT_OPID_GPS_SUSPEND] = opfunc_gps_suspend,
 	[WMT_OPID_GET_CONSYS_STATE] = opfunc_get_consys_state,
+	[WMT_OPID_DUMP_PC_LOG] = opfunc_dump_pc_log,
+	[WMT_OPID_DUMP_CPUPCR] = opfunc_dump_cpupcr,
 };
 
 atomic_t g_wifi_on_off_ready;
@@ -3802,6 +3806,8 @@ static INT32 opfunc_get_consys_state(P_WMT_OP pWmtOp)
 	/* dmp cpu_pcr */
 	for (i = 0; i < times; i++) {
 		dmp_op->dmp_info.cpu_pcr[i] = wmt_plat_read_cpupcr();
+		osal_get_local_time(&(dmp_op->dmp_info.sec[i]),
+							&(dmp_op->dmp_info.nsec[i]));
 		if (slp_ms > 0)
 			osal_sleep_ms(slp_ms);
 	}
@@ -3817,4 +3823,36 @@ static INT32 opfunc_get_consys_state(P_WMT_OP pWmtOp)
 done:
 	osal_unlock_sleepable_lock(&dmp_op->lock);
 	return 0;
+}
+
+INT32 opfunc_dump_pc_log(P_WMT_OP pWmtOp)
+{
+
+	/* WMT should be ON */
+	if (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WMT] != DRV_STS_FUNC_ON) {
+		WMT_INFO_FUNC("WMT is not on");
+		return -1;
+	}
+	mtk_wcn_consys_pc_log_dump();
+
+	return 0;
+}
+
+INT32 opfunc_dump_cpupcr(P_WMT_OP pWmtOp)
+{
+	UINT32 times, sleep_ms;
+
+	/* WMT should be ON */
+	if (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WMT] != DRV_STS_FUNC_ON) {
+		WMT_INFO_FUNC("WMT is not on");
+		return -1;
+	}
+
+	times = (UINT32)pWmtOp->au4OpData[0];
+	sleep_ms = (UINT32)pWmtOp->au4OpData[1];
+
+	if (sleep_ms > 10 || times > 10)
+		return -1;
+
+	return mtk_wcn_consys_poll_cpucpr_dump(times, sleep_ms);
 }
