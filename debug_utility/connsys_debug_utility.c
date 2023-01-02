@@ -35,10 +35,10 @@ struct connlog_dev {
 	phys_addr_t phyAddrEmiBase;
 	void __iomem *virAddrEmiLogBase;
 	int conn2ApIrqId;
-	void *irqRegBaseVirAddr;
 	bool eirqOn;
 	spinlock_t irq_lock;
 	unsigned long flags;
+	unsigned int irq_counter;
 	struct timer_list workTimer;
 	struct work_struct logDataWorker;
 #ifdef PRINT_FW_LOG
@@ -99,14 +99,13 @@ static size_t cache_size_table[CONNLOG_TYPE_END] = {
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
 */
-static int connlog_eirq_init(void *irq_reg_base, unsigned int irq_id, unsigned int irq_flag);
+static int connlog_eirq_init(unsigned int irq_id, unsigned int irq_flag);
 static void connlog_eirq_deinit(void);
 static int connlog_emi_init(phys_addr_t emiaddr);
 static void connlog_emi_deinit(void);
 static int connlog_ring_buffer_init(void);
 static void connlog_ring_buffer_deinit(void);
 static int connlog_set_ring_buffer_base_addr(void);
-static void connlog_clear_irq_reg(void);
 static irqreturn_t connlog_eirq_isr(int irq, void *arg);
 static void connlog_set_ring_ready(void);
 static void connlog_buffer_init(int conn_type);
@@ -484,27 +483,6 @@ static void connlog_log_data_handler(struct work_struct *work)
 
 /*****************************************************************************
 * FUNCTION
-*  connlog_clear_irq_reg
-* DESCRIPTION
-*  Clear irq bits in conn2ap_sw_irq
-* PARAMETERS
-*  void
-* RETURNS
-*  void
-*****************************************************************************/
-static void connlog_clear_irq_reg(void)
-{
-	if (gDev.irqRegBaseVirAddr) {
-		pr_debug("BF: CONSYS IRQ CR VALUE(0x%x)\n", EMI_READ32(gDev.irqRegBaseVirAddr));
-		/* 18002150[27:24] */
-		EMI_WRITE32(gDev.irqRegBaseVirAddr, EMI_READ32(gDev.irqRegBaseVirAddr) & (~0xF000000));
-		pr_debug("AF: CONSYS IRQ CR VALUE(0x%x)\n", EMI_READ32(gDev.irqRegBaseVirAddr));
-	} else
-		pr_err("irqRegBaseVirAddr is NULL!\n");
-}
-
-/*****************************************************************************
-* FUNCTION
 *  connlog_eirq_isr
 * DESCRIPTION
 *  IRQ handler to notify subsys that EMI has logs.
@@ -517,8 +495,9 @@ static void connlog_clear_irq_reg(void)
 *****************************************************************************/
 static irqreturn_t connlog_eirq_isr(int irq, void *arg)
 {
-	connlog_clear_irq_reg();
 	spin_lock_irqsave(&gDev.irq_lock, gDev.flags);
+	gDev.irq_counter++;
+	EMI_WRITE32(gDev.virAddrEmiLogBase + CONNLOG_IRQ_COUNTER_BASE, gDev.irq_counter);
 	gDev.eirqOn = !schedule_work(&gDev.logDataWorker);
 	spin_unlock_irqrestore(&gDev.irq_lock, gDev.flags);
 	return IRQ_HANDLED;
@@ -531,21 +510,21 @@ static irqreturn_t connlog_eirq_isr(int irq, void *arg)
 *  To register IRQ
 * PARAMETERS
 *  irq_id      [IN]        irq number
-*  irq_reg_base[IN]        irq register base address
+*  irq_flag    [IN]        irq type
 * RETURNS
 *  int    0=success, others=error
 *****************************************************************************/
-static int connlog_eirq_init(void *irq_reg_base, unsigned int irq_id, unsigned int irq_flag)
+static int connlog_eirq_init(unsigned int irq_id, unsigned int irq_flag)
 {
 	int iret = 0;
 
-	if (gDev.conn2ApIrqId == 0) {
+	if (gDev.conn2ApIrqId == 0)
 		gDev.conn2ApIrqId = irq_id;
-		gDev.irqRegBaseVirAddr = irq_reg_base;
-	} else {
+	else {
 		pr_warn("IRQ has been initialized\n");
 		return -1;
 	}
+	pr_info("EINT CONN_LOG_IRQ(%d, %d)\n", irq_id, irq_flag);
 
 	iret = request_irq(gDev.conn2ApIrqId, connlog_eirq_isr, irq_flag, "CONN_LOG_IRQ", NULL);
 	if (iret)
@@ -710,20 +689,18 @@ static void connlog_ring_buffer_deinit(void)
 *  for APSOC platform
 * PARAMETERS
 *  emiaddr      [IN]        EMI physical base address
-*  irq_reg_base [IN]        conn2ap_sw_irq CR base address after ioremapping
 *  irq_num      [IN]        IRQ id from device tree
 *  irq_flag     [IN]        IRQ flag from device tree
 * RETURNS
 *  void
 *****************************************************************************/
-int connsys_dedicated_log_path_apsoc_init(phys_addr_t emiaddr, void *irq_reg_base,
-	unsigned int irq_num, unsigned int irq_flag)
+int connsys_dedicated_log_path_apsoc_init(phys_addr_t emiaddr, unsigned int irq_num, unsigned int irq_flag)
 {
 	gDev.phyAddrEmiBase = 0;
 	gDev.virAddrEmiLogBase = 0;
-	gDev.irqRegBaseVirAddr = 0;
 	gDev.conn2ApIrqId = 0;
 	gDev.eirqOn = false;
+	gDev.irq_counter = 0;
 
 	if (connlog_emi_init(emiaddr)) {
 		pr_err("EMI init failed\n");
@@ -739,7 +716,7 @@ int connsys_dedicated_log_path_apsoc_init(phys_addr_t emiaddr, void *irq_reg_bas
 	gDev.workTimer.function = work_timer_handler;
 	spin_lock_init(&gDev.irq_lock);
 	INIT_WORK(&gDev.logDataWorker, connlog_log_data_handler);
-	if (connlog_eirq_init(irq_reg_base, irq_num, irq_flag)) {
+	if (connlog_eirq_init(irq_num, irq_flag)) {
 		pr_err("EIRQ init failed\n");
 		return -3;
 	}
