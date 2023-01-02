@@ -77,6 +77,7 @@ struct platform_device *g_pdev;
 UINT32 gps_lna_pin_num = 0xffffffff;
 
 INT32 chip_reset_status = -1;
+static INT32 wifi_ant_swap_gpio_pin_num;
 
 #ifdef CONFIG_OF
 const struct of_device_id apwmt_of_ids[] = {
@@ -247,6 +248,9 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 			}
 		}
 	}
+
+	wifi_ant_swap_gpio_pin_num = of_get_named_gpio(pdev->dev.of_node, "wifi_ant_swap_gpio", 0);
+	WMT_PLAT_PR_INFO("ant swap pin number:%d\n", wifi_ant_swap_gpio_pin_num);
 
 	if (wmt_consys_ic_ops->consys_ic_store_reset_control)
 		wmt_consys_ic_ops->consys_ic_store_reset_control(pdev);
@@ -817,3 +821,12 @@ INT32 mtk_consys_chip_reset_status(VOID)
 {
 	return chip_reset_status;
 }
+
+INT32 mtk_consys_get_wifi_ant_swap_gpio_value(VOID)
+{
+	INT32 value = connectivity_export_gpio_get_tristate_input(wifi_ant_swap_gpio_pin_num);
+
+	WMT_PLAT_PR_INFO("ant swap pin number:%d %d\n", wifi_ant_swap_gpio_pin_num, value);
+	return value;
+}
+
