@@ -643,6 +643,8 @@ extern INT32 mtk_wcn_stp_emi_dump_flag_ctrl(UINT32 on);
 extern INT32 mtk_wcn_stp_emi_dump_flag_get(VOID);
 
 extern INT32 mtk_wcn_stp_set_wmt_last_close(UINT32 value);
+extern INT32 mtk_wcn_stp_is_wmt_last_close(VOID);
+
 /*stp btif API declared*/
 extern INT32 mtk_wcn_stp_open_btif(VOID);
 extern INT32 mtk_wcn_stp_close_btif(VOID);
