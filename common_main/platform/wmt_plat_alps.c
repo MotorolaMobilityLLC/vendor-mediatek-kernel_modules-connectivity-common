@@ -181,7 +181,6 @@ static const fp_set_pin gfp_set_pin_table[] = {
 INT32 wmt_plat_audio_ctrl(enum CMB_STUB_AIF_X state, enum CMB_STUB_AIF_CTRL ctrl)
 {
 	INT32 iRet = 0;
-	UINT32 pinShare = 0;
 	UINT32 mergeIfSupport = 0;
 
 	/* input sanity check */
@@ -233,8 +232,7 @@ INT32 wmt_plat_audio_ctrl(enum CMB_STUB_AIF_X state, enum CMB_STUB_AIF_CTRL ctrl
 			WMT_INFO_FUNC("call chip aif setting\n");
 			/* need to control chip side GPIO */
 			if (wmt_plat_audio_if_cb != NULL)
-				iRet += (*wmt_plat_audio_if_cb)(state, (pinShare) ? MTK_WCN_BOOL_TRUE :
-						MTK_WCN_BOOL_FALSE);
+				iRet += (*wmt_plat_audio_if_cb)(state, MTK_WCN_BOOL_FALSE);
 			else {
 				WMT_WARN_FUNC("wmt_plat_audio_if_cb is not registered\n");
 				iRet -= 1;
