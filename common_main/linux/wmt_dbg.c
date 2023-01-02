@@ -261,7 +261,7 @@ INT32 wmt_dbg_dsns_ctrl(INT32 par1, INT32 par2, INT32 par3)
 INT32 wmt_dbg_hwver_get(INT32 par1, INT32 par2, INT32 par3)
 {
 	WMT_INFO_FUNC("query chip version\n");
-	mtk_wcn_wmt_hwver_get();
+	wmt_lib_get_icinfo(WMTCHIN_HWVER);
 	return 0;
 }
 
@@ -447,7 +447,7 @@ INT32 wmt_dbg_func_ctrl(INT32 par1, INT32 par2, INT32 par3)
 
 INT32 wmt_dbg_raed_chipid(INT32 par1, INT32 par2, INT32 par3)
 {
-	WMT_INFO_FUNC("chip version = %d\n", wmt_lib_get_icinfo(WMTCHIN_MAPPINGHWVER));
+	WMT_INFO_FUNC("chip id = %d\n", wmt_lib_get_icinfo(WMTCHIN_CHIPID));
 
 	return 0;
 }
