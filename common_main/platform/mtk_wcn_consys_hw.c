@@ -701,7 +701,8 @@ P_CONSYS_EMI_ADDR_INFO mtk_wcn_consys_soc_get_emi_phy_add(VOID)
 
 UINT32 mtk_wcn_consys_read_cpupcr(VOID)
 {
-	if (wmt_consys_ic_ops->consys_ic_read_cpupcr)
+	if (wmt_consys_ic_ops->consys_ic_read_cpupcr &&
+		mtk_consys_check_reg_readable())
 		return wmt_consys_ic_ops->consys_ic_read_cpupcr();
 	else
 		return 0;
