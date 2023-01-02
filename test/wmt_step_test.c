@@ -630,8 +630,7 @@ void wmt_step_test_check_show_act(unsigned int len, ...)
 	if (content == NULL || g_step_test_check.step_check_result_string == NULL) {
 		WMT_ERR_FUNC("STEP test failed: content is NULL");
 		g_step_test_check.step_check_result = TEST_FAIL;
-	}
-	if (osal_strcmp(content, g_step_test_check.step_check_result_string) == 0) {
+	} else if (osal_strcmp(content, g_step_test_check.step_check_result_string) == 0) {
 		g_step_test_check.step_check_result = TEST_PASS;
 	} else {
 		WMT_ERR_FUNC("STEP test failed: content(%s), expect(%s)",
@@ -709,9 +708,9 @@ void wmt_step_test_clear_temp_register(void)
 #define STEP_CAN_WRITE_UNKNOWN 0
 #define STEP_CAN_WRITE_YES 1
 #define STEP_CAN_WRITE_NO 2
-int wmt_step_test_is_can_write(SIZE_T addr, int mask)
+int wmt_step_test_is_can_write(SIZE_T addr, unsigned int mask)
 {
-	int before, after;
+	unsigned int before, after;
 	int ret = STEP_CAN_WRITE_UNKNOWN;
 
 	before = CONSYS_REG_READ(addr);
@@ -732,7 +731,7 @@ int wmt_step_test_is_can_write(SIZE_T addr, int mask)
 	return ret;
 }
 
-int wmt_step_test_find_can_write_register(SIZE_T addr, int max, int mask)
+int wmt_step_test_find_can_write_register(SIZE_T addr, int max, unsigned int mask)
 {
 	int i;
 	int write_able;
