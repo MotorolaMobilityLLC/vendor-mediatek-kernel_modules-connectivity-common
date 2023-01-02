@@ -1581,6 +1581,9 @@ static INT32 WMT_init(VOID)
 	/*static allocate chrdev */
 	gWmtInitStatus = WMT_INIT_START;
 	init_waitqueue_head((wait_queue_head_t *) &gWmtInitWq);
+
+	osal_unsleepable_lock_init(&g_temp_query_spinlock);
+
 #if (MTK_WCN_REMOVE_KO)
 	/* called in do_common_drv_init() */
 #else
@@ -1655,8 +1658,6 @@ static INT32 WMT_init(VOID)
 	if (chip_type == WMT_CHIP_TYPE_COMBO)
 		mtk_wcn_hif_sdio_update_cb_reg(wmt_dev_tra_sdio_update);
 
-	WMT_DBG_FUNC("wmt_dev register thermal cb\n");
-	osal_unsleepable_lock_init(&g_temp_query_spinlock);
 	wmt_lib_register_thermal_ctrl_cb(wmt_dev_tm_temp_query);
 	wmt_lib_register_trigger_assert_cb(wmt_lib_trigger_assert);
 
