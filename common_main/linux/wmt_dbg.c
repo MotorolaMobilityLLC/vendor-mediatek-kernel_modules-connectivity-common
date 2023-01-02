@@ -288,7 +288,17 @@ INT32 wmt_dbg_assert_test(INT32 par1, INT32 par2, INT32 par3)
 			WMT_ERR_FUNC("wake up failed\n");
 			return -1;
 		}
+		/* driver type */
 		wmt_lib_trigger_assert(par2, 30);
+		ENABLE_PSM_MONITOR();
+		return 0;
+	}  else if (par3 == 5) {
+		if (DISABLE_PSM_MONITOR()) {
+			WMT_ERR_FUNC("wake up failed\n");
+			return -1;
+		}
+		/* assert reason */
+		wmt_lib_trigger_assert(4, par2);
 		ENABLE_PSM_MONITOR();
 		return 0;
 	}
