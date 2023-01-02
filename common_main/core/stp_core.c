@@ -332,7 +332,7 @@ static LONG stp_parser_dmp_num(PUINT8 str)
 
 
 	if (!str) {
-		STP_DBG_ERR_FUNC("NULL string source\n");
+		STP_DBG_PR_ERR("NULL string source\n");
 		return -1;
 	}
 
@@ -344,7 +344,7 @@ static LONG stp_parser_dmp_num(PUINT8 str)
 		while (*pTemp >= '0' && *pTemp <= '9')
 			pTemp++;
 	} else {
-		STP_DBG_WARN_FUNC("parser string 'Dump=' is not found\n");
+		STP_DBG_PR_WARN("parser string 'Dump=' is not found\n");
 		return -2;
 	}
 	len = pTemp - pDtr;
@@ -352,7 +352,7 @@ static LONG stp_parser_dmp_num(PUINT8 str)
 	tempBuf[len] = '\0';
 	ret = osal_strtol(tempBuf, 10, &res);
 	if (ret) {
-		STP_DBG_ERR_FUNC(" get 'Dump=' from firmware  failed (%d)", ret);
+		STP_DBG_PR_ERR(" get 'Dump=' from firmware  failed (%d)", ret);
 		return -4;
 	}
 
