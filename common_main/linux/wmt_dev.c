@@ -231,6 +231,16 @@ static INT32 wmt_fb_notifier_callback(struct notifier_block *self, ULONG event, 
 ********************************************************************************
 */
 
+INT32 wmt_dev_apo_ctrl(UINT32 enable)
+{
+	always_pwr_on_flag = enable ? 1 : 0;
+	if (!always_pwr_on_flag)
+		schedule_work(&gPwrOnOffWork);
+	WMT_INFO_FUNC("always_pwr_on_flag: %d\n", always_pwr_on_flag);
+
+	return 0;
+}
+
 static VOID wmt_pwr_on_off_handler(struct work_struct *work)
 {
 	INT32 retry = 5;
