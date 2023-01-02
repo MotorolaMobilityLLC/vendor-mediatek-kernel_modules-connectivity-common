@@ -681,7 +681,7 @@ static INT32 wmt_dbg_ap_reg_read(INT32 par1, INT32 par2, INT32 par3)
 	PUINT8 ap_reg_base = NULL;
 
 	WMT_INFO_FUNC("AP register read, reg address:0x%x\n", par2);
-	ap_reg_base = ioremap_nocache(par2, 0x4);
+	ap_reg_base = ioremap(par2, 0x4);
 	if (ap_reg_base) {
 		value = readl(ap_reg_base);
 		WMT_INFO_FUNC("AP register read, reg address:0x%x, value:0x%x\n", par2, value);
@@ -699,7 +699,7 @@ static INT32 wmt_dbg_ap_reg_write(INT32 par1, INT32 par2, INT32 par3)
 
 	WMT_INFO_FUNC("AP register write, reg address:0x%x, value:0x%x\n", par2, par3);
 
-	ap_reg_base = ioremap_nocache(par2, 0x4);
+	ap_reg_base = ioremap(par2, 0x4);
 	if (ap_reg_base) {
 		writel(par3, ap_reg_base);
 		value = readl(ap_reg_base);
@@ -1543,11 +1543,18 @@ ssize_t wmt_dbg_write(struct file *filp, const char __user *buffer, size_t count
 
 INT32 wmt_dev_dbg_setup(VOID)
 {
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(5, 6, 0))
 	static const struct file_operations wmt_dbg_fops = {
 		.owner = THIS_MODULE,
 		.read = wmt_dbg_read,
 		.write = wmt_dbg_write,
 	};
+#else
+	static const struct proc_ops wmt_dbg_fops = {
+		.proc_read = wmt_dbg_read,
+		.proc_write = wmt_dbg_write,
+	};
+#endif
 	INT32 i_ret = 0;
 
 	gWmtDbgEntry = proc_create(WMT_DBG_PROCNAME, 0664, NULL, &wmt_dbg_fops);
