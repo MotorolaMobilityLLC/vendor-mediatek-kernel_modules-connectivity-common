@@ -258,8 +258,8 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 	INT32 iRet = -1;
 	INT32 pin_ret = 0;
 	UINT32 pinmux = 0;
-	struct device_node *pinctl_node, *pins_node;
-	UINT8 __iomem *pConnsysEmiStart;
+	struct device_node *pinctl_node = NULL, *pins_node = NULL;
+	UINT8 __iomem *pConnsysEmiStart = NULL;
 
 	if (pdev)
 		g_pdev = pdev;
