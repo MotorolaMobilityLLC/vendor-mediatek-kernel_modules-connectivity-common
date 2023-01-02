@@ -1091,7 +1091,7 @@ static INT32 wmt_lib_is_bt_able_to_reset(VOID)
 		ULONG local_time;
 		struct rtc_time tm;
 
-		do_gettimeofday(&time);
+		osal_do_gettimeofday(&time);
 		local_time = (ULONG)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
 		rtc_time_to_tm(local_time, &tm);
 		if (tm.tm_hour == 2)
