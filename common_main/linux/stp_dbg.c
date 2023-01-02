@@ -1371,7 +1371,6 @@ INT32 stp_dbg_dmp_append(MTKSTP_DBG_T *stp_dbg, PUINT8 pBuf, INT32 max_len)
 
 static _osal_inline_ INT32 stp_dbg_get_avl_entry_num(MTKSTP_DBG_T *stp_dbg)
 {
-	osal_bug_on(!stp_dbg);
 	if (stp_dbg->logsys->size == 0)
 		return STP_DBG_LOG_ENTRY_NUM;
 	else
@@ -1421,8 +1420,6 @@ static _osal_inline_ INT32 stp_dbg_add_pkt(MTKSTP_DBG_T *stp_dbg, STP_DBG_HDR_T 
 	ULONG flags;
 	UINT32 avl_num;
 
-	osal_bug_on(!stp_dbg);
-
 	if (hdr->dbg_type == STP_DBG_PKT)
 		body_sz = (hdr->len <= STP_PKT_SZ) ? (hdr->len) : (STP_PKT_SZ);
 	else
@@ -1466,6 +1463,11 @@ INT32 stp_dbg_log_pkt(MTKSTP_DBG_T *stp_dbg, INT32 dbg_type,
 		      const PUINT8 body)
 {
 	STP_DBG_HDR_T hdr;
+
+	osal_bug_on(!stp_dbg);
+
+	if (!stp_dbg)
+		return -1;
 
 	if (stp_dbg->is_enable == 0) {
 		/*dbg is disable,and not to log */
