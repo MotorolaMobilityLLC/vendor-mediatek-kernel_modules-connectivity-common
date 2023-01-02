@@ -1,5 +1,7 @@
 #include "ring_emi.h"
-
+#include <linux/string.h>
+#include <linux/kernel.h>
+#include <linux/bug.h>
 
 void ring_emi_init(void *base, unsigned int max_size, void *read, void *write, struct ring_emi *ring_emi)
 {
