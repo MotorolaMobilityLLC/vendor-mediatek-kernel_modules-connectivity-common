@@ -291,6 +291,7 @@ typedef INT32(*CONSYS_IC_CMD_TX_TIMEOUT_DUMP) (VOID);
 typedef INT32(*CONSYS_IC_CMD_RX_TIMEOUT_DUMP) (VOID);
 typedef INT32(*CONSYS_IC_COREDUMP_TIMEOUT_DUMP) (VOID);
 typedef INT32(*CONSYS_IC_ASSERT_TIMEOUT_DUMP) (VOID);
+typedef INT32(*CONSYS_IC_IPI_TIMEOUT_DUMP) (VOID);
 
 typedef INT32(*CONSYS_IC_BEFORE_CHIP_RESET_DUMP) (VOID);
 typedef INT32(*CONSYS_IC_PC_LOG_DUMP) (VOID);
@@ -390,6 +391,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_ASSERT_TIMEOUT_DUMP consys_ic_assert_timeout_dump;
 	CONSYS_IC_BEFORE_CHIP_RESET_DUMP consys_ic_before_chip_reset_dump;
 	CONSYS_IC_PC_LOG_DUMP consys_ic_pc_log_dump;
+	CONSYS_IC_IPI_TIMEOUT_DUMP consys_ic_ipi_timeout_dump;
 
 	/* ant setting */
 	CONSYS_IC_IS_ANT_SWAP_ENABLE_BY_HWID consys_ic_is_ant_swap_enable_by_hwid;
@@ -505,7 +507,9 @@ INT32 mtk_wcn_consys_coredump_timeout_dump(VOID);
 INT32 mtk_wcn_consys_assert_timeout_dump(VOID);
 INT32 mtk_wnc_consys_before_chip_reset_dump(VOID);
 INT32 mtk_wcn_consys_pc_log_dump(VOID);
+INT32 mtk_wcn_consys_ipi_timeout_dump(VOID);
 
+VOID mtk_wcn_dump_util_init(VOID);
 VOID mtk_wcn_dump_util_destroy(VOID);
 
 extern int g_mapped_reg_table_sz;
