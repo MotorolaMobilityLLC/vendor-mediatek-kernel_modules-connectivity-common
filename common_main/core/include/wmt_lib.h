@@ -352,6 +352,10 @@ VOID wmt_lib_set_ext_ldo(UINT32 flag);
 UINT32 wmt_lib_get_ext_ldo(VOID);
 INT32 wmt_lib_try_pwr_off(VOID);
 
+INT32 wmt_lib_blank_status_ctrl(UINT32 on_off_flag);
+VOID wmt_lib_set_blank_status(UINT32 on_off_flag);
+extern UINT32 wmt_lib_get_blank_status(VOID);
+
 extern INT32 DISABLE_PSM_MONITOR(VOID);
 extern VOID ENABLE_PSM_MONITOR(VOID);
 extern INT32 wmt_lib_notify_stp_sleep(VOID);
