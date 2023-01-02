@@ -32,7 +32,7 @@
 ********************************************************************************
 */
 #include "osal_typedef.h"
-
+#include "connsys_debug_utility.h"
 #include "wmt_lib.h"
 #include "wmt_core.h"
 #include "wmt_ctrl.h"
@@ -151,7 +151,7 @@ static INT32 opfunc_idc_msg_handling(P_WMT_OP pWmtOp);
 static INT32 opfunc_trigger_stp_assert(P_WMT_OP pWmtOp);
 static INT32 opfunc_flash_patch_down(P_WMT_OP pWmtOp);
 static INT32 opfunc_flash_patch_ver_get(P_WMT_OP pWmtOp);
-
+static INT32 opfunc_utc_time_sync(P_WMT_OP pWmtOp);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -255,6 +255,14 @@ static UINT8 WMT_FLASH_PATCH_DWN_EVT[] = { 0x02, 0x01, 0x01, 0x00	/*length */
 	, 0x00
 };
 
+#ifdef CONFIG_MTK_CONNSYS_DEDICATED_LOG_PATH
+static UINT8 WMT_UTC_SYNC_CMD[] = { 0x01, 0xF0, 0x09, 0x00, 0x02
+	, 0x00, 0x00, 0x00, 0x00 /*UTC time second unit*/
+	, 0x00, 0x00, 0x00, 0x00 /*UTC time microsecond unit*/
+};
+static UINT8 WMT_UTC_SYNC_EVT[] = { 0x02, 0xF0, 0x01, 0x00, 0x02
+};
+#endif
 
 /* GeorgeKuo: Use designated initializers described in
  * http://gcc.gnu.org/onlinedocs/gcc-4.0.4/gcc/Designated-Inits.html
@@ -293,6 +301,7 @@ static const WMT_OPID_FUNC wmt_core_opfunc[] = {
 	[WMT_OPID_TRIGGER_STP_ASSERT] = opfunc_trigger_stp_assert,
 	[WMT_OPID_FLASH_PATCH_DOWN] = opfunc_flash_patch_down,
 	[WMT_OPID_FLASH_PATCH_VER_GET] = opfunc_flash_patch_ver_get,
+	[WMT_OPID_UTC_TIME_SYNC] = opfunc_utc_time_sync,
 
 };
 
@@ -828,6 +837,10 @@ static INT32 wmt_core_stp_init(VOID)
 		WMT_ERR_FUNC("gMtkWmtCtx.p_ic_ops->sw_init fail:%d\n", iRet);
 		return -10;
 	}
+
+	/* send UTC time sync command after connsys power on or chip reset */
+	opfunc_utc_time_sync(NULL);
+
 	/* 4 <10> set stp ready */
 	ctrlPa1 = WMT_STP_CONF_RDY;
 	ctrlPa2 = 1;
@@ -1306,6 +1319,8 @@ static INT32 opfunc_func_on(P_WMT_OP pWmtOp)
 		return iRet;
 	}
 
+	/* send UTC time sync command after function on */
+	opfunc_utc_time_sync(NULL);
 	wmt_core_dump_func_state("AF FUNC ON");
 
 	return 0;
@@ -3129,6 +3144,59 @@ UINT32 wmt_core_get_flag_for_test(VOID)
 }
 
 #endif
+
+static INT32 opfunc_utc_time_sync(P_WMT_OP pWmtOp)
+{
+#ifdef CONFIG_MTK_CONNSYS_DEDICATED_LOG_PATH
+	INT32 iRet;
+	UINT32 u4Res;
+	UINT32 evtLen;
+	UINT8 evtBuf[16] = { 0 };
+	UINT32 tsec;
+	UINT32 tusec;
+
+	connsys_dedicated_log_get_utc_time(&tsec, &tusec);
+	/* UTC time second unit */
+	osal_memcpy(&WMT_UTC_SYNC_CMD[5], &tsec, 4);
+	/* UTC time microsecond unit */
+	osal_memcpy(&WMT_UTC_SYNC_CMD[9], &tusec, 4);
+
+	/* send command */
+	iRet = wmt_core_tx(WMT_UTC_SYNC_CMD, sizeof(WMT_UTC_SYNC_CMD),
+		&u4Res, MTK_WCN_BOOL_FALSE);
+	if (iRet) {
+		WMT_ERR_FUNC("Tx WMT_UTC_SYNC_CMD fail!(%d) len (%d, %zu)\n",
+			iRet, u4Res, sizeof(WMT_UTC_SYNC_CMD));
+		return -1;
+	}
+
+	/* receive event */
+	evtLen = osal_sizeof(WMT_UTC_SYNC_EVT);
+	iRet = wmt_core_rx(evtBuf, evtLen, &u4Res);
+	if (iRet || (u4Res != evtLen)) {
+		WMT_ERR_FUNC("WMT-CORE: read WMT_UTC_SYNC_EVT fail(%d) len(%d, %d)\n",
+			iRet, u4Res, evtLen);
+		osal_assert(0);
+		return iRet;
+	}
+
+	if (osal_memcmp(evtBuf, WMT_UTC_SYNC_EVT,
+		osal_sizeof(WMT_UTC_SYNC_EVT)) != 0) {
+		WMT_ERR_FUNC("WMT-CORE: compare WMT_UTC_SYNC_EVT error\n");
+		WMT_ERR_FUNC("WMT-CORE: rx(%d):[%02X,%02X,%02X,%02X,%02X]\n",
+			u4Res, evtBuf[0], evtBuf[1], evtBuf[2], evtBuf[3], evtBuf[4]);
+		WMT_ERR_FUNC("WMT-CORE: exp(%zu):[%02X,%02X,%02X,%02X,%02X]\n",
+			osal_sizeof(WMT_UTC_SYNC_EVT), WMT_UTC_SYNC_EVT[0],
+			WMT_UTC_SYNC_EVT[1], WMT_UTC_SYNC_EVT[2], WMT_UTC_SYNC_EVT[3],
+			WMT_UTC_SYNC_EVT[4]);
+	} else {
+		WMT_INFO_FUNC("Send WMT_UTC_SYNC_CMD command OK!\n");
+	}
+	return 0;
+#else
+	return -1;
+#endif
+}
 
 P_WMT_GEN_CONF wmt_get_gen_conf_pointer(VOID)
 {
