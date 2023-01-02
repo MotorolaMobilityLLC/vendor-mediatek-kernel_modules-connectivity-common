@@ -328,7 +328,8 @@ VOID osal_dump_thread_state(const PUINT8 name)
 
 VOID osal_thread_show_stack(P_OSAL_THREAD pThread)
 {
-	return KERNEL_show_stack(pThread->pThread, NULL);
+	if ((pThread) && (pThread->pThread))
+		KERNEL_show_stack(pThread->pThread, NULL);
 }
 
 /*
@@ -338,6 +339,9 @@ VOID osal_thread_show_stack(P_OSAL_THREAD pThread)
 */
 INT32 osal_thread_create(P_OSAL_THREAD pThread)
 {
+	if (!pThread)
+		return -1;
+
 	pThread->pThread = kthread_create(pThread->pThreadFunc, pThread->pThreadData, pThread->threadName);
 	if (pThread->pThread == NULL)
 		return -1;
@@ -347,7 +351,7 @@ INT32 osal_thread_create(P_OSAL_THREAD pThread)
 
 INT32 osal_thread_run(P_OSAL_THREAD pThread)
 {
-	if (pThread->pThread) {
+	if ((pThread) && (pThread->pThread)) {
 		wake_up_process(pThread->pThread);
 		return 0;
 	} else {
