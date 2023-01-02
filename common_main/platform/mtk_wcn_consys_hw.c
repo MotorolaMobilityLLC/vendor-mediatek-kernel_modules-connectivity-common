@@ -255,6 +255,9 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 	if (wmt_consys_ic_ops->consys_ic_store_reset_control)
 		wmt_consys_ic_ops->consys_ic_store_reset_control(pdev);
 
+	if (wmt_consys_ic_ops->consys_ic_register_devapc_cb)
+		wmt_consys_ic_ops->consys_ic_register_devapc_cb();
+
 	return 0;
 }
 
