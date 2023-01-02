@@ -20,6 +20,7 @@
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/workqueue.h>
+#include <linux/ratelimit.h>
 #include "connsys_debug_utility.h"
 #include "ring.h"
 #ifdef EMI_TO_CACHE_SUPPORT
@@ -223,22 +224,27 @@ static void connlog_ring_emi_to_cache(int conn_type)
 	int total_size = 0;
 	int count = 0;
 	unsigned int cache_max_size = 0;
+	static DEFINE_RATELIMIT_STATE(_rs, 10 * HZ, 1);
+	static DEFINE_RATELIMIT_STATE(_rs2, HZ, 1);
 
 	if (RING_CACHE_FULL(ring_cache)) {
-		pr_warn("%s cache is full.\n", type_to_title[conn_type]);
+		if (__ratelimit(&_rs))
+			pr_warn("%s cache is full.\n", type_to_title[conn_type]);
 		return;
 	}
 
 	cache_max_size = RING_CACHE_WRITE_REMAIN_SIZE(ring_cache);
 	if (RING_EMPTY(ring) || !ring_read_prepare(cache_max_size, &ring_seg, ring)) {
-		pr_err("%s no data, possibly taken by concurrent reader.\n", type_to_title[conn_type]);
+		if (__ratelimit(&_rs))
+			pr_err("%s no data, possibly taken by concurrent reader.\n", type_to_title[conn_type]);
 		return;
 	}
 
 	/* Check ring buffer memory. Dump EMI data if it's corruption. */
 	if (EMI_READ32(ring->read) > emi_offset_table[conn_type].emi_size ||
 		EMI_READ32(ring->write) > emi_offset_table[conn_type].emi_size) {
-		pr_err("%s read/write pointer out-of-bounds.\n", type_to_title[conn_type]);
+		if (__ratelimit(&_rs))
+			pr_err("%s read/write pointer out-of-bounds.\n", type_to_title[conn_type]);
 		/* 64 byte ring buffer setting & 32 byte mcu read/write pointer */
 		connlog_dump_emi(0x0, 0x60);
 		/* 32 byte wifi read/write pointer */
@@ -264,9 +270,10 @@ static void connlog_ring_emi_to_cache(int conn_type)
 			ring_cache_dump(__func__, &connlog_buffer_table[conn_type].ring_cache);
 			ring_cache_dump_segment(__func__, &ring_cache_seg);
 #endif
-			pr_info("%s: ring_seg.sz=%d, ring_cache_pt=%p, ring_cache_seg.sz=%d\n",
-				type_to_title[conn_type], ring_seg.sz, ring_cache_seg.ring_cache_pt,
-				ring_cache_seg.sz);
+			if (__ratelimit(&_rs2))
+				pr_info("%s: ring_seg.sz=%d, ring_cache_pt=%p, ring_cache_seg.sz=%d\n",
+					type_to_title[conn_type], ring_seg.sz, ring_cache_seg.ring_cache_pt,
+					ring_cache_seg.sz);
 			memcpy_fromio(ring_cache_seg.ring_cache_pt, ring_seg.ring_pt + ring_cache_seg.data_pos,
 				ring_cache_seg.sz);
 			emi_buf_size -= ring_cache_seg.sz;
@@ -453,6 +460,7 @@ static void connlog_log_data_handler(struct work_struct *work)
 {
 	int ret = 0;
 	int i;
+	static DEFINE_RATELIMIT_STATE(_rs, 10 * HZ, 1);
 
 	do {
 		ret = 0;
@@ -466,8 +474,10 @@ static void connlog_log_data_handler(struct work_struct *work)
 #endif
 				connlog_event_set(i);
 				/* ret++; */
-			} else
-				pr_debug("%s emi ring is empty!!\n", type_to_title[i]);
+			} else {
+				if (__ratelimit(&_rs))
+					pr_debug("%s emi ring is empty!!\n", type_to_title[i]);
+			}
 		}
 	} while (ret);
 
