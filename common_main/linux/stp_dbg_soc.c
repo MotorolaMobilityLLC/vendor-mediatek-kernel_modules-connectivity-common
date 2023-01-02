@@ -215,6 +215,12 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 	if (dump_sink == 0)
 		return 0;
 
+	/* handshake error handle: notify FW assert in abnormal case */
+	if (p_ecsi->p_ecso->emi_apmem_ctrl_state == 0x0) {
+		mtk_wcn_force_trigger_assert_debug_pin();
+		osal_sleep_ms(100);
+	}
+
 	/*packet number depend on dump_num get from register:0xf0080044 ,support jade*/
 	dump_num = wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_chip_page_dump_num);
 	if (dump_num != 0) {
