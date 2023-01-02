@@ -13,9 +13,11 @@
 */
 
 /* ALPS header files */
+#include <linux/version.h>
+
 #ifndef CONFIG_RTC_DRV_MT6397
 #include <mtk_rtc.h>
-#else
+#elif (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0))
 #include <linux/mfd/mt6397/rtc_misc.h>
 #endif
 
@@ -157,7 +159,9 @@ static int wmt_detect_chip_pwr_on(void)
 	msleep(MAX_LDO_STABLE_TIME);
 
 	/*export RTC clock, sleep for RTC stable time*/
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0))
 	rtc_gpio_enable_32k(RTC_GPIO_USER_GPS);
+#endif
 	msleep(MAX_RTC_STABLE_TIME);
 	/*PMU output low, RST output low, to make chip power off completely*/
 	/*always done*/
