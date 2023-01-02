@@ -398,6 +398,7 @@ extern ENUM_WMTHWVER_TYPE_T mtk_wcn_wmt_hwver_get(VOID);
 
 extern UINT32 mtk_wcn_wmt_ic_info_get(ENUM_WMT_CHIPINFO_TYPE_T type);
 
+extern UINT32 mtk_wcn_wmt_adie_workable(VOID);
 
 extern INT32 mtk_wcn_wmt_chipid_query(VOID);
 
