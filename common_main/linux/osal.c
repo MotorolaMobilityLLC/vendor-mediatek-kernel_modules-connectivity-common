@@ -1740,7 +1740,7 @@ VOID osal_op_history_print(struct osal_op_history *log_history, PINT8 name)
 			 * RING_SIZE(ring_buffer);
 
 	/* Allocate memory before getting lock to save time of holding lock */
-	queue = kmalloc(queue_size, GFP_KERNEL);
+	queue = kmalloc(queue_size, GFP_ATOMIC);
 	if (queue == NULL) {
 		spin_unlock_irqrestore(lock, flags);
 		return;
