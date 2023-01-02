@@ -3350,11 +3350,15 @@ err:
 
 INT32 wmt_lib_reg_readable(VOID)
 {
+	return wmt_lib_reg_readable_by_addr(0);
+}
+
+INT32 wmt_lib_reg_readable_by_addr(SIZE_T addr)
+{
 	if (wmt_lib_get_drv_status(WMTDRV_TYPE_WMT) != DRV_STS_FUNC_ON
 			|| osal_test_bit(WMT_STAT_PWR, &gDevWmt.state) == 0) {
 		return MTK_WCN_BOOL_FALSE;
 	}
-	return mtk_consys_check_reg_readable();
+	return mtk_consys_check_reg_readable_by_addr(addr);
 }
-
 
