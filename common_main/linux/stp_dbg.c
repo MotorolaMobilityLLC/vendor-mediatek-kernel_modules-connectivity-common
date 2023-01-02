@@ -1156,6 +1156,19 @@ INT32 stp_dbg_disable(MTKSTP_DBG_T *stp_dbg)
 	return 0;
 }
 
+static PINT8 stp_get_dbg_type_string(const PINT8 *pType, UINT32 type)
+{
+	PINT8 info_task_type = "<DBG>";
+
+	if (!pType)
+		return NULL;
+
+	if ((mtk_wcn_stp_is_support_gpsl5() == 0) && (type == INFO_TASK_INDX))
+		return info_task_type;
+	else
+		return pType[type];
+}
+
 static _osal_inline_ INT32 stp_dbg_dmp_in(MTKSTP_DBG_T *stp_dbg, PINT8 buf, INT32 len)
 {
 	ULONG flags;
@@ -1187,7 +1200,8 @@ static _osal_inline_ INT32 stp_dbg_dmp_in(MTKSTP_DBG_T *stp_dbg, PINT8 buf, INT3
 			pHdr->sec,
 			pHdr->usec,
 			pHdr->dir == PKT_DIR_TX ? "Tx" : "Rx",
-			pType[pHdr->type], pHdr->no, pHdr->len, pHdr->seq, pHdr->ack);
+			stp_get_dbg_type_string(pType, pHdr->type),
+			pHdr->no, pHdr->len, pHdr->seq, pHdr->ack);
 
 		if (length > 0)
 			stp_dbg_dump_data(pBuf, pHdr->dir == PKT_DIR_TX ? "Tx" : "Rx", length);
@@ -1239,7 +1253,8 @@ static VOID stp_dbg_dmp_print_work(struct work_struct *work)
 			pHdr->sec,
 			pHdr->usec,
 			pHdr->dir == PKT_DIR_TX ? "Tx" : "Rx",
-			pType[pHdr->type], pHdr->no, pHdr->len, pHdr->seq,
+			stp_get_dbg_type_string(pType, pHdr->type),
+			pHdr->no, pHdr->len, pHdr->seq,
 			pHdr->ack, pHdr->l_sec, pHdr->l_nsec);
 
 		if (len > 0)
@@ -1410,7 +1425,8 @@ INT32 stp_dbg_dmp_append(MTKSTP_DBG_T *stp_dbg, PUINT8 pBuf, INT32 max_len)
 		len += osal_sprintf(pBuf + len, "\t%llu.%06lus, %s:pT%sn(%d)l(%4d)s(%d)a(%d)\t",
 				    pHdr->l_sec, pHdr->l_nsec,
 				    pHdr->dir == PKT_DIR_TX ? "Tx" : "Rx",
-				    pType[pHdr->type], pHdr->no, pHdr->len, pHdr->seq,
+				    stp_get_dbg_type_string(pType, pHdr->type),
+				    pHdr->no, pHdr->len, pHdr->seq,
 				    pHdr->ack);
 
 		for (i = 0; i < l; i++, p++)
