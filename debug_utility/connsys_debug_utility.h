@@ -37,6 +37,24 @@ enum CONNLOG_TYPE {
 };
 
 typedef void (*CONNLOG_EVENT_CB) (void);
+typedef void (*CONNLOG_IRQ_CB) (void);
+
+struct connlog_emi_config {
+	/* basic information */
+	phys_addr_t emi_offset;
+	unsigned int emi_size_total;
+	/* for individual radio */
+	unsigned int emi_size_mcu;
+	unsigned int emi_size_wifi;
+	unsigned int emi_size_bt;
+	unsigned int emi_size_gps;
+};
+
+struct connlog_irq_config {
+	unsigned int irq_num;
+	unsigned int irq_flag;
+	CONNLOG_IRQ_CB irq_callback;
+};
 
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S
@@ -44,7 +62,10 @@ typedef void (*CONNLOG_EVENT_CB) (void);
 */
 
 /* Common Driver API */
-int connsys_dedicated_log_path_apsoc_init(phys_addr_t emiaddr, unsigned int irq_num, unsigned int irq_flag);
+int connsys_dedicated_log_path_apsoc_init(
+	phys_addr_t emi_base,
+	const struct connlog_emi_config *emi_config,
+	const struct connlog_irq_config *irq_config);
 void connsys_dedicated_log_path_apsoc_deinit(void);
 void __iomem *connsys_log_get_emi_log_base_vir_addr(void);
 void connsys_dedicated_log_get_utc_time(unsigned int *second, unsigned int *usecond);
