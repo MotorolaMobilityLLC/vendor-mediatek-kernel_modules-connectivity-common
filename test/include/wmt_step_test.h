@@ -55,6 +55,7 @@ void wmt_step_test_do_gpio_action(struct step_test_report *p_report);
 void wmt_step_test_do_disable_reset_action(struct step_test_report *p_report);
 void wmt_step_test_do_chip_reset_action(struct step_test_report *p_report);
 void wmt_step_test_do_wakeup_action(struct step_test_report *p_report);
+void wmt_step_test_create_periodic_dump(struct step_test_report *p_report);
 
 #endif /* end of _WMT_STEP_TEST_H_ */
 
