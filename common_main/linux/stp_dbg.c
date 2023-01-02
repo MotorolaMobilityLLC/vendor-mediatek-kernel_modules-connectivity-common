@@ -43,6 +43,7 @@
 #include "stp_sdio.h"
 #include "stp_core.h"
 #include "mtk_wcn_consys_hw.h"
+#include "wmt_lib.h"
 
 
 UINT32 gStpDbgLogOut;
@@ -2055,6 +2056,22 @@ static VOID stp_dbg_dmaregs_deinit(P_STP_DBG_DMAREGS_T pDmaRegs)
 	}
 }
 
+/*
+ *	who call this ?
+ *	- stp_dbg_soc_paged_dump
+ *		generate coredump and coredump timeout
+ *	- wmt_dbg_poll_cpupcr
+ *		dump cpupcr through command
+ *	- mtk_stp_dbg_poll_cpupcr (should remove this)
+ *		export to other drivers
+ *	- _stp_btm_handler
+ *		coredump timeout
+ *	- wmt_ctrl_rx
+ *		rx timeout
+ *	- stp_do_tx_timeout
+ *		tx timeout
+ *
+ */
 INT32 stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
 {
 	INT32 i = 0;
@@ -2134,7 +2151,7 @@ INT32 stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
 		if (count % 4 != 0)
 			STP_DBG_PR_INFO("TIME/CPUPCR: %s\n", str);
 
-		if (chip_type == WMT_CHIP_TYPE_SOC && mtk_consys_check_reg_readable()) {
+		if (chip_type == WMT_CHIP_TYPE_SOC && wmt_lib_reg_readable()) {
 			STP_DBG_PR_INFO("CONNSYS cpu:0x%x/bus:0x%x/dbg_cr1:0x%x/dbg_cr2:0x%x/EMIaddr:0x%x\n",
 					  stp_dbg_soc_read_debug_crs(CONNSYS_CPU_CLK),
 					  stp_dbg_soc_read_debug_crs(CONNSYS_BUS_CLK),
