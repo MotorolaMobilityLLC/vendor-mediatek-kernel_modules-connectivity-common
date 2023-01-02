@@ -229,6 +229,14 @@ static const char * const STEP_TRIGGER_TIME_NAME[] = {
 		"[TP 23] When AP resume",
 	[STEP_TRIGGER_POINT_POWER_OFF_HANDSHAKE] =
 		"[TP 24] When power off handshake",
+	[STEP_TRIGGER_POINT_BEFORE_RESTORE_CAL_RESULT] =
+		"[TP 25] Before restore calibration result",
+	[STEP_TRIGGER_POINT_AFTER_RESTORE_CAL_RESULT] =
+		"[TP 26] After restore calibration result",
+	[STEP_TRIGGER_POINT_POWER_ON_AFTER_BT_WIFI_CALIBRATION] =
+		"[TP 27] Power on sequence(5): After BT and Wi-Fi calibration",
+	[STEP_TRIGGER_POINT_AFTER_RESTORE_CAL_CMD] =
+		"[TP 28] After send calibration restore command",
 };
 
 static const int wmt_step_func_ctrl_id[WMTDRV_TYPE_MAX][2] = {
