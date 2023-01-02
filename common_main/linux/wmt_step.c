@@ -1920,6 +1920,8 @@ static bool wmt_step_reg_readable(struct step_reigster_info *p_reg_info)
 		if (p_reg_info->address_type == STEP_REGISTER_CONN_MCU_CONFIG_BASE ||
 		    p_reg_info->address_type == STEP_REGISTER_MISC_OFF_BASE ||
 		    p_reg_info->address_type == STEP_REGISTER_CFG_ON_BASE ||
+		    p_reg_info->address_type == STEP_REGISTER_HIF_ON_BASE ||
+		    p_reg_info->address_type == STEP_MCU_TOP_MISC_ON_BASE ||
 		    p_reg_info->address_type == STEP_CIRQ_BASE)
 			return mtk_consys_check_reg_readable();
 	}
