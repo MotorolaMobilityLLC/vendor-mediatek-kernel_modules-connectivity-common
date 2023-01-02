@@ -1226,7 +1226,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	 * If yes, notify stp_launcher to update.
 	 */
 	if (wmt_lib_get_need_update_patch_version()) {
-		wmt_lib_set_need_update_patch_version(1);
+		wmt_lib_set_need_update_patch_version(0);
 		mtk_wcn_soc_update_patch_version();
 		WMT_INFO_FUNC("wmt update patch version\n");
 	}
