@@ -65,6 +65,7 @@ do { \
 #include <linux/workqueue.h>
 #include <linux/of.h>
 #include <linux/of_irq.h>
+#include <linux/interrupt.h>
 #include <mtk_wcn_cmb_stub.h>
 #include <wmt_build_in_adapter.h>
 #include "wmt_detect.h"
