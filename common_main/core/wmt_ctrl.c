@@ -292,7 +292,6 @@ INT32 wmt_ctrl_rx(P_WMT_CTRL_DATA pWmtCtrlData /*UINT8 *pBuff, UINT32 buffLen, U
 				osal_thread_sched_unmark(p_rx_thread, &schedstats);
 				wmt_ctrl_show_sched_stats_log(p_rx_thread, &schedstats);
 				stp_dbg_poll_cpupcr(5, 1, 1);
-				WMT_STEP_COMMAND_TIMEOUT_DO_ACTIONS_FUNC("STP RX timeout");
 				WMT_ERR_FUNC("wmt_dev_rx_timeout: timeout,jiffies(%lu),timeoutvalue(%d)\n",
 					     jiffies, pDev->rWmtRxWq.timeoutValue);
 				WMT_STEP_COMMAND_TIMEOUT_DO_ACTIONS_FUNC("STP RX timeout");

@@ -49,7 +49,7 @@ int wmt_step_test_check_write_tp(struct step_action_list *p_act_list, enum step_
 		tp_id = index_of_array(p_act_list, &g_step_env.actions, struct step_action_list);
 		if (tp_id != g_step_test_check.step_check_test_tp_id[index]) {
 			g_step_test_check.step_check_result = TEST_FAIL;
-			WMT_ERR_FUNC("STEP failed: tp_id %d: expect %d(%d)\n", tp_id,
+			WMT_ERR_FUNC("STEP test failed: tp_id %d: expect %d(%d)\n", tp_id,
 				g_step_test_check.step_check_test_tp_id[index], index);
 			return 0;
 		}
@@ -57,14 +57,14 @@ int wmt_step_test_check_write_tp(struct step_action_list *p_act_list, enum step_
 
 	if (act_id != g_step_test_check.step_check_test_act_id[index]) {
 		g_step_test_check.step_check_result = TEST_FAIL;
-		WMT_ERR_FUNC("STEP failed: act_id %d: expect %d(%d)\n", act_id,
+		WMT_ERR_FUNC("STEP test failed: act_id %d: expect %d(%d)\n", act_id,
 			g_step_test_check.step_check_test_tp_id[index], index);
 		return 0;
 	}
 
 	if (param_num != g_step_test_check.step_check_params_num[index]) {
 		g_step_test_check.step_check_result = TEST_FAIL;
-		WMT_ERR_FUNC("STEP failed: param num %d: expect %d(%d)\n", param_num,
+		WMT_ERR_FUNC("STEP test failed: param num %d: expect %d(%d)\n", param_num,
 			g_step_test_check.step_check_params_num[index], index);
 		return 0;
 	}
@@ -75,7 +75,7 @@ int wmt_step_test_check_write_tp(struct step_action_list *p_act_list, enum step_
 
 		if (params[0] == NULL || osal_strcmp(params[0], g_step_test_check.step_check_params[index][0]) != 0) {
 			g_step_test_check.step_check_result = TEST_FAIL;
-			WMT_ERR_FUNC("STEP failed: params[%d] %s: expect %s(%d)\n", i, params[0],
+			WMT_ERR_FUNC("STEP test failed: params[%d] %s: expect %s(%d)\n", i, params[0],
 				g_step_test_check.step_check_params[index][0], index);
 			return 0;
 		}
@@ -512,7 +512,7 @@ void wmt_step_test_check_emi_act(unsigned int len, ...)
 	p_virtual_addr = wmt_plat_get_emi_virt_add(offset);
 	if (!p_virtual_addr) {
 		g_step_test_check.step_check_result = TEST_FAIL;
-		WMT_ERR_FUNC("STEP failed: p_virtual_addr offset(%d) is null", offset);
+		WMT_ERR_FUNC("STEP test failed: p_virtual_addr offset(%d) is null", offset);
 		return;
 	}
 	check_result = CONSYS_REG_READ(p_virtual_addr);
@@ -524,7 +524,7 @@ void wmt_step_test_check_emi_act(unsigned int len, ...)
 	if (check_result == value) {
 		g_step_test_check.step_check_result = TEST_PASS;
 	} else {
-		WMT_ERR_FUNC("STEP failed: Value is %d, expect %d", value, check_result);
+		WMT_ERR_FUNC("STEP test failed: Value is %d, expect %d", value, check_result);
 		g_step_test_check.step_check_result = TEST_FAIL;
 		return;
 	}
@@ -532,7 +532,7 @@ void wmt_step_test_check_emi_act(unsigned int len, ...)
 	if (g_step_test_check.step_check_temp_register_id != -1) {
 		if (g_step_env.temp_register[g_step_test_check.step_check_temp_register_id] !=
 			(check_result & g_step_test_check.step_test_mask)) {
-			WMT_ERR_FUNC("STEP failed: Register id(%d) value is %d, expect %d mask 0x%08x",
+			WMT_ERR_FUNC("STEP test failed: Register id(%d) value is %d, expect %d mask 0x%08x",
 				g_step_test_check.step_check_temp_register_id,
 				g_step_env.temp_register[g_step_test_check.step_check_temp_register_id],
 				check_result, g_step_test_check.step_test_mask);
@@ -549,6 +549,9 @@ void wmt_step_test_check_reg_read_act(unsigned int len, ...)
 	unsigned int value;
 	va_list args;
 
+	if (g_step_test_check.step_check_result == TEST_FAIL)
+		return;
+
 	va_start(args, len);
 	value = va_arg(args, unsigned int);
 	check_result = CONSYS_REG_READ(g_step_test_check.step_check_register_addr);
@@ -556,7 +559,7 @@ void wmt_step_test_check_reg_read_act(unsigned int len, ...)
 	if (check_result == value) {
 		g_step_test_check.step_check_result = TEST_PASS;
 	} else {
-		WMT_ERR_FUNC("STEP failed: Value is %d, expect %d(0x%08x)", value, check_result,
+		WMT_ERR_FUNC("STEP test failed: Value is %d, expect %d(0x%08x)", value, check_result,
 			g_step_test_check.step_check_register_addr);
 		g_step_test_check.step_check_result = TEST_FAIL;
 	}
@@ -564,7 +567,7 @@ void wmt_step_test_check_reg_read_act(unsigned int len, ...)
 	if (g_step_test_check.step_check_temp_register_id != -1) {
 		if (g_step_env.temp_register[g_step_test_check.step_check_temp_register_id] !=
 			(check_result & g_step_test_check.step_test_mask)) {
-			WMT_ERR_FUNC("STEP failed: Register id(%d) value is %d, expect %d",
+			WMT_ERR_FUNC("STEP test failed: Register id(%d) value is %d, expect %d",
 				g_step_test_check.step_check_temp_register_id,
 				g_step_env.temp_register[g_step_test_check.step_check_temp_register_id],
 				check_result);
@@ -590,20 +593,20 @@ void wmt_step_test_check_reg_write_act(unsigned int len, ...)
 		if (g_step_test_check.step_check_write_value == value) {
 			g_step_test_check.step_check_result = TEST_PASS;
 		} else {
-			WMT_ERR_FUNC("STEP failed: Value is %d, expect %d", value,
+			WMT_ERR_FUNC("STEP test failed: Value is %d, expect %d", value,
 				g_step_test_check.step_check_write_value);
 			g_step_test_check.step_check_result = TEST_FAIL;
 		}
 	} else {
 		if ((mask & value) != (mask & g_step_test_check.step_check_write_value)) {
-			WMT_ERR_FUNC("STEP failed: Overrite fail, Value is %d, expect write %d recovery %d mask %d",
+			WMT_ERR_FUNC("STEP test failed: Overrite value: %d, expect value %d origin %d mask %d",
 				value,
 				g_step_test_check.step_check_write_value,
 				g_step_test_check.step_recovery_value,
 				mask);
 			g_step_test_check.step_check_result = TEST_FAIL;
 		} else if ((~mask & value) != (~mask & g_step_test_check.step_recovery_value)) {
-			WMT_ERR_FUNC("STEP failed: No change fail, Value is %d, expect write %d recovery %d mask %d",
+			WMT_ERR_FUNC("STEP test failed: No change value: %d, expect value %d origin %d mask %d",
 				value,
 				g_step_test_check.step_check_write_value,
 				g_step_test_check.step_recovery_value,
@@ -625,13 +628,13 @@ void wmt_step_test_check_show_act(unsigned int len, ...)
 	va_start(args, len);
 	content = va_arg(args, char*);
 	if (content == NULL || g_step_test_check.step_check_result_string == NULL) {
-		WMT_ERR_FUNC("STEP failed: content is NULL");
+		WMT_ERR_FUNC("STEP test failed: content is NULL");
 		g_step_test_check.step_check_result = TEST_FAIL;
 	}
 	if (osal_strcmp(content, g_step_test_check.step_check_result_string) == 0) {
 		g_step_test_check.step_check_result = TEST_PASS;
 	} else {
-		WMT_ERR_FUNC("STEP failed: content(%s), expect(%s)",
+		WMT_ERR_FUNC("STEP test failed: content(%s), expect(%s)",
 			content, g_step_test_check.step_check_result_string);
 		g_step_test_check.step_check_result = TEST_FAIL;
 	}
@@ -648,7 +651,7 @@ void wmt_step_test_check_condition_act(unsigned int len, ...)
 	if (value == g_step_test_check.step_check_result_value) {
 		g_step_test_check.step_check_result = TEST_PASS;
 	} else {
-		WMT_ERR_FUNC("STEP failed: value(%d), expect(%d)",
+		WMT_ERR_FUNC("STEP test failed: value(%d), expect(%d)",
 			value, g_step_test_check.step_check_result_value);
 		g_step_test_check.step_check_result = TEST_FAIL;
 	}
@@ -665,7 +668,7 @@ void wmt_step_test_check_value_act(unsigned int len, ...)
 	if (value == g_step_test_check.step_check_result_value) {
 		g_step_test_check.step_check_result = TEST_PASS;
 	} else {
-		WMT_ERR_FUNC("STEP failed: value(%d), expect(%d)",
+		WMT_ERR_FUNC("STEP test failed: value(%d), expect(%d)",
 			value, g_step_test_check.step_check_result_value);
 		g_step_test_check.step_check_result = TEST_FAIL;
 	}
@@ -701,6 +704,54 @@ void wmt_step_test_clear_temp_register(void)
 
 	for (i = 0; i < STEP_TEMP_REGISTER_SIZE; i++)
 		g_step_env.temp_register[i] = 0;
+}
+
+#define STEP_CAN_WRITE_UNKNOWN 0
+#define STEP_CAN_WRITE_YES 1
+#define STEP_CAN_WRITE_NO 2
+int wmt_step_test_is_can_write(SIZE_T addr, int mask)
+{
+	int before, after;
+	int ret = STEP_CAN_WRITE_UNKNOWN;
+
+	before = CONSYS_REG_READ(addr);
+	CONSYS_REG_WRITE_MASK(addr, 0xFFFFFFFF, mask);
+	after = CONSYS_REG_READ(addr);
+	if ((after & mask) != (0xFFFFFFFF & mask))
+		ret = STEP_CAN_WRITE_NO;
+
+	CONSYS_REG_WRITE_MASK(addr, 0x0, mask);
+	after = CONSYS_REG_READ(addr);
+	if ((after & mask) != (0x0 & mask))
+		ret = STEP_CAN_WRITE_NO;
+
+	CONSYS_REG_WRITE_MASK(addr, before, mask);
+	if (ret != STEP_CAN_WRITE_NO)
+		ret = STEP_CAN_WRITE_YES;
+
+	return ret;
+}
+
+int wmt_step_test_find_can_write_register(SIZE_T addr, int max, int mask)
+{
+	int i;
+	bool is_write;
+
+	if (DISABLE_PSM_MONITOR()) {
+		WMT_ERR_FUNC("wake up failed\n");
+		return -1;
+	}
+
+	for (i = 0x0; i < max; i += 0x4) {
+		is_write = wmt_step_test_is_can_write(addr + i, mask);
+		if (is_write == STEP_CAN_WRITE_YES) {
+			ENABLE_PSM_MONITOR();
+			return i;
+		}
+	}
+	ENABLE_PSM_MONITOR();
+
+	return -1;
 }
 
 void wmt_step_test_update_result(int result, struct step_test_report *p_report, char *err_result)
@@ -752,7 +803,7 @@ void __wmt_step_test_parse_data(const char *buf, struct step_test_report *p_repo
 {
 	wmt_step_parse_data(buf, osal_strlen((char *)buf), wmt_step_test_check_write_tp);
 	if (g_step_test_check.step_check_total != g_step_test_check.step_check_index) {
-		WMT_ERR_FUNC("STEP failed: index %d: expect total %d\n", g_step_test_check.step_check_index,
+		WMT_ERR_FUNC("STEP test failed: index %d: expect total %d\n", g_step_test_check.step_check_index,
 				g_step_test_check.step_check_total);
 		g_step_test_check.step_check_result = TEST_FAIL;
 	}
@@ -1017,6 +1068,7 @@ void __wmt_step_test_do_register_action(enum step_action_id act_id, int param_nu
 			}
 		} else {
 			/* Read register test */
+			g_step_test_check.step_check_result = TEST_PASS;
 			result = wmt_step_do_register_action(p_act, wmt_step_test_check_reg_read_act);
 			if (result == result_of_action) {
 				if (g_step_test_check.step_check_result == TEST_PASS) {
@@ -1082,6 +1134,7 @@ void __wmt_step_test_do_cond_register_action(enum step_action_id act_id, int par
 			}
 		} else {
 			/* Read register test */
+			g_step_test_check.step_check_result = TEST_PASS;
 			result = wmt_step_do_condition_register_action(p_act, wmt_step_test_check_reg_read_act);
 			if (result == result_of_action) {
 				if (g_step_test_check.step_check_result == TEST_PASS) {
@@ -1150,7 +1203,7 @@ void wmt_step_test_all(void)
 	g_step_env.is_enable = is_enable_step;
 
 	osal_gettimeofday(&sec_end, &usec_end);
-	wmt_step_test_show_result_report("STEP test: All result",
+	wmt_step_test_show_result_report("STEP result: All result",
 		&report, sec_begin, usec_begin, sec_end, usec_end);
 }
 
@@ -1171,12 +1224,12 @@ void wmt_step_test_read_file(struct step_test_report *p_report)
 	if (-1 == wmt_step_read_file("wmt_failed.cfg")) {
 		temp_report.pass++;
 	} else {
-		WMT_ERR_FUNC("STEP failed: (Read file TC-1) expect no file\n");
+		WMT_ERR_FUNC("STEP test failed: (Read file TC-1) expect no file\n");
 		temp_report.fail++;
 	}
 
 	osal_gettimeofday(&sec_end, &usec_end);
-	wmt_step_test_show_result_report("STEP test: Read file result",
+	wmt_step_test_show_result_report("STEP result: Read file result",
 		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
 	wmt_step_test_update_result_report(p_report, &temp_report);
 }
@@ -1332,7 +1385,7 @@ void wmt_step_test_parse_data(struct step_test_report *p_report)
 	g_step_test_check.step_check_params[18][4] = "$1";
 	g_step_test_check.step_check_params_num[18] = 5;
 	__wmt_step_test_parse_data(buf, &temp_report,
-		"STEP failed: (Parse data TC-1) Normal case\n");
+		"STEP test case failed: (Parse data TC-1) Normal case\n");
 
 	/*********************************
 	 ******** Test case 2 ************
@@ -1462,7 +1515,7 @@ void wmt_step_test_parse_data(struct step_test_report *p_report)
 	g_step_test_check.step_check_params[18][4] = "$1";
 	g_step_test_check.step_check_params_num[18] = 5;
 	__wmt_step_test_parse_data(buf, &temp_report,
-		"STEP failed: (Parse data TC-2) Normal case with some space\n");
+		"STEP test case failed: (Parse data TC-2) Normal case with some space\n");
 
 	/***************************************************
 	 ****************** Test case 3 ********************
@@ -1536,7 +1589,7 @@ void wmt_step_test_parse_data(struct step_test_report *p_report)
 	g_step_test_check.step_check_params_num[10] = 1;
 
 	__wmt_step_test_parse_data(buf, &temp_report,
-		"STEP failed: (Parse data TC-3) Not enough parameter\n");
+		"STEP test case failed: (Parse data TC-3) Not enough parameter\n");
 
 	/***************************************************
 	 ****************** Test case 4 ********************
@@ -1664,7 +1717,7 @@ void wmt_step_test_parse_data(struct step_test_report *p_report)
 	g_step_test_check.step_check_params_num[17] = 5;
 
 	__wmt_step_test_parse_data(buf, &temp_report,
-		"STEP failed: (Parse data TC-4) Upcase and lowercase\n");
+		"STEP test case failed: (Parse data TC-4) Upcase and lowercase\n");
 
 	/*************************************************
 	 ****************** Test case 5 ******************
@@ -1723,7 +1776,7 @@ void wmt_step_test_parse_data(struct step_test_report *p_report)
 	g_step_test_check.step_check_params[6][3] = "2";
 	g_step_test_check.step_check_params_num[6] = 4;
 	__wmt_step_test_parse_data(buf, &temp_report,
-		"STEP failed: (Parse data TC-5) TP sequence switch\n");
+		"STEP test case failed: (Parse data TC-5) TP sequence switch\n");
 
 	/*********************************
 	 ********* Test case 6 ***********
@@ -1795,7 +1848,7 @@ void wmt_step_test_parse_data(struct step_test_report *p_report)
 	g_step_test_check.step_check_params[7][1] = "8";
 	g_step_test_check.step_check_params_num[7] = 2;
 	__wmt_step_test_parse_data(buf, &temp_report,
-		"STEP failed: (Parse data TC-6) More comment\n");
+		"STEP test case failed: (Parse data TC-6) More comment\n");
 
 	/*********************************
 	 ********* Test case 7 ***********
@@ -1829,7 +1882,7 @@ void wmt_step_test_parse_data(struct step_test_report *p_report)
 
 	g_step_test_check.step_check_total = 0;
 	__wmt_step_test_parse_data(buf, &temp_report,
-		"STEP failed: (Parse data TC-7) Wrong format\n");
+		"STEP test case failed: (Parse data TC-7) Wrong format\n");
 
 	/********************************
 	 ******** Test case 8 ***********
@@ -1902,7 +1955,7 @@ void wmt_step_test_parse_data(struct step_test_report *p_report)
 	g_step_test_check.step_check_params[8][2] = "3";
 	g_step_test_check.step_check_params_num[8] = 3;
 	__wmt_step_test_parse_data(buf, &temp_report,
-		"STEP failed: (Parse data TC-8) Periodic dump\n");
+		"STEP test case failed: (Parse data TC-8) Periodic dump\n");
 
 	/*********************************
 	 ******** Test case 9 ************
@@ -1933,10 +1986,10 @@ void wmt_step_test_parse_data(struct step_test_report *p_report)
 	g_step_test_check.step_check_params_num[0] = 10;
 
 	__wmt_step_test_parse_data(buf, &temp_report,
-		"STEP failed: (Parse data TC-9) Boundary: Much parameter\n");
+		"STEP test case failed: (Parse data TC-9) Boundary: Much parameter\n");
 
 	osal_gettimeofday(&sec_end, &usec_end);
-	wmt_step_test_show_result_report("STEP test: Parse data result",
+	wmt_step_test_show_result_report("STEP result: Parse data result",
 		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
 	wmt_step_test_update_result_report(p_report, &temp_report);
 }
@@ -1971,7 +2024,7 @@ void wmt_step_test_create_emi_action(struct step_test_report *p_report)
 	check_params[1] = 0x50;
 	check_params[2] = 0x9c;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-1) EMI create");
+		"STEP test case failed: (Create action TC-1) EMI create");
 
 	/************************************
 	 ********** Test case 2 ************
@@ -1983,7 +2036,7 @@ void wmt_step_test_create_emi_action(struct step_test_report *p_report)
 	params[1] = "0x50";
 	param_num = 2;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-2) EMI create fail");
+		"STEP test case failed: (Create action TC-2) EMI create fail");
 
 	/*************************************************
 	 **************** Test case 3 *******************
@@ -2001,7 +2054,7 @@ void wmt_step_test_create_emi_action(struct step_test_report *p_report)
 	check_params[2] = 0x00000030;
 	check_params[3] = 3;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-3) Save emi to temp register");
+		"STEP test case failed: (Create action TC-3) Save emi to temp register");
 
 	/*************************************************
 	 **************** Test case 4 *******************
@@ -2015,10 +2068,10 @@ void wmt_step_test_create_emi_action(struct step_test_report *p_report)
 	params[3] = "$30";
 	param_num = 4;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-4) Boundary: Save emi to wrong temp register");
+		"STEP test case failed: (Create action TC-4) Boundary: Save emi to wrong temp register");
 
 	osal_gettimeofday(&sec_end, &usec_end);
-	wmt_step_test_show_result_report("STEP test: Create EMI action result",
+	wmt_step_test_show_result_report("STEP result: Create EMI action result",
 		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
 	wmt_step_test_update_result_report(p_report, &temp_report);
 }
@@ -2055,7 +2108,7 @@ void wmt_step_test_create_cond_emi_action(struct step_test_report *p_report)
 	check_params[2] = 0x50;
 	check_params[3] = 0x70;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-1) Condition emi create");
+		"STEP test case failed: (Create action TC-1) Condition emi create");
 
 	/*************************************************
 	 **************** Test case 2 *******************
@@ -2075,7 +2128,7 @@ void wmt_step_test_create_cond_emi_action(struct step_test_report *p_report)
 	check_params[3] = 0x00000030;
 	check_params[4] = 3;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-2) Save condition emi to temp register");
+		"STEP test case failed: (Create action TC-2) Save condition emi to temp register");
 
 	/***********************************************************
 	 ******************** Test case 3 *************************
@@ -2090,7 +2143,7 @@ void wmt_step_test_create_cond_emi_action(struct step_test_report *p_report)
 	params[4] = "$30";
 	param_num = 5;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-3) Boundary: Boundary: Save condition emi to wrong temp register");
+		"STEP test case failed: (Create action TC-3) Boundary: Boundary: Save condition emi to wrong temp register");
 
 	/***********************************************************
 	 ******************** Test case 4 *************************
@@ -2105,7 +2158,7 @@ void wmt_step_test_create_cond_emi_action(struct step_test_report *p_report)
 	params[4] = "$1";
 	param_num = 5;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-4) Boundary: Boundary: Save condition emi is wrong temp register");
+		"STEP test case failed: (Create action TC-4) Boundary: Boundary: Save condition emi is wrong temp register");
 
 	/*************************************************
 	 **************** Test case 5 *******************
@@ -2118,7 +2171,7 @@ void wmt_step_test_create_cond_emi_action(struct step_test_report *p_report)
 	params[2] = "0x50";
 	param_num = 3;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-5) Condition emi create less params");
+		"STEP test case failed: (Create action TC-5) Condition emi create less params");
 
 	/*************************************************
 	 **************** Test case 6 *******************
@@ -2133,10 +2186,10 @@ void wmt_step_test_create_cond_emi_action(struct step_test_report *p_report)
 	params[3] = "$1";
 	param_num = 5;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-6) Condition emi create wrong symbol");
+		"STEP test case failed: (Create action TC-6) Condition emi create wrong symbol");
 
 	osal_gettimeofday(&sec_end, &usec_end);
-	wmt_step_test_show_result_report("STEP test: Create condition EMI action result",
+	wmt_step_test_show_result_report("STEP result: Create condition EMI action result",
 		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
 	wmt_step_test_update_result_report(p_report, &temp_report);
 }
@@ -2175,7 +2228,7 @@ void wmt_step_test_create_register_action(struct step_test_report *p_report)
 	check_params[3] = 2;
 	check_params[4] = 10;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-1) REG create read");
+		"STEP test case failed: (Create action TC-1) REG create read");
 
 	/*****************************************
 	 ************ Test case 2 ****************
@@ -2193,7 +2246,7 @@ void wmt_step_test_create_register_action(struct step_test_report *p_report)
 	check_params[2] = 0x9c;
 	check_params[3] = 15;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-2) REG create write");
+		"STEP test case failed: (Create action TC-2) REG create write");
 
 	/******************************************
 	 ************** Test case 3 ***************
@@ -2213,7 +2266,7 @@ void wmt_step_test_create_register_action(struct step_test_report *p_report)
 	check_params[3] = 2;
 	check_params[4] = 10;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-3) Boundary: read wrong symbol");
+		"STEP test case failed: (Create action TC-3) Boundary: read wrong symbol");
 
 	/****************************************************
 	 **************** Test case 4 **********************
@@ -2226,7 +2279,7 @@ void wmt_step_test_create_register_action(struct step_test_report *p_report)
 	params[2] = "0x9c";
 	param_num = 3;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-4) REG create read fail");
+		"STEP test case failed: (Create action TC-4) REG create read fail");
 
 	/*****************************************************
 	 ************ Test case 5 ***************************
@@ -2239,7 +2292,7 @@ void wmt_step_test_create_register_action(struct step_test_report *p_report)
 	params[2] = "0x9c";
 	param_num = 3;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-5) REG create write fail");
+		"STEP test case failed: (Create action TC-5) REG create write fail");
 
 	/*****************************************
 	 ************ Test case 6 ****************
@@ -2259,7 +2312,7 @@ void wmt_step_test_create_register_action(struct step_test_report *p_report)
 	check_params[3] = 15;
 	check_params[4] = 0xFF00FF00;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-6) REG create write");
+		"STEP test case failed: (Create action TC-6) REG create write");
 
 	/*********************************************************
 	 ******************** Test case 7 ***********************
@@ -2279,7 +2332,7 @@ void wmt_step_test_create_register_action(struct step_test_report *p_report)
 	check_params[3] = 0x00000030;
 	check_params[4] = 5;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-7) REGISTER(Addr) create for read to temp register");
+		"STEP test case failed: (Create action TC-7) REGISTER(Addr) create for read to temp register");
 
 	/*********************************************************
 	 ******************** Test case 8 ***********************
@@ -2299,7 +2352,7 @@ void wmt_step_test_create_register_action(struct step_test_report *p_report)
 	check_params[3] = 0x00000030;
 	check_params[4] = 7;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-8) REGISTER(Symbol) create for read to temp register");
+		"STEP test case failed: (Create action TC-8) REGISTER(Symbol) create for read to temp register");
 
 	/*********************************************************
 	 ******************** Test case 9 ***********************
@@ -2319,7 +2372,7 @@ void wmt_step_test_create_register_action(struct step_test_report *p_report)
 	check_params[3] = 1;
 	check_params[4] = 10;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-9) REGISTER(Symbol) create for read");
+		"STEP test case failed: (Create action TC-9) REGISTER(Symbol) create for read");
 
 	/*********************************************************
 	 ******************** Test case 10 ***********************
@@ -2333,7 +2386,7 @@ void wmt_step_test_create_register_action(struct step_test_report *p_report)
 	params[3] = "0x555";
 	param_num = 4;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-10) REGISTER(Addr) less parameter");
+		"STEP test case failed: (Create action TC-10) REGISTER(Addr) less parameter");
 
 	/*********************************************************
 	 ******************** Test case 11 ***********************
@@ -2347,7 +2400,7 @@ void wmt_step_test_create_register_action(struct step_test_report *p_report)
 	params[3] = "0x555";
 	param_num = 4;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-11) REGISTER(Symbol) less parameter");
+		"STEP test case failed: (Create action TC-11) REGISTER(Symbol) less parameter");
 
 	/**********************************************************
 	 *********************** Test case 12 *********************
@@ -2362,7 +2415,7 @@ void wmt_step_test_create_register_action(struct step_test_report *p_report)
 	params[4] = "$35";
 	param_num = 5;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-12) Boundary: REGISTER(Addr) read to worng temp registe");
+		"STEP test case failed: (Create action TC-12) Boundary: REGISTER(Addr) read to worng temp registe");
 
 	/************************************************************
 	 *********************** Test case 13 ***********************
@@ -2377,10 +2430,10 @@ void wmt_step_test_create_register_action(struct step_test_report *p_report)
 	params[4] = "$35";
 	param_num = 5;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-13) Boundary: REGISTER(Symbol) read to worng temp registe");
+		"STEP test case failed: (Create action TC-13) Boundary: REGISTER(Symbol) read to worng temp registe");
 
 	osal_gettimeofday(&sec_end, &usec_end);
-	wmt_step_test_show_result_report("STEP test: Create register action result",
+	wmt_step_test_show_result_report("STEP result: Create register action result",
 		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
 	wmt_step_test_update_result_report(p_report, &temp_report);
 }
@@ -2421,7 +2474,7 @@ void wmt_step_test_create_cond_register_action(struct step_test_report *p_report
 	check_params[4] = 2;
 	check_params[5] = 10;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-1) COND_REG(Addr) create for read");
+		"STEP test case failed: (Create action TC-1) COND_REG(Addr) create for read");
 
 	/*****************************************
 	 ************ Test case 2 ****************
@@ -2441,7 +2494,7 @@ void wmt_step_test_create_cond_register_action(struct step_test_report *p_report
 	check_params[3] = 0x9c;
 	check_params[4] = 15;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-2) COND_REG(Addr) create write");
+		"STEP test case failed: (Create action TC-2) COND_REG(Addr) create write");
 
 	/******************************************
 	 ************** Test case 3 ***************
@@ -2463,7 +2516,7 @@ void wmt_step_test_create_cond_register_action(struct step_test_report *p_report
 	check_params[4] = 2;
 	check_params[5] = 10;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-3) Boundary: read wrong symbol");
+		"STEP test case failed: (Create action TC-3) Boundary: read wrong symbol");
 
 	/****************************************************
 	 **************** Test case 4 **********************
@@ -2477,7 +2530,7 @@ void wmt_step_test_create_cond_register_action(struct step_test_report *p_report
 	params[3] = "0x9c";
 	param_num = 4;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-4) COND_REG create read fail");
+		"STEP test case failed: (Create action TC-4) COND_REG create read fail");
 
 	/*****************************************************
 	 ************ Test case 5 ***************************
@@ -2491,7 +2544,7 @@ void wmt_step_test_create_cond_register_action(struct step_test_report *p_report
 	params[3] = "0x9c";
 	param_num = 4;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-5) COND_REG create write fail");
+		"STEP test case failed: (Create action TC-5) COND_REG create write fail");
 
 	/*****************************************
 	 ************ Test case 6 ****************
@@ -2513,7 +2566,7 @@ void wmt_step_test_create_cond_register_action(struct step_test_report *p_report
 	check_params[4] = 15;
 	check_params[5] = 0xFF00FF00;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-6) COND_REG create write");
+		"STEP test case failed: (Create action TC-6) COND_REG create write");
 
 	/*********************************************************
 	 ******************** Test case 7 ***********************
@@ -2535,7 +2588,7 @@ void wmt_step_test_create_cond_register_action(struct step_test_report *p_report
 	check_params[4] = 0x00000030;
 	check_params[5] = 5;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-7) COND_REG(Addr) create for read to temp register");
+		"STEP test case failed: (Create action TC-7) COND_REG(Addr) create for read to temp register");
 
 	/*********************************************************
 	 ******************** Test case 8 ***********************
@@ -2557,7 +2610,7 @@ void wmt_step_test_create_cond_register_action(struct step_test_report *p_report
 	check_params[4] = 0x00000030;
 	check_params[5] = 7;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-8) COND_REG(Symbol) create for read to temp register");
+		"STEP test case failed: (Create action TC-8) COND_REG(Symbol) create for read to temp register");
 
 	/*********************************************************
 	 ******************** Test case 9 ***********************
@@ -2579,7 +2632,7 @@ void wmt_step_test_create_cond_register_action(struct step_test_report *p_report
 	check_params[4] = 1;
 	check_params[5] = 10;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-9) COND_REG(Symbol) create for read");
+		"STEP test case failed: (Create action TC-9) COND_REG(Symbol) create for read");
 
 	/*********************************************************
 	 ******************** Test case 10 ***********************
@@ -2594,7 +2647,7 @@ void wmt_step_test_create_cond_register_action(struct step_test_report *p_report
 	params[4] = "0x555";
 	param_num = 5;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-10) COND_REG(Addr) less parameter");
+		"STEP test case failed: (Create action TC-10) COND_REG(Addr) less parameter");
 
 	/*********************************************************
 	 ******************** Test case 11 ***********************
@@ -2609,7 +2662,7 @@ void wmt_step_test_create_cond_register_action(struct step_test_report *p_report
 	params[4] = "0x555";
 	param_num = 5;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-11) COND_REG(Symbol) less parameter");
+		"STEP test case failed: (Create action TC-11) COND_REG(Symbol) less parameter");
 
 	/**********************************************************
 	 *********************** Test case 12 *********************
@@ -2625,7 +2678,7 @@ void wmt_step_test_create_cond_register_action(struct step_test_report *p_report
 	params[5] = "$35";
 	param_num = 6;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-12) Boundary: COND_REG(Addr) read to worng temp registe");
+		"STEP test case failed: (Create action TC-12) Boundary: COND_REG(Addr) read to worng temp registe");
 
 	/************************************************************
 	 *********************** Test case 13 ***********************
@@ -2641,7 +2694,7 @@ void wmt_step_test_create_cond_register_action(struct step_test_report *p_report
 	params[5] = "$35";
 	param_num = 6;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-13) Boundary: COND_REG(Symbol) read to worng temp registe");
+		"STEP test case failed: (Create action TC-13) Boundary: COND_REG(Symbol) read to worng temp registe");
 
 	/*********************************************************
 	 ******************** Test case 14 ***********************
@@ -2657,7 +2710,7 @@ void wmt_step_test_create_cond_register_action(struct step_test_report *p_report
 	params[5] = "10";
 	param_num = 6;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-14) Boundary: COND_REG(Symbol) worng symbol");
+		"STEP test case failed: (Create action TC-14) Boundary: COND_REG(Symbol) worng symbol");
 
 	/*********************************************************
 	 ******************** Test case 15 ***********************
@@ -2673,11 +2726,11 @@ void wmt_step_test_create_cond_register_action(struct step_test_report *p_report
 	params[5] = "10";
 	param_num = 6;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-15) Boundary: COND_REG(Symbol) read to worng temp registe");
+		"STEP test case failed: (Create action TC-15) Boundary: COND_REG(Symbol) read to worng temp registe");
 
 
 	osal_gettimeofday(&sec_end, &usec_end);
-	wmt_step_test_show_result_report("STEP test: Create condition register action result",
+	wmt_step_test_show_result_report("STEP result: Create condition register action result",
 		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
 	wmt_step_test_update_result_report(p_report, &temp_report);
 }
@@ -2694,11 +2747,11 @@ int wmt_step_test_get_symbol_num(void)
 			len /= (of_n_addr_cells(node) + of_n_size_cells(node));
 			len /= (sizeof(int));
 		} else {
-			WMT_ERR_FUNC("STEP failed: node null");
+			WMT_ERR_FUNC("STEP test failed: node null");
 			return -1;
 		}
 	} else {
-		WMT_ERR_FUNC("STEP failed: gdev null");
+		WMT_ERR_FUNC("STEP test failed: gdev null");
 		return -1;
 	}
 
@@ -2746,12 +2799,12 @@ void wmt_step_test_check_register_symbol(struct step_test_report *p_report)
 			check_params[3] = 1;
 			check_params[4] = 10;
 			__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-				"STEP failed: (Check Register symbol TC-1) REGISTER(Symbol) create for read");
+				"STEP test case failed: (Check Register symbol TC-1) REGISTER(Symbol) create for read");
 		}
 	}
 
 	osal_gettimeofday(&sec_end, &usec_end);
-	wmt_step_test_show_result_report("STEP test: Check Register symbol result",
+	wmt_step_test_show_result_report("STEP result: Check Register symbol result",
 		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
 	wmt_step_test_update_result_report(p_report, &temp_report);
 }
@@ -2784,7 +2837,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	check_params[0] = 0;
 	check_params[1] = 8;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-1) GPIO create read");
+		"STEP test case failed: (Create action TC-1) GPIO create read");
 
 	/*****************************************
 	 ************ Test case 2 ****************
@@ -2795,7 +2848,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	act_id = STEP_ACTION_INDEX_DISABLE_RESET;
 	param_num = 0;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-2) DISABLE REST");
+		"STEP test case failed: (Create action TC-2) DISABLE REST");
 
 	/*****************************************
 	 ************ Test case 3 ****************
@@ -2806,7 +2859,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	act_id = STEP_ACTION_INDEX_CHIP_RESET;
 	param_num = 0;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-3) CHIP REST");
+		"STEP test case failed: (Create action TC-3) CHIP REST");
 
 	/*****************************************
 	 ************ Test case 4 ****************
@@ -2817,7 +2870,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	act_id = STEP_ACTION_INDEX_KEEP_WAKEUP;
 	param_num = 0;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-4) Keep wakeup");
+		"STEP test case failed: (Create action TC-4) Keep wakeup");
 
 	/*****************************************
 	 ************ Test case 5 ****************
@@ -2828,7 +2881,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	act_id = STEP_ACTION_INDEX_CANCEL_WAKEUP;
 	param_num = 0;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-5) Cancel keep wakeup");
+		"STEP test case failed: (Create action TC-5) Cancel keep wakeup");
 
 	/*************************************************
 	 **************** Test case 6 *******************
@@ -2840,7 +2893,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	params[0] = "0";
 	param_num = 1;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-6) GPIO create fail");
+		"STEP test case failed: (Create action TC-6) GPIO create fail");
 
 	/*************************************************
 	 **************** Test case 7 *******************
@@ -2852,7 +2905,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	params[0] = (PINT8)&fack_pd_entry;
 	param_num = 1;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-7) Periodic dump create fail");
+		"STEP test case failed: (Create action TC-7) Periodic dump create fail");
 
 	/*************************************************
 	 **************** Test case 8 *******************
@@ -2863,7 +2916,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	act_id = STEP_ACTION_INDEX_PERIODIC_DUMP;
 	param_num = 0;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-8) Periodic dump create fail");
+		"STEP test case failed: (Create action TC-8) Periodic dump create fail");
 
 	/*************************************************
 	 **************** Test case 9 *******************
@@ -2875,7 +2928,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	params[0] = "Hello";
 	param_num = 1;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-9) Show create");
+		"STEP test case failed: (Create action TC-9) Show create");
 
 	/*************************************************
 	 **************** Test case 10 *******************
@@ -2886,7 +2939,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	act_id = STEP_ACTION_INDEX_SHOW_STRING;
 	param_num = 0;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-10) Show create failed no param");
+		"STEP test case failed: (Create action TC-10) Show create failed no param");
 
 	/*************************************************
 	 **************** Test case 11 *******************
@@ -2899,7 +2952,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	param_num = 1;
 	check_params[0] = 1000;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-11) Sleep create");
+		"STEP test case failed: (Create action TC-11) Sleep create");
 
 	/*************************************************
 	 **************** Test case 12 *******************
@@ -2910,7 +2963,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	act_id = STEP_ACTION_INDEX_SLEEP;
 	param_num = 0;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-12) Sleep create failed no param");
+		"STEP test case failed: (Create action TC-12) Sleep create failed no param");
 
 	/*************************************************
 	 **************** Test case 13 *******************
@@ -2929,7 +2982,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	check_params[2] = STEP_OPERATOR_EQUAL;
 	check_params[3] = 2;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-13) Condition create");
+		"STEP test case failed: (Create action TC-13) Condition create");
 
 	/*************************************************
 	 **************** Test case 14 *******************
@@ -2948,7 +3001,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	check_params[2] = STEP_OPERATOR_EQUAL;
 	check_params[3] = 16;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-14) Condition create");
+		"STEP test case failed: (Create action TC-14) Condition create");
 
 	/*************************************************
 	 **************** Test case 15 *******************
@@ -2962,7 +3015,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	params[2] = "$2";
 	param_num = 3;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-15) Condition create failed less param");
+		"STEP test case failed: (Create action TC-15) Condition create failed less param");
 
 	/*************************************************
 	 **************** Test case 16 *******************
@@ -2974,7 +3027,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	params[0] = "==";
 	param_num = 1;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-16) Condition create failed no value");
+		"STEP test case failed: (Create action TC-16) Condition create failed no value");
 
 	/*************************************************
 	 **************** Test case 17 *******************
@@ -2989,7 +3042,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	params[3] = "$2";
 	param_num = 4;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-17) Boundary: Condition create failed over reg id");
+		"STEP test case failed: (Create action TC-17) Boundary: Condition create failed over reg id");
 
 	/*************************************************
 	 **************** Test case 18 *******************
@@ -3004,7 +3057,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	params[3] = "$20";
 	param_num = 4;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-18) Boundary: Condition create failed over reg id");
+		"STEP test case failed: (Create action TC-18) Boundary: Condition create failed over reg id");
 
 	/*************************************************
 	 **************** Test case 19 *******************
@@ -3019,7 +3072,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	params[3] = "$2";
 	param_num = 4;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-19) Condition create failed operator");
+		"STEP test case failed: (Create action TC-19) Condition create failed operator");
 
 	/*************************************************
 	 **************** Test case 20 *******************
@@ -3034,7 +3087,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	check_params[0] = 0;
 	check_params[1] = 0x123;
 	__wmt_step_test_create_action(act_id, param_num, params, 0, check_params, &temp_report,
-		"STEP failed: (Create action TC-20) Condition create");
+		"STEP test case failed: (Create action TC-20) Condition create");
 
 	/*************************************************
 	 **************** Test case 21 *******************
@@ -3047,7 +3100,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	params[1] = "$1";
 	param_num = 2;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-21) Value create failed wrong order");
+		"STEP test case failed: (Create action TC-21) Value create failed wrong order");
 
 	/*************************************************
 	 **************** Test case 22 *******************
@@ -3059,7 +3112,7 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	params[0] = "$1";
 	param_num = 1;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-22) Value create failed no value");
+		"STEP test case failed: (Create action TC-22) Value create failed no value");
 
 	/*************************************************
 	 **************** Test case 23 *******************
@@ -3072,17 +3125,27 @@ void wmt_step_test_create_other_action(struct step_test_report *p_report)
 	params[1] = "0x123";
 	param_num = 2;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
-		"STEP failed: (Create action TC-23) Boundary: Value create failed over reg id");
+		"STEP test case failed: (Create action TC-23) Boundary: Value create failed over reg id");
 
 	osal_gettimeofday(&sec_end, &usec_end);
-	wmt_step_test_show_result_report("STEP test: Create other action result",
+	wmt_step_test_show_result_report("STEP result: Create other action result",
 		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
 	wmt_step_test_update_result_report(p_report, &temp_report);
 }
 
-void wmt_step_test_get_emi_wmt_offset(unsigned char buf[], int offset)
+int wmt_step_test_get_emi_wmt_offset(unsigned char buf[], int offset)
 {
-	snprintf(buf, 11, "0x%08x", ((unsigned int)STEP_TEST_CONSYS_EMI_WMT_OFFSET + offset));
+	P_CONSYS_EMI_ADDR_INFO emi_phy_addr;
+
+	emi_phy_addr = mtk_wcn_consys_soc_get_emi_phy_add();
+	if (emi_phy_addr != NULL) {
+		snprintf(buf, 11, "0x%08x", ((unsigned int)emi_phy_addr->emi_core_dump_offset + offset));
+	} else {
+		WMT_ERR_FUNC("STEP test failed: emi_phy_addr is NULL\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 void wmt_step_test_do_emi_action(struct step_test_report *p_report)
@@ -3101,6 +3164,16 @@ void wmt_step_test_do_emi_action(struct step_test_report *p_report)
 	WMT_INFO_FUNC("STEP test: Do EMI action start\n");
 	osal_gettimeofday(&sec_begin, &usec_begin);
 	act_id = STEP_ACTION_INDEX_EMI;
+
+	if (wmt_step_test_get_emi_wmt_offset(buf_begin, 0x0) != 0) {
+		temp_report.fail++;
+		osal_gettimeofday(&sec_end, &usec_end);
+		wmt_step_test_show_result_report("STEP result: Do EMI action result",
+			&temp_report, sec_begin, usec_begin, sec_end, usec_end);
+		wmt_step_test_update_result_report(p_report, &temp_report);
+		return;
+	}
+
 	/*****************************************
 	 ************ Test case 1 ****************
 	 ********** EMI dump 32 bit **************
@@ -3117,7 +3190,7 @@ void wmt_step_test_do_emi_action(struct step_test_report *p_report)
 	g_step_test_check.step_check_total = 1;
 	g_step_test_check.step_check_emi_offset[0] = 0x44;
 	__wmt_step_test_do_emi_action(act_id, param_num, params, 0, &temp_report,
-		"STEP failed: (Do EMI action TC-1) dump 32bit");
+		"STEP test case failed: (Do EMI action TC-1) dump 32bit");
 
 	/*****************************************
 	 ************ Test case 2 ****************
@@ -3142,7 +3215,7 @@ void wmt_step_test_do_emi_action(struct step_test_report *p_report)
 	g_step_test_check.step_check_emi_offset[6] = 0x3c;
 	g_step_test_check.step_check_emi_offset[7] = 0x40;
 	__wmt_step_test_do_emi_action(act_id, param_num, params, 0, &temp_report,
-		"STEP failed: (Do EMI action TC-2) more address");
+		"STEP test case failed: (Do EMI action TC-2) more address");
 
 	/*****************************************
 	 ************ Test case 3 ****************
@@ -3165,7 +3238,7 @@ void wmt_step_test_do_emi_action(struct step_test_report *p_report)
 	g_step_test_check.step_check_emi_offset[4] = 0x18;
 	g_step_test_check.step_check_emi_offset[5] = 0x1c;
 	__wmt_step_test_do_emi_action(act_id, param_num, params, 0, &temp_report,
-		"STEP failed: (Do EMI action TC-3) begin larger than end");
+		"STEP test case failed: (Do EMI action TC-3) begin larger than end");
 
 	/****************************************
 	 ************ Test case 4 ***************
@@ -3181,7 +3254,7 @@ void wmt_step_test_do_emi_action(struct step_test_report *p_report)
 	params[2] = buf_end;
 	param_num = 3;
 	__wmt_step_test_do_emi_action(act_id, param_num, params, -1, &temp_report,
-		"STEP failed: (Do EMI action TC-4) only support read");
+		"STEP test case failed: (Do EMI action TC-4) only support read");
 
 	/****************************************
 	 ************ Test case 5 ***************
@@ -3200,7 +3273,7 @@ void wmt_step_test_do_emi_action(struct step_test_report *p_report)
 	g_step_test_check.step_check_emi_offset[0] = 0x08;
 	g_step_test_check.step_check_emi_offset[1] = 0x0c;
 	__wmt_step_test_do_emi_action(act_id, param_num, params, 0, &temp_report,
-		"STEP failed: (Do EMI action TC-5) not 32bit");
+		"STEP test case failed: (Do EMI action TC-5) not 32bit");
 
 	/*****************************************
 	 ************ Test case 6 ****************
@@ -3216,7 +3289,7 @@ void wmt_step_test_do_emi_action(struct step_test_report *p_report)
 	params[2] = buf_end;
 	param_num = 3;
 	__wmt_step_test_do_emi_action(act_id, param_num, params, -1, &temp_report,
-		"STEP failed: (Do EMI action TC-6) over emi max size");
+		"STEP test case failed: (Do EMI action TC-6) over emi max size");
 
 	/*****************************************
 	 ************ Test case 7 ****************
@@ -3232,7 +3305,7 @@ void wmt_step_test_do_emi_action(struct step_test_report *p_report)
 	params[2] = buf_end;
 	param_num = 3;
 	__wmt_step_test_do_emi_action(act_id, param_num, params, -1, &temp_report,
-		"STEP failed: (Do EMI action TC-7) page fault");
+		"STEP test case failed: (Do EMI action TC-7) page fault");
 
 	/*****************************************
 	 ************ Test case 8 ****************
@@ -3253,10 +3326,10 @@ void wmt_step_test_do_emi_action(struct step_test_report *p_report)
 	g_step_test_check.step_test_mask = 0x0F0F0F0F;
 	g_step_test_check.step_check_temp_register_id = 1;
 	__wmt_step_test_do_emi_action(act_id, param_num, params, 0, &temp_report,
-		"STEP failed: (Do EMI action TC-8) save to temp reg");
+		"STEP test case failed: (Do EMI action TC-8) save to temp reg");
 
 	osal_gettimeofday(&sec_end, &usec_end);
-	wmt_step_test_show_result_report("STEP test: Do EMI action result",
+	wmt_step_test_show_result_report("STEP result: Do EMI action result",
 		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
 	wmt_step_test_update_result_report(p_report, &temp_report);
 }
@@ -3297,7 +3370,7 @@ void wmt_step_test_do_cond_emi_action(struct step_test_report *p_report)
 	g_step_test_check.step_check_total = 1;
 	g_step_test_check.step_check_emi_offset[0] = 0x44;
 	__wmt_step_test_do_cond_emi_action(act_id, param_num, params, 0, &temp_report,
-		"STEP failed: (Do COND EMI action TC-1) dump 32bit");
+		"STEP test case failed: (Do COND EMI action TC-1) dump 32bit");
 
 	/*****************************************
 	 ************ Test case 2 ****************
@@ -3326,7 +3399,7 @@ void wmt_step_test_do_cond_emi_action(struct step_test_report *p_report)
 	g_step_test_check.step_check_emi_offset[6] = 0x3c;
 	g_step_test_check.step_check_emi_offset[7] = 0x40;
 	__wmt_step_test_do_cond_emi_action(act_id, param_num, params, 0, &temp_report,
-		"STEP failed: (Do COND EMI action TC-2) more address");
+		"STEP test case failed: (Do COND EMI action TC-2) more address");
 
 	/*****************************************
 	 ************ Test case 3 ****************
@@ -3353,7 +3426,7 @@ void wmt_step_test_do_cond_emi_action(struct step_test_report *p_report)
 	g_step_test_check.step_check_emi_offset[4] = 0x18;
 	g_step_test_check.step_check_emi_offset[5] = 0x1c;
 	__wmt_step_test_do_cond_emi_action(act_id, param_num, params, 0, &temp_report,
-		"STEP failed: (Do COND EMI action TC-3) begin larger than end");
+		"STEP test case failed: (Do COND EMI action TC-3) begin larger than end");
 
 	/****************************************
 	 ************ Test case 4 ***************
@@ -3373,7 +3446,7 @@ void wmt_step_test_do_cond_emi_action(struct step_test_report *p_report)
 	g_step_env.temp_register[1] = 1;
 
 	__wmt_step_test_do_cond_emi_action(act_id, param_num, params, -1, &temp_report,
-		"STEP failed: (Do COND EMI action TC-4) only support read");
+		"STEP test case failed: (Do COND EMI action TC-4) only support read");
 
 	/****************************************
 	 ************ Test case 5 ***************
@@ -3396,7 +3469,7 @@ void wmt_step_test_do_cond_emi_action(struct step_test_report *p_report)
 	g_step_test_check.step_check_emi_offset[0] = 0x08;
 	g_step_test_check.step_check_emi_offset[1] = 0x0c;
 	__wmt_step_test_do_cond_emi_action(act_id, param_num, params, 0, &temp_report,
-		"STEP failed: (Do COND EMI action TC-5) not 32bit");
+		"STEP test case failed: (Do COND EMI action TC-5) not 32bit");
 
 	/*****************************************
 	 ************ Test case 6 ****************
@@ -3416,7 +3489,7 @@ void wmt_step_test_do_cond_emi_action(struct step_test_report *p_report)
 	g_step_env.temp_register[9] = 1;
 
 	__wmt_step_test_do_cond_emi_action(act_id, param_num, params, -1, &temp_report,
-		"STEP failed: (Do COND EMI action TC-6) over emi max size");
+		"STEP test case failed: (Do COND EMI action TC-6) over emi max size");
 
 	/*****************************************
 	 ************ Test case 7 ****************
@@ -3436,7 +3509,7 @@ void wmt_step_test_do_cond_emi_action(struct step_test_report *p_report)
 	g_step_env.temp_register[0] = 1;
 
 	__wmt_step_test_do_cond_emi_action(act_id, param_num, params, -1, &temp_report,
-		"STEP failed: (Do COND EMI action TC-7) page fault");
+		"STEP test case failed: (Do COND EMI action TC-7) page fault");
 
 	/*****************************************
 	 ************ Test case 8 ****************
@@ -3459,7 +3532,7 @@ void wmt_step_test_do_cond_emi_action(struct step_test_report *p_report)
 	g_step_test_check.step_check_temp_register_id = 1;
 	g_step_env.temp_register[0] = 1;
 	__wmt_step_test_do_cond_emi_action(act_id, param_num, params, 0, &temp_report,
-		"STEP failed: (Do EMI action TC-8) save to temp reg");
+		"STEP test case failed: (Do EMI action TC-8) save to temp reg");
 
 
 	/*****************************************
@@ -3480,10 +3553,10 @@ void wmt_step_test_do_cond_emi_action(struct step_test_report *p_report)
 	g_step_env.temp_register[0] = 0;
 
 	__wmt_step_test_do_cond_emi_action(act_id, param_num, params, -1, &temp_report,
-		"STEP failed: (Do COND EMI action TC-9) condition invalid");
+		"STEP test case failed: (Do COND EMI action TC-9) condition invalid");
 
 	osal_gettimeofday(&sec_end, &usec_end);
-	wmt_step_test_show_result_report("STEP test: Do condition EMI action result",
+	wmt_step_test_show_result_report("STEP result: Do condition EMI action result",
 		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
 	wmt_step_test_update_result_report(p_report, &temp_report);
 }
@@ -3499,15 +3572,15 @@ int wmt_step_test_get_reg_base_phy_addr(unsigned char buf[], unsigned int index)
 		if (node) {
 			ret = of_address_to_resource(node, index, &res);
 			if (ret) {
-				WMT_ERR_FUNC("STEP failed: of_address_to_resource null");
+				WMT_ERR_FUNC("STEP test failed: of_address_to_resource null");
 				return ret;
 			}
 		} else {
-			WMT_ERR_FUNC("STEP failed: node null");
+			WMT_ERR_FUNC("STEP test failed: node null");
 			return -1;
 		}
 	} else {
-		WMT_ERR_FUNC("STEP failed: gdev null");
+		WMT_ERR_FUNC("STEP test failed: gdev null");
 		return -1;
 	}
 	snprintf(buf, 11, "0x%08x", ((unsigned int)res.start));
@@ -3526,8 +3599,15 @@ void wmt_step_test_do_register_action(struct step_test_report *p_report)
 	int usec_end = 0;
 	unsigned char buf[11];
 	int param_num;
+	int can_write_offset = 0;
+	unsigned char can_write_offset_char[11];
 
 	WMT_INFO_FUNC("STEP test: Do register action start\n");
+
+	can_write_offset =
+		 wmt_step_test_find_can_write_register(conn_reg.mcu_base, 0x200, 0x0000000F);
+	snprintf(can_write_offset_char, 11, "0x%08x", can_write_offset);
+
 	osal_gettimeofday(&sec_begin, &usec_begin);
 	act_id = STEP_ACTION_INDEX_REGISTER;
 	/****************************************
@@ -3545,11 +3625,11 @@ void wmt_step_test_do_register_action(struct step_test_report *p_report)
 	param_num = 5;
 	g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + 0x08);
 	__wmt_step_test_do_register_action(act_id, param_num, params, 0, &temp_report,
-		"STEP failed: (Do register action TC-1) MCU chip id");
+		"STEP test case failed: (Do register action TC-1) MCU chip id");
 
 	/****************************************
 	 ************ Test case 2 ***************
-	 *** REG read cpucpr 5 times / 200ms ****
+	 *** REG read cpucpr 5 times / 3ms ****
 	 ****************************************/
 	WMT_INFO_FUNC("STEP test: TC 2\n");
 	wmt_step_test_clear_check_data();
@@ -3558,11 +3638,11 @@ void wmt_step_test_do_register_action(struct step_test_report *p_report)
 	params[1] = "#1";
 	params[2] = "0x160";
 	params[3] = "5";
-	params[4] = "200";
+	params[4] = "3";
 	param_num = 5;
 	g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + 0x160);
 	__wmt_step_test_do_register_action(act_id, param_num, params, 0, &temp_report,
-		"STEP failed: (Do register action TC-2) cpucpr 5 times / 200ms");
+		"STEP test case failed: (Do register action TC-2) cpucpr 5 times / 3ms");
 
 	/**********************************************
 	 *************** Test case 3 ******************
@@ -3580,15 +3660,15 @@ void wmt_step_test_do_register_action(struct step_test_report *p_report)
 		param_num = 5;
 		g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + 0x08);
 		__wmt_step_test_do_register_action(act_id, param_num, params, 0, &temp_report,
-			"STEP failed: (Do register action TC-3) MCU chip id by phy");
+			"STEP test case failed: (Do register action TC-3) MCU chip id by phy");
 	} else {
 		p_report->fail++;
-		WMT_ERR_FUNC("STEP failed: get physical address failed\n");
+		WMT_ERR_FUNC("STEP test case failed: get physical address failed\n");
 	}
 
 	/*********************************************************
 	 ********************* Test case 4 ***********************
-	 ** REG read cpucpr 5 times / 200ms by physical address **
+	 ** REG read cpucpr 5 times / 3ms by physical address **
 	 *********************************************************/
 	WMT_INFO_FUNC("STEP test: TC 4\n");
 	wmt_step_test_clear_check_data();
@@ -3598,14 +3678,14 @@ void wmt_step_test_do_register_action(struct step_test_report *p_report)
 		params[1] = buf;
 		params[2] = "0x160";
 		params[3] = "5";
-		params[4] = "20";
+		params[4] = "3";
 		param_num = 5;
 		g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + 0x160);
 		__wmt_step_test_do_register_action(act_id, param_num, params, 0, &temp_report,
-			"STEP failed: (Do register action TC-4) cpucpr 5 times / 200ms by phy");
+			"STEP test case failed: (Do register action TC-4) cpucpr 5 times / 3ms by phy");
 	} else {
 		p_report->fail++;
-		WMT_ERR_FUNC("STEP failed: get physical address failed\n");
+		WMT_ERR_FUNC("STEP test case failed: get physical address failed\n");
 	}
 
 	/*****************************************
@@ -3622,7 +3702,7 @@ void wmt_step_test_do_register_action(struct step_test_report *p_report)
 	params[4] = "0";
 	param_num = 5;
 	__wmt_step_test_do_register_action(act_id, param_num, params, -1, &temp_report,
-		"STEP failed: (Do register action TC-5) Over size");
+		"STEP test case failed: (Do register action TC-5) Over size");
 
 	/******************************************
 	 ************** Test case 6 ***************
@@ -3640,10 +3720,10 @@ void wmt_step_test_do_register_action(struct step_test_report *p_report)
 		param_num = 5;
 		g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + 0x204);
 		__wmt_step_test_do_register_action(act_id, param_num, params, 0, &temp_report,
-			"STEP failed: (Do register action TC-6) Over size by phy");
+			"STEP test case failed: (Do register action TC-6) Over size by phy");
 	} else {
 		p_report->fail++;
-		WMT_ERR_FUNC("STEP failed: get physical address failed\n");
+		WMT_ERR_FUNC("STEP test case failed: get physical address failed\n");
 	}
 
 	/******************************************
@@ -3655,13 +3735,13 @@ void wmt_step_test_do_register_action(struct step_test_report *p_report)
 	wmt_step_test_clear_parameter(params);
 	params[0] = "1";
 	params[1] = "#1";
-	params[2] = "0x110";
-	params[3] = "0x200";
+	params[2] = can_write_offset_char;
+	params[3] = "0x2";
 	param_num = 4;
-	g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + 0x110);
-	g_step_test_check.step_check_write_value = 0x200;
+	g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + can_write_offset);
+	g_step_test_check.step_check_write_value = 0x2;
 	__wmt_step_test_do_register_action(act_id, param_num, params, 0, &temp_report,
-		"STEP failed: (Do register action TC-7) REG write");
+		"STEP test case failed: (Do register action TC-7) REG write");
 
 	/******************************************
 	 ************** Test case 8 ***************
@@ -3673,16 +3753,16 @@ void wmt_step_test_do_register_action(struct step_test_report *p_report)
 	params[0] = "1";
 	if (wmt_step_test_get_reg_base_phy_addr(buf, 0) == 0) {
 		params[1] = buf;
-		params[2] = "0x110";
-		params[3] = "0x020";
+		params[2] = can_write_offset_char;
+		params[3] = "0x7";
 		param_num = 4;
-		g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + 0x110);
-		g_step_test_check.step_check_write_value = 0x020;
+		g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + can_write_offset);
+		g_step_test_check.step_check_write_value = 0x7;
 		__wmt_step_test_do_register_action(act_id, param_num, params, 0, &temp_report,
-			"STEP failed: (Do register action TC-8) REG write by phy");
+			"STEP test case failed: (Do register action TC-8) REG write by phy");
 	} else {
 		p_report->fail++;
-		WMT_ERR_FUNC("STEP failed: get physical address failed\n");
+		WMT_ERR_FUNC("STEP test case failed: get physical address failed\n");
 	}
 
 	/******************************************
@@ -3694,15 +3774,15 @@ void wmt_step_test_do_register_action(struct step_test_report *p_report)
 	wmt_step_test_clear_parameter(params);
 	params[0] = "1";
 	params[1] = "#1";
-	params[2] = "0x160";
-	params[3] = "0x123";
-	params[4] = "0xF00";
+	params[2] = can_write_offset_char;
+	params[3] = "0x321";
+	params[4] = "0x00F";
 	param_num = 5;
-	g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + 0x160);
-	g_step_test_check.step_check_write_value = 0x100;
-	g_step_test_check.step_test_mask = 0xF00;
+	g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + can_write_offset);
+	g_step_test_check.step_check_write_value = 0x001;
+	g_step_test_check.step_test_mask = 0x00F;
 	__wmt_step_test_do_register_action(act_id, param_num, params, 0, &temp_report,
-		"STEP failed: (Do register action TC-9) REG write bit");
+		"STEP test case failed: (Do register action TC-9) REG write bit");
 
 	/******************************************
 	 ************** Test case 10 **************
@@ -3714,18 +3794,18 @@ void wmt_step_test_do_register_action(struct step_test_report *p_report)
 	params[0] = "1";
 	if (wmt_step_test_get_reg_base_phy_addr(buf, 0) == 0) {
 		params[1] = buf;
-		params[2] = "0x160";
-		params[3] = "0x123";
-		params[4] = "0x0F0";
+		params[2] = can_write_offset_char;
+		params[3] = "0x32f";
+		params[4] = "0x002";
 		param_num = 5;
-		g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + 0x160);
-		g_step_test_check.step_check_write_value = 0x020;
-		g_step_test_check.step_test_mask = 0x0F0;
+		g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + can_write_offset);
+		g_step_test_check.step_check_write_value = 0x002;
+		g_step_test_check.step_test_mask = 0x002;
 		__wmt_step_test_do_register_action(act_id, param_num, params, 0, &temp_report,
-			"STEP failed: (Do register action TC-10) REG write bit by phy");
+			"STEP test case failed: (Do register action TC-10) REG write bit by phy");
 	} else {
 		p_report->fail++;
-		WMT_ERR_FUNC("STEP failed: get physical address failed\n");
+		WMT_ERR_FUNC("STEP test case failed: get physical address failed\n");
 	}
 
 	/******************************************
@@ -3746,7 +3826,7 @@ void wmt_step_test_do_register_action(struct step_test_report *p_report)
 	g_step_test_check.step_test_mask = 0x0F0F0F0F;
 	g_step_test_check.step_check_temp_register_id = 2;
 	__wmt_step_test_do_register_action(act_id, param_num, params, 0, &temp_report,
-		"STEP failed: (Do register action TC-11) REG read to temp reg");
+		"STEP test case failed: (Do register action TC-11) REG read to temp reg");
 
 	/******************************************
 	 ************** Test case 12 **************
@@ -3767,14 +3847,14 @@ void wmt_step_test_do_register_action(struct step_test_report *p_report)
 		g_step_test_check.step_test_mask = 0x0F0F0F0F;
 		g_step_test_check.step_check_temp_register_id = 3;
 		__wmt_step_test_do_register_action(act_id, param_num, params, 0, &temp_report,
-			"STEP failed: (Do register action TC-12) REG read phy to temp reg");
+			"STEP test case failed: (Do register action TC-12) REG read phy to temp reg");
 	} else {
 		p_report->fail++;
-		WMT_ERR_FUNC("STEP failed: get physical address failed\n");
+		WMT_ERR_FUNC("STEP test case failed: get physical address failed\n");
 	}
 
 	osal_gettimeofday(&sec_end, &usec_end);
-	wmt_step_test_show_result_report("STEP test: Do register action result",
+	wmt_step_test_show_result_report("STEP result: Do register action result",
 		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
 	wmt_step_test_update_result_report(p_report, &temp_report);
 }
@@ -3790,8 +3870,15 @@ void wmt_step_test_do_cond_register_action(struct step_test_report *p_report)
 	int usec_end = 0;
 	unsigned char buf[11];
 	int param_num;
+	int can_write_offset = 0;
+	unsigned char can_write_offset_char[11];
 
 	WMT_INFO_FUNC("STEP test: Do condition register action start\n");
+
+	can_write_offset =
+		 wmt_step_test_find_can_write_register(conn_reg.mcu_base, 0x200, 0x0000000F);
+	snprintf(can_write_offset_char, 11, "0x%08x", can_write_offset);
+
 	osal_gettimeofday(&sec_begin, &usec_begin);
 	act_id = STEP_ACTION_INDEX_CONDITION_REGISTER;
 	/****************************************
@@ -3813,11 +3900,11 @@ void wmt_step_test_do_cond_register_action(struct step_test_report *p_report)
 
 	g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + 0x08);
 	__wmt_step_test_do_cond_register_action(act_id, param_num, params, 0, &temp_report,
-		"STEP failed: (Do cond register action TC-1) MCU chip id");
+		"STEP test case failed: (Do cond register action TC-1) MCU chip id");
 
 	/****************************************
 	 ************ Test case 2 ***************
-	 *** REG read cpucpr 5 times / 200ms ****
+	 *** REG read cpucpr 5 times / 3ms ****
 	 ****************************************/
 	WMT_INFO_FUNC("STEP test: TC 2\n");
 	wmt_step_test_clear_check_data();
@@ -3828,13 +3915,13 @@ void wmt_step_test_do_cond_register_action(struct step_test_report *p_report)
 	params[2] = "#1";
 	params[3] = "0x160";
 	params[4] = "5";
-	params[5] = "200";
+	params[5] = "3";
 	param_num = 6;
 	g_step_env.temp_register[1] = 1;
 
 	g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + 0x160);
 	__wmt_step_test_do_cond_register_action(act_id, param_num, params, 0, &temp_report,
-		"STEP failed: (Do cond register action TC-2) cpucpr 5 times / 200ms");
+		"STEP test case failed: (Do cond register action TC-2) cpucpr 5 times / 3ms");
 
 	/**********************************************
 	 *************** Test case 3 ******************
@@ -3856,15 +3943,15 @@ void wmt_step_test_do_cond_register_action(struct step_test_report *p_report)
 
 		g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + 0x08);
 		__wmt_step_test_do_cond_register_action(act_id, param_num, params, 0, &temp_report,
-			"STEP failed: (Do cond register action TC-3) MCU chip id by phy");
+			"STEP test case failed: (Do cond register action TC-3) MCU chip id by phy");
 	} else {
 		p_report->fail++;
-		WMT_ERR_FUNC("STEP failed: get physical address failed\n");
+		WMT_ERR_FUNC("STEP test case failed: get physical address failed\n");
 	}
 
 	/*********************************************************
 	 ********************* Test case 4 ***********************
-	 ** REG read cpucpr 5 times / 200ms by physical address **
+	 ** REG read cpucpr 5 times / 3ms by physical address **
 	 *********************************************************/
 	WMT_INFO_FUNC("STEP test: TC 4\n");
 	wmt_step_test_clear_check_data();
@@ -3876,16 +3963,16 @@ void wmt_step_test_do_cond_register_action(struct step_test_report *p_report)
 		params[2] = buf;
 		params[3] = "0x160";
 		params[4] = "5";
-		params[5] = "20";
+		params[5] = "3";
 		param_num = 6;
 		g_step_env.temp_register[3] = 11;
 
 		g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + 0x160);
 		__wmt_step_test_do_cond_register_action(act_id, param_num, params, 0, &temp_report,
-			"STEP failed: (Do cond register action TC-4) cpucpr 5 times / 200ms by phy");
+			"STEP test case failed: (Do cond register action TC-4) cpucpr 5 times / 3ms by phy");
 	} else {
 		p_report->fail++;
-		WMT_ERR_FUNC("STEP failed: get physical address failed\n");
+		WMT_ERR_FUNC("STEP test case failed: get physical address failed\n");
 	}
 
 	/*****************************************
@@ -3906,7 +3993,7 @@ void wmt_step_test_do_cond_register_action(struct step_test_report *p_report)
 	g_step_env.temp_register[4] = 10;
 
 	__wmt_step_test_do_cond_register_action(act_id, param_num, params, -1, &temp_report,
-		"STEP failed: (Do cond register action TC-5) Over size");
+		"STEP test case failed: (Do cond register action TC-5) Over size");
 
 	/******************************************
 	 ************** Test case 6 ***************
@@ -3928,10 +4015,10 @@ void wmt_step_test_do_cond_register_action(struct step_test_report *p_report)
 
 		g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + 0x204);
 		__wmt_step_test_do_cond_register_action(act_id, param_num, params, 0, &temp_report,
-			"STEP failed: (Do cond register action TC-6) Over size by phy");
+			"STEP test case failed: (Do cond register action TC-6) Over size by phy");
 	} else {
 		p_report->fail++;
-		WMT_ERR_FUNC("STEP failed: get physical address failed\n");
+		WMT_ERR_FUNC("STEP test case failed: get physical address failed\n");
 	}
 
 	/******************************************
@@ -3945,15 +4032,15 @@ void wmt_step_test_do_cond_register_action(struct step_test_report *p_report)
 	params[0] = "$6";
 	params[1] = "1";
 	params[2] = "#1";
-	params[3] = "0x110";
-	params[4] = "0x200";
+	params[3] = can_write_offset_char;
+	params[4] = "0x2";
 	param_num = 5;
 	g_step_env.temp_register[6] = 1;
 
-	g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + 0x110);
-	g_step_test_check.step_check_write_value = 0x200;
+	g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + can_write_offset);
+	g_step_test_check.step_check_write_value = 0x2;
 	__wmt_step_test_do_cond_register_action(act_id, param_num, params, 0, &temp_report,
-		"STEP failed: (Do cond register action TC-7) REG write");
+		"STEP test case failed: (Do cond register action TC-7) REG write");
 
 	/******************************************
 	 ************** Test case 8 ***************
@@ -3967,18 +4054,18 @@ void wmt_step_test_do_cond_register_action(struct step_test_report *p_report)
 	params[1] = "1";
 	if (wmt_step_test_get_reg_base_phy_addr(buf, 0) == 0) {
 		params[2] = buf;
-		params[3] = "0x110";
-		params[4] = "0x020";
+		params[3] = can_write_offset_char;
+		params[4] = "0x7";
 		param_num = 5;
 		g_step_env.temp_register[7] = 1;
 
-		g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + 0x110);
-		g_step_test_check.step_check_write_value = 0x020;
+		g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + can_write_offset);
+		g_step_test_check.step_check_write_value = 0x7;
 		__wmt_step_test_do_cond_register_action(act_id, param_num, params, 0, &temp_report,
-			"STEP failed: (Do cond register action TC-8) REG write by phy");
+			"STEP test case failed: (Do cond register action TC-8) REG write by phy");
 	} else {
 		p_report->fail++;
-		WMT_ERR_FUNC("STEP failed: get physical address failed\n");
+		WMT_ERR_FUNC("STEP test case failed: get physical address failed\n");
 	}
 
 	/******************************************
@@ -3992,17 +4079,17 @@ void wmt_step_test_do_cond_register_action(struct step_test_report *p_report)
 	params[0] = "$8";
 	params[1] = "1";
 	params[2] = "#1";
-	params[3] = "0x160";
-	params[4] = "0x123";
-	params[5] = "0xF00";
+	params[3] = can_write_offset_char;
+	params[4] = "0x321";
+	params[5] = "0x00F";
 	param_num = 6;
 	g_step_env.temp_register[8] = 1;
 
-	g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + 0x160);
-	g_step_test_check.step_check_write_value = 0x100;
-	g_step_test_check.step_test_mask = 0xF00;
+	g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + can_write_offset);
+	g_step_test_check.step_check_write_value = 0x001;
+	g_step_test_check.step_test_mask = 0x00F;
 	__wmt_step_test_do_cond_register_action(act_id, param_num, params, 0, &temp_report,
-		"STEP failed: (Do cond register action TC-9) REG write bit");
+		"STEP test case failed: (Do cond register action TC-9) REG write bit");
 
 	/******************************************
 	 ************** Test case 10 **************
@@ -4016,20 +4103,20 @@ void wmt_step_test_do_cond_register_action(struct step_test_report *p_report)
 	params[1] = "1";
 	if (wmt_step_test_get_reg_base_phy_addr(buf, 0) == 0) {
 		params[2] = buf;
-		params[3] = "0x160";
-		params[4] = "0x123";
-		params[5] = "0xF00";
+		params[3] = can_write_offset_char;
+		params[4] = "0x32f";
+		params[5] = "0x002";
 		param_num = 6;
 		g_step_env.temp_register[9] = 1;
 
-		g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + 0x160);
-		g_step_test_check.step_check_write_value = 0x100;
-		g_step_test_check.step_test_mask = 0xF00;
+		g_step_test_check.step_check_register_addr = (conn_reg.mcu_base + can_write_offset);
+		g_step_test_check.step_check_write_value = 0x002;
+		g_step_test_check.step_test_mask = 0x002;
 		__wmt_step_test_do_cond_register_action(act_id, param_num, params, 0, &temp_report,
-			"STEP failed: (Do cond register action TC-10) REG write bit by phy");
+			"STEP test case failed: (Do cond register action TC-10) REG write bit by phy");
 	} else {
 		p_report->fail++;
-		WMT_ERR_FUNC("STEP failed: get physical address failed\n");
+		WMT_ERR_FUNC("STEP test case failed: get physical address failed\n");
 	}
 
 	/******************************************
@@ -4052,7 +4139,7 @@ void wmt_step_test_do_cond_register_action(struct step_test_report *p_report)
 	g_step_test_check.step_check_temp_register_id = 2;
 	g_step_env.temp_register[8] = 1;
 	__wmt_step_test_do_register_action(act_id, param_num, params, 0, &temp_report,
-		"STEP failed: (Do register action TC-11) REG read to temp reg");
+		"STEP test case failed: (Do register action TC-11) REG read to temp reg");
 
 	/******************************************
 	 ************** Test case 12 **************
@@ -4075,10 +4162,10 @@ void wmt_step_test_do_cond_register_action(struct step_test_report *p_report)
 		g_step_test_check.step_check_temp_register_id = 3;
 		g_step_env.temp_register[8] = 1;
 		__wmt_step_test_do_register_action(act_id, param_num, params, 0, &temp_report,
-			"STEP failed: (Do register action TC-12) REG read phy to temp reg");
+			"STEP test case failed: (Do register action TC-12) REG read phy to temp reg");
 	} else {
 		p_report->fail++;
-		WMT_ERR_FUNC("STEP failed: get physical address failed\n");
+		WMT_ERR_FUNC("STEP test case failed: get physical address failed\n");
 	}
 
 	/******************************************
@@ -4099,7 +4186,7 @@ void wmt_step_test_do_cond_register_action(struct step_test_report *p_report)
 	g_step_env.temp_register[8] = 0;
 
 	__wmt_step_test_do_cond_register_action(act_id, param_num, params, -1, &temp_report,
-		"STEP failed: (Do cond register action TC-13) condition invalid");
+		"STEP test case failed: (Do cond register action TC-13) condition invalid");
 
 	/******************************************
 	 ************** Test case 14 **************
@@ -4118,7 +4205,7 @@ void wmt_step_test_do_cond_register_action(struct step_test_report *p_report)
 	g_step_env.temp_register[6] = 0;
 
 	__wmt_step_test_do_cond_register_action(act_id, param_num, params, -1, &temp_report,
-		"STEP failed: (Do cond register action TC-14) condition invalid write");
+		"STEP test case failed: (Do cond register action TC-14) condition invalid write");
 
 	/******************************************
 	 ************** Test case 15 **************
@@ -4138,11 +4225,11 @@ void wmt_step_test_do_cond_register_action(struct step_test_report *p_report)
 	g_step_env.temp_register[0] = 0;
 
 	__wmt_step_test_do_cond_register_action(act_id, param_num, params, -1, &temp_report,
-		"STEP failed: (Do cond register action TC-15) REG write");
+		"STEP test case failed: (Do cond register action TC-15) REG write");
 
 
 	osal_gettimeofday(&sec_end, &usec_end);
-	wmt_step_test_show_result_report("STEP test: Do condition register action result",
+	wmt_step_test_show_result_report("STEP result: Do condition register action result",
 		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
 	wmt_step_test_update_result_report(p_report, &temp_report);
 }
@@ -4179,17 +4266,17 @@ void wmt_step_test_do_gpio_action(struct step_test_report *p_report)
 			WMT_INFO_FUNC("STEP check: Do gpio action TC-1(Read #8): search(8: )");
 			temp_report.check++;
 		} else {
-			WMT_ERR_FUNC("STEP failed: (Do gpio action TC-1) Read #8\n");
+			WMT_ERR_FUNC("STEP test case failed: (Do gpio action TC-1) Read #8\n");
 			temp_report.fail++;
 		}
 		wmt_step_remove_action(p_act);
 	} else {
 		temp_report.fail++;
-		WMT_ERR_FUNC("STEP failed: (Do gpio action TC-1) Create failed\n");
+		WMT_ERR_FUNC("STEP test case failed: (Do gpio action TC-1) Create failed\n");
 	}
 
 	osal_gettimeofday(&sec_end, &usec_end);
-	wmt_step_test_show_result_report("STEP test: Do GPIO action result",
+	wmt_step_test_show_result_report("STEP result: Do GPIO action result",
 		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
 	wmt_step_test_update_result_report(p_report, &temp_report);
 }
@@ -4222,17 +4309,17 @@ void wmt_step_test_do_chip_reset_action(struct step_test_report *p_report)
 			WMT_INFO_FUNC("STEP check: Do chip reset TC-1(chip reset): Trigger AEE");
 			temp_report.check++;
 		} else {
-			WMT_ERR_FUNC("STEP failed: (Do chip reset action TC-1) chip reset\n");
+			WMT_ERR_FUNC("STEP test case failed: (Do chip reset action TC-1) chip reset\n");
 			temp_report.fail++;
 		}
 		wmt_step_remove_action(p_act);
 	} else {
 		temp_report.fail++;
-		WMT_ERR_FUNC("STEP failed: (Do chip reset action TC-1) Create failed\n");
+		WMT_ERR_FUNC("STEP test case failed: (Do chip reset action TC-1) Create failed\n");
 	}
 
 	osal_gettimeofday(&sec_end, &usec_end);
-	wmt_step_test_show_result_report("STEP test: Do chip reset action result",
+	wmt_step_test_show_result_report("STEP result: Do chip reset action result",
 		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
 	wmt_step_test_update_result_report(p_report, &temp_report);
 }
@@ -4266,7 +4353,7 @@ void wmt_step_test_do_wakeup_action(struct step_test_report *p_report)
 		wmt_step_remove_action(p_act);
 	} else {
 		temp_report.fail++;
-		WMT_ERR_FUNC("STEP failed: (Do wakeup) Create failed\n");
+		WMT_ERR_FUNC("STEP test case failed: (Do wakeup) Create failed\n");
 	}
 
 	act_id = STEP_ACTION_INDEX_CANCEL_WAKEUP;
@@ -4278,11 +4365,11 @@ void wmt_step_test_do_wakeup_action(struct step_test_report *p_report)
 		wmt_step_remove_action(p_act);
 	} else {
 		temp_report.fail++;
-		WMT_ERR_FUNC("STEP failed: (Do cancel wakeup) Create failed\n");
+		WMT_ERR_FUNC("STEP test case failed: (Do cancel wakeup) Create failed\n");
 	}
 
 	osal_gettimeofday(&sec_end, &usec_end);
-	wmt_step_test_show_result_report("STEP test: Do wakeup action result",
+	wmt_step_test_show_result_report("STEP result: Do wakeup action result",
 		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
 	wmt_step_test_update_result_report(p_report, &temp_report);
 }
@@ -4319,17 +4406,17 @@ void wmt_step_test_do_show_action(struct step_test_report *p_report)
 		if (g_step_test_check.step_check_result == TEST_PASS) {
 			temp_report.pass++;
 		} else {
-			WMT_ERR_FUNC("STEP failed: Do show TC-1(Show Hello world)\n");
+			WMT_ERR_FUNC("STEP test case failed: Do show TC-1(Show Hello world)\n");
 			temp_report.fail++;
 		}
 		wmt_step_remove_action(p_act);
 	} else {
 		temp_report.fail++;
-		WMT_ERR_FUNC("STEP failed: Do show TC-1(Show Hello world) Create failed\n");
+		WMT_ERR_FUNC("STEP test case failed: Do show TC-1(Show Hello world) Create failed\n");
 	}
 
 	osal_gettimeofday(&sec_end, &usec_end);
-	wmt_step_test_show_result_report("STEP test: Do show action result",
+	wmt_step_test_show_result_report("STEP result: Do show action result",
 		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
 	wmt_step_test_update_result_report(p_report, &temp_report);
 }
@@ -4368,18 +4455,18 @@ void wmt_step_test_do_sleep_action(struct step_test_report *p_report)
 		if (check_sec_e > check_sec_b) {
 			temp_report.pass++;
 		} else {
-			WMT_ERR_FUNC("STEP failed: Do show TC-1(Sleep 1s), begin(%d.%d) end(%d.%d)\n",
+			WMT_ERR_FUNC("STEP test case failed: Do show TC-1(Sleep 1s), begin(%d.%d) end(%d.%d)\n",
 				check_sec_b, check_usec_b, check_sec_e, check_usec_e);
 			temp_report.fail++;
 		}
 		wmt_step_remove_action(p_act);
 	} else {
 		temp_report.fail++;
-		WMT_ERR_FUNC("STEP failed: Do show TC-1(Sleep 1s) Create failed\n");
+		WMT_ERR_FUNC("STEP test case failed: Do show TC-1(Sleep 1s) Create failed\n");
 	}
 
 	osal_gettimeofday(&sec_end, &usec_end);
-	wmt_step_test_show_result_report("STEP test: Do sleep action result",
+	wmt_step_test_show_result_report("STEP result: Do sleep action result",
 		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
 	wmt_step_test_update_result_report(p_report, &temp_report);
 }
@@ -4420,13 +4507,13 @@ void wmt_step_test_do_condition_action(struct step_test_report *p_report)
 		if (g_step_test_check.step_check_result == TEST_PASS) {
 			temp_report.pass++;
 		} else {
-			WMT_ERR_FUNC("STEP failed: Do condition TC-1(equal)\n");
+			WMT_ERR_FUNC("STEP test case failed: Do condition TC-1(equal)\n");
 			temp_report.fail++;
 		}
 		wmt_step_remove_action(p_act);
 	} else {
 		temp_report.fail++;
-		WMT_ERR_FUNC("STEP failed: Do condition TC-1(equal) Create failed\n");
+		WMT_ERR_FUNC("STEP test case failed: Do condition TC-1(equal) Create failed\n");
 	}
 
 	/****************************************
@@ -4452,13 +4539,13 @@ void wmt_step_test_do_condition_action(struct step_test_report *p_report)
 		if (g_step_test_check.step_check_result == TEST_PASS) {
 			temp_report.pass++;
 		} else {
-			WMT_ERR_FUNC("STEP failed: Do condition TC-2(greater)\n");
+			WMT_ERR_FUNC("STEP test case failed: Do condition TC-2(greater)\n");
 			temp_report.fail++;
 		}
 		wmt_step_remove_action(p_act);
 	} else {
 		temp_report.fail++;
-		WMT_ERR_FUNC("STEP failed: Do condition TC-2(greater) Create failed\n");
+		WMT_ERR_FUNC("STEP test case failed: Do condition TC-2(greater) Create failed\n");
 	}
 
 	/****************************************
@@ -4484,13 +4571,13 @@ void wmt_step_test_do_condition_action(struct step_test_report *p_report)
 		if (g_step_test_check.step_check_result == TEST_PASS) {
 			temp_report.pass++;
 		} else {
-			WMT_ERR_FUNC("STEP failed: Do condition TC-3(greater equal)\n");
+			WMT_ERR_FUNC("STEP test case failed: Do condition TC-3(greater equal)\n");
 			temp_report.fail++;
 		}
 		wmt_step_remove_action(p_act);
 	} else {
 		temp_report.fail++;
-		WMT_ERR_FUNC("STEP failed: Do condition TC-3(greater equal) Create failed\n");
+		WMT_ERR_FUNC("STEP test case failed: Do condition TC-3(greater equal) Create failed\n");
 	}
 
 	/****************************************
@@ -4516,13 +4603,13 @@ void wmt_step_test_do_condition_action(struct step_test_report *p_report)
 		if (g_step_test_check.step_check_result == TEST_PASS) {
 			temp_report.pass++;
 		} else {
-			WMT_ERR_FUNC("STEP failed: Do condition TC-4(less)\n");
+			WMT_ERR_FUNC("STEP test case failed: Do condition TC-4(less)\n");
 			temp_report.fail++;
 		}
 		wmt_step_remove_action(p_act);
 	} else {
 		temp_report.fail++;
-		WMT_ERR_FUNC("STEP failed: Do condition TC-4(less) Create failed\n");
+		WMT_ERR_FUNC("STEP test case failed: Do condition TC-4(less) Create failed\n");
 	}
 
 	/****************************************
@@ -4548,13 +4635,13 @@ void wmt_step_test_do_condition_action(struct step_test_report *p_report)
 		if (g_step_test_check.step_check_result == TEST_PASS) {
 			temp_report.pass++;
 		} else {
-			WMT_ERR_FUNC("STEP failed: Do condition TC-5(less equal)\n");
+			WMT_ERR_FUNC("STEP test case failed: Do condition TC-5(less equal)\n");
 			temp_report.fail++;
 		}
 		wmt_step_remove_action(p_act);
 	} else {
 		temp_report.fail++;
-		WMT_ERR_FUNC("STEP failed: Do condition TC-5(less equal) Create failed\n");
+		WMT_ERR_FUNC("STEP test case failed: Do condition TC-5(less equal) Create failed\n");
 	}
 
 	/****************************************
@@ -4580,13 +4667,13 @@ void wmt_step_test_do_condition_action(struct step_test_report *p_report)
 		if (g_step_test_check.step_check_result == TEST_PASS) {
 			temp_report.pass++;
 		} else {
-			WMT_ERR_FUNC("STEP failed: Do condition TC-6(not equal)\n");
+			WMT_ERR_FUNC("STEP test case failed: Do condition TC-6(not equal)\n");
 			temp_report.fail++;
 		}
 		wmt_step_remove_action(p_act);
 	} else {
 		temp_report.fail++;
-		WMT_ERR_FUNC("STEP failed: Do condition TC-6(not equal) Create failed\n");
+		WMT_ERR_FUNC("STEP test case failed: Do condition TC-6(not equal) Create failed\n");
 	}
 
 	/****************************************
@@ -4612,13 +4699,13 @@ void wmt_step_test_do_condition_action(struct step_test_report *p_report)
 		if (g_step_test_check.step_check_result == TEST_PASS) {
 			temp_report.pass++;
 		} else {
-			WMT_ERR_FUNC("STEP failed: Do condition TC-7(and)\n");
+			WMT_ERR_FUNC("STEP test case failed: Do condition TC-7(and)\n");
 			temp_report.fail++;
 		}
 		wmt_step_remove_action(p_act);
 	} else {
 		temp_report.fail++;
-		WMT_ERR_FUNC("STEP failed: Do condition TC-7(and) Create failed\n");
+		WMT_ERR_FUNC("STEP test case failed: Do condition TC-7(and) Create failed\n");
 	}
 
 	/****************************************
@@ -4644,13 +4731,13 @@ void wmt_step_test_do_condition_action(struct step_test_report *p_report)
 		if (g_step_test_check.step_check_result == TEST_PASS) {
 			temp_report.pass++;
 		} else {
-			WMT_ERR_FUNC("STEP failed: Do condition TC-8(or)\n");
+			WMT_ERR_FUNC("STEP test case failed: Do condition TC-8(or)\n");
 			temp_report.fail++;
 		}
 		wmt_step_remove_action(p_act);
 	} else {
 		temp_report.fail++;
-		WMT_ERR_FUNC("STEP failed: Do condition TC-8(or) Create failed\n");
+		WMT_ERR_FUNC("STEP test case failed: Do condition TC-8(or) Create failed\n");
 	}
 
 	/****************************************
@@ -4675,13 +4762,13 @@ void wmt_step_test_do_condition_action(struct step_test_report *p_report)
 		if (g_step_test_check.step_check_result == TEST_PASS) {
 			temp_report.pass++;
 		} else {
-			WMT_ERR_FUNC("STEP failed: Do condition TC-9(not equal value)\n");
+			WMT_ERR_FUNC("STEP test case failed: Do condition TC-9(not equal value)\n");
 			temp_report.fail++;
 		}
 		wmt_step_remove_action(p_act);
 	} else {
 		temp_report.fail++;
-		WMT_ERR_FUNC("STEP failed: Do condition TC-9(not equal value) Create failed\n");
+		WMT_ERR_FUNC("STEP test case failed: Do condition TC-9(not equal value) Create failed\n");
 	}
 
 	/****************************************
@@ -4706,13 +4793,13 @@ void wmt_step_test_do_condition_action(struct step_test_report *p_report)
 		if (g_step_test_check.step_check_result == TEST_PASS) {
 			temp_report.pass++;
 		} else {
-			WMT_ERR_FUNC("STEP failed: Do condition TC-10(equal value)\n");
+			WMT_ERR_FUNC("STEP test case failed: Do condition TC-10(equal value)\n");
 			temp_report.fail++;
 		}
 		wmt_step_remove_action(p_act);
 	} else {
 		temp_report.fail++;
-		WMT_ERR_FUNC("STEP failed: Do condition TC-10(equal value) Create failed\n");
+		WMT_ERR_FUNC("STEP test case failed: Do condition TC-10(equal value) Create failed\n");
 	}
 
 	/****************************************
@@ -4737,17 +4824,17 @@ void wmt_step_test_do_condition_action(struct step_test_report *p_report)
 		if (g_step_test_check.step_check_result == TEST_PASS) {
 			temp_report.pass++;
 		} else {
-			WMT_ERR_FUNC("STEP failed: Do condition TC-11(equal value HEX)\n");
+			WMT_ERR_FUNC("STEP test case failed: Do condition TC-11(equal value HEX)\n");
 			temp_report.fail++;
 		}
 		wmt_step_remove_action(p_act);
 	} else {
 		temp_report.fail++;
-		WMT_ERR_FUNC("STEP failed: Do condition TC-11(equal value HEX) Create failed\n");
+		WMT_ERR_FUNC("STEP test case failed: Do condition TC-11(equal value HEX) Create failed\n");
 	}
 
 	osal_gettimeofday(&sec_end, &usec_end);
-	wmt_step_test_show_result_report("STEP test: Do condition action result",
+	wmt_step_test_show_result_report("STEP result: Do condition action result",
 		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
 	wmt_step_test_update_result_report(p_report, &temp_report);
 }
@@ -4786,17 +4873,17 @@ void wmt_step_test_do_value_action(struct step_test_report *p_report)
 		if (g_step_test_check.step_check_result == TEST_PASS) {
 			temp_report.pass++;
 		} else {
-			WMT_ERR_FUNC("STEP failed: Do show TC-1(Save value to register)");
+			WMT_ERR_FUNC("STEP test case failed: Do show TC-1(Save value to register)");
 			temp_report.fail++;
 		}
 		wmt_step_remove_action(p_act);
 	} else {
 		temp_report.fail++;
-		WMT_ERR_FUNC("STEP failed: Do show TC-1(Save value to register) Create failed\n");
+		WMT_ERR_FUNC("STEP test case failed: Do show TC-1(Save value to register) Create failed\n");
 	}
 
 	osal_gettimeofday(&sec_end, &usec_end);
-	wmt_step_test_show_result_report("STEP test: Do value action result",
+	wmt_step_test_show_result_report("STEP result: Do value action result",
 		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
 	wmt_step_test_update_result_report(p_report, &temp_report);
 }
@@ -4817,7 +4904,7 @@ void wmt_step_test_create_periodic_dump(struct step_test_report *p_report)
 
 	if (g_step_env.pd_struct.step_pd_wq == NULL) {
 		if (wmt_step_init_pd_env() != 0) {
-			WMT_ERR_FUNC("STEP failed: Start thread failed\n");
+			WMT_ERR_FUNC("STEP test case failed: Start thread failed\n");
 			return;
 		}
 		is_thread_run_for_test = 1;
@@ -4831,13 +4918,13 @@ void wmt_step_test_create_periodic_dump(struct step_test_report *p_report)
 	expires_ms = 5;
 	p_current = wmt_step_get_periodic_dump_entry(expires_ms);
 	if (p_current == NULL) {
-		WMT_ERR_FUNC("STEP failed: (Create periodic dump TC-1) No entry\n");
+		WMT_ERR_FUNC("STEP test case failed: (Create periodic dump TC-1) No entry\n");
 		temp_report.fail++;
 	} else {
 		if (p_current->expires_ms == expires_ms) {
 			temp_report.pass++;
 		} else {
-			WMT_ERR_FUNC("STEP failed: (Create periodic dump TC-1) Currect %d not %d\n",
+			WMT_ERR_FUNC("STEP test case failed: (Create periodic dump TC-1) Currect %d not %d\n",
 				p_current->expires_ms, expires_ms);
 			temp_report.fail++;
 		}
@@ -4849,7 +4936,7 @@ void wmt_step_test_create_periodic_dump(struct step_test_report *p_report)
 		wmt_step_deinit_pd_env();
 
 	osal_gettimeofday(&sec_end, &usec_end);
-	wmt_step_test_show_result_report("STEP test: Create periodic dump result",
+	wmt_step_test_show_result_report("STEP result: Create periodic dump result",
 		&temp_report, sec_begin, usec_begin, sec_end, usec_end);
 	wmt_step_test_update_result_report(p_report, &temp_report);
 }
