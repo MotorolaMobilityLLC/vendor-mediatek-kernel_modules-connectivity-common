@@ -30,6 +30,12 @@ int do_connectivity_driver_init(int chip_id)
 {
 	int i_ret = 0;
 	int tmp_ret = 0;
+	static int init_before;
+
+	/* To avoid invoking more than once.*/
+	if (init_before)
+		return 0;
+	init_before = 1;
 
 	tmp_ret = do_common_drv_init(chip_id);
 	i_ret += tmp_ret;
