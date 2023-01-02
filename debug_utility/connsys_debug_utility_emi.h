@@ -1,12 +1,6 @@
 #ifndef _CONN_DEDICATED_LOG_EMI_H_
 #define _CONN_DEDICATED_LOG_EMI_H_
 
-#ifdef CONFIG_MTK_CONNSYS_DEDICATED_LOG_PATH
-#define EMI_TO_CACHE_SUPPORT
-#else
-#define PRINT_FW_LOG
-#endif
-
 #define CONNLOG_EMI_SIZE (192*1024) /* 192KB */
 #define CONNLOG_EMI_LOG_BASE_OFFSET 0x36500
 #define CONNLOG_EMI_32_BYTE_ALIGNED 32 /* connsys EMI cache is 32-byte aligned */
