@@ -1422,7 +1422,7 @@ ssize_t wmt_dbg_write(struct file *filp, const char __user *buffer, size_t count
 	INT32 x = 0, y = 0, z = 0;
 	PINT8 pToken = NULL;
 	PINT8 pDelimiter = " \t";
-	LONG res;
+	LONG res = 0;
 	static INT8 dbgEnabled;
 
 	WMT_INFO_FUNC("write parameter len = %d\n\r", (INT32) len);
