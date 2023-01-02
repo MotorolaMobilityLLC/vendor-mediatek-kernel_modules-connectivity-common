@@ -49,6 +49,7 @@
 #include "stp_sdio.h"
 #include "stp_dbg.h"
 #include "wmt_step.h"
+#include <linux/workqueue.h>
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -92,6 +93,16 @@ static UINT8 g_cpupcr_buf[WMT_STP_CPUPCR_BUF_SIZE] = { 0 };
 static UINT32 g_quick_sleep_ctrl = 1;
 static UINT32 g_fw_patch_update_rst;
 
+#define ASSERT_KEYWORD_LENGTH 20
+struct assert_work_st {
+	struct work_struct work;
+	ENUM_WMTDRV_TYPE_T type;
+	UINT32 reason;
+	UINT8 keyword[ASSERT_KEYWORD_LENGTH];
+};
+
+static struct assert_work_st wmt_assert_work;
+
 #define CONSYS_MET_WAIT	(1000*10) /* ms */
 #define MET_DUMP_MAX_NUM (1)
 #define MET_DUMP_SIZE (4*MET_DUMP_MAX_NUM)
@@ -134,6 +145,7 @@ static VOID wmt_lib_utc_sync_worker_handler(struct work_struct *work);
 static VOID wmt_lib_wmtd_worker_thread_timeout_handler(ULONG data);
 static VOID wmt_lib_wmtd_worker_thread_work_handler(struct work_struct *work);
 
+static VOID wmt_lib_assert_work_cb(struct work_struct *work);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
@@ -412,6 +424,9 @@ INT32 wmt_lib_init(VOID)
 #if CFG_WMT_LTE_COEX_HANDLING
 	wmt_idc_init();
 #endif
+
+	INIT_WORK(&(wmt_assert_work.work), wmt_lib_assert_work_cb);
+
 	WMT_DBG_FUNC("init success\n");
 	return 0;
 }
@@ -3096,4 +3111,22 @@ INT32 wmt_lib_set_need_update_patch_version(INT32 need)
 VOID mtk_lib_set_mcif_mpu_protection(MTK_WCN_BOOL enable)
 {
 	mtk_consys_set_mcif_mpu_protection(enable);
+}
+
+static VOID wmt_lib_assert_work_cb(struct work_struct *work)
+{
+	struct assert_work_st *a = &wmt_assert_work;
+
+	wmt_lib_trigger_assert_keyword(a->type, a->reason, a->keyword);
+}
+
+VOID wmt_lib_trigger_assert_keyword_delay(ENUM_WMTDRV_TYPE_T type, UINT32 reason, PUINT8 keyword)
+{
+	struct assert_work_st *a = &wmt_assert_work;
+
+	a->type = type;
+	a->reason = reason;
+	snprintf(a->keyword, sizeof(a->keyword), "%s", keyword);
+	WMT_ERR_FUNC("Assert: type = %d, reason = %d, keyword = %s", type, reason, keyword);
+	schedule_work(&(a->work));
 }
