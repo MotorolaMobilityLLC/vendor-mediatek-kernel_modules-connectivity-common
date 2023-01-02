@@ -758,6 +758,9 @@ static UINT8 WMT_POWER_CTRL_DLM_CMD3[] = {
 static UINT8 WMT_POWER_CTRL_DLM_EVT[] = { 0x02, 0x08, 0x04, 0x00, 0x00, 0x00, 0x00, 0x01 };
 #endif
 
+static UINT8 WMT_WIFI_ANT_SWAP_CMD[] = { 0x01, 0x14, 0x03, 0x00, 0x05, 0x02, 0x00 };
+static UINT8 WMT_WIFI_ANT_SWAP_EVT[] = { 0x02, 0x14, 0x02, 0x00, 0x00, 0x05 };
+
 #if (!CFG_IC_SOC)
 
 /* stp sdio init scripts */
@@ -968,6 +971,11 @@ static struct init_script wmt_power_on_dlm_table[] = {
 };
 #endif
 
+
+static struct init_script wifi_ant_swap_table[] = {
+	INIT_CMD(WMT_WIFI_ANT_SWAP_CMD, WMT_WIFI_ANT_SWAP_EVT, "ant swap"),
+};
+
 /* SOC Chip Version and Info Table */
 static const WMT_IC_INFO_S mtk_wcn_soc_info_table[] = {
 	{
@@ -1071,6 +1079,8 @@ static INT32 mtk_wcn_soc_do_calibration(void);
 static INT32 mtk_wcn_soc_calibration_backup(void);
 static INT32 mtk_wcn_soc_calibration_restore(void);
 #endif
+
+static INT32 wmt_stp_init_wifi_ant_swap(VOID);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -1450,6 +1460,13 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	if (iRet) {
 		WMT_ERR_FUNC("init_epa_elna fail(%d)\n", iRet);
 		return -22;
+	}
+
+	iRet = wmt_stp_init_wifi_ant_swap();
+
+	if (iRet) {
+		WMT_ERR_FUNC("init_wifi_ant_swap fail(%d)\n", iRet);
+		return -23;
 	}
 
 	/* 7. start RF calibration data */
@@ -2368,6 +2385,47 @@ static INT32 wmt_stp_init_epa_elna(VOID)
 	return iRet;
 }
 
+
+static INT32 wmt_stp_init_wifi_ant_swap(VOID)
+{
+	INT32 iRet;
+	unsigned long addr;
+	WMT_GEN_CONF *pWmtGenConf;
+	UINT8 ant_swap_mode = 0;
+	/*Get wmt config */
+	iRet = wmt_core_ctrl(WMT_CTRL_GET_WMT_CONF, &addr, 0);
+	if (iRet) {
+		WMT_ERR_FUNC("ctrl GET_WMT_CONF fail(%d)\n", iRet);
+		return -2;
+	}
+	WMT_DBG_FUNC("ctrl GET_WMT_CONF ok(0x%08lx)\n", addr);
+
+	pWmtGenConf = (P_WMT_GEN_CONF) addr;
+
+	/*Check if WMT.cfg exists */
+	if (pWmtGenConf->cfgExist == 0) {
+		WMT_DBG_FUNC("cfgExist == 0, skip config chip\n");
+		/*if WMT.cfg not existed, still return success and adopt the default value */
+		return 0;
+	}
+
+	ant_swap_mode = pWmtGenConf->wifi_ant_swap_mode;
+
+	WMT_INFO_FUNC("ant swap mode = %d, main_polarity = %d\n",
+		ant_swap_mode, pWmtGenConf->wifi_main_ant_polarity);
+
+	if (ant_swap_mode <= 0 || ant_swap_mode > 2)
+		return 0;
+
+	if (ant_swap_mode == 2 && mtk_consys_get_wifi_ant_swap_gpio_value() != 0)
+		return 0;
+
+	wifi_ant_swap_table[0].cmd[6] = pWmtGenConf->wifi_main_ant_polarity;
+
+	iRet = wmt_core_init_script(wifi_ant_swap_table, ARRAY_SIZE(wifi_ant_swap_table));
+
+	return iRet;
+}
 
 
 #if CFG_WMT_SDIO_DRIVING_SET
