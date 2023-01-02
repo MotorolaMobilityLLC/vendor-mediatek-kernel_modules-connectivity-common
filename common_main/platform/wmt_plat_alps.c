@@ -1834,19 +1834,3 @@ INT32 wmt_plat_set_dynamic_dumpmem(PUINT32 str_buf)
 
 	return 0;
 }
-
-INT32 wmt_plat_reset_emi(VOID)
-{
-	PUINT8 p_virtual_addr = NULL;
-
-	p_virtual_addr = wmt_plat_get_emi_virt_add(0x0);
-	if (!p_virtual_addr) {
-		WMT_PLAT_ERR_FUNC("get virtual address fail\n");
-		return -1;
-	}
-	/* reset 0xF0068000 ~ 0xF0068400 (1K) */
-	memset_io(p_virtual_addr, 0, 0x400);
-	/* reset 0xF0070400 ~ 0xF0078400 (32K)  */
-	memset_io(p_virtual_addr + 0x8400, 0, 0x8000);
-	return 0;
-}
