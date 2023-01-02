@@ -533,7 +533,7 @@ INT32 wmt_func_gps_on(P_WMT_IC_OPS pOps, P_WMT_GEN_CONF pConf)
 	}
 	iRet = wmt_func_gps_pre_on(pOps, pConf);
 	if (iRet == 0) {
-		if (!pConf || pConf->wmt_gps_suspend_ctrl == 0)
+		if (pConf->wmt_gps_suspend_ctrl == 0)
 			iRet = wmt_func_gps_ctrl(FUNC_ON);
 		if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC) {
 			if (!iRet) {
@@ -564,7 +564,7 @@ INT32 wmt_func_gps_off(P_WMT_IC_OPS pOps, P_WMT_GEN_CONF pConf)
 	if (!osal_test_bit(WMT_GPS_SUSPEND, &gGpsFmState))
 		iRet = wmt_func_gps_pre_off(pOps, pConf);
 	if (iRet == 0) {
-		if (!pConf || pConf->wmt_gps_suspend_ctrl == 0)
+		if (pConf->wmt_gps_suspend_ctrl == 0)
 			iRet = wmt_func_gps_ctrl(FUNC_OFF);
 		if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC) {
 			if (!iRet) {
