@@ -288,6 +288,9 @@ typedef struct _WMT_GEN_CONF {
 	UINT8 coex_config_addjust_ble_scan_time_ratio_bt_slot;
 	UINT8 coex_config_addjust_ble_scan_time_ratio_wifi_slot;
 
+	/* wifi ant swap feature */
+	UINT8 wifi_ant_swap_mode;
+	UINT8 wifi_main_ant_polarity;
 } WMT_GEN_CONF, *P_WMT_GEN_CONF;
 
 typedef enum _ENUM_DRV_STS_ {
