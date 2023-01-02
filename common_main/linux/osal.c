@@ -1556,6 +1556,8 @@ VOID osal_op_history_init(struct osal_op_history *log_history, INT32 queue_size)
 {
 	int size = queue_size * sizeof(struct osal_op_history_entry);
 
+	spin_lock_init(&(log_history->lock));
+
 	log_history->queue = kzalloc(size, GFP_ATOMIC);
 	if (log_history->queue == NULL)
 		return;
