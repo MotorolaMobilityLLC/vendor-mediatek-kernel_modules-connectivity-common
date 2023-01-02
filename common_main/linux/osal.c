@@ -791,9 +791,13 @@ INT32 osal_timer_create(P_OSAL_TIMER pTimer)
 {
 	struct timer_list *timer = &pTimer->timer;
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+	timer_setup(timer, pTimer->timeoutHandler, 0);
+#else
 	init_timer(timer);
 	timer->function = pTimer->timeoutHandler;
 	timer->data = (ULONG)pTimer->timeroutHandlerData;
+#endif
 	return 0;
 }
 
