@@ -47,7 +47,7 @@
 
 UINT32 gStpDbgLogOut;
 UINT32 gStpDbgDumpType = STP_DBG_PKT;
-UINT32 gStpDbgDbgLevel = STP_DBG_LOG_INFO;
+INT32 gStpDbgDbgLevel = STP_DBG_LOG_INFO;
 
 MTKSTP_DBG_T *g_stp_dbg;
 
