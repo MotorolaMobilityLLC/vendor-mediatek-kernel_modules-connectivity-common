@@ -42,6 +42,8 @@
 #include "wmt_ic.h"
 #include <linux/of_reserved_mem.h>
 #include <linux/pinctrl/consumer.h>
+#include <linux/of_gpio.h>
+#include <connectivity_build_in_adapter.h>
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -97,6 +99,7 @@ const struct of_device_id apwmt_of_ids[] = {
 	{.compatible = "mediatek,mt6765-consys",},
 	{.compatible = "mediatek,mt6761-consys",},
 	{.compatible = "mediatek,mt6779-consys",},
+	{.compatible = "mediatek,mt6768-consys",},
 	{}
 };
 struct CONSYS_BASE_ADDRESS conn_reg;
