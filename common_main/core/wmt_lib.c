@@ -2270,6 +2270,7 @@ ENUM_WMTRSTRET_TYPE_T wmt_lib_cmb_rst(ENUM_WMTRSTSRC_TYPE_T src)
 	} else {
 		retval = rstMsg == WMTRSTMSG_RESET_END ? WMTRSTRET_SUCCESS : WMTRSTRET_FAIL;
 	}
+	mtk_wcn_stp_assert_flow_ctrl(0);
 	mtk_wcn_stp_coredump_start_ctrl(0);
 	mtk_wcn_stp_set_wmt_trg_assert(0);
 	mtk_wcn_stp_emi_dump_flag_ctrl(0);
