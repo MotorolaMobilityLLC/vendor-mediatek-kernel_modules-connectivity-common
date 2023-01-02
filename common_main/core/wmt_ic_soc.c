@@ -1257,24 +1257,31 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	/* 6.1 Let launcher to search patch info */
 	/* 6.2 Read patch number */
 	/* If patch number is 0, it's first time connys power on */
-	patch_num = mtk_wcn_soc_get_patch_num();
-	if (patch_num == 0 || wmt_lib_get_patch_info() == NULL) {
-		iRet = mtk_wcn_soc_patch_info_prepare();
-		if (iRet) {
-			WMT_ERR_FUNC("patch info perpare fail(%d)\n", iRet);
-			return -6;
-		}
+	if ((wmt_ic_ops_soc.options & OPT_DISABLE_ROM_PATCH_DWN) == 0) {
 		patch_num = mtk_wcn_soc_get_patch_num();
+		if (patch_num == 0 || wmt_lib_get_patch_info() == NULL) {
+			iRet = mtk_wcn_soc_patch_info_prepare();
+			if (iRet) {
+				WMT_ERR_FUNC("patch info perpare fail(%d)\n", iRet);
+				return -6;
+			}
+			patch_num = mtk_wcn_soc_get_patch_num();
+			WMT_INFO_FUNC("patch total num = [%lu]\n", patch_num);
+		}
+	} else {
+		patch_num = 0;
 	}
 #if CFG_WMT_PATCH_DL_OPTM
-	if (wmt_ic_ops_soc.options & OPT_SET_MCUCLK_TABLE_1_2) {
-		iRet = wmt_core_init_script(set_mcuclk_table_1, osal_array_size(set_mcuclk_table_1));
-		if (iRet)
-			WMT_ERR_FUNC("set_mcuclk_table_1 fail(%d)\n", iRet);
-	} else if (wmt_ic_ops_soc.options & OPT_SET_MCUCLK_TABLE_3_4) {
-		iRet = wmt_core_init_script(set_mcuclk_table_3, osal_array_size(set_mcuclk_table_3));
-		if (iRet)
-			WMT_ERR_FUNC("set_mcuclk_table_3 fail(%d)\n", iRet);
+	if (patch_num != 0) {
+		if (wmt_ic_ops_soc.options & OPT_SET_MCUCLK_TABLE_1_2) {
+			iRet = wmt_core_init_script(set_mcuclk_table_1, osal_array_size(set_mcuclk_table_1));
+			if (iRet)
+				WMT_ERR_FUNC("set_mcuclk_table_1 fail(%d)\n", iRet);
+		} else if (wmt_ic_ops_soc.options & OPT_SET_MCUCLK_TABLE_3_4) {
+			iRet = wmt_core_init_script(set_mcuclk_table_3, osal_array_size(set_mcuclk_table_3));
+			if (iRet)
+				WMT_ERR_FUNC("set_mcuclk_table_3 fail(%d)\n", iRet);
+		}
 	}
 #endif
 	/* 6.3 Multi-patch Patch download */
@@ -1296,31 +1303,35 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	}
 
 #if CFG_WMT_PATCH_DL_OPTM
-	if (wmt_ic_ops_soc.options & OPT_SET_MCUCLK_TABLE_1_2) {
-		iRet = wmt_core_init_script(set_mcuclk_table_2, osal_array_size(set_mcuclk_table_2));
-		if (iRet)
-			WMT_ERR_FUNC("set_mcuclk_table_2 fail(%d)\n", iRet);
-	} else if (wmt_ic_ops_soc.options & OPT_SET_MCUCLK_TABLE_3_4) {
-		iRet = wmt_core_init_script(set_mcuclk_table_4, osal_array_size(set_mcuclk_table_4));
-		if (iRet)
-			WMT_ERR_FUNC("set_mcuclk_table_4 fail(%d)\n", iRet);
+	if (patch_num != 0) {
+		if (wmt_ic_ops_soc.options & OPT_SET_MCUCLK_TABLE_1_2) {
+			iRet = wmt_core_init_script(set_mcuclk_table_2, osal_array_size(set_mcuclk_table_2));
+			if (iRet)
+				WMT_ERR_FUNC("set_mcuclk_table_2 fail(%d)\n", iRet);
+		} else if (wmt_ic_ops_soc.options & OPT_SET_MCUCLK_TABLE_3_4) {
+			iRet = wmt_core_init_script(set_mcuclk_table_4, osal_array_size(set_mcuclk_table_4));
+			if (iRet)
+				WMT_ERR_FUNC("set_mcuclk_table_4 fail(%d)\n", iRet);
+		}
 	}
 #endif
 
 #else
 	/* 6.3 Patch download */
-	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_BEFORE_SEND_DOWNLOAD_PATCH);
-	iRet = mtk_wcn_soc_patch_dwn();
-	/* If patch download fail, we just ignore this error and let chip init process goes on */
-	if (iRet)
-		WMT_ERR_FUNC("patch dwn fail (%d), just omit\n", iRet);
+	if ((wmt_ic_ops_soc.options & OPT_DISABLE_ROM_PATCH_DWN) == 0) {
+		WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_BEFORE_SEND_DOWNLOAD_PATCH);
+		iRet = mtk_wcn_soc_patch_dwn();
+		/* If patch download fail, we just ignore this error and let chip init process goes on */
+		if (iRet)
+			WMT_ERR_FUNC("patch dwn fail (%d), just omit\n", iRet);
 
-	/* 6.4. WMT Reset command */
-	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_BEFORE_CONNSYS_RESET);
-	iRet = wmt_core_init_script(init_table_3, osal_array_size(init_table_3));
-	if (iRet) {
-		WMT_ERR_FUNC("init_table_3 fail(%d)\n", iRet);
-		return -8;
+		/* 6.4. WMT Reset command */
+		WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_BEFORE_CONNSYS_RESET);
+		iRet = wmt_core_init_script(init_table_3, osal_array_size(init_table_3));
+		if (iRet) {
+			WMT_ERR_FUNC("init_table_3 fail(%d)\n", iRet);
+			return -8;
+		}
 	}
 #endif
 
