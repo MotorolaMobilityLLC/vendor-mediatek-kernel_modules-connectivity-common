@@ -827,7 +827,7 @@ INT32 mtk_wcn_hif_sdio_readb(MTK_WCN_HIF_SDIO_CLTCTX ctx, UINT32 offset, PUINT8 
 {
 #if HIF_SDIO_UPDATE
 	INT32 ret;
-	struct sdio_func *func;
+	struct sdio_func *func = NULL;
 #else
 	INT32 ret = -HIF_SDIO_ERR_FAIL;
 	INT32 probe_index = -1;
@@ -894,7 +894,7 @@ INT32 mtk_wcn_hif_sdio_writeb(MTK_WCN_HIF_SDIO_CLTCTX ctx, UINT32 offset, UINT8 
 {
 #if HIF_SDIO_UPDATE
 	INT32 ret;
-	struct sdio_func *func;
+	struct sdio_func *func = NULL;
 #else
 	INT32 ret = -HIF_SDIO_ERR_FAIL;
 	INT32 probe_index = -1;
@@ -963,7 +963,7 @@ INT32 mtk_wcn_hif_sdio_readl(MTK_WCN_HIF_SDIO_CLTCTX ctx, UINT32 offset, PUINT32
 {
 #if HIF_SDIO_UPDATE
 	INT32 ret;
-	struct sdio_func *func;
+	struct sdio_func *func = NULL;
 #else
 	INT32 ret = -HIF_SDIO_ERR_FAIL;
 	INT32 probe_index = -1;
@@ -1031,7 +1031,7 @@ INT32 mtk_wcn_hif_sdio_writel(MTK_WCN_HIF_SDIO_CLTCTX ctx, UINT32 offset, UINT32
 {
 #if HIF_SDIO_UPDATE
 	INT32 ret;
-	struct sdio_func *func;
+	struct sdio_func *func = NULL;
 #else
 	INT32 ret = -HIF_SDIO_ERR_FAIL;
 	INT32 probe_index = -1;
@@ -1100,7 +1100,7 @@ INT32 mtk_wcn_hif_sdio_read_buf(MTK_WCN_HIF_SDIO_CLTCTX ctx,
 {
 #if HIF_SDIO_UPDATE
 	INT32 ret;
-	struct sdio_func *func;
+	struct sdio_func *func = NULL;
 #else
 	INT32 ret = -HIF_SDIO_ERR_FAIL;
 	INT32 probe_index = -1;
@@ -1170,7 +1170,7 @@ INT32 mtk_wcn_hif_sdio_write_buf(MTK_WCN_HIF_SDIO_CLTCTX ctx,
 {
 #if HIF_SDIO_UPDATE
 	INT32 ret;
-	struct sdio_func *func;
+	struct sdio_func *func = NULL;
 #else
 	INT32 ret = -HIF_SDIO_ERR_FAIL;
 	INT32 probe_index = -1;
@@ -1240,7 +1240,7 @@ INT32 mtk_wcn_hif_sdio_abort(MTK_WCN_HIF_SDIO_CLTCTX ctx)
 {
 #if HIF_SDIO_UPDATE
 	INT32 ret;
-	struct sdio_func *func;
+	struct sdio_func *func = NULL;
 #else
 	INT32 ret = -HIF_SDIO_ERR_FAIL;
 	INT32 probe_index = -1;
@@ -1393,7 +1393,7 @@ EXPORT_SYMBOL(mtk_wcn_hif_sdio_wmt_control);
 VOID mtk_wcn_hif_sdio_get_dev(MTK_WCN_HIF_SDIO_CLTCTX ctx, struct device **dev)
 {
 #if HIF_SDIO_UPDATE
-	struct sdio_func *func;
+	struct sdio_func *func = NULL;
 #else
 	UINT8 probe_index = CLTCTX_IDX(ctx);
 #endif
@@ -1767,7 +1767,7 @@ static _osal_inline_ INT32 hif_sdio_add_clt_list(PINT32 clt_index_p,
 #if HIF_SDIO_SUPPORT_SUSPEND
 static INT32 hif_sdio_suspend(struct device *dev)
 {
-	struct sdio_func *func;
+	struct sdio_func *func = NULL;
 	mmc_pm_flag_t flag;
 	INT32 ret;
 
@@ -1810,7 +1810,7 @@ static INT32 hif_sdio_suspend(struct device *dev)
 static INT32 hif_sdio_resume(struct device *dev)
 {
 #if HIF_SDIO_SUPPORT_WAKEUP
-	struct sdio_func *func;
+	struct sdio_func *func = NULL;
 #endif
 	if (!dev) {
 		HIF_SDIO_WARN_FUNC("null dev!\n");
@@ -2190,7 +2190,7 @@ static _osal_inline_ INT32 hif_sdio_stp_on(VOID)
 	INT32 probe_index = -1;
 	INT32 ret = -1;
 	INT32 ret2 = -1;
-	struct sdio_func *func;
+	struct sdio_func *func = NULL;
 	UINT32 chip_id = 0;
 	UINT16 func_num = 0;
 
@@ -2331,7 +2331,7 @@ static _osal_inline_ INT32 hif_sdio_stp_off(VOID)
 	INT32 probe_index = -1;
 	INT32 ret = -1;
 	INT32 ret2 = -1;
-	struct sdio_func *func;
+	struct sdio_func *func = NULL;
 	UINT32 chip_id = 0;
 	UINT16 func_num = 0;
 	const MTK_WCN_HIF_SDIO_FUNCINFO *func_info = NULL;
@@ -2463,7 +2463,7 @@ static _osal_inline_ INT32 hif_sdio_wifi_on(VOID)
 	INT32 probe_index = -1;
 	INT32 ret = 0;
 	INT32 ret2 = 0;
-	struct sdio_func *func;
+	struct sdio_func *func = NULL;
 	UINT32 chip_id = 0;
 	UINT16 func_num = 0;
 	const MTK_WCN_HIF_SDIO_FUNCINFO *func_info = NULL;
@@ -2599,7 +2599,7 @@ static _osal_inline_ INT32 hif_sdio_wifi_off(VOID)
 	INT32 probe_index = -1;
 	INT32 ret = -1;
 	INT32 ret2 = -1;
-	struct sdio_func *func;
+	struct sdio_func *func = NULL;
 	UINT32 chip_id = 0;
 	UINT16 func_num = 0;
 	const MTK_WCN_HIF_SDIO_FUNCINFO *func_info = NULL;
@@ -2792,7 +2792,7 @@ INT32 mtk_wcn_hif_sdio_f0_readb(MTK_WCN_HIF_SDIO_CLTCTX ctx, UINT32 offset, PUIN
 {
 #if HIF_SDIO_UPDATE
 	INT32 ret;
-	struct sdio_func *func;
+	struct sdio_func *func = NULL;
 #else
 	INT32 ret = -HIF_SDIO_ERR_FAIL;
 	INT32 probe_index = -1;
@@ -2857,7 +2857,7 @@ INT32 mtk_wcn_hif_sdio_f0_writeb(MTK_WCN_HIF_SDIO_CLTCTX ctx, UINT32 offset, UIN
 {
 #if HIF_SDIO_UPDATE
 	INT32 ret;
-	struct sdio_func *func;
+	struct sdio_func *func = NULL;
 #else
 	INT32 ret = -HIF_SDIO_ERR_FAIL;
 	INT32 probe_index = -1;
