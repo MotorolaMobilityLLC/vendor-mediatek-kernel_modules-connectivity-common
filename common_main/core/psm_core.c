@@ -531,7 +531,6 @@ static INT32 _stp_psm_proc(PVOID pvData)
 	P_OSAL_OP pOp;
 	UINT32 id;
 	INT32 result;
-	static DEFINE_RATELIMIT_STATE(_rs, HZ, 10);
 
 	if (!stp_psm) {
 		STP_PSM_WARN_FUNC("!stp_psm\n");
@@ -563,8 +562,7 @@ static INT32 _stp_psm_proc(PVOID pvData)
 			    ("+++++++++++ Get op from activeQ fail, maybe disable/enable psm\n");
 			continue;
 		}
-		if (__ratelimit(&_rs))
-			STP_PSM_INFO_FUNC("pOp(%p):%u(%d)\n", pOp, pOp->op.opId, atomic_read(&pOp->ref_count));
+		osal_op_history_save(&stp_psm->op_history, pOp);
 
 		id = osal_op_get_id(pOp);
 
@@ -1918,6 +1916,11 @@ static INT32 _stp_psm_opid_dbg_out_printk(P_STP_PSM_OPID_RECORD p_opid_dbg)
 
 }
 
+VOID stp_psm_print_op_history(VOID)
+{
+	osal_op_history_print(&stp_psm->op_history, "_stp_psm_proc");
+}
+
 MTKSTP_PSM_T *stp_psm_init(VOID)
 {
 	INT32 err = 0;
@@ -1962,7 +1965,8 @@ MTKSTP_PSM_T *stp_psm_init(VOID)
 	}
 	/* stp_psm->current_active_op = NULL; */
 	stp_psm->last_active_opId = STP_OPID_PSM_INALID;
-	/*Generate BTM thread, to servie STP-CORE and WMT-CORE for sleeping, waking up and host awake */
+	osal_op_history_init(&stp_psm->op_history, 16);
+	/*Generate PSM thread, to servie STP-CORE and WMT-CORE for sleeping, waking up and host awake */
 	stp_psm->PSMd.pThreadData = (PVOID) stp_psm;
 	stp_psm->PSMd.pThreadFunc = (PVOID) _stp_psm_proc;
 	osal_memcpy(stp_psm->PSMd.threadName, PSM_THREAD_NAME, osal_strlen(PSM_THREAD_NAME));
