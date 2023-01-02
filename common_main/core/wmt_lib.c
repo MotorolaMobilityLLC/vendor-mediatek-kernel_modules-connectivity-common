@@ -2582,6 +2582,12 @@ INT32 wmt_lib_register_thermal_ctrl_cb(thermal_query_ctrl_cb thermal_ctrl)
 	return 0;
 }
 
+INT32 wmt_lib_register_trigger_assert_cb(trigger_assert_cb trigger_assert)
+{
+	wmt_plat_trigger_assert_cb_reg(trigger_assert);
+	return 0;
+}
+
 UINT32 wmt_lib_set_host_assert_info(UINT32 type, UINT32 reason, UINT32 en)
 {
 	return stp_dbg_set_host_assert_info(type, reason, en);
