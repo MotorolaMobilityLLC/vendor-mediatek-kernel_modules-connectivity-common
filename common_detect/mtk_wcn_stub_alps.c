@@ -115,6 +115,7 @@ static wmt_thermal_query_cb cmb_stub_thermal_ctrl_cb;
 static enum CMB_STUB_AIF_X cmb_stub_aif_stat = CMB_STUB_AIF_0;
 static wmt_deep_idle_ctrl_cb cmb_stub_deep_idle_ctrl_cb;
 static wmt_func_do_reset cmb_stub_do_reset_cb;
+static wmt_clock_fail_dump_cb cmb_stub_clock_fail_dump_cb;
 /* A temp translation table between COMBO_AUDIO_STATE_X and CMB_STUB_AIF_X.
  * This is used for ALPS backward compatible ONLY!!! Remove this table, related
  * functions, and type definition after modifying other kernel built-in modules,
@@ -146,6 +147,7 @@ static u32 wifi_irq = 0xffffffff;
 
 #ifndef MTK_WCN_REMOVE_KERNEL_MODULE
 static int _mtk_wcn_cmb_stub_query_ctrl(void);
+static void _mtk_wcn_cmb_stub_clock_fail_dump(void);
 #endif /* MTK_WCN_REMOVE_KERNEL_MODULE */
 
 /*******************************************************************************
@@ -183,9 +185,11 @@ int mtk_wcn_cmb_stub_reg(struct _CMB_STUB_CB_ *p_stub_cb)
 	cmb_stub_thermal_ctrl_cb = p_stub_cb->thermal_query_cb;
 	cmb_stub_deep_idle_ctrl_cb = p_stub_cb->deep_idle_ctrl_cb;
 	cmb_stub_do_reset_cb = p_stub_cb->wmt_do_reset_cb;
+	cmb_stub_clock_fail_dump_cb = p_stub_cb->clock_fail_dump_cb;
 
 #ifndef MTK_WCN_REMOVE_KERNEL_MODULE
 	pbridge.thermal_query_cb = _mtk_wcn_cmb_stub_query_ctrl;
+	pbridge.clock_fail_dump_cb = _mtk_wcn_cmb_stub_clock_fail_dump;
 	wmt_export_platform_bridge_register(&pbridge);
 #endif
 
@@ -211,6 +215,7 @@ int mtk_wcn_cmb_stub_unreg(void)
 	cmb_stub_thermal_ctrl_cb = NULL;
 	cmb_stub_deep_idle_ctrl_cb = NULL;
 	cmb_stub_do_reset_cb = NULL;
+	cmb_stub_clock_fail_dump_cb = NULL;
 	CMB_STUB_LOG_INFO("[cmb_stub] unregistered\n");	/* KERN_DEBUG */
 
 	return 0;
@@ -274,6 +279,16 @@ static int _mtk_wcn_cmb_stub_query_ctrl(void)
 
 	return temp;
 }
+
+#ifndef MTK_WCN_REMOVE_KERNEL_MODULE
+void _mtk_wcn_cmb_stub_clock_fail_dump(void)
+{
+	if (cmb_stub_clock_fail_dump_cb)
+		(*cmb_stub_clock_fail_dump_cb) ();
+	else
+		CMB_STUB_LOG_WARN("[cmb_stub] clock_fail_dump_cb null\n");
+}
+#endif
 
 /*platform-related APIs*/
 /* void clr_device_working_ability(UINT32 clockId, MT6573_STATE state); */

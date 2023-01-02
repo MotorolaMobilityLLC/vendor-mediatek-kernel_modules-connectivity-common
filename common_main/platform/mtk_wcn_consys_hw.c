@@ -712,3 +712,9 @@ INT32 mtk_consys_check_reg_readable(VOID)
 	else
 		return 1;
 }
+
+VOID mtk_wcn_consys_clock_fail_dump(VOID)
+{
+	if (wmt_consys_ic_ops->consys_ic_clock_fail_dump)
+		wmt_consys_ic_ops->consys_ic_clock_fail_dump();
+}
