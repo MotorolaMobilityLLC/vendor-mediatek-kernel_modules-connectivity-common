@@ -180,6 +180,8 @@ static const struct parse_data wmtcfg_fields[] = {
 
 	/* This is an open config whose actual purpose is decided by WIFI. */
 	BYTE_ARRAY(wifi_config),
+
+	INT(vcn33_1_voltage),
 };
 
 #define NUM_WMTCFG_FIELDS (osal_sizeof(wmtcfg_fields) / osal_sizeof(wmtcfg_fields[0]))
