@@ -2545,6 +2545,18 @@ PUINT8 wmt_lib_get_cpupcr_xml_format(PUINT32 pLen)
 	return &g_cpupcr_buf[0];
 }
 
+PUINT8 wmt_lib_get_cpupcr_reg_info(PUINT32 pLen, PUINT32 consys_reg)
+{
+	osal_memset(&g_cpupcr_buf[0], 0, WMT_STP_CPUPCR_BUF_SIZE);
+	if (consys_reg != NULL)
+		*pLen += stp_dbg_dump_cpupcr_reg_info(g_cpupcr_buf, consys_reg[1]);
+	else
+		*pLen += osal_sprintf(g_cpupcr_buf + *pLen, "0\n");
+	WMT_INFO_FUNC("print buffer,len(%d):\n\n", *pLen);
+	WMT_INFO_FUNC("%s", g_cpupcr_buf);
+	return &g_cpupcr_buf[0];
+}
+
 INT32 wmt_lib_tm_temp_query(VOID)
 {
 	return wmt_dev_tm_temp_query();
