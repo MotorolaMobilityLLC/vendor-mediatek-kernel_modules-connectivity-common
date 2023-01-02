@@ -3543,9 +3543,15 @@ static INT32 opfunc_blank_status_ctrl(P_WMT_OP pWmtOp)
 
 	evtLen = osal_sizeof(WMT_BLANK_STATUS_EVT);
 	iRet = wmt_core_rx(evtBuf, evtLen, &u4Res);
-	if (iRet || (u4Res != evtLen))
+	if (iRet || (u4Res != evtLen)) {
 		WMT_ERR_FUNC("WMT-CORE: read WMT_BLANK_STATUS_EVT fail(%d) len(%d, %d)\n",
 			     iRet, u4Res, evtLen);
+		WMT_INFO_FUNC("buf:[%2X,%2X,%2X,%2X,%2X] evt:[%2X,%2X,%2X,%2X,%2X]\n",
+				evtBuf[0], evtBuf[1], evtBuf[2], evtBuf[3], evtBuf[4],
+				WMT_BLANK_STATUS_EVT[0], WMT_BLANK_STATUS_EVT[1],
+				WMT_BLANK_STATUS_EVT[2], WMT_BLANK_STATUS_EVT[3],
+				WMT_BLANK_STATUS_EVT[4]);
+	}
 	else
 		wmt_lib_set_blank_status(WMT_BLANK_STATUS_CMD[5]);
 #endif
