@@ -44,7 +44,7 @@
 
 
 #if (defined(CONFIG_MTK_GMO_RAM_OPTIMIZE) && !defined(CONFIG_MTK_ENG_BUILD))
-#define OSAL_OP_DATA_SIZE   8
+#define OSAL_OP_DATA_SIZE   16
 #else
 #define OSAL_OP_DATA_SIZE   32
 #endif
