@@ -1574,6 +1574,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 				break;
 			}
 
+			version[WMT_FIRMWARE_VERSION_LENGTH] = '\0';
 			iRet = wmt_lib_set_active_patch_version(version);
 		} while (0);
 		break;
