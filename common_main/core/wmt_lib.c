@@ -1296,9 +1296,9 @@ static INT32 met_thread(void *pvData)
 		return -1;
 	}
 
-	WMT_INFO_FUNC("emi phy base:%x, emi vir base:%x, met offset:%x, size:%x\n",
+	WMT_INFO_FUNC("emi phy base:%x, emi vir base:%p, met offset:%x, size:%x\n",
 			emi_info->emi_ap_phy_addr,
-			(unsigned int)emi_met_base,
+			emi_met_base,
 			emi_met_offset,
 			emi_met_size);
 
