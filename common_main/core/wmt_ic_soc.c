@@ -1378,7 +1378,10 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		iRet = wmt_core_init_script_retry(get_a_die_script, osal_array_size(get_a_die_script), 1, 0);
 		if (iRet) {
 			WMT_ERR_FUNC("get_a_die_script fail(%d)\n", iRet);
-#ifndef CFG_WMT_EVB
+#ifdef CFG_WMT_EVB
+			/* prevent printing too much log */
+			osal_sleep_ms(1000);
+#else
 			osal_dbg_assert_aee("Connsys A-die is not exist", "Please check Connsys A-die\0");
 #endif
 			return -21;
