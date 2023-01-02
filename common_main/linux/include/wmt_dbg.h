@@ -19,10 +19,14 @@
 #define STP_UART_MAND 0x02
 #define STP_UART_FULL 0x01
 
+#if (WMT_DBG_SUPPORT)
 #define CFG_WMT_DBG_SUPPORT 1	/* support wmt_dbg or not */
+#else
+#define CFG_WMT_DBG_SUPPORT 0
+#endif
+
 #define CFG_WMT_PROC_FOR_AEE 1
 
-#if CFG_WMT_DBG_SUPPORT
 typedef struct _COEX_BUF {
 	UINT8 buffer[128];
 	INT32 availSize;
@@ -59,5 +63,4 @@ INT32 wmt_dev_dbg_setup(VOID);
 INT32 wmt_dev_dbg_remove(VOID);
 INT32 wmt_dbg_fwinfor_from_emi(INT32 par1, INT32 par2, INT32 par3);
 
-#endif /* CFG_WMT_DBG_SUPPORT */
 #endif /* _WMT_DBG_H_ */
