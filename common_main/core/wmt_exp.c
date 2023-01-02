@@ -32,6 +32,7 @@
 ********************************************************************************
 */
 #include "osal_typedef.h"
+#include "wmt_step.h"
 
 #include <wmt_exp.h>
 #include <wmt_lib.h>
@@ -154,6 +155,7 @@ static MTK_WCN_BOOL mtk_wcn_wmt_func_ctrl(ENUM_WMTDRV_TYPE_T type, ENUM_WMT_OPID
 	else
 		pSignal->timeoutValue = (pOp->op.opId == WMT_OPID_FUNC_ON) ? MAX_FUNC_ON_TIME : MAX_FUNC_OFF_TIME;
 
+	WMT_STEP_FUNC_CTRL_DO_ACTIONS_FUNC(type, opId);
 	WMT_INFO_FUNC("wmt-exp: OPID(%d) type(%zu) start\n", pOp->op.opId, pOp->op.au4OpData[0]);
 
 	/*do not check return value, we will do this either way */
@@ -271,6 +273,7 @@ INT8 mtk_wcn_wmt_therm_ctrl(ENUM_WMTTHERM_TYPE_T eType)
 	pOpData->au4OpData[0] = eType;
 	pSignal->timeoutValue = MAX_EACH_WMT_CMD;
 
+	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_BEFORE_READ_THERMAL);
 	WMT_DBG_FUNC("OPID(%d) type(%zu) start\n", pOp->op.opId, pOp->op.au4OpData[0]);
 
 	if (DISABLE_PSM_MONITOR()) {

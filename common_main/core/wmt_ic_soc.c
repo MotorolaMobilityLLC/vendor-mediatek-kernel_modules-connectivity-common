@@ -43,6 +43,7 @@
 #include "wmt_lib.h"
 #include "stp_core.h"
 #include "mtk_wcn_consys_hw.h"
+#include "wmt_step.h"
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -1173,12 +1174,16 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	}
 #endif
 	/* 6.3 Multi-patch Patch download */
+	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_BEFORE_SEND_DOWNLOAD_PATCH);
 	for (patch_index = 0; patch_index < patch_num; patch_index++) {
 		iRet = mtk_wcn_soc_patch_dwn(patch_index);
 		if (iRet) {
 			WMT_ERR_FUNC("patch dwn fail (%d),patch_index(%d)\n", iRet, patch_index);
 			return -7;
 		}
+		if (patch_index == (patch_num - 1))
+			WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_BEFORE_CONNSYS_RESET);
+
 		iRet = wmt_core_init_script(init_table_3, osal_array_size(init_table_3));
 		if (iRet) {
 			WMT_ERR_FUNC("init_table_3 fail(%d)\n", iRet);
@@ -1206,12 +1211,14 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 
 #else
 	/* 6.3 Patch download */
+	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_BEFORE_SEND_DOWNLOAD_PATCH);
 	iRet = mtk_wcn_soc_patch_dwn();
 	/* If patch download fail, we just ignore this error and let chip init process goes on */
 	if (iRet)
 		WMT_ERR_FUNC("patch dwn fail (%d), just omit\n", iRet);
 
 	/* 6.4. WMT Reset command */
+	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_BEFORE_CONNSYS_RESET);
 	iRet = wmt_core_init_script(init_table_3, osal_array_size(init_table_3));
 	if (iRet) {
 		WMT_ERR_FUNC("init_table_3 fail(%d)\n", iRet);
@@ -1325,6 +1332,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	ctrlPa2 = PALDO_ON;
 	iRet = wmt_core_ctrl(WMT_CTRL_SOC_PALDO_CTRL, &ctrlPa1, &ctrlPa2);
 
+	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_BEFORE_BT_WIFI_CALIBRATION);
 	iRet = wmt_core_init_script(calibration_table, osal_array_size(calibration_table));
 	if (iRet) {
 		/* pwrap_read(0x0210,&ctrlPa1); */
@@ -1566,6 +1574,8 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 			wmt_lib_ps_disable();
 	}
 #endif
+
+	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_END);
 
 	return 0;
 }
@@ -1944,6 +1954,7 @@ static INT32 wmt_stp_wifi_lte_coex(VOID)
 	osal_sleep_ms(5);
 
 	if (pWmtGenConf->coex_wmt_filter_mode == 0) {
+		WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_BEFORE_SET_WIFI_LTE_COEX);
 		if ((wmt_ic_ops_soc.icId == 0x6752) ||
 		    (wmt_ic_ops_soc.icId == 0x6580) ||
 		    (wmt_ic_ops_soc.icId == 0x8163) ||
