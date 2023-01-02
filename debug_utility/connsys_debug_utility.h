@@ -48,6 +48,7 @@ int connsys_dedicated_log_path_apsoc_init(phys_addr_t emiaddr, unsigned int irq_
 void connsys_dedicated_log_path_apsoc_deinit(void);
 void __iomem *connsys_log_get_emi_log_base_vir_addr(void);
 void connsys_dedicated_log_get_utc_time(unsigned int *second, unsigned int *usecond);
+void connsys_dedicated_log_flush_emi(void);
 
 /* Debug Utility API */
 int connsys_log_init(int conn_type);
