@@ -157,6 +157,8 @@ static struct work_struct gPwrOnOffWork;
 static atomic_t g_es_lr_flag_for_quick_sleep = ATOMIC_INIT(1); /* for ctrl quick sleep flag */
 static atomic_t g_es_lr_flag_for_lpbk_onoff = ATOMIC_INIT(0); /* for ctrl lpbk on off */
 
+/*BLANK on/off ctrl for wmt varabile*/
+static atomic_t g_es_lr_flag_for_blank = ATOMIC_INIT(0); /* for ctrl blank flag */
 
 /* Prevent race condition when wmt_dev_tm_temp_query is called concurrently */
 static OSAL_UNSLEEPABLE_LOCK g_temp_query_spinlock;
@@ -167,6 +169,7 @@ static VOID wmt_dev_early_suspend(struct early_suspend *h)
 {
 	atomic_set(&g_es_lr_flag_for_quick_sleep, 1);
 	atomic_set(&g_es_lr_flag_for_lpbk_onoff, 0);
+	atomic_set(&g_es_lr_flag_for_blank, 0);
 
 	WMT_WARN_FUNC("@@@@@@@@@@wmt enter early suspend@@@@@@@@@@@@@@\n");
 
@@ -177,6 +180,7 @@ static VOID wmt_dev_late_resume(struct early_suspend *h)
 {
 	atomic_set(&g_es_lr_flag_for_quick_sleep, 0);
 	atomic_set(&g_es_lr_flag_for_lpbk_onoff, 1);
+	atomic_set(&g_es_lr_flag_for_blank, 1);
 
 	WMT_WARN_FUNC("@@@@@@@@@@wmt enter late resume@@@@@@@@@@@@@@\n");
 
@@ -210,6 +214,7 @@ static INT32 wmt_fb_notifier_callback(struct notifier_block *self, ULONG event, 
 	case FB_BLANK_UNBLANK:
 		atomic_set(&g_es_lr_flag_for_quick_sleep, 0);
 		atomic_set(&g_es_lr_flag_for_lpbk_onoff, 1);
+		atomic_set(&g_es_lr_flag_for_blank, 1);
 		WMT_WARN_FUNC("@@@@@@@@@@wmt enter UNBLANK @@@@@@@@@@@@@@\n");
 		if (hif_info == 0)
 			break;
@@ -218,6 +223,7 @@ static INT32 wmt_fb_notifier_callback(struct notifier_block *self, ULONG event, 
 	case FB_BLANK_POWERDOWN:
 		atomic_set(&g_es_lr_flag_for_quick_sleep, 1);
 		atomic_set(&g_es_lr_flag_for_lpbk_onoff, 0);
+		atomic_set(&g_es_lr_flag_for_blank, 0);
 		WMT_WARN_FUNC("@@@@@@@@@@wmt enter early POWERDOWN @@@@@@@@@@@@@@\n");
 		schedule_work(&gPwrOnOffWork);
 		break;
@@ -249,6 +255,10 @@ static VOID wmt_pwr_on_off_handler(struct work_struct *work)
 
 	WMT_DBG_FUNC("wmt_pwr_on_off_handler start to run\n");
 
+	/* Update blank off status before wmt power off */
+	if (wmt_dev_get_blank_state() == 0)
+		wmt_dev_blank_handler();
+
 	if (always_pwr_on_flag == 0) {
 		while ((wmt_lib_get_drv_status(WMTDRV_TYPE_LPBK) == DRV_STS_FUNC_ON) !=
 				atomic_read(&g_es_lr_flag_for_lpbk_onoff)) {
@@ -258,6 +268,10 @@ static VOID wmt_pwr_on_off_handler(struct work_struct *work)
 				break;
 		}
 	}
+
+	/* Update blank on status after wmt power on */
+	if (wmt_dev_get_blank_state() == 1)
+		wmt_dev_blank_handler();
 }
 
 INT32 wmt_lpbk_handler(UINT32 on_off_flag, UINT32 retry)
@@ -289,6 +303,20 @@ INT32 wmt_lpbk_handler(UINT32 on_off_flag, UINT32 retry)
 		}
 	} while (retry_count > 0);
 	return ((wmt_lib_get_drv_status(WMTDRV_TYPE_LPBK) == DRV_STS_FUNC_ON) == on_off_flag) - 1;
+}
+
+VOID wmt_dev_blank_handler(VOID)
+{
+	WMT_DBG_FUNC("wmt_dev_blank_handler start to run\n");
+
+	if (wmt_lib_get_blank_status() != wmt_dev_get_blank_state())
+		if (wmt_lib_blank_status_ctrl(wmt_dev_get_blank_state()))
+			WMT_WARN_FUNC("mtk_lib_blank_status_ctrl failed\n");
+}
+
+UINT32 wmt_dev_get_blank_state(VOID)
+{
+	return atomic_read(&g_es_lr_flag_for_blank);
 }
 
 MTK_WCN_BOOL wmt_dev_get_early_suspend_state(VOID)
