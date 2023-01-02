@@ -179,6 +179,7 @@ typedef struct mtk_stp_psm {
 	INT32 (*wmt_notify)(MTKSTP_PSM_ACTION_T action);
 	INT32 (*stp_tx_cb)(PUINT8 buffer, UINT32 length, UINT8 type);
 	MTK_WCN_BOOL (*is_wmt_quick_ps_support)(VOID);
+	INT32 (*update_wmt_fw_patch_chip_rst)(VOID);
 	UINT8 out_buf[STP_PSM_TX_SIZE];
 	struct osal_op_history op_history;
 } MTKSTP_PSM_T;
