@@ -52,6 +52,7 @@
 #include <linux/of.h>
 #include <linux/of_platform.h>
 #include <linux/regmap.h>
+#define ALLOCATE_CONNSYS_EMI_FROM_KO 1
 #endif
 
 /*******************************************************************************
@@ -82,6 +83,13 @@ UINT8 __iomem *pEmibaseaddr;
 P_WMT_CONSYS_IC_OPS wmt_consys_ic_ops;
 
 struct platform_device *g_pdev;
+
+#ifdef ALLOCATE_CONNSYS_EMI_FROM_KO
+phys_addr_t gConEmiPhyBase;
+EXPORT_SYMBOL(gConEmiPhyBase);
+unsigned long long gConEmiSize;
+EXPORT_SYMBOL(gConEmiSize);
+#endif
 
 UINT32 gps_lna_pin_num = 0xffffffff;
 
@@ -208,6 +216,32 @@ static VOID mtk_wcn_get_regmap(struct platform_device *pdev)
 }
 #endif
 
+static INT32 wmt_allocate_connsys_emi(struct platform_device *pdev)
+{
+#ifdef ALLOCATE_CONNSYS_EMI_FROM_KO
+	struct device_node *np;
+	struct reserved_mem *rmem;
+
+	np = of_parse_phandle(pdev->dev.of_node, "memory-region", 0);
+	if (!np) {
+		WMT_PLAT_PR_INFO("no memory-region, np is NULL\n");
+		return -1;
+	}
+
+	rmem = of_reserved_mem_lookup(np);
+	of_node_put(np);
+
+	if (!rmem) {
+		WMT_PLAT_PR_INFO("no memory-region\n");
+		return -1;
+	}
+
+	gConEmiPhyBase = rmem->base;
+	gConEmiSize = rmem->size;
+#endif
+	return 0;
+}
+
 static INT32 mtk_wmt_probe(struct platform_device *pdev)
 {
 	INT32 iRet = -1;
@@ -222,6 +256,8 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 		WMT_PLAT_PR_ERR("pdev is NULL\n");
 		return -1;
 	}
+
+	wmt_allocate_connsys_emi(pdev);
 
 	if (wmt_consys_ic_ops->consys_ic_need_store_pdev) {
 		if (wmt_consys_ic_ops->consys_ic_need_store_pdev() == MTK_WCN_BOOL_TRUE) {
