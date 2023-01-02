@@ -63,6 +63,8 @@ MTKSTP_DBG_T *g_stp_dbg;
 #define STP_DBG_AEE_EXP_API (0)
 #endif
 
+#define STP_MAGIC_NUM (0xDEADFEED)
+
 enum {
 	__STP_DBG_ATTR_INVALID,
 	STP_DBG_ATTR_MSG,
@@ -1194,52 +1196,28 @@ static _osal_inline_ INT32 stp_dbg_notify_btm_dmp_wq(MTKSTP_DBG_T *stp_dbg)
 	return retval;
 }
 
-INT32 stp_dbg_dmp_print(MTKSTP_DBG_T *stp_dbg)
+static VOID stp_dbg_dmp_print_work(struct work_struct *work)
 {
-#define MAX_DMP_NUM 80
-	ULONG flags;
+	MTKSTP_LOG_SYS_T *logsys = container_of(work, MTKSTP_LOG_SYS_T, dump_work);
+	INT32 dumpSize = logsys->dump_size;
+	MTKSTP_LOG_ENTRY_T *queue = logsys->dump_queue;
+	INT32 i;
 	PINT8 pBuf = NULL;
 	INT32 len = 0;
 	STP_DBG_HDR_T *pHdr = NULL;
-	UINT32 dumpSize = 0;
-	UINT32 inIndex = 0;
-	UINT32 outIndex = 0;
 	const PINT8 *pType = NULL;
 
-	if (spin_trylock_irqsave(&(stp_dbg->logsys->lock), flags) == 0) {
-		/* It is okay, because someone must have acquire this lock and
-		 * it is dump print operation who are supposed to acquire this lock for much longer time
-		 */
-		STP_DBG_PR_WARN("logsys log is locked by other, omit this dump request\n");
-		return -1;
-	}
+	if (queue == NULL || queue == (MTKSTP_LOG_ENTRY_T *)STP_MAGIC_NUM)
+		return;
 
 	pType = wmt_detect_get_chip_type() == WMT_CHIP_TYPE_COMBO ?
 		comboStpDbgType : socStpDbgType;
 
-	/*spin_lock_irqsave(&(stp_dbg->logsys->lock), flags); */
-	/* Not to dequeue from loging system */
-	inIndex = stp_dbg->logsys->in;
-	dumpSize = stp_dbg->logsys->size;
-	if (dumpSize == STP_DBG_LOG_ENTRY_NUM)
-		outIndex = inIndex;
-	else
-		outIndex = ((inIndex + STP_DBG_LOG_ENTRY_NUM) - dumpSize) % STP_DBG_LOG_ENTRY_NUM;
-
-	if (dumpSize > MAX_DMP_NUM) {
-
-		outIndex += (dumpSize - MAX_DMP_NUM);
-		outIndex %= STP_DBG_LOG_ENTRY_NUM;
-		dumpSize = MAX_DMP_NUM;
-
-	}
-	STP_DBG_PR_INFO("loged packet size = %d, in(%d), out(%d)\n", dumpSize, inIndex, outIndex);
-	while (dumpSize > 0) {
-		pHdr = (STP_DBG_HDR_T *) &(stp_dbg->logsys->queue[outIndex].buffer[0]);
-		pBuf = &(stp_dbg->logsys->queue[outIndex].buffer[0]) + sizeof(STP_DBG_HDR_T);
-		len = stp_dbg->logsys->queue[outIndex].len - sizeof(STP_DBG_HDR_T);
+	for (i = 0; i < dumpSize; i++) {
+		pHdr = (STP_DBG_HDR_T *) &(queue[i].buffer[0]);
+		pBuf = &(queue[i].buffer[0]) + sizeof(STP_DBG_HDR_T);
+		len = queue[i].len - sizeof(STP_DBG_HDR_T);
 		len = len > STP_PKT_SZ ? STP_PKT_SZ : len;
-
 		pr_info("STP-DBG:%d.%ds, %s:pT%sn(%d)l(%d)s(%d)a(%d), time[%llu.%06lu]\n",
 			pHdr->sec,
 			pHdr->usec,
@@ -1249,13 +1227,86 @@ INT32 stp_dbg_dmp_print(MTKSTP_DBG_T *stp_dbg)
 
 		if (len > 0)
 			stp_dbg_dump_data(pBuf, pHdr->dir == PKT_DIR_TX ? "Tx" : "Rx", len);
-		outIndex = (outIndex >= (STP_DBG_LOG_ENTRY_NUM - 1)) ? (0) : (outIndex + 1);
-		dumpSize--;
 
+	}
+	vfree(queue);
+	logsys->dump_queue = NULL;
+}
+
+INT32 stp_dbg_dmp_print(MTKSTP_DBG_T *stp_dbg)
+{
+#define MAX_DMP_NUM 80
+	ULONG flags;
+	UINT32 dumpSize = 0;
+	UINT32 inIndex = 0;
+	UINT32 outIndex = 0;
+	MTKSTP_LOG_ENTRY_T *dump_queue = NULL;
+	MTKSTP_LOG_ENTRY_T *queue = stp_dbg->logsys->queue;
+
+	spin_lock_irqsave(&(stp_dbg->logsys->lock), flags);
+	if (stp_dbg->logsys->dump_queue != NULL) {
+		spin_unlock_irqrestore(&(stp_dbg->logsys->lock), flags);
+		return 0;
+	}
+
+	stp_dbg->logsys->dump_queue = (MTKSTP_LOG_ENTRY_T *)STP_MAGIC_NUM;
+	spin_unlock_irqrestore(&(stp_dbg->logsys->lock), flags);
+
+	/* allocate memory may take long time, thus allocate it before get lock */
+	dump_queue = vmalloc(sizeof(MTKSTP_LOG_ENTRY_T) * MAX_DMP_NUM);
+	if (dump_queue == NULL) {
+		stp_dbg->logsys->dump_queue = NULL;
+		pr_info("fail to allocate memory");
+		return -1;
+	}
+
+	if (spin_trylock_irqsave(&(stp_dbg->logsys->lock), flags) == 0) {
+		stp_dbg->logsys->dump_queue = NULL;
+		vfree(dump_queue);
+		pr_info("fail to get lock");
+		return -1;
+	}
+	/* Not to dequeue from loging system */
+	inIndex = stp_dbg->logsys->in;
+	dumpSize = stp_dbg->logsys->size;
+
+	/* chance is little but still needs to check */
+	if (dumpSize == 0) {
+		stp_dbg->logsys->dump_queue = NULL;
+		spin_unlock_irqrestore(&(stp_dbg->logsys->lock), flags);
+		vfree(dump_queue);
+		return 0;
+	}
+
+	if (dumpSize == STP_DBG_LOG_ENTRY_NUM)
+		outIndex = inIndex;
+	else
+		outIndex = ((inIndex + STP_DBG_LOG_ENTRY_NUM) - dumpSize) % STP_DBG_LOG_ENTRY_NUM;
+
+	if (dumpSize > MAX_DMP_NUM) {
+		outIndex += (dumpSize - MAX_DMP_NUM);
+		outIndex %= STP_DBG_LOG_ENTRY_NUM;
+		dumpSize = MAX_DMP_NUM;
+	}
+
+	stp_dbg->logsys->dump_queue = dump_queue;
+	stp_dbg->logsys->dump_size = dumpSize;
+
+	/* copy content of stp_dbg->logsys->queue out, don't print log while holding */
+	/* spinlock to prevent blocking other process */
+	if (outIndex + dumpSize > STP_DBG_LOG_ENTRY_NUM) {
+		UINT32 tailNum = STP_DBG_LOG_ENTRY_NUM  - outIndex;
+
+		osal_memcpy(dump_queue, &(queue[outIndex]), sizeof(MTKSTP_LOG_ENTRY_T) * tailNum);
+		osal_memcpy(dump_queue + tailNum, &(queue[0]), sizeof(MTKSTP_LOG_ENTRY_T) *
+			(dumpSize - tailNum));
+	} else {
+		osal_memcpy(dump_queue, &(queue[outIndex]), sizeof(MTKSTP_LOG_ENTRY_T) * dumpSize);
 	}
 
 	spin_unlock_irqrestore(&(stp_dbg->logsys->lock), flags);
-
+	STP_DBG_PR_INFO("loged packet size = %d, in(%d), out(%d)\n", dumpSize, inIndex, outIndex);
+	schedule_work(&(stp_dbg->logsys->dump_work));
 	return 0;
 }
 
@@ -2559,6 +2610,7 @@ MTKSTP_DBG_T *stp_dbg_init(PVOID btm_half)
 	}
 	memset(stp_dbg->logsys, 0, sizeof(MTKSTP_LOG_SYS_T));
 	spin_lock_init(&(stp_dbg->logsys->lock));
+	INIT_WORK(&(stp_dbg->logsys->dump_work), stp_dbg_dmp_print_work);
 	stp_dbg->pkt_trace_no = 0;
 	stp_dbg->is_enable = 0;
 	g_stp_dbg = stp_dbg;
