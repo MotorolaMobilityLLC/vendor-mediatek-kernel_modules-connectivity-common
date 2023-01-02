@@ -762,3 +762,46 @@ VOID mtk_wcn_wmt_set_mcif_mpu_protection(MTK_WCN_BOOL enable)
 	mtk_consys_set_mcif_mpu_protection(enable);
 }
 EXPORT_SYMBOL(mtk_wcn_wmt_set_mcif_mpu_protection);
+
+MTK_WCN_BOOL mtk_wmt_gps_suspend_ctrl(MTK_WCN_BOOL suspend)
+{
+	P_OSAL_OP pOp;
+	MTK_WCN_BOOL bRet;
+	P_OSAL_SIGNAL pSignal;
+
+	pOp = wmt_lib_get_free_op();
+	if (!pOp) {
+		WMT_DBG_FUNC("get_free_lxop fail\n");
+		return MTK_WCN_BOOL_FALSE;
+	}
+
+	pSignal = &pOp->signal;
+
+	pOp->op.opId = WMT_OPID_GPS_SUSPEND;
+	pOp->op.au4OpData[0] = (MTK_WCN_BOOL_FALSE == suspend ? 0 : 1);
+	pSignal->timeoutValue = (MTK_WCN_BOOL_FALSE == suspend) ? MAX_FUNC_ON_TIME : MAX_FUNC_OFF_TIME;
+
+	WMT_INFO_FUNC("wmt-exp: OPID(%d) type(%zu) start\n", pOp->op.opId, pOp->op.au4OpData[0]);
+
+	/*do not check return value, we will do this either way */
+	wmt_lib_host_awake_get();
+	/* wake up chip first */
+	if (DISABLE_PSM_MONITOR()) {
+		WMT_ERR_FUNC("wake up failed,OPID(%d) type(%zu) abort\n", pOp->op.opId, pOp->op.au4OpData[0]);
+		wmt_lib_put_op_to_free_queue(pOp);
+		wmt_lib_host_awake_put();
+		return MTK_WCN_BOOL_FALSE;
+	}
+
+	bRet = wmt_lib_put_act_op(pOp);
+	ENABLE_PSM_MONITOR();
+	wmt_lib_host_awake_put();
+
+	if (bRet == MTK_WCN_BOOL_FALSE)
+		WMT_WARN_FUNC("OPID(%d) type(%zu) fail\n", pOp->op.opId, pOp->op.au4OpData[0]);
+	else
+		WMT_INFO_FUNC("OPID(%d) type(%zu) ok\n", pOp->op.opId, pOp->op.au4OpData[0]);
+
+	return bRet;
+}
+EXPORT_SYMBOL(mtk_wmt_gps_suspend_ctrl);
