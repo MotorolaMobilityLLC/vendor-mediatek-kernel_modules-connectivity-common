@@ -1454,7 +1454,7 @@ static struct step_action *wmt_step_create_show_string_action(int param_num, cha
 		return NULL;
 	}
 
-	p_show_act->content = kzalloc(sizeof(params[0]), GFP_KERNEL);
+	p_show_act->content = kzalloc((osal_strlen(params[0]) + 1), GFP_KERNEL);
 	if (p_show_act->content == NULL) {
 		WMT_ERR_FUNC("STEP failed: kzalloc show string content fail\n");
 		kfree(p_show_act);
