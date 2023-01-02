@@ -377,4 +377,5 @@ VOID stp_dbg_reset(VOID);
 
 MTKSTP_DBG_T *stp_dbg_init(PVOID btm_half);
 INT32 stp_dbg_deinit(MTKSTP_DBG_T *stp_dbg);
+INT32 stp_dbg_start_coredump_timer(VOID);
 #endif /* end of _STP_DEBUG_H_ */
