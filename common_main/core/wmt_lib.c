@@ -2930,3 +2930,126 @@ INT32 wmt_lib_blank_status_ctrl(UINT32 on_off_flag)
 	WMT_WARN_FUNC("WMT_OPID_BLANK_STATUS_CTRL on_off_flag(0x%x) bRet(%d)\n", on_off_flag, bRet);
 	return -1;
 }
+
+
+/**
+ * Desinged for native service to get number of patches
+ * resides in /vendor/firmware
+ */
+INT32 wmt_lib_get_vendor_patch_num(VOID)
+{
+	return gDevWmt.patch_table.num;
+}
+
+INT32 wmt_lib_set_vendor_patch_version(struct wmt_vendor_patch *p)
+{
+	struct vendor_patch_table *table = &(gDevWmt.patch_table);
+	struct wmt_vendor_patch *patch = table->patch;
+
+	if (table->num >= MAX_PATCH_NUM) {
+		WMT_ERR_FUNC("set vendor version exceeding limit");
+		return -1;
+	}
+
+	if (patch == NULL) {
+		INT32 init_capacity = 5;
+
+		patch = (struct wmt_vendor_patch *)osal_malloc(
+			 sizeof(struct wmt_vendor_patch) * init_capacity);
+		if (patch == NULL) {
+			WMT_ERR_FUNC("[oom]set vendor patch version");
+			return -1;
+		}
+		table->patch = patch;
+		table->capacity = init_capacity;
+		table->num = 0;
+	}
+
+	if (table->capacity == table->num) {
+		INT32 new_capacity = table->capacity + 1;
+
+		patch = (struct wmt_vendor_patch *)osal_malloc(
+			sizeof(struct wmt_vendor_patch) * new_capacity);
+		if (patch == NULL) {
+			WMT_ERR_FUNC("[oom]set vendor patch version");
+			return -1;
+		}
+		osal_memcpy(patch, table->patch,
+			sizeof(struct wmt_vendor_patch)	* table->capacity);
+		osal_free(table->patch);
+		table->patch = patch;
+		table->capacity = new_capacity;
+	}
+
+	/* copy patch info to table */
+	patch = patch + table->num;
+	patch->type = p->type;
+	osal_strncpy(patch->file_name, p->file_name, sizeof(p->file_name));
+	osal_strncpy(patch->version, p->version, sizeof(p->version));
+
+	table->num++;
+	WMT_INFO_FUNC("set version %s %s %d",
+		patch->file_name, patch->version, patch->type);
+	return 0;
+}
+
+INT32 wmt_lib_get_vendor_patch_version(struct wmt_vendor_patch *p)
+{
+	struct vendor_patch_table *table = &(gDevWmt.patch_table);
+
+	if (p->id >= table->num || p->id < 0) {
+		WMT_ERR_FUNC("id %d out of range", p->id);
+		return -1;
+	}
+
+	osal_memcpy(p, &table->patch[p->id], sizeof(struct wmt_vendor_patch));
+	WMT_INFO_FUNC("get version: %s %s t:%d id:%d",
+		p->file_name, p->version, p->type, p->id);
+	return 0;
+}
+
+INT32 wmt_lib_set_check_patch_status(INT32 status)
+{
+	gDevWmt.patch_table.status = status;
+	return 0;
+}
+
+INT32 wmt_lib_get_check_patch_status(VOID)
+{
+	return gDevWmt.patch_table.status;
+}
+
+INT32 wmt_lib_set_active_patch_version(PUINT8 version)
+{
+	if (osal_strlen(version) >= sizeof(gDevWmt.patch_table.active_version)) {
+		WMT_ERR_FUNC("version: %s too long to set", version);
+		return -1;
+	}
+
+	if (osal_strcmp(version, gDevWmt.patch_table.active_version) == 0)
+		return 0;
+
+	gDevWmt.patch_table.need_update = 1;
+	osal_strncpy(gDevWmt.patch_table.active_version, version,
+		strlen(version) + 1);
+	return 0;
+}
+
+INT32 wmt_lib_get_active_patch_version(PUINT8 version)
+{
+	osal_strncpy(version, gDevWmt.patch_table.active_version,
+		strlen(gDevWmt.patch_table.active_version) + 1);
+	return 0;
+}
+
+INT32 wmt_lib_get_need_update_patch_version(VOID)
+{
+	return gDevWmt.patch_table.need_update;
+}
+
+
+INT32 wmt_lib_set_need_update_patch_version(INT32 need)
+{
+	gDevWmt.patch_table.need_update = need > 0 ? 1 : 0;
+	return 0;
+}
