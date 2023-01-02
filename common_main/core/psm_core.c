@@ -1274,10 +1274,13 @@ static inline INT32 _stp_psm_notify_wmt(MTKSTP_PSM_T *stp_psm, const MTKSTP_PSM_
 	return ret;
 }
 
-static inline VOID _stp_psm_stp_is_idle(ULONG data)
+static inline VOID _stp_psm_stp_is_idle(timer_handler_arg arg)
 {
-	MTKSTP_PSM_T *stp_psm = (MTKSTP_PSM_T *) data;
+	ULONG data;
+	MTKSTP_PSM_T *stp_psm;
 
+	GET_HANDLER_DATA(arg, data);
+	stp_psm = (MTKSTP_PSM_T *) data;
 	osal_clear_bit(STP_PSM_WMT_EVENT_DISABLE_MONITOR_RX_HIGH_DENSITY, &stp_psm->flag);
 	_stp_psm_dbg_dmp_in(g_stp_psm_dbg, stp_psm->flag.data, __LINE__);
 	osal_clear_bit(STP_PSM_WMT_EVENT_DISABLE_MONITOR_TX_HIGH_DENSITY, &stp_psm->flag);
