@@ -911,6 +911,31 @@ static int wmt_step_do_read_register_action(struct step_register_action *p_reg_a
 	return 0;
 }
 
+static bool wmt_step_reg_readable(struct step_register_action *p_reg_act)
+{
+	phys_addr_t phy_addr;
+
+	/* Protect 0x18000000 ~ 0x18006FFF and 0x18008000 ~ 0x180FFFFF */
+	if (p_reg_act->address_type == STEP_REGISTER_PHYSICAL_ADDRESS) {
+		phy_addr = p_reg_act->address + p_reg_act->offset;
+		if (phy_addr > 0x18000000 && phy_addr < 0x180FFFFF) {
+			if (phy_addr >= 0x18007000 && phy_addr <= 0x18007FFF)
+				return 1;
+
+			return mtk_consys_check_reg_readable();
+		}
+	} else {
+		if (p_reg_act->address_type == STEP_REGISTER_CONN_MCU_CONFIG_BASE ||
+			p_reg_act->address_type == STEP_REGISTER_MISC_OFF_BASE ||
+			p_reg_act->address_type == STEP_REGISTER_CFG_ON_BASE ||
+			p_reg_act->address_type == STEP_CIRQ_BASE) {
+			return mtk_consys_check_reg_readable();
+		}
+	}
+
+	return 1;
+}
+
 static void wmt_step_remove_emi_action(struct step_action *p_act)
 {
 	struct step_emi_action *p_emi_act = NULL;
@@ -1041,6 +1066,14 @@ int wmt_step_do_register_action(struct step_action *p_act, STEP_DO_EXTRA func_do
 	if (is_wakeup == 1) {
 		if (DISABLE_PSM_MONITOR())
 			WMT_ERR_FUNC("STEP failed: Wake up, continue to show register\n");
+	}
+
+	/* TODO: Remove this after support action condition */
+	if (!wmt_step_reg_readable(p_reg_act)) {
+		WMT_ERR_FUNC("STEP failed: register cant read\n");
+		if (is_wakeup == 1)
+			ENABLE_PSM_MONITOR();
+		return -1;
 	}
 
 	if (p_reg_act->is_write == 1)
