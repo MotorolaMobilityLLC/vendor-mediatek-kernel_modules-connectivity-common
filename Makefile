@@ -177,7 +177,7 @@ endif
 # Customer eng/userdebug load: Support
 # Customer user load: Not support
 
-ifeq ($(wildcard vendor/mediatek/proprietary/external/aee_config_internal/init.aee.mtk.rc),)
+ifeq ($(wildcard vendor/mediatek/proprietary/external/aee_config_internal/init.aee.mtk.system.rc),)
 	ccflags-y += -D CFG_WMT_STEP
 else
 	ifneq ($(TARGET_BUILD_VARIANT),user)
