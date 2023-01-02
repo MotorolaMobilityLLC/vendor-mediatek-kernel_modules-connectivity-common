@@ -991,6 +991,8 @@ static VOID wmt_core_dump_func_state(PINT8 pSource)
 
 ENUM_DRV_STS wmt_core_get_drv_status(ENUM_WMTDRV_TYPE_T type)
 {
+	if ((type < WMTDRV_TYPE_BT) || (type >= WMTDRV_TYPE_MAX))
+		return DRV_STS_POWER_OFF;
 	return gMtkWmtCtx.eDrvStatus[type];
 }
 
