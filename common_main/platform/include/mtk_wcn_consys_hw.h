@@ -205,6 +205,7 @@ typedef PUINT32(*CONSYS_IC_RESUME_DUMP_INFO) (VOID);
 typedef VOID(*CONSYS_IC_SET_PDMA_AXI_RREADY_FORCE_HIGH) (UINT32 enable);
 typedef VOID(*CONSYS_IC_SET_MCIF_EMI_MPU_PROTECTION)(MTK_WCN_BOOL enable);
 typedef INT32(*CONSYS_IC_CALIBRATION_BACKUP_RESTORE) (VOID);
+typedef VOID(*CONSYS_IC_REGISTER_DEVAPC_CB) (VOID);
 
 typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_CLOCK_BUFFER_CTRL consys_ic_clock_buffer_ctrl;
@@ -251,6 +252,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_SET_PDMA_AXI_RREADY_FORCE_HIGH consys_ic_set_pdma_axi_rready_force_high;
 	CONSYS_IC_SET_MCIF_EMI_MPU_PROTECTION consys_ic_set_mcif_emi_mpu_protection;
 	CONSYS_IC_CALIBRATION_BACKUP_RESTORE consys_ic_calibration_backup_restore;
+	CONSYS_IC_REGISTER_DEVAPC_CB consys_ic_register_devapc_cb;
 } WMT_CONSYS_IC_OPS, *P_WMT_CONSYS_IC_OPS;
 /*******************************************************************************
 *                            P U B L I C   D A T A

@@ -54,6 +54,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6359
 endif
 ccflags-y += -I$(srctree)/drivers/mmc/core
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/connectivity/common
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 ###############################################################################
 
 
