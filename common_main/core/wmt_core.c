@@ -45,6 +45,7 @@
 #include "wmt_exp.h"
 #include "wmt_detect.h"
 #include "wmt_plat.h"
+#include "wmt_dev.h"
 
 P_WMT_FUNC_OPS gpWmtFuncOps[WMTDRV_TYPE_MAX] = {
 #if CFG_FUNC_BT_SUPPORT
@@ -158,6 +159,7 @@ static INT32 opfunc_wlan_probe(P_WMT_OP pWmtOp);
 static INT32 opfunc_wlan_remove(P_WMT_OP pWmtOp);
 static INT32 opfunc_try_pwr_off(P_WMT_OP pWmtOp);
 static INT32 opfunc_gps_mcu_ctrl(P_WMT_OP pWmtOp);
+static INT32 opfunc_blank_status_ctrl(P_WMT_OP pWmtOp);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -268,6 +270,9 @@ static UINT8 WMT_UTC_SYNC_CMD[] = { 0x01, 0xF0, 0x09, 0x00, 0x02
 };
 static UINT8 WMT_UTC_SYNC_EVT[] = { 0x02, 0xF0, 0x02, 0x00, 0x02, 0x00
 };
+
+static UINT8 WMT_BLANK_STATUS_CMD[] = { 0x01, 0xF0, 0x02, 0x00, 0x03, 0x00 };
+static UINT8 WMT_BLANK_STATUS_EVT[] = { 0x02, 0xF0, 0x02, 0x00, 0x03, 0x00 };
 #endif
 
 static UINT8 WMT_FW_LOG_CTRL_CMD[] = { 0x01, 0xF0, 0x04, 0x00, 0x01
@@ -320,6 +325,7 @@ static const WMT_OPID_FUNC wmt_core_opfunc[] = {
 	[WMT_OPID_WLAN_REMOVE] = opfunc_wlan_remove,
 	[WMT_OPID_GPS_MCU_CTRL] = opfunc_gps_mcu_ctrl,
 	[WMT_OPID_TRY_PWR_OFF] = opfunc_try_pwr_off,
+	[WMT_OPID_BLANK_STATUS_CTRL] = opfunc_blank_status_ctrl,
 
 };
 
@@ -1142,6 +1148,10 @@ pwr_on_rty:
 
 	WMT_DBG_FUNC("WMT-CORE: WMT [FUNC_ON]\n");
 	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WMT] = DRV_STS_FUNC_ON;
+
+	/* update blank status when ConnSys power on */
+	pWmtOp->au4OpData[0] = wmt_dev_get_blank_state();
+	opfunc_blank_status_ctrl(pWmtOp);
 
 	/* What to do when state is changed from POWER_OFF to POWER_ON?
 	 * 1. STP driver does s/w reset
@@ -3496,3 +3506,43 @@ P_WMT_GEN_CONF wmt_get_gen_conf_pointer(VOID)
 	return pWmtGenConf;
 }
 
+VOID wmt_core_set_blank_status(UINT32 on_off_flag)
+{
+	gMtkWmtCtx.wmtBlankStatus = on_off_flag;
+}
+
+UINT32 wmt_core_get_blank_status(VOID)
+{
+	return gMtkWmtCtx.wmtBlankStatus;
+}
+
+static INT32 opfunc_blank_status_ctrl(P_WMT_OP pWmtOp)
+{
+	INT32 iRet = 0;
+#ifdef CONFIG_MTK_CONNSYS_DEDICATED_LOG_PATH
+	UINT32 u4Res;
+	UINT32 evtLen;
+	UINT8 evtBuf[16] = { 0 };
+
+	WMT_BLANK_STATUS_CMD[5] = (pWmtOp->au4OpData[0]) ? 0x1 : 0x0;
+
+	/* send command */
+	iRet = wmt_core_tx((PUINT8)WMT_BLANK_STATUS_CMD, osal_sizeof(WMT_BLANK_STATUS_CMD), &u4Res,
+			   MTK_WCN_BOOL_FALSE);
+
+	if (iRet || (u4Res != osal_sizeof(WMT_BLANK_STATUS_CMD))) {
+		WMT_ERR_FUNC("WMT-CORE: WMT_BLANK_STATUS_CMD iRet(%d) cmd len err(%d, %zu)\n",
+			     (iRet == 0 ? -1 : iRet), u4Res, osal_sizeof(WMT_BLANK_STATUS_CMD));
+		return iRet;
+	}
+
+	evtLen = osal_sizeof(WMT_BLANK_STATUS_EVT);
+	iRet = wmt_core_rx(evtBuf, evtLen, &u4Res);
+	if (iRet || (u4Res != evtLen))
+		WMT_ERR_FUNC("WMT-CORE: read WMT_BLANK_STATUS_EVT fail(%d) len(%d, %d)\n",
+			     iRet, u4Res, evtLen);
+	else
+		wmt_lib_set_blank_status(WMT_BLANK_STATUS_CMD[5]);
+#endif
+	return iRet;
+}
