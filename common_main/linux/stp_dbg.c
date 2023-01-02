@@ -2170,6 +2170,56 @@ INT32 stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
 	return 0;
 }
 
+INT32 stp_dbg_dump_cpupcr_reg_info(PUINT8 buf, UINT32 consys_lp_reg)
+{
+	INT32 i = 0;
+	INT32 count = 0;
+	UINT32 len = 0;
+
+	/* never retrun negative value */
+	if (!g_stp_dbg_cpupcr || !buf) {
+		STP_DBG_PR_DBG("NULL pointer, g_stp_dbg_cpupcr:%p, buf:%p\n",
+				g_stp_dbg_cpupcr, buf);
+		return 0;
+	}
+
+	for (i = 0; i < STP_DBG_CPUPCR_NUM; i++) {
+		if (g_stp_dbg_cpupcr->sec_buffer[i] == 0 &&
+				g_stp_dbg_cpupcr->nsec_buffer[i] == 0)
+			continue;
+		count++;
+		if (count == 1)
+			len += osal_sprintf(buf + len, "0x%08x", g_stp_dbg_cpupcr->buffer[i]);
+		else
+			len += osal_sprintf(buf + len, ";0x%08x", g_stp_dbg_cpupcr->buffer[i]);
+	}
+
+	if (count == 0)
+		len += osal_sprintf(buf + len, "0x%08x\n", consys_lp_reg);
+	else
+		len += osal_sprintf(buf + len, ";0x%08x\n", consys_lp_reg);
+
+	stp_dbg_clear_cpupcr_reg_info();
+
+	return len;
+}
+
+VOID stp_dbg_clear_cpupcr_reg_info(VOID)
+{
+	if (osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock)) {
+		STP_DBG_PR_DBG("lock failed\n");
+		return;
+	}
+
+	osal_memset(&g_stp_dbg_cpupcr->buffer[0], 0, STP_DBG_CPUPCR_NUM);
+	g_stp_dbg_cpupcr->count = 0;
+	g_stp_dbg_cpupcr->host_assert_info.reason = 0;
+	g_stp_dbg_cpupcr->host_assert_info.drv_type = 0;
+	g_stp_dbg_cpupcr->issue_type = STP_FW_ISSUE_TYPE_INVALID;
+	g_stp_dbg_cpupcr->keyword[0] = '\0';
+	osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
+}
+
 INT32 stp_dbg_poll_dmaregs(UINT32 times, UINT32 sleep)
 {
 #if 0
