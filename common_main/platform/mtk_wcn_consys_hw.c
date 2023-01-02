@@ -963,6 +963,9 @@ INT32 mtk_wcn_consys_hw_init(VOID)
 		register_syscore_ops(&wmt_dbg_syscore_ops);
 	}
 
+#if WMT_DBG_SUPPORT
+	mtk_wcn_dump_util_init();
+#endif
 	return iRet;
 
 }
@@ -1289,6 +1292,13 @@ INT32 mtk_wcn_consys_pc_log_dump(VOID)
 {
 	if (wmt_consys_ic_ops->consys_ic_pc_log_dump)
 		return wmt_consys_ic_ops->consys_ic_pc_log_dump();
+	return 0;
+}
+
+INT32 mtk_wcn_consys_ipi_timeout_dump(VOID)
+{
+	if (wmt_consys_ic_ops->consys_ic_ipi_timeout_dump)
+		return wmt_consys_ic_ops->consys_ic_ipi_timeout_dump();
 	return 0;
 }
 
