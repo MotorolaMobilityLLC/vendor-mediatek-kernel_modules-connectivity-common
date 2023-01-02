@@ -1552,7 +1552,8 @@ static VOID _osal_opq_dump(const char *qName, P_OSAL_OP_Q pOpQ)
 		}
 
 		if (op) {
-			printed += sprintf(buf + printed, "[%u(%u)]%p:%u(%d)(%d)-%u-",
+			printed += snprintf(buf + printed, OPQ_DUMP_LINE_BUF_SIZE - printed,
+						"[%u(%u)]%p:%u(%d)(%d)-%u-",
 						idx,
 						(rd & RB_MASK(pOpQ)),
 						op,
@@ -1561,10 +1562,13 @@ static VOID _osal_opq_dump(const char *qName, P_OSAL_OP_Q pOpQ)
 						op->result,
 						op->op.u4InfoBit);
 			for (opDataIdx = 0; opDataIdx < OPQ_DUMP_OPDATA_PER_OP; opDataIdx++)
-				printed += sprintf(buf + printed, "%zx,", op->op.au4OpData[opDataIdx]);
+				printed += snprintf(buf + printed, OPQ_DUMP_LINE_BUF_SIZE - printed,
+						"%zx,", op->op.au4OpData[opDataIdx]);
 			buf[printed-1] = ' ';
-		} else
-			printed += sprintf(buf + printed, "[%u(%u)]%p ", idx, (rd & RB_MASK(pOpQ)), op);
+		} else {
+			printed += snprintf(buf + printed, OPQ_DUMP_LINE_BUF_SIZE - printed,
+						"[%u(%u)]%p ", idx, (rd & RB_MASK(pOpQ)), op);
+		}
 		buf[printed++] = ' ';
 
 		if (idxInBuf == OPQ_DUMP_OP_PER_LINE - 1  || rd == wt - 1) {
