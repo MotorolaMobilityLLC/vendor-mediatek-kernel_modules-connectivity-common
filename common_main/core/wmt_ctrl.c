@@ -1096,18 +1096,22 @@ static INT32 wmt_ctrl_trg_assert(P_WMT_CTRL_DATA pWmtCtrlData)
 
 	ENUM_WMTDRV_TYPE_T drv_type;
 	UINT32 reason = 0;
+	PUINT8 keyword;
 
 	drv_type = pWmtCtrlData->au4CtrlData[0];
 	reason = pWmtCtrlData->au4CtrlData[1];
-	WMT_INFO_FUNC("wmt-ctrl:drv_type(%d),reason(%d)\n", drv_type, reason);
+	keyword = (PUINT8) pWmtCtrlData->au4CtrlData[2];
+	WMT_INFO_FUNC("wmt-ctrl:drv_type(%d),reason(%d),keyword(%s)\n", drv_type, reason, keyword);
 
 	if (mtk_wcn_stp_get_wmt_trg_assert() == 0) {
 		mtk_wcn_stp_set_wmt_trg_assert(1);
 		mtk_wcn_stp_dbg_dump_package();
 
 		iRet = mtk_wcn_stp_wmt_trg_assert();
-		if (iRet == 0)
+		if (iRet == 0) {
 			wmt_lib_set_host_assert_info(drv_type, reason, 1);
+			stp_dbg_set_keyword(keyword);
+		}
 	} else
 		WMT_INFO_FUNC("do trigger assert & chip reset in stp noack\n");
 
