@@ -143,6 +143,10 @@ typedef enum _ENUM_WMTRSTSRC_TYPE_T {
 	WMTRSTSRC_RESET_MAX
 } ENUM_WMTRSTSRC_TYPE_T, *P_ENUM_WMTRSTSRC_TYPE_T;
 
+enum wmt_fw_log_type {
+	WMT_FWLOG_MCU = 0,
+	WMT_FWLOG_MAX
+};
 
 typedef struct {
 	PF_WMT_CB fDrvRst[WMTDRV_TYPE_MAX];
@@ -373,6 +377,7 @@ extern UINT32 wmt_lib_jtag_flag_set(UINT32 en);
 #endif
 
 UINT32 wmt_lib_get_gps_lna_pin_num(VOID);
+extern INT32 wmt_lib_fw_log_ctrl(enum wmt_fw_log_type type, UINT8 onoff, UINT8 level);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
