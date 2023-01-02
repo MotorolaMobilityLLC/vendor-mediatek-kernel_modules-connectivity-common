@@ -52,7 +52,7 @@
 #include <linux/ratelimit.h>
 
 #ifndef _TYPEDEFS_H		/*fix redifine */
-typedef char INT8, *PINT8, **PPINT8;
+typedef signed char INT8;
 #endif
 
 typedef void VOID, *PVOID, **PPVOID;
