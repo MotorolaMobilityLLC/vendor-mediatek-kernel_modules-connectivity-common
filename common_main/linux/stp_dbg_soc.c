@@ -375,9 +375,11 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 
 paged_dump_end:
 		wmt_plat_set_host_dump_state(STP_HOST_DUMP_NOT_START);
-		STP_DBG_PR_INFO("++ counter(%d) packet_num(%d) page_counter(%d) g_paged_dump_len(%d)++\n",
-			counter, packet_num, page_counter, g_paged_dump_len);
-		if (wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_chip_paded_dump_end)) {
+		STP_DBG_PR_INFO("++ counter(%d) packet_num(%d) page_counter(%d) g_paged_dump_len(%d) fw_state(%d)++\n",
+				counter, packet_num, page_counter, g_paged_dump_len,
+				wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_state));
+		if (wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_chip_paded_dump_end) ||
+				(wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_state) == 0x8)) {
 			if (stp_dbg_get_coredump_timer_state() == CORE_DUMP_DOING) {
 				STP_DBG_PR_INFO("paged dump end by emi flag\n");
 				if (dump_sink == 1)
