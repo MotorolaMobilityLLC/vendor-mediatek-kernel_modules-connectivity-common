@@ -252,6 +252,8 @@ typedef struct _DEV_WMT_ {
 	/* Timer for wmt_worker_thread */
 	OSAL_TIMER worker_timer;
 	struct work_struct wmtd_worker_thread_work;
+	struct osal_op_history wmtd_op_history;
+	struct osal_op_history worker_op_history;
 } DEV_WMT, *P_DEV_WMT;
 
 
@@ -398,6 +400,8 @@ extern UINT32 wmt_lib_jtag_flag_set(UINT32 en);
 
 UINT32 wmt_lib_get_gps_lna_pin_num(VOID);
 extern INT32 wmt_lib_fw_log_ctrl(enum wmt_fw_log_type type, UINT8 onoff, UINT8 level);
+VOID wmt_lib_print_wmtd_op_history(VOID);
+VOID wmt_lib_print_worker_op_history(VOID);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
