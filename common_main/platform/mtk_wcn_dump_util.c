@@ -51,7 +51,7 @@ static struct reg_map_addr *get_mapped_reg(unsigned int mapped_tbl_idx)
 	reg_addr = &g_mapped_reg_table[mapped_tbl_idx];
 
 	if (reg_addr->vir_addr == NULL) {
-		addr = ioremap_nocache(reg_addr->phy_addr, reg_addr->size);
+		addr = ioremap(reg_addr->phy_addr, reg_addr->size);
 		if (addr == NULL)
 			return NULL;
 		WMT_PLAT_PR_INFO("mapidx=[%d] phy[%x] addr=[%x] sz=[%d]",
@@ -140,6 +140,25 @@ INT32 execute_dump_action(const char *trg_str, const char *dump_prefix, struct c
 		WMT_PLAT_PR_INFO("[%s][%s] %s", trg_str, dump_prefix, str_buf);
 	WMT_PLAT_PR_INFO("[%s][%s] <<<<<< Count=[%d]", trg_str, dump_prefix, read_idx);
 	return 0;
+}
+
+VOID mtk_wcn_dump_util_init(VOID)
+{
+	struct reg_map_addr *reg_addr = NULL;
+	int i;
+	UINT8 *addr = NULL;
+
+	for (i = 0; i < g_mapped_reg_table_sz; i++) {
+		reg_addr = &g_mapped_reg_table[i];
+		if (reg_addr->vir_addr == NULL) {
+			addr = ioremap(reg_addr->phy_addr, reg_addr->size);
+			if (addr == NULL)
+				return;
+			WMT_PLAT_PR_INFO("mapidx=[%d] phy[%x] addr=[%x] sz=[%d]",
+				i, reg_addr->phy_addr, addr, reg_addr->size);
+			reg_addr->vir_addr = addr;
+		}
+	}
 }
 
 VOID mtk_wcn_dump_util_destroy(VOID)
