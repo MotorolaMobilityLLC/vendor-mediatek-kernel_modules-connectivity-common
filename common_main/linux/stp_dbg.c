@@ -2521,9 +2521,9 @@ PUINT8 stp_dbg_id_to_task(UINT32 id)
 VOID stp_dbg_reset(VOID)
 {
 	if (g_stp_dbg_cpupcr) {
-		osal_memset(g_stp_dbg_cpupcr->buffer, 0, STP_DBG_CPUPCR_NUM);
-		osal_memset(g_stp_dbg_cpupcr->sec_buffer, 0, STP_DBG_CPUPCR_NUM);
-		osal_memset(g_stp_dbg_cpupcr->nsec_buffer, 0, STP_DBG_CPUPCR_NUM);
+		osal_memset(g_stp_dbg_cpupcr->buffer, 0, osal_sizeof(g_stp_dbg_cpupcr->buffer));
+		osal_memset(g_stp_dbg_cpupcr->sec_buffer, 0, osal_sizeof(g_stp_dbg_cpupcr->sec_buffer));
+		osal_memset(g_stp_dbg_cpupcr->nsec_buffer, 0, osal_sizeof(g_stp_dbg_cpupcr->nsec_buffer));
 	}
 
 	if (g_stp_dbg_dmaregs) {
