@@ -2074,7 +2074,7 @@ P_WMT_PATCH_INFO wmt_lib_get_patch_info(VOID)
  */
 INT32 wmt_lib_set_aif(enum CMB_STUB_AIF_X aif, MTK_WCN_BOOL share)
 {
-	if (aif >= CMB_STUB_AIF_MAX) {
+	if (aif < 0 || aif >= CMB_STUB_AIF_MAX) {
 		WMT_ERR_FUNC("invalid aif (%d)\n", aif);
 		return -1;
 	}
@@ -2338,7 +2338,7 @@ ENUM_WMTRSTRET_TYPE_T wmt_lib_cmb_rst(ENUM_WMTRSTSRC_TYPE_T src)
 	WMT_INFO_FUNC("coredump mode == %d. Connsys coredump is %s.",
 			coredump_mode, coredump_mode ? "enabled" : "disabled");
 
-	if (src < WMTRSTSRC_RESET_MAX)
+	if (src >= 0 && src < WMTRSTSRC_RESET_MAX)
 		WMT_INFO_FUNC("reset source = %s\n", srcName[src]);
 
 	if (src == WMTRSTSRC_RESET_TEST) {
@@ -2537,6 +2537,9 @@ VOID wmt_lib_set_patch_info(P_WMT_PATCH_INFO pPatchinfo)
 VOID wmt_lib_set_rom_patch_info(struct wmt_rom_patch_info *PatchInfo, ENUM_WMTDRV_TYPE_T type)
 {
 	P_DEV_WMT pWmtDev = &gDevWmt;
+
+	if (type < 0)
+		return;
 
 	/* Allow info of a type to be set only once, to avoid inproper usage */
 	if (pWmtDev->pWmtRomPatchInfo[type])
@@ -3256,9 +3259,12 @@ VOID wmt_lib_trigger_assert_keyword_delay(ENUM_WMTDRV_TYPE_T type, UINT32 reason
 
 	a->type = type;
 	a->reason = reason;
-	snprintf(a->keyword, sizeof(a->keyword), "%s", keyword);
-	WMT_ERR_FUNC("Assert: type = %d, reason = %d, keyword = %s", type, reason, keyword);
-	schedule_work(&(a->work));
+	if (snprintf(a->keyword, sizeof(a->keyword), "%s", keyword) < 0) {
+		WMT_INFO_FUNC("snprintf a->keyword fail\n");
+	} else {
+		WMT_ERR_FUNC("Assert: type = %d, reason = %d, keyword = %s", type, reason, keyword);
+		schedule_work(&(a->work));
+	}
 }
 
 INT32 wmt_lib_dmp_consys_state(P_CONSYS_STATE_DMP_INFO dmp_info,
@@ -3305,8 +3311,7 @@ INT32 wmt_lib_dmp_consys_state(P_CONSYS_STATE_DMP_INFO dmp_info,
 		return MTK_WCN_BOOL_FALSE;
 
 	memset(&dmp_op->dmp_info, 0, sizeof(struct consys_state_dmp_info));
-	dmp_op->times = cpupcr_times > WMT_CORE_DMP_CPUPCR_NUM ?
-				WMT_CORE_DMP_CPUPCR_NUM : cpupcr_times;
+	dmp_op->times = cpupcr_times;
 	dmp_op->cpu_sleep_ms = slp_ms;
 
 	pOp = wmt_lib_get_free_op();
