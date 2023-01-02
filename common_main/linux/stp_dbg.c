@@ -1573,7 +1573,7 @@ VOID stp_dbg_nl_deinit(VOID)
 
 static INT32 stp_dbg_nl_bind(struct sk_buff *skb, struct genl_info *info)
 {
-	struct nlattr *na;
+	struct nlattr *na = NULL;
 	PINT8 mydata;
 	INT32 i;
 

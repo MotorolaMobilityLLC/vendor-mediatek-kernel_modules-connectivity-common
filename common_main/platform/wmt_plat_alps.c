@@ -1374,10 +1374,10 @@ static INT32 wmt_plat_soc_gps_lna_ctrl(ENUM_PIN_STATE state)
 		break;
 	}
 #else
-	struct pinctrl_state *gps_lna_init;
-	struct pinctrl_state *gps_lna_oh;
-	struct pinctrl_state *gps_lna_ol;
-	struct pinctrl *consys_pinctrl;
+	struct pinctrl_state *gps_lna_init = NULL;
+	struct pinctrl_state *gps_lna_oh = NULL;
+	struct pinctrl_state *gps_lna_ol = NULL;
+	struct pinctrl *consys_pinctrl = NULL;
 
 	WMT_PLAT_PR_DBG("ENTER++\n");
 	consys_pinctrl = mtk_wcn_consys_get_pinctrl();

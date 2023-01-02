@@ -1070,7 +1070,7 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 	PUINT8 pkt_bufp;
 	UINT32 prev_wr_idx;
 	UINT32 prev_size;
-	MTK_WCN_STP_SDIO_PKT_BUF *pb;
+	MTK_WCN_STP_SDIO_PKT_BUF *pb = NULL;
 	UINT32 idx;
 
 	osal_ftrace_print("%s|S|L|%d\n", __func__, size);
