@@ -106,6 +106,7 @@
 #define WMT_IOCTL_SET_ROM_PATCH_INFO	_IOW(WMT_IOC_MAGIC, 31, char*)
 #define WMT_IOCTL_FDB_CTRL		_IOW(WMT_IOC_MAGIC, 32, char*)
 #define WMT_IOCTL_GET_EMI_PHY_SIZE  _IOR(WMT_IOC_MAGIC, 33, unsigned int)
+#define WMT_IOCTL_FW_PATCH_UPDATE_RST	_IOR(WMT_IOC_MAGIC, 34, int)
 
 #define MTK_WMT_VERSION  "Consys WMT Driver - v1.0"
 #define MTK_WMT_DATE     "2013/01/20"
@@ -1392,6 +1393,9 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			WMT_INFO_FUNC("gConEmiSize %p\n", gConEmiSize);
 			return (UINT32)gConEmiSize;
 		} while (0);
+		break;
+	case WMT_IOCTL_FW_PATCH_UPDATE_RST:
+		wmt_lib_fw_patch_update_rst_ctrl(arg);
 		break;
 	default:
 		iRet = -EINVAL;
