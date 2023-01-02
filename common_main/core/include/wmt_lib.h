@@ -356,6 +356,7 @@ VOID wmt_lib_set_ext_ldo(UINT32 flag);
 UINT32 wmt_lib_get_ext_ldo(VOID);
 INT32 wmt_lib_try_pwr_off(VOID);
 P_WMT_PATCH_INFO wmt_lib_get_patch_info(VOID);
+INT32 wmt_lib_met_cmd(UINT32 value);
 
 INT32 wmt_lib_blank_status_ctrl(UINT32 on_off_flag);
 VOID wmt_lib_set_blank_status(UINT32 on_off_flag);
