@@ -321,5 +321,7 @@ VOID mtk_wcn_consys_clock_fail_dump(VOID);
 INT32 mtk_consys_is_connsys_reg(UINT32 addr);
 VOID mtk_consys_set_mcif_mpu_protection(MTK_WCN_BOOL enable);
 INT32 mtk_consys_is_calibration_backup_restore_support(VOID);
+VOID mtk_consys_set_chip_reset_status(INT32 status);
+INT32 mtk_consys_chip_reset_status(VOID);
 #endif /* _MTK_WCN_CONSYS_HW_H_ */
 
