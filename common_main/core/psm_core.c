@@ -1004,6 +1004,9 @@ static inline INT32 _stp_psm_notify_stp(MTKSTP_PSM_T *stp_psm, const MTKSTP_PSM_
 
 	INT32 retval = STP_PSM_OPERATION_SUCCESS;
 
+	if (action < 0 || action >= STP_PSM_MAX_ACTION)
+		return STP_PSM_OPERATION_FAIL;
+
 	if (action == EIRQ) {
 		STP_PSM_PR_DBG("Call _stp_psm_notify_wmt_host_awake_wq\n\r");
 		_stp_psm_notify_wmt_host_awake_wq(stp_psm);
@@ -1349,6 +1352,9 @@ static inline INT32 _stp_psm_do_wait(MTKSTP_PSM_T *stp_psm, MTKSTP_PSM_STATE_T s
 	INT32 limit = POLL_WAIT_TIME / POLL_WAIT;
 	UINT64 sec = 0;
 	ULONG usec = 0;
+
+	if (state < 0 || state >= STP_PSM_MAX_STATE)
+		return STP_PSM_OPERATION_FAIL;
 
 	osal_get_local_time(&sec, &usec);
 	while (_stp_psm_get_state(stp_psm) != state && i < limit && mtk_wcn_stp_is_enable()) {
