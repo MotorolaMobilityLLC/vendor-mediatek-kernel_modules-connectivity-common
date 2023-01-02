@@ -1222,8 +1222,8 @@ WMT_CO_CLOCK mt6632_co_clock_get(VOID)
 
 static INT32 mt6632_ver_check(VOID)
 {
-	UINT32 hw_ver;
-	UINT32 fw_ver;
+	UINT32 hw_ver = 0;
+	UINT32 fw_ver = 0;
 	INT32 iret;
 	const WMT_IC_INFO_S *p_info;
 	ULONG ctrlPa1;
