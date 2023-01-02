@@ -133,13 +133,6 @@ static _osal_inline_ VOID stp_dbg_cpupcr_deinit(P_STP_DBG_CPUPCR_T pCpupcr);
 static _osal_inline_ P_STP_DBG_DMAREGS_T stp_dbg_dmaregs_init(VOID);
 static _osal_inline_ VOID stp_dbg_dmaregs_deinit(P_STP_DBG_DMAREGS_T pDmaRegs);
 
-INT32 __weak mtk_btif_rxd_be_blocked_flag_get(VOID)
-{
-	STP_DBG_PR_ERR("mtk_btif_rxd_be_blocked_flag_get is not define!!!\n");
-
-	return 0;
-}
-
 /* operation definition */
 static struct genl_ops stp_dbg_gnl_ops_array[] = {
 	{
