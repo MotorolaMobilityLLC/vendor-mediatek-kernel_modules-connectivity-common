@@ -1089,6 +1089,7 @@ static INT32 wmt_core_hw_check(VOID)
 	case 0x6779:
 	case 0x6768:
 	case 0x6785:
+	case 0x6833:
 	case 0x6853:
 	case 0x6873:
 	case 0x8168:
