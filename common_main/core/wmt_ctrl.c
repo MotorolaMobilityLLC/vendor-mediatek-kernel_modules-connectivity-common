@@ -276,7 +276,7 @@ INT32 wmt_ctrl_rx(P_WMT_CTRL_DATA pWmtCtrlData /*UINT8 *pBuff, UINT32 buffLen, U
 		if (waitRet == 0) {
 			leftCnt--;
 
-			WMT_INFO_FUNC("RX waiting [%lu] ms ===========", jiffies_to_msecs(jiffies - start_time));
+			WMT_INFO_FUNC("RX waiting [%u] ms ===========", jiffies_to_msecs(jiffies - start_time));
 			/* dump btif_rxd's backtrace to check whether it is blocked or not */
 			osal_dump_thread_state("btif_rxd");
 			if (!mtk_wcn_stp_is_sdio_mode())
