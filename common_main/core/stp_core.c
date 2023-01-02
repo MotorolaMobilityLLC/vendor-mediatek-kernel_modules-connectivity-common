@@ -571,6 +571,9 @@ static void stp_update_tx_queue(UINT32 txseq)
 	UINT8 checksum = 0;
 
 	tx_read = stp_core_ctx.tx_start_addr[txseq];
+	if (tx_read < 0)
+		return;
+
 	stp_core_ctx.tx_buf[tx_read] &= 0xf8;
 	stp_core_ctx.tx_buf[tx_read] |= stp_core_ctx.sequence.txack;
 
