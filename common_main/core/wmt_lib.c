@@ -1805,6 +1805,38 @@ INT32 wmt_lib_utc_time_sync(VOID)
 	return 0;
 }
 
+INT32 wmt_lib_try_pwr_off(VOID)
+{
+	P_OSAL_OP pOp;
+	MTK_WCN_BOOL bRet;
+	P_OSAL_SIGNAL pSignal;
+
+	pOp = wmt_lib_get_free_op();
+	if (!pOp) {
+		WMT_WARN_FUNC("get_free_lxop fail\n");
+		return -1;
+	}
+
+	pSignal = &pOp->signal;
+	pSignal->timeoutValue = MAX_FUNC_OFF_TIME;
+	pOp->op.opId = WMT_OPID_TRY_PWR_OFF;
+	if (DISABLE_PSM_MONITOR()) {
+		WMT_ERR_FUNC("wake up failed\n");
+		wmt_lib_put_op_to_free_queue(pOp);
+		return -2;
+	}
+
+	bRet = wmt_lib_put_act_op(pOp);
+	ENABLE_PSM_MONITOR();
+	if (bRet == MTK_WCN_BOOL_FALSE) {
+		WMT_WARN_FUNC("WMT_OPID_TRY_PWR_OFF fail(%d)\n", bRet);
+		return -2;
+	}
+	WMT_DBG_FUNC("wmt_lib_try_pwr_off OPID(%d) ok\n", pOp->op.opId);
+
+	return 0;
+}
+
 /*!
  * \brief update combo chip AUDIO Interface (AIF) settings
  *
