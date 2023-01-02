@@ -3610,6 +3610,11 @@ void wmt_step_test_do_register_action(struct step_test_report *p_report)
 
 	can_write_offset =
 		 wmt_step_test_find_can_write_register(conn_reg.mcu_base, 0x200, 0x0000000F);
+	if (can_write_offset == -1) {
+		p_report->fail++;
+		WMT_ERR_FUNC("STEP test: Do register action init can_write_offset failed\n");
+		return;
+	}
 	snprintf(can_write_offset_char, 11, "0x%08x", can_write_offset);
 
 	osal_gettimeofday(&sec_begin, &usec_begin);
@@ -3881,6 +3886,11 @@ void wmt_step_test_do_cond_register_action(struct step_test_report *p_report)
 
 	can_write_offset =
 		 wmt_step_test_find_can_write_register(conn_reg.mcu_base, 0x200, 0x0000000F);
+	if (can_write_offset == -1) {
+		p_report->fail++;
+		WMT_ERR_FUNC("STEP test: Do register action init can_write_offset failed\n");
+		return;
+	}
 	snprintf(can_write_offset_char, 11, "0x%08x", can_write_offset);
 
 	osal_gettimeofday(&sec_begin, &usec_begin);
