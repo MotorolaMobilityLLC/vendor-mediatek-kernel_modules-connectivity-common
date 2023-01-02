@@ -134,6 +134,9 @@ static UINT8 WMT_BTP2_CMD[] = { 0x01, 0x10, 0x03, 0x00, 0x01, 0x03, 0x01 };
 static UINT8 WMT_BTP2_EVT[] = { 0x02, 0x10, 0x01, 0x00, 0x00 };
 #endif
 
+static UINT8 WMT_QUERY_A_DIE_CMD[] = { 0x01, 0x02, 0x01, 0x00, 0x12 };
+static UINT8 WMT_QUERY_A_DIE_EVT[] = { 0x02, 0x02, 0x05, 0x00, 0x00 };
+
 /*soc patial patch address cmd & evt need firmware owner provide*/
 #if CFG_WMT_MULTI_PATCH
 static UINT8 WMT_PATCH_ADDRESS_CMD[] = {
@@ -772,6 +775,10 @@ static struct init_script get_efuse_vcn33_script[] = {
 };
 #endif
 
+static struct init_script get_a_die_script[] = {
+	INIT_CMD(WMT_QUERY_A_DIE_CMD, WMT_QUERY_A_DIE_EVT, "query A-die"),
+};
+
 static struct init_script init_table_4[] = {
 	INIT_CMD(WMT_SET_STP_CMD, WMT_SET_STP_EVT, "set stp"),
 };
@@ -1220,6 +1227,17 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		return -8;
 	}
 #endif
+
+	if (wmt_ic_ops_soc.icId == 0x6765 || wmt_ic_ops_soc.icId == 0x3967) {
+		iRet = wmt_core_init_script_retry(get_a_die_script, osal_array_size(get_a_die_script), 1, 0);
+		if (iRet) {
+			WMT_ERR_FUNC("get_a_die_script fail(%d)\n", iRet);
+#ifndef CFG_WMT_EVB
+			osal_dbg_assert_aee("Connsys A-die is not exist", "Please check Connsys A-die\0");
+#endif
+			return -21;
+		}
+	}
 
 #ifdef CFG_WMT_READ_EFUSE_VCN33
 	/*get CrystalTiming value before set it */
