@@ -249,6 +249,7 @@ typedef struct _EMI_CTRL_STATE_OFFSET_ {
 	UINT32 emi_apmem_ctrl_host_outband_assert_w1;
 	UINT32 emi_apmem_ctrl_chip_page_dump_num;
 	UINT32 emi_apmem_ctrl_assert_flag;
+	UINT32 emi_apmem_ctrl_chip_check_sleep;
 } EMI_CTRL_STATE_OFFSET, *P_EMI_CTRL_STATE_OFFSET;
 
 typedef struct _BGF_IRQ_BALANCE_ {
