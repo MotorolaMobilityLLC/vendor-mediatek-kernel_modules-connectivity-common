@@ -2716,3 +2716,46 @@ VOID wmt_lib_print_worker_op_history(VOID)
 {
 	osal_op_history_print(&gDevWmt.worker_op_history, "wmtd_worker_thread");
 }
+VOID wmt_lib_set_blank_status(UINT32 on_off_flag)
+{
+	wmt_core_set_blank_status(on_off_flag);
+}
+
+UINT32 wmt_lib_get_blank_status(VOID)
+{
+	return wmt_core_get_blank_status();
+}
+
+INT32 wmt_lib_blank_status_ctrl(UINT32 on_off_flag)
+{
+	P_OSAL_OP pOp;
+	MTK_WCN_BOOL bRet;
+	P_OSAL_SIGNAL pSignal;
+
+	pOp = wmt_lib_get_free_op();
+	if (!pOp) {
+		WMT_DBG_FUNC("get_free_lxop fail\n");
+		return -1;
+	}
+
+	pSignal = &pOp->signal;
+	pSignal->timeoutValue = MAX_EACH_WMT_CMD;
+	WMT_DBG_FUNC("WMT_OPID_BLANK_STATUS_CTRL on_off_flag(0x%x)\n\n", on_off_flag);
+	pOp->op.opId = WMT_OPID_BLANK_STATUS_CTRL;
+	pOp->op.au4OpData[0] = on_off_flag;
+	if (DISABLE_PSM_MONITOR()) {
+		WMT_ERR_FUNC("wake up failed\n");
+		wmt_lib_put_op_to_free_queue(pOp);
+		return -1;
+	}
+
+	bRet = wmt_lib_put_act_op(pOp);
+	ENABLE_PSM_MONITOR();
+
+	if (bRet != MTK_WCN_BOOL_FALSE) {
+		WMT_DBG_FUNC("WMT_OPID_BLANK_STATUS_CTRL on_off_flag(0x%x) ok\n", on_off_flag);
+		return 0;
+	}
+	WMT_WARN_FUNC("WMT_OPID_BLANK_STATUS_CTRL on_off_flag(0x%x) bRet(%d)\n", on_off_flag, bRet);
+	return -1;
+}
