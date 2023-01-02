@@ -273,6 +273,9 @@ static INT32 mtk_wmt_resume(struct platform_device *pdev)
 {
 	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_WHEN_AP_RESUME);
 
+	if (wmt_consys_ic_ops->consys_ic_resume_dump_info)
+		wmt_consys_ic_ops->consys_ic_resume_dump_info();
+
 	return 0;
 }
 
