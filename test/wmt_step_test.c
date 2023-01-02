@@ -2736,7 +2736,7 @@ void wmt_step_test_create_cond_register_action(struct step_test_report *p_report
 
 int wmt_step_test_get_symbol_num(void)
 {
-	int len;
+	int len = 0;
 	struct device_node *node = NULL;
 
 	if (g_pdev != NULL) {

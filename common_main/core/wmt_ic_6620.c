@@ -1169,8 +1169,8 @@ static MTK_WCN_BOOL mt6620_aee_dump_flag_get(VOID)
 
 static INT32 mt6620_ver_check(VOID)
 {
-	UINT32 hw_ver;
-	UINT32 fw_ver;
+	UINT32 hw_ver = 0;
+	UINT32 fw_ver = 0;
 	INT32 iret;
 	const WMT_IC_INFO_S *p_info;
 	ULONG ctrlPa1;
