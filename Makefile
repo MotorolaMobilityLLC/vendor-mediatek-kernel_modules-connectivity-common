@@ -185,6 +185,10 @@ else
 	endif
 endif
 
+ifeq ($(findstring evb, $(MTK_PROJECT)), evb)
+ccflags-y += -D CFG_WMT_EVB
+endif
+
 ifneq ($(filter "CONSYS_%",$(CONFIG_MTK_COMBO_CHIP)),)
 $(MODULE_NAME)-objs += common_main/platform/$(MTK_PLATFORM).o
 endif
