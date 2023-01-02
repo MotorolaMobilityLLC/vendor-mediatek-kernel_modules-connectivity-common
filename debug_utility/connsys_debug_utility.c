@@ -27,6 +27,7 @@
 #include "wmt_exp.h"
 #include <linux/alarmtimer.h>
 #include <linux/suspend.h>
+#include <linux/version.h>
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -139,7 +140,11 @@ static void connlog_dump_buf(const char *title, const char *buf, ssize_t sz);
 static void connlog_ring_print(int conn_type);
 static void connlog_event_set(int conn_type);
 static void connlog_log_data_handler(struct work_struct *work);
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+static void work_timer_handler(struct timer_list *t);
+#else
 static void work_timer_handler(unsigned long data);
+#endif
 static void connlog_do_schedule_work(bool count);
 
 /* connlog when suspend */
@@ -485,7 +490,11 @@ static void connlog_do_schedule_work(bool count)
 * RETURNS
 *  void
 *****************************************************************************/
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+static void work_timer_handler(struct timer_list *t)
+#else
 static void work_timer_handler(unsigned long data)
+#endif
 {
 	connlog_do_schedule_work(false);
 }
@@ -953,7 +962,11 @@ int connsys_dedicated_log_path_apsoc_init(phys_addr_t emiaddr, unsigned int irq_
 		return -2;
 	}
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+	timer_setup(&gDev.workTimer, work_timer_handler, 0);
+#else
 	init_timer(&gDev.workTimer);
+#endif
 	gDev.workTimer.function = work_timer_handler;
 	spin_lock_init(&gDev.irq_lock);
 	INIT_WORK(&gDev.logDataWorker, connlog_log_data_handler);
