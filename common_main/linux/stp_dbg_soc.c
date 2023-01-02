@@ -467,15 +467,16 @@ INT32 stp_dbg_soc_core_dump(INT32 dump_sink)
 {
 	INT32 ret = 0;
 
-	stp_dbg_soc_paged_dump(dump_sink);
-	ret = stp_dbg_soc_paged_trace();
-	if (ret)
-		STP_DBG_PR_ERR("stp_dbg_soc_paged_trace fail: %d!\n", ret);
-
+	STP_DBG_PR_INFO("coredump mode == %d. Connsys coredump is %s.",
+			dump_sink, dump_sink ? "enabled" : "disabled");
 	if (dump_sink == 0 || chip_reset_only == 1) {
 		chip_reset_only = 0;
 		mtk_wcn_stp_ctx_restore();
 	} else if (dump_sink == 1 || dump_sink == 2) {
+		stp_dbg_soc_paged_dump(dump_sink);
+		ret = stp_dbg_soc_paged_trace();
+		if (ret)
+			STP_DBG_PR_ERR("stp_dbg_soc_paged_trace fail: %d!\n", ret);
 		if (stp_dbg_start_emi_dump() < 0)
 			mtk_wcn_stp_ctx_restore();
 	}
