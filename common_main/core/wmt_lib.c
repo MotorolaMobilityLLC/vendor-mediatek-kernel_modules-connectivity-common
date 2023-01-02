@@ -180,6 +180,11 @@ void wmt_lib_psm_lock_release(VOID)
 	osal_unlock_sleepable_lock(&gDevWmt.psm_lock);
 }
 
+INT32 wmt_lib_psm_lock_trylock(VOID)
+{
+	return osal_trylock_sleepable_lock(&gDevWmt.psm_lock);
+}
+
 INT32 wmt_lib_assert_lock_aquire(VOID)
 {
 	return osal_lock_sleepable_lock(&gDevWmt.assert_lock);
@@ -988,6 +993,9 @@ INT32 wmt_lib_update_fw_patch_chip_rst(VOID)
 	if (g_fw_patch_update_rst == 0)
 		return 0;
 
+	if (chip_reset_only == 1)
+		return 0;
+
 	if (wmt_lib_get_drv_status(WMTDRV_TYPE_WIFI) == DRV_STS_FUNC_ON) {
 		if (wmt_lib_wlan_lock_trylock() == 0)
 			return 0;
@@ -1003,6 +1011,10 @@ INT32 wmt_lib_update_fw_patch_chip_rst(VOID)
 		|| mtk_wcn_stp_is_ready() == MTK_WCN_BOOL_FALSE
 		|| wifiDrvOwn == MTK_WCN_BOOL_TRUE)
 		return 0;
+
+	if (wmt_lib_psm_lock_trylock() == 0)
+		return 0;
+	wmt_lib_psm_lock_release();
 
 	wmt_lib_fw_patch_update_rst_ctrl(0);
 	chip_reset_only = 1;
@@ -2218,7 +2230,16 @@ ENUM_WMTRSTRET_TYPE_T wmt_lib_cmb_rst(ENUM_WMTRSTSRC_TYPE_T src)
 		goto rstDone;
 	}
 	/* <2> Block all STP request */
-	mtk_wcn_stp_enable(0);
+	if (wmt_lib_psm_lock_trylock() == 0) {
+		if (chip_reset_only == 1) {
+			wmt_lib_fw_patch_update_rst_ctrl(1);
+			retval = WMTRSTRET_RETRY;
+			goto rstDone;
+		}
+	} else {
+		mtk_wcn_stp_enable(0);
+		wmt_lib_psm_lock_release();
+	}
 
 	/* <3> RESET_START notification */
 	bRet = wmt_cdev_rstmsg_snd(WMTRSTMSG_RESET_START);
@@ -2276,6 +2297,7 @@ ENUM_WMTRSTRET_TYPE_T wmt_lib_cmb_rst(ENUM_WMTRSTSRC_TYPE_T src)
 	mtk_wcn_stp_emi_dump_flag_ctrl(0);
 rstDone:
 	osal_clear_bit(WMT_STAT_RST_ON, &pDevWmt->state);
+	chip_reset_only = 0;
 	return retval;
 }
 
