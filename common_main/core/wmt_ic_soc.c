@@ -1016,7 +1016,6 @@ static INT32 mtk_wcn_soc_patch_dwn(VOID);
 #endif
 
 static INT32 mtk_wcn_soc_co_clock_ctrl(WMT_CO_CLOCK on);
-static WMT_CO_CLOCK mtk_wcn_soc_co_clock_get(VOID);
 
 #if CFG_WMT_CRYSTAL_TIMING_SET
 static INT32 mtk_wcn_soc_crystal_triming_set(VOID);
@@ -2337,7 +2336,7 @@ static INT32 mtk_wcn_soc_normal_patch_dwn(PUINT8 pPatchBuf, UINT32 patchSize, PU
 	fragNum = patchSize / patchSizePerFrag;
 	fragNum += ((fragNum * patchSizePerFrag) == patchSize) ? 0 : 1;
 
-	WMT_DBG_FUNC("patch size(%d) fragNum(%d)\n", patchSize, fragNum);
+	WMT_INFO_FUNC("normal patch download patch size(%d) fragNum(%d)\n", patchSize, fragNum);
 
 	/*send wmt part patch address command */
 	if (wmt_ic_ops_soc.icId == 0x6752 ||
@@ -2554,10 +2553,10 @@ static INT32 mtk_wcn_soc_pda_patch_dwn(PUINT8 pPatchBuf, UINT32 patchSize, PUINT
 	WMT_PATCH_PDA_CFG_CMD[8] = addressByte[0];
 
 	/*PDA download size*/
-	WMT_PATCH_PDA_CFG_CMD[9] = patchSize & 0xFF000000 >> 24;
-	WMT_PATCH_PDA_CFG_CMD[10] = patchSize & 0xFF0000 >> 16;
-	WMT_PATCH_PDA_CFG_CMD[11] = patchSize & 0xFF00 >> 8;
-	WMT_PATCH_PDA_CFG_CMD[12] = patchSize & 0xFF;
+	WMT_PATCH_PDA_CFG_CMD[9] = (patchSize & 0xFF000000) >> 24;
+	WMT_PATCH_PDA_CFG_CMD[10] = (patchSize & 0x00FF0000) >> 16;
+	WMT_PATCH_PDA_CFG_CMD[11] = (patchSize & 0x0000FF00) >> 8;
+	WMT_PATCH_PDA_CFG_CMD[12] = (patchSize & 0x000000FF);
 
 	iRet = wmt_core_tx((PUINT8) &WMT_PATCH_PDA_CFG_CMD[0], sizeof(WMT_PATCH_PDA_CFG_CMD), &u4Res,
 			MTK_WCN_BOOL_FALSE);
@@ -2579,11 +2578,11 @@ static INT32 mtk_wcn_soc_pda_patch_dwn(PUINT8 pPatchBuf, UINT32 patchSize, PUINT
 	fragNum = patchSize / patchSizePerFrag;
 	fragNum += ((fragNum * patchSizePerFrag) == patchSize) ? 0 : 1;
 
+	WMT_INFO_FUNC("PDA patch download patch size(%d) fragNum(%d)\n", patchSize, fragNum);
 	/* send all fragments */
 	offset = 0;
 	fragSeq = 0;
 	while (fragSeq < fragNum) {
-		WMT_DBG_FUNC("patch size(%d) fragNum(%d)\n", patchSize, fragNum);
 		if (fragSeq == (fragNum - 1)) {
 			/* last fragment */
 			fragSize = patchSize - fragSeq * patchSizePerFrag;
