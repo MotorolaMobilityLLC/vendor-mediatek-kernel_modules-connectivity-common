@@ -31,6 +31,7 @@
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
 */
+#include <connectivity_build_in_adapter.h>
 #include "osal_typedef.h"
 #include "connsys_debug_utility.h"
 #include "wmt_lib.h"
@@ -162,7 +163,7 @@ static INT32 opfunc_gps_mcu_ctrl(P_WMT_OP pWmtOp);
 static INT32 opfunc_blank_status_ctrl(P_WMT_OP pWmtOp);
 static INT32 opfunc_met_ctrl(P_WMT_OP pWmtOp);
 static INT32 opfunc_gps_suspend(P_WMT_OP pWmtOp);
-static INT32 opfunc_resume_dump_info(P_WMT_OP pWmtOp);
+static INT32 opfunc_get_consys_state(P_WMT_OP pWmtOp);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -331,7 +332,7 @@ static const WMT_OPID_FUNC wmt_core_opfunc[] = {
 	[WMT_OPID_BLANK_STATUS_CTRL] = opfunc_blank_status_ctrl,
 	[WMT_OPID_MET_CTRL] = opfunc_met_ctrl,
 	[WMT_OPID_GPS_SUSPEND] = opfunc_gps_suspend,
-	[WMT_OPID_RESUME_DUMP_INFO] = opfunc_resume_dump_info,
+	[WMT_OPID_GET_CONSYS_STATE] = opfunc_get_consys_state,
 };
 
 atomic_t g_wifi_on_off_ready;
@@ -1015,6 +1016,9 @@ static INT32 wmt_core_hw_check(VOID)
 	WMT_LOUD_FUNC("before read hwcode (chip id)\n");
 	iret = wmt_core_reg_rw_raw(0, GEN_HCR, &chipid, GEN_HCR_MASK);	/* read 0x80000008 */
 	if (iret) {
+#if defined(KERNEL_clk_buf_show_status_info)
+		KERNEL_clk_buf_show_status_info();  /* dump clock buffer */
+#endif
 		WMT_ERR_FUNC("get hwcode (chip id) fail (%d)\n", iret);
 		return -2;
 	}
@@ -1196,6 +1200,8 @@ pwr_on_rty:
 
 	/* update blank status when ConnSys power on */
 	wmt_blank_status_ctrl(wmt_dev_get_blank_state());
+
+	mtk_wcn_consys_sleep_info_restore();
 
 	/* What to do when state is changed from POWER_OFF to POWER_ON?
 	 * 1. STP driver does s/w reset
@@ -3694,7 +3700,56 @@ static INT32 opfunc_met_ctrl(P_WMT_OP pWmtOp)
 	return 0;
 }
 
-static INT32 opfunc_resume_dump_info(P_WMT_OP pWmtOp)
+static INT32 opfunc_get_consys_state(P_WMT_OP pWmtOp)
 {
-	return mtk_consys_resume_dump_info();
+	INT32 ret = 0, i;
+	INT32 times = 0, slp_ms;
+	P_CONSYS_STATE_DMP_OP dmp_op = (P_CONSYS_STATE_DMP_OP)pWmtOp->au4OpData[0];
+	ULONG ver = (ULONG)pWmtOp->au4OpData[1];
+
+	osal_lock_sleepable_lock(&dmp_op->lock);
+	if (dmp_op->status == WMT_DUMP_STATE_NONE
+		|| dmp_op->version != ver) {
+		ret = -1;
+		goto done;
+	}
+
+	/* WMT should be ON */
+	if (gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WMT] != DRV_STS_FUNC_ON) {
+		WMT_INFO_FUNC("WMT is not on");
+		ret = -1;
+		goto done;
+	}
+
+	if (mtk_wcn_consys_sleep_info_read_all_ctrl(&dmp_op->dmp_info.state) != 0)
+		ret = -1;
+
+	/* Consys register should be readable */
+	if (mtk_consys_check_reg_readable() == 0) {
+		WMT_INFO_FUNC("cr cannot readable");
+		ret = -1;
+		goto done;
+	}
+
+	times = dmp_op->times;
+	slp_ms = dmp_op->cpu_sleep_ms;
+
+	/* dmp cpu_pcr */
+	for (i = 0; i < times; i++) {
+		dmp_op->dmp_info.cpu_pcr[i] = wmt_plat_read_cpupcr();
+		if (slp_ms > 0)
+			osal_sleep_ms(slp_ms);
+	}
+
+	ret = mtk_consys_dump_osc_state(&dmp_op->dmp_info.state);
+	if (ret != MTK_WCN_BOOL_TRUE)
+		ret = -2;
+
+	ret = mtk_wcn_consys_dump_gating_state(&dmp_op->dmp_info.state);
+	if (ret != MTK_WCN_BOOL_TRUE)
+		ret = -3;
+
+done:
+	osal_unlock_sleepable_lock(&dmp_op->lock);
+	return 0;
 }
