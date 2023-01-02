@@ -226,6 +226,7 @@ typedef enum _ENUM_WMT_FLASH_PATCH_STATUS_T {
 
 typedef MTK_WCN_BOOL(*MTK_WCN_WMT_FUNC_CTRL) (ENUM_WMTDRV_TYPE_T type);
 typedef INT8(*MTK_WCN_WMT_THERM_CTRL) (ENUM_WMTTHERM_TYPE_T eType);
+typedef ENUM_WMTHWVER_TYPE_T(*MTK_WCN_WMT_HWVER_GET) (VOID);
 typedef MTK_WCN_BOOL(*MTK_WCN_WMT_DSNS_CTRL) (ENUM_WMTDSNS_TYPE_T eType);
 typedef INT32(*MTK_WCN_WMT_MSGCB_REG) (ENUM_WMTDRV_TYPE_T eType, PF_WMT_CB pCb);
 typedef INT32(*MTK_WCN_WMT_MSGCB_UNREG) (ENUM_WMTDRV_TYPE_T eType);
@@ -245,6 +246,7 @@ typedef struct _MTK_WCN_WMT_EXP_CB_INFO_ {
 	MTK_WCN_WMT_FUNC_CTRL wmt_func_on_cb;
 	MTK_WCN_WMT_FUNC_CTRL wmt_func_off_cb;
 	MTK_WCN_WMT_THERM_CTRL wmt_therm_ctrl_cb;
+	MTK_WCN_WMT_HWVER_GET wmt_hwver_get_cb;
 	MTK_WCN_WMT_DSNS_CTRL wmt_dsns_ctrl_cb;
 	MTK_WCN_WMT_MSGCB_REG wmt_msgcb_reg_cb;
 	MTK_WCN_WMT_MSGCB_UNREG wmt_msgcb_unreg_cb;
@@ -386,6 +388,8 @@ extern INT32 mtk_wcn_stp_wmt_sdio_host_awake(VOID);
 *read thermal sensor function: thermal value
 */
 extern INT8 mtk_wcn_wmt_therm_ctrl(ENUM_WMTTHERM_TYPE_T eType);
+
+extern ENUM_WMTHWVER_TYPE_T mtk_wcn_wmt_hwver_get(VOID);
 
 extern UINT32 mtk_wcn_wmt_ic_info_get(ENUM_WMT_CHIPINFO_TYPE_T type);
 
