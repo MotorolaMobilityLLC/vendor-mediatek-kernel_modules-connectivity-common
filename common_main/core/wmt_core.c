@@ -1241,7 +1241,8 @@ static INT32 opfunc_pwr_off(P_WMT_OP pWmtOp)
 			/*should let run to power down chip */
 		}
 	}
-	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WMT] = DRV_STS_POWER_ON;
+
+	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WMT] = DRV_STS_POWER_OFF;
 
 	/* power off control */
 	ctrlPa1 = 0;
@@ -1252,8 +1253,6 @@ static INT32 opfunc_pwr_off(P_WMT_OP pWmtOp)
 	else
 		WMT_DBG_FUNC("HW_PWR_OFF ok\n");
 
-	/*anyway, set to POWER_OFF state */
-	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WMT] = DRV_STS_POWER_OFF;
 	return iRet;
 
 }
