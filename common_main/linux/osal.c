@@ -1670,18 +1670,19 @@ VOID osal_op_history_print(struct osal_op_history *log_history, PINT8 name)
 		return;
 	}
 
+	spin_lock_irqsave(lock, flags);
 	ring_buffer = &log_history->ring_buffer;
 	queue_size = sizeof(struct osal_op_history_entry)
 			 * RING_SIZE(ring_buffer);
 
 	/* Allocate memory before getting lock to save time of holding lock */
 	queue = kmalloc(queue_size, GFP_KERNEL);
-	if (queue == NULL)
+	if (queue == NULL) {
+		spin_unlock_irqrestore(lock, flags);
 		return;
-
+	}
 	dump_ring_buffer = &log_history->dump_ring_buffer;
 
-	spin_lock_irqsave(lock, flags);
 	if (dump_ring_buffer->base != NULL) {
 		spin_unlock_irqrestore(lock, flags);
 		kfree(queue);
