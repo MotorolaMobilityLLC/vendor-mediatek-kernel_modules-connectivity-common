@@ -378,7 +378,7 @@ static INT32 _stp_btm_proc(PVOID pvData)
 			STP_BTM_WARN_FUNC("get_lxop activeQ fail\n");
 			continue;
 		}
-		STP_BTM_INFO_FUNC("pOp(%p):%u\n", pOp, pOp->op.opId);
+		STP_BTM_INFO_FUNC("pOp(%p):%u(%d)\n", pOp, pOp->op.opId, atomic_read(&pOp->ref_count));
 
 		id = osal_op_get_id(pOp);
 
