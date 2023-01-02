@@ -2292,7 +2292,7 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 				break;
 			case 2:
 				STP_DBG_PR_INFO("GPS trigger assert\n");
-				g_stp_dbg_cpupcr->fwTaskId = STP_DBG_TASK_GPS;
+				g_stp_dbg_cpupcr->fwTaskId = STP_DBG_TASK_DRVGPS;
 				break;
 			case 3:
 				STP_DBG_PR_INFO("WIFI trigger assert\n");
