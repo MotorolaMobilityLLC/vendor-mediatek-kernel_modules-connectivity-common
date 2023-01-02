@@ -311,8 +311,10 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 			wmt_consys_ic_ops->consys_ic_emi_set_remapping_reg();
 		if (wmt_consys_ic_ops->consys_ic_emi_coredump_remapping)
 			wmt_consys_ic_ops->consys_ic_emi_coredump_remapping(&pEmibaseaddr, 1);
+#ifdef CONFIG_MTK_CONNSYS_DEDICATED_LOG_PATH
 		if (wmt_consys_ic_ops->consys_ic_dedicated_log_path_init)
 			wmt_consys_ic_ops->consys_ic_dedicated_log_path_init(pdev);
+#endif
 	} else {
 		WMT_PLAT_PR_ERR("consys emi memory address gConEmiPhyBase invalid\n");
 	}
@@ -377,8 +379,10 @@ static INT32 mtk_wmt_remove(struct platform_device *pdev)
 			pm_runtime_disable(&pdev->dev);
 	}
 
+#ifdef CONFIG_MTK_CONNSYS_DEDICATED_LOG_PATH
 	if (wmt_consys_ic_ops->consys_ic_dedicated_log_path_deinit)
 		wmt_consys_ic_ops->consys_ic_dedicated_log_path_deinit();
+#endif
 	if (wmt_consys_ic_ops->consys_ic_emi_coredump_remapping)
 		wmt_consys_ic_ops->consys_ic_emi_coredump_remapping(&pEmibaseaddr, 0);
 
