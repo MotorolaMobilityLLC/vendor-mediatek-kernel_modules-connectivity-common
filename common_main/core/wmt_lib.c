@@ -218,6 +218,16 @@ INT32 wmt_lib_assert_lock_trylock(VOID)
 	return osal_trylock_sleepable_lock(&gDevWmt.assert_lock);
 }
 
+INT32 wmt_lib_mpu_lock_aquire(VOID)
+{
+	return osal_lock_sleepable_lock(&gDevWmt.mpu_lock);
+}
+
+VOID wmt_lib_mpu_lock_release(VOID)
+{
+	osal_unlock_sleepable_lock(&gDevWmt.mpu_lock);
+}
+
 INT32 DISABLE_PSM_MONITOR(VOID)
 {
 	INT32 ret = 0;
@@ -332,6 +342,7 @@ INT32 wmt_lib_init(VOID)
 	osal_sleepable_lock_init(&pDevWmt->idc_lock);
 	osal_sleepable_lock_init(&pDevWmt->wlan_lock);
 	osal_sleepable_lock_init(&pDevWmt->assert_lock);
+	osal_sleepable_lock_init(&pDevWmt->mpu_lock);
 	osal_sleepable_lock_init(&pDevWmt->rActiveOpQ.sLock);
 	osal_sleepable_lock_init(&pDevWmt->rWorkerOpQ.sLock);
 	osal_sleepable_lock_init(&pDevWmt->rFreeOpQ.sLock);
@@ -497,6 +508,7 @@ INT32 wmt_lib_deinit(VOID)
 	osal_sleepable_lock_deinit(&pDevWmt->rFreeOpQ.sLock);
 	osal_sleepable_lock_deinit(&pDevWmt->rActiveOpQ.sLock);
 	osal_sleepable_lock_deinit(&pDevWmt->rWorkerOpQ.sLock);
+	osal_sleepable_lock_deinit(&pDevWmt->mpu_lock);
 	osal_sleepable_lock_deinit(&pDevWmt->idc_lock);
 	osal_sleepable_lock_deinit(&pDevWmt->wlan_lock);
 	osal_sleepable_lock_deinit(&pDevWmt->assert_lock);
