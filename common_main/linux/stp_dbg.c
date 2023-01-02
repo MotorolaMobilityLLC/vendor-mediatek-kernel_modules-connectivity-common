@@ -758,6 +758,7 @@ static _osal_inline_ INT32 stp_dbg_gzip_compressor(PVOID worker, PUINT8 in_buf, 
 static _osal_inline_ P_WCN_COMPRESSOR_T stp_dbg_compressor_init(PUINT8 name, INT32 L1_buf_sz,
 		INT32 L2_buf_sz)
 {
+	INT32 ret = 0;
 	z_stream *pstream = NULL;
 	P_WCN_COMPRESSOR_T compress = NULL;
 
@@ -786,8 +787,12 @@ static _osal_inline_ P_WCN_COMPRESSOR_T stp_dbg_compressor_init(PUINT8 name, INT
 			STP_DBG_PR_ERR("alloc workspace failed!\n");
 			goto fail;
 		}
-		zlib_deflateInit2(pstream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, -MAX_WBITS,
+		ret = zlib_deflateInit2(pstream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, -MAX_WBITS,
 				  DEF_MEM_LEVEL, Z_DEFAULT_STRATEGY);
+		if (ret != Z_OK) {
+			STP_DBG_PR_INFO("[%s::%d] zlib_deflateInit2 failed!\n", __func__, __LINE__);
+			goto fail;
+		}
 	}
 
 	compress->handler = stp_dbg_gzip_compressor;
