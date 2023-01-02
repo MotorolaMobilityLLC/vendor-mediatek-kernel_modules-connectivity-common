@@ -1231,7 +1231,7 @@ static INT32 wmt_dbg_jtag_flag_ctrl(INT32 par1, INT32 par2, INT32 par3)
 static INT32 wmt_dbg_lte_to_wmt_test(UINT32 opcode, UINT32 msg_len)
 {
 	conn_md_ipc_ilm_t ilm;
-	struct local_para *p_buf_str;
+	struct local_para *p_buf_str = NULL;
 	INT32 i = 0;
 	INT32 iRet = -1;
 
