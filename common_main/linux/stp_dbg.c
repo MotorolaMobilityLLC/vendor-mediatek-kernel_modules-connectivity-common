@@ -1101,8 +1101,8 @@ static VOID stp_dbg_dump_data(PUINT8 pBuf, PINT8 title, INT32 len)
 	/* pr_warn("    ", title, len); */
 	for (k = 0; k < len; k++) {
 		if (strlen(str) < 200) {
-			snprintf(buf_str, sizeof(buf_str), "0x%02x ", pBuf[k]);
-			strncat(str, buf_str, strlen(buf_str));
+			if (snprintf(buf_str, sizeof(buf_str), "0x%02x ", pBuf[k]) > 0)
+				strncat(str, buf_str, strlen(buf_str));
 		} else {
 			pr_warn("More than 200 of the data is too much\n");
 			break;
