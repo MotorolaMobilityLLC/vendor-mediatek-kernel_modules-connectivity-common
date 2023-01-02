@@ -159,7 +159,7 @@ static INT32 mtk_wcn_sys_check_function_status(UINT8 type, UINT8 op)
 {
 
 	/*op == FUNCTION_ACTIVE, to check if funciton[type] is active ? */
-	if (!(type >= 0 && type < MTKSTP_MAX_TASK_NUM))
+	if (type >= MTKSTP_MAX_TASK_NUM)
 		return STATUS_FUNCTION_INVALID;
 
 	if (op == OP_FUNCTION_ACTIVE) {
