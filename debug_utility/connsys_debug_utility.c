@@ -22,9 +22,9 @@
 #include <linux/workqueue.h>
 #include <linux/ratelimit.h>
 #include "connsys_debug_utility.h"
-#include "ring.h"
+#include "ring_emi.h"
 #ifdef EMI_TO_CACHE_SUPPORT
-#include "ring_cache.h"
+#include "ring.h"
 #endif
 
 /*******************************************************************************
@@ -51,9 +51,9 @@ static struct connlog_dev gDev;
 static CONNLOG_EVENT_CB event_callback_table[CONNLOG_TYPE_END] = { 0x0 };
 
 struct connlog_buffer {
-	struct ring ring_emi;
+	struct ring_emi ring_emi;
 #ifdef EMI_TO_CACHE_SUPPORT
-	struct ring_cache ring_cache;
+	struct ring ring_cache;
 	void *cache_base;
 #endif
 };
@@ -75,13 +75,17 @@ struct connlog_offset {
 	.emi_buf = buf}
 static struct connlog_offset emi_offset_table[CONNLOG_TYPE_END] = {
 	INIT_EMI_OFFSET(CONNLOG_EMI_WIFI_BASE_OFFESET, CONNLOG_EMI_WIFI_SIZE,
-		CONNLOG_EMI_WIFI_READ, CONNLOG_EMI_WIFI_WRITE, CONNLOG_EMI_WIFI_BUF),
+			CONNLOG_EMI_WIFI_READ, CONNLOG_EMI_WIFI_WRITE,
+			CONNLOG_EMI_WIFI_BUF),
 	INIT_EMI_OFFSET(CONNLOG_EMI_BT_BASE_OFFESET, CONNLOG_EMI_BT_SIZE,
-		CONNLOG_EMI_BT_READ, CONNLOG_EMI_BT_WRITE, CONNLOG_EMI_BT_BUF),
+			CONNLOG_EMI_BT_READ, CONNLOG_EMI_BT_WRITE,
+			CONNLOG_EMI_BT_BUF),
 	INIT_EMI_OFFSET(CONNLOG_EMI_GPS_BASE_OFFESET, CONNLOG_EMI_GPS_SIZE,
-		CONNLOG_EMI_GPS_READ, CONNLOG_EMI_GPS_WRITE, CONNLOG_EMI_GPS_BUF),
+			CONNLOG_EMI_GPS_READ, CONNLOG_EMI_GPS_WRITE,
+			CONNLOG_EMI_GPS_BUF),
 	INIT_EMI_OFFSET(CONNLOG_EMI_MCU_BASE_OFFESET, CONNLOG_EMI_MCU_SIZE,
-		CONNLOG_EMI_MCU_READ, CONNLOG_EMI_MCU_WRITE, CONNLOG_EMI_MCU_BUF),
+			CONNLOG_EMI_MCU_READ, CONNLOG_EMI_MCU_WRITE,
+			CONNLOG_EMI_MCU_BUF),
 };
 
 
@@ -163,7 +167,7 @@ static void connlog_set_ring_ready(void)
 	const char ready_str[] = "EMIFWLOG";
 
 	memcpy_toio(gDev.virAddrEmiLogBase + CONNLOG_READY_PATTERN_BASE,
-		ready_str, CONNLOG_READY_PATTERN_BASE_SIZE);
+		    ready_str, CONNLOG_READY_PATTERN_BASE_SIZE);
 }
 
 /*****************************************************************************
@@ -179,24 +183,24 @@ static void connlog_set_ring_ready(void)
 static void connlog_buffer_init(int conn_type)
 {
 	/* init ring emi */
-	ring_init(
-		gDev.virAddrEmiLogBase + emi_offset_table[conn_type].emi_buf,
-		emi_offset_table[conn_type].emi_size,
-		gDev.virAddrEmiLogBase + emi_offset_table[conn_type].emi_read,
-		gDev.virAddrEmiLogBase + emi_offset_table[conn_type].emi_write,
-		&connlog_buffer_table[conn_type].ring_emi
+	ring_emi_init(
+		      gDev.virAddrEmiLogBase + emi_offset_table[conn_type].emi_buf,
+		      emi_offset_table[conn_type].emi_size,
+		      gDev.virAddrEmiLogBase + emi_offset_table[conn_type].emi_read,
+		      gDev.virAddrEmiLogBase + emi_offset_table[conn_type].emi_write,
+		      &connlog_buffer_table[conn_type].ring_emi
 	);
 
 #ifdef EMI_TO_CACHE_SUPPORT
 	/* init ring cache */
 	connlog_buffer_table[conn_type].cache_base = connlog_cache_allocate(cache_size_table[conn_type]);
 	memset(connlog_buffer_table[conn_type].cache_base, 0, cache_size_table[conn_type]);
-	ring_cache_init(
-		connlog_buffer_table[conn_type].cache_base,
-		cache_size_table[conn_type],
-		0,
-		0,
-		&connlog_buffer_table[conn_type].ring_cache
+	ring_init(
+		  connlog_buffer_table[conn_type].cache_base,
+		  cache_size_table[conn_type],
+		  0,
+		  0,
+		  &connlog_buffer_table[conn_type].ring_cache
 	);
 #endif
 }
@@ -214,34 +218,34 @@ static void connlog_buffer_init(int conn_type)
 *****************************************************************************/
 static void connlog_ring_emi_to_cache(int conn_type)
 {
-	struct ring_segment ring_seg;
-	struct ring *ring = &connlog_buffer_table[conn_type].ring_emi;
-	struct ring_cache *ring_cache = &connlog_buffer_table[conn_type].ring_cache;
+	struct ring_emi_segment ring_emi_seg;
+	struct ring_emi *ring_emi = &connlog_buffer_table[conn_type].ring_emi;
+	struct ring *ring_cache = &connlog_buffer_table[conn_type].ring_cache;
 	int total_size = 0;
 	int count = 0;
 	unsigned int cache_max_size = 0;
 	static DEFINE_RATELIMIT_STATE(_rs, 10 * HZ, 1);
 	static DEFINE_RATELIMIT_STATE(_rs2, HZ, 1);
 
-	if (RING_CACHE_FULL(ring_cache)) {
+	if (RING_FULL(ring_cache)) {
 		if (__ratelimit(&_rs))
 			pr_warn("%s cache is full.\n", type_to_title[conn_type]);
 		return;
 	}
 
-	cache_max_size = RING_CACHE_WRITE_REMAIN_SIZE(ring_cache);
-	if (RING_EMPTY(ring) || !ring_read_prepare(cache_max_size, &ring_seg, ring)) {
+	cache_max_size = RING_WRITE_REMAIN_SIZE(ring_cache);
+	if (RING_EMI_EMPTY(ring_emi) || !ring_emi_read_prepare(cache_max_size, &ring_emi_seg, ring_emi)) {
 		if (__ratelimit(&_rs))
 			pr_err("%s no data, possibly taken by concurrent reader.\n", type_to_title[conn_type]);
 		return;
 	}
 
-	/* Check ring buffer memory. Dump EMI data if it's corruption. */
-	if (EMI_READ32(ring->read) > emi_offset_table[conn_type].emi_size ||
-		EMI_READ32(ring->write) > emi_offset_table[conn_type].emi_size) {
+	/* Check ring_emi buffer memory. Dump EMI data if it's corruption. */
+	if (EMI_READ32(ring_emi->read) > emi_offset_table[conn_type].emi_size ||
+		EMI_READ32(ring_emi->write) > emi_offset_table[conn_type].emi_size) {
 		if (__ratelimit(&_rs))
 			pr_err("%s read/write pointer out-of-bounds.\n", type_to_title[conn_type]);
-		/* 64 byte ring buffer setting & 32 byte mcu read/write pointer */
+		/* 64 byte ring_emi buffer setting & 32 byte mcu read/write pointer */
 		connlog_dump_emi(0x0, 0x60);
 		/* 32 byte wifi read/write pointer */
 		connlog_dump_emi(CONNLOG_EMI_WIFI_BASE_OFFESET, 0x20);
@@ -251,31 +255,31 @@ static void connlog_ring_emi_to_cache(int conn_type)
 		connlog_dump_emi(CONNLOG_EMI_GPS_BASE_OFFESET, 0x20);
 	}
 
-	RING_READ_ALL_FOR_EACH(ring_seg, ring) {
-		struct ring_cache_segment ring_cache_seg;
-		unsigned int emi_buf_size = ring_seg.sz;
+	RING_EMI_READ_ALL_FOR_EACH(ring_emi_seg, ring_emi) {
+		struct ring_segment ring_cache_seg;
+		unsigned int emi_buf_size = ring_emi_seg.sz;
 		unsigned int written = 0;
 
 #ifdef DEBUG_RING
-		ring_dump(__func__, ring);
-		ring_dump_segment(__func__, &ring_seg);
+		ring_emi_dump(__func__, ring_emi);
+		ring_emi_dump_segment(__func__, &ring_emi_seg);
 #endif
-		RING_CACHE_WRITE_FOR_EACH(ring_seg.sz, ring_cache_seg, &connlog_buffer_table[conn_type].ring_cache) {
+		RING_WRITE_FOR_EACH(ring_emi_seg.sz, ring_cache_seg, &connlog_buffer_table[conn_type].ring_cache) {
 #ifdef DEBUG_RING
-			ring_cache_dump(__func__, &connlog_buffer_table[conn_type].ring_cache);
-			ring_cache_dump_segment(__func__, &ring_cache_seg);
+			ring_dump(__func__, &connlog_buffer_table[conn_type].ring_cache);
+			ring_dump_segment(__func__, &ring_cache_seg);
 #endif
 			if (__ratelimit(&_rs2))
-				pr_info("%s: ring_seg.sz=%d, ring_cache_pt=%p, ring_cache_seg.sz=%d\n",
-					type_to_title[conn_type], ring_seg.sz, ring_cache_seg.ring_cache_pt,
+				pr_info("%s: ring_emi_seg.sz=%d, ring_cache_pt=%p, ring_cache_seg.sz=%d\n",
+					type_to_title[conn_type], ring_emi_seg.sz, ring_cache_seg.ring_pt,
 					ring_cache_seg.sz);
-			memcpy_fromio(ring_cache_seg.ring_cache_pt, ring_seg.ring_pt + ring_cache_seg.data_pos,
+			memcpy_fromio(ring_cache_seg.ring_pt, ring_emi_seg.ring_emi_pt + ring_cache_seg.data_pos,
 				ring_cache_seg.sz);
 			emi_buf_size -= ring_cache_seg.sz;
 			written += ring_cache_seg.sz;
 		}
 
-		total_size += ring_seg.sz;
+		total_size += ring_emi_seg.sz;
 		count++;
 	}
 }
@@ -373,22 +377,22 @@ static void connlog_ring_print(int conn_type)
 {
 	unsigned int written = 0;
 	unsigned int buf_size;
-	struct ring_segment ring_seg;
-	struct ring *ring;
+	struct ring_emi_segment ring_emi_seg;
+	struct ring_emi *ring_emi;
 
-	ring = &connlog_buffer_table[conn_type].ring_emi;
-	if (RING_EMPTY(ring) || !ring_read_all_prepare(&ring_seg, ring)) {
+	ring_emi = &connlog_buffer_table[conn_type].ring_emi;
+	if (RING_EMI_EMPTY(ring_emi) || !ring_emi_read_all_prepare(&ring_emi_seg, ring_emi)) {
 		pr_err("type(%s) no data, possibly taken by concurrent reader.\n", type_to_title[conn_type]);
 		return;
 	}
-	buf_size = ring_seg.remain;
+	buf_size = ring_emi_seg.remain;
 	memset(gDev.log_data, 0, CONNLOG_EMI_BT_SIZE);
 
-	/* Check ring buffer memory. Dump EMI data if it's corruption. */
-	if (EMI_READ32(ring->read) > emi_offset_table[conn_type].emi_size ||
-		EMI_READ32(ring->write) > emi_offset_table[conn_type].emi_size) {
+	/* Check ring_emi buffer memory. Dump EMI data if it's corruption. */
+	if (EMI_READ32(ring_emi->read) > emi_offset_table[conn_type].emi_size ||
+	    EMI_READ32(ring_emi->write) > emi_offset_table[conn_type].emi_size) {
 		pr_err("%s read/write pointer out-of-bounds.\n", type_to_title[conn_type]);
-		/* 64 byte ring buffer setting & 32 byte mcu read/write pointer */
+		/* 64 byte ring_emi buffer setting & 32 byte mcu read/write pointer */
 		connlog_dump_emi(0x0, 0x60);
 		/* 32 byte wifi read/write pointer */
 		connlog_dump_emi(CONNLOG_EMI_WIFI_BASE_OFFESET, 0x20);
@@ -398,11 +402,11 @@ static void connlog_ring_print(int conn_type)
 		connlog_dump_emi(CONNLOG_EMI_GPS_BASE_OFFESET, 0x20);
 	}
 
-	RING_READ_ALL_FOR_EACH(ring_seg, ring) {
-		memcpy_fromio(gDev.log_data + written, ring_seg.ring_pt, ring_seg.sz);
-		/* connlog_dump_buf("fw_log", gDev.log_data + written, ring_seg.sz); */
-		buf_size -= ring_seg.sz;
-		written += ring_seg.sz;
+	RING_EMI_READ_ALL_FOR_EACH(ring_emi_seg, ring_emi) {
+		memcpy_fromio(gDev.log_data + written, ring_emi_seg.ring_emi_pt, ring_emi_seg.sz);
+		/* connlog_dump_buf("fw_log", gDev.log_data + written, ring_emi_seg.sz); */
+		buf_size -= ring_emi_seg.sz;
+		written += ring_emi_seg.sz;
 	}
 	if (conn_type != CONNLOG_TYPE_BT)
 		connlog_fw_log_parser(conn_type, gDev.log_data, written);
@@ -479,7 +483,7 @@ static void connlog_log_data_handler(struct work_struct *work)
 	do {
 		ret = 0;
 		for (i = 0; i < CONNLOG_TYPE_END; i++) {
-			if (!RING_EMPTY(&connlog_buffer_table[i].ring_emi)) {
+			if (!RING_EMI_EMPTY(&connlog_buffer_table[i].ring_emi)) {
 #ifdef EMI_TO_CACHE_SUPPORT
 				connlog_ring_emi_to_cache(i);
 #endif
@@ -810,9 +814,9 @@ unsigned int connsys_log_get_buf_size(int conn_type)
 	if (conn_type >= CONNLOG_TYPE_END || conn_type < 0)
 		return -1;
 #ifdef EMI_TO_CACHE_SUPPORT
-	return RING_CACHE_SIZE(&connlog_buffer_table[conn_type].ring_cache);
+	return RING_SIZE(&connlog_buffer_table[conn_type].ring_cache);
 #else
-	return RING_SIZE(&connlog_buffer_table[conn_type].ring_emi);
+	return RING_EMI_SIZE(&connlog_buffer_table[conn_type].ring_emi);
 #endif
 }
 EXPORT_SYMBOL(connsys_log_get_buf_size);
@@ -854,37 +858,37 @@ ssize_t connsys_log_read(int conn_type, char *buf, size_t count)
 	unsigned int written = 0;
 #ifdef EMI_TO_CACHE_SUPPORT
 	unsigned int cache_buf_size;
-	struct ring_cache_segment ring_seg;
-	struct ring_cache *ring = &connlog_buffer_table[conn_type].ring_cache;
+	struct ring_segment ring_seg;
+	struct ring *ring = &connlog_buffer_table[conn_type].ring_cache;
 	unsigned int size = 0;
 
-	size = count < RING_CACHE_SIZE(ring) ? count : RING_CACHE_SIZE(ring);
-	if (RING_CACHE_EMPTY(ring) || !ring_cache_read_prepare(size, &ring_seg, ring)) {
+	size = count < RING_SIZE(ring) ? count : RING_SIZE(ring);
+	if (RING_EMPTY(ring) || !ring_read_prepare(size, &ring_seg, ring)) {
 		pr_err("type(%d) no data, possibly taken by concurrent reader.\n", conn_type);
 		goto done;
 	}
 	cache_buf_size = ring_seg.remain;
 
-	RING_CACHE_READ_FOR_EACH(size, ring_seg, ring) {
-		memcpy(buf + written, ring_seg.ring_cache_pt, ring_seg.sz);
+	RING_READ_FOR_EACH(size, ring_seg, ring) {
+		memcpy(buf + written, ring_seg.ring_pt, ring_seg.sz);
 		cache_buf_size -= ring_seg.sz;
 		written += ring_seg.sz;
 	}
 #else
 	unsigned int buf_size;
-	struct ring_segment ring_seg;
-	struct ring *ring = &connlog_buffer_table[conn_type].ring_emi;
+	struct ring_emi_segment ring_emi_seg;
+	struct ring_emi *ring_emi = &connlog_buffer_table[conn_type].ring_emi;
 
-	if (RING_EMPTY(ring) || !ring_read_all_prepare(&ring_seg, ring)) {
+	if (RING_EMI_EMPTY(ring_emi) || !ring_emi_read_all_prepare(&ring_emi_seg, ring_emi)) {
 		pr_err("type(%d) no data, possibly taken by concurrent reader.\n", conn_type);
 		goto done;
 	}
-	buf_size = ring_seg.remain;
+	buf_size = ring_emi_seg.remain;
 
-	RING_READ_ALL_FOR_EACH(ring_seg, ring) {
-		memcpy(buf + written, ring_seg.ring_pt, ring_seg.sz);
-		buf_size -= ring_seg.sz;
-		written += ring_seg.sz;
+	RING_EMI_READ_ALL_FOR_EACH(ring_emi_seg, ring_emi) {
+		memcpy(buf + written, ring_emi_seg.ring_emi_pt, ring_emi_seg.sz);
+		buf_size -= ring_emi_seg.sz;
+		written += ring_emi_seg.sz;
 	}
 #endif
 done:
@@ -910,19 +914,19 @@ ssize_t connsys_log_read_to_user(int conn_type, char __user *buf, size_t count)
 	unsigned int written = 0;
 #ifdef EMI_TO_CACHE_SUPPORT
 	unsigned int cache_buf_size;
-	struct ring_cache_segment ring_seg;
-	struct ring_cache *ring = &connlog_buffer_table[conn_type].ring_cache;
+	struct ring_segment ring_seg;
+	struct ring *ring = &connlog_buffer_table[conn_type].ring_cache;
 	unsigned int size = 0;
 
-	size = count < RING_CACHE_SIZE(ring) ? count : RING_CACHE_SIZE(ring);
-	if (RING_CACHE_EMPTY(ring) || !ring_cache_read_prepare(size, &ring_seg, ring)) {
+	size = count < RING_SIZE(ring) ? count : RING_SIZE(ring);
+	if (RING_EMPTY(ring) || !ring_read_prepare(size, &ring_seg, ring)) {
 		pr_err("type(%d) no data, possibly taken by concurrent reader.\n", conn_type);
 		goto done;
 	}
 	cache_buf_size = ring_seg.remain;
 
-	RING_CACHE_READ_FOR_EACH(size, ring_seg, ring) {
-		retval = copy_to_user(buf + written, ring_seg.ring_cache_pt, ring_seg.sz);
+	RING_READ_FOR_EACH(size, ring_seg, ring) {
+		retval = copy_to_user(buf + written, ring_seg.ring_pt, ring_seg.sz);
 		if (retval) {
 			pr_err("copy to user buffer failed, ret:%d\n", retval);
 			goto done;
@@ -932,23 +936,23 @@ ssize_t connsys_log_read_to_user(int conn_type, char __user *buf, size_t count)
 	}
 #else
 	unsigned int buf_size;
-	struct ring_segment ring_seg;
-	struct ring *ring = &connlog_buffer_table[conn_type].ring_emi;
+	struct ring_emi_segment ring_emi_seg;
+	struct ring_emi *ring_emi = &connlog_buffer_table[conn_type].ring_emi;
 
-	if (RING_EMPTY(ring) || !ring_read_all_prepare(&ring_seg, ring)) {
+	if (RING_EMI_EMPTY(ring_emi) || !ring_emi_read_all_prepare(&ring_emi_seg, ring_emi)) {
 		pr_err("type(%d) no data, possibly taken by concurrent reader.\n", conn_type);
 		goto done;
 	}
-	buf_size = ring_seg.remain;
+	buf_size = ring_emi_seg.remain;
 
-	RING_READ_ALL_FOR_EACH(ring_seg, ring) {
-		retval = copy_to_user(buf + written, ring_seg.ring_pt, ring_seg.sz);
+	RING_EMI_READ_ALL_FOR_EACH(ring_emi_seg, ring_emi) {
+		retval = copy_to_user(buf + written, ring_emi_seg.ring_emi_pt, ring_emi_seg.sz);
 		if (retval) {
 			pr_err("copy to user buffer failed, ret:%d\n", retval);
 			goto done;
 		}
-		buf_size -= ring_seg.sz;
-		written += ring_seg.sz;
+		buf_size -= ring_emi_seg.sz;
+		written += ring_emi_seg.sz;
 	}
 #endif
 done:
