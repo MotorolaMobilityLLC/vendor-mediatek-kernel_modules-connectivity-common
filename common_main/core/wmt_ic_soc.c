@@ -1137,11 +1137,6 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	}
 #endif
 
-	/* turn on VCN28 for reading efuse */
-	ctrlPa1 = EFUSE_PALDO;
-	ctrlPa2 = PALDO_ON;
-	iRet = wmt_core_ctrl(WMT_CTRL_SOC_PALDO_CTRL, &ctrlPa1, &ctrlPa2);
-
 	/* 6. download patch */
 #if CFG_WMT_MULTI_PATCH
 	/* 6.1 Let launcher to search patch info */
