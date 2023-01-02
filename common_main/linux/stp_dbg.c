@@ -2044,7 +2044,7 @@ INT32 stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
 		if (i % 4 != 0)
 			STP_DBG_INFO_FUNC("TIME/CPUPCR: %s\n", str);
 
-		if (chip_type == WMT_CHIP_TYPE_SOC) {
+		if (chip_type == WMT_CHIP_TYPE_SOC && mtk_consys_check_reg_readable()) {
 			STP_DBG_INFO_FUNC("CONNSYS cpu:0x%x/bus:0x%x/dbg_cr1:0x%x/dbg_cr2:0x%x/EMIaddr:0x%x\n",
 					  stp_dbg_soc_read_debug_crs(CONNSYS_CPU_CLK),
 					  stp_dbg_soc_read_debug_crs(CONNSYS_BUS_CLK),
