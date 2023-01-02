@@ -985,14 +985,22 @@ INT32 wmt_lib_update_fw_patch_chip_rst(VOID)
 {
 	MTK_WCN_BOOL wifiDrvOwn = MTK_WCN_BOOL_FALSE;
 
-	if (wmt_lib_get_drv_status(WMTDRV_TYPE_WIFI) != DRV_STS_FUNC_ON)
-		wifiDrvOwn = MTK_WCN_BOOL_FALSE;
-	else if (mtk_wcn_wlan_is_wifi_drv_own != NULL)
-		wifiDrvOwn = ((*mtk_wcn_wlan_is_wifi_drv_own)() == 0) ? MTK_WCN_BOOL_FALSE : MTK_WCN_BOOL_TRUE;
+	if (g_fw_patch_update_rst == 0)
+		return 0;
+
+	if (wmt_lib_get_drv_status(WMTDRV_TYPE_WIFI) == DRV_STS_FUNC_ON) {
+		if (wmt_lib_wlan_lock_trylock() == 0)
+			return 0;
+
+		if (mtk_wcn_wlan_is_wifi_drv_own != NULL)
+			wifiDrvOwn = ((*mtk_wcn_wlan_is_wifi_drv_own)() == 0) ? MTK_WCN_BOOL_FALSE : MTK_WCN_BOOL_TRUE;
+
+		wmt_lib_wlan_lock_release();
+	}
 
 	if (wmt_dev_get_early_suspend_state() == MTK_WCN_BOOL_FALSE
 		|| wmt_lib_get_drv_status(WMTDRV_TYPE_FM) == DRV_STS_FUNC_ON
-		|| g_fw_patch_update_rst == 0 || mtk_wcn_stp_is_ready() == MTK_WCN_BOOL_FALSE
+		|| mtk_wcn_stp_is_ready() == MTK_WCN_BOOL_FALSE
 		|| wifiDrvOwn == MTK_WCN_BOOL_TRUE)
 		return 0;
 
