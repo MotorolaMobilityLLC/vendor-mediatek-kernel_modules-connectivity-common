@@ -59,6 +59,11 @@
 #define WMT_OP_BIT(x) (0x1UL << x)
 #define WMT_OP_HIF_BIT WMT_OP_BIT(0)
 
+#define GET_BIT_MASK(value, mask) ((value) & (mask))
+#define SET_BIT_MASK(pdest, value, mask) (*(pdest) = (GET_BIT_MASK(*(pdest), ~(mask)) | GET_BIT_MASK(value, mask)))
+#define GET_BIT_RANGE(data, end, begin) ((data) & GENMASK(end, begin))
+#define SET_BIT_RANGE(pdest, data, end, begin) (SET_BIT_MASK(pdest, data, GENMASK(end, begin)))
+
 #define RB_LATEST(prb) ((prb)->write - 1)
 #define RB_SIZE(prb) ((prb)->size)
 #define RB_MASK(prb) (RB_SIZE(prb) - 1)
