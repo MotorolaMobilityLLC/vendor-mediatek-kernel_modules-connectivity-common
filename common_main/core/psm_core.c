@@ -961,6 +961,9 @@ static inline INT32 _stp_psm_wait_wmt_event_wq(MTKSTP_PSM_T *stp_psm)
 		STP_PSM_PR_DBG("sleep-wake_lock(%d)\n", osal_wake_lock_count(&stp_psm->wake_lock));
 		osal_wake_unlock(&stp_psm->wake_lock);
 		STP_PSM_PR_DBG("sleep-wake_lock#(%d)\n", osal_wake_lock_count(&stp_psm->wake_lock));
+
+		if (osal_wake_lock_count(&stp_psm->wake_lock) == 0 && stp_psm->update_wmt_fw_patch_chip_rst != NULL)
+			stp_psm->update_wmt_fw_patch_chip_rst();
 	} else if (osal_test_bit(STP_PSM_WMT_EVENT_ROLL_BACK_EN, &stp_psm->flag)) {
 		osal_clear_bit(STP_PSM_WMT_EVENT_ROLL_BACK_EN, &stp_psm->flag);
 		_stp_psm_dbg_dmp_in(g_stp_psm_dbg, stp_psm->flag.data, __LINE__);
@@ -1937,6 +1940,7 @@ MTKSTP_PSM_T *stp_psm_init(VOID)
 	stp_psm->wmt_notify = wmt_lib_ps_stp_cb;
 	stp_psm->is_wmt_quick_ps_support = wmt_lib_is_quick_ps_support;
 	stp_psm->idle_time_to_sleep = STP_PSM_IDLE_TIME_SLEEP;
+	stp_psm->update_wmt_fw_patch_chip_rst = wmt_lib_update_fw_patch_chip_rst;
 	stp_psm->flag.data = 0;
 	stp_psm->stp_tx_cb = NULL;
 	stp_psm_set_sleep_enable(stp_psm);

@@ -52,6 +52,7 @@ wmt_wlan_remove_cb mtk_wcn_wlan_remove;
 wmt_wlan_bus_cnt_get_cb mtk_wcn_wlan_bus_tx_cnt;
 wmt_wlan_bus_cnt_clr_cb mtk_wcn_wlan_bus_tx_cnt_clr;
 wmt_wlan_emi_mpu_set_protection_cb mtk_wcn_wlan_emi_mpu_set_protection;
+wmt_wlan_is_wifi_drv_own_cb mtk_wcn_wlan_is_wifi_drv_own;
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -582,6 +583,7 @@ INT32 mtk_wcn_wmt_wlan_reg(P_MTK_WCN_WMT_WLAN_CB_INFO pWmtWlanCbInfo)
 	mtk_wcn_wlan_bus_tx_cnt = pWmtWlanCbInfo->wlan_bus_cnt_get_cb;
 	mtk_wcn_wlan_bus_tx_cnt_clr = pWmtWlanCbInfo->wlan_bus_cnt_clr_cb;
 	mtk_wcn_wlan_emi_mpu_set_protection = pWmtWlanCbInfo->wlan_emi_mpu_set_protection_cb;
+	mtk_wcn_wlan_is_wifi_drv_own = pWmtWlanCbInfo->wlan_is_wifi_drv_own_cb;
 
 	if (gWifiProbed) {
 		WMT_INFO_FUNC("wlan has been done power on,call probe directly\n");
@@ -606,6 +608,7 @@ INT32 mtk_wcn_wmt_wlan_unreg(void)
 	mtk_wcn_wlan_bus_tx_cnt = NULL;
 	mtk_wcn_wlan_bus_tx_cnt_clr = NULL;
 	mtk_wcn_wlan_emi_mpu_set_protection = NULL;
+	mtk_wcn_wlan_is_wifi_drv_own = NULL;
 
 	return 0;
 }
