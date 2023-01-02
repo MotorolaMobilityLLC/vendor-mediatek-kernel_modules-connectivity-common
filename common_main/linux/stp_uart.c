@@ -59,25 +59,21 @@
 
 static UINT32 gDbgLevel = UART_LOG_INFO;
 
-#define UART_DBG_FUNC(fmt, arg...)	\
+#define UART_PR_DBG(fmt, arg...)	\
 do { if (gDbgLevel >= UART_LOG_DBG)	\
-		pr_warn(PFX "%s: "  fmt, __func__, ##arg);	\
+		pr_info(PFX "%s: "  fmt, __func__, ##arg);	\
 } while (0)
-#define UART_INFO_FUNC(fmt, arg...)	\
+#define UART_PR_INFO(fmt, arg...)	\
 do { if (gDbgLevel >= UART_LOG_INFO)	\
-		pr_warn(PFX "%s: "  fmt, __func__, ##arg);	\
+		pr_info(PFX "%s: "  fmt, __func__, ##arg);	\
 } while (0)
-#define UART_WARN_FUNC(fmt, arg...)	\
+#define UART_PR_WARN(fmt, arg...)	\
 do { if (gDbgLevel >= UART_LOG_WARN)	\
 		pr_warn(PFX "%s: "  fmt, __func__, ##arg);	\
 } while (0)
-#define UART_ERR_FUNC(fmt, arg...)	\
+#define UART_PR_ERR(fmt, arg...)	\
 do { if (gDbgLevel >= UART_LOG_ERR)	\
 		pr_err(PFX "%s: "   fmt, __func__, ##arg);	\
-} while (0)
-#define UART_TRC_FUNC(f)	\
-do { if (gDbgLevel >= UART_LOG_DBG)	\
-		pr_debug(PFX "<%s> <%d>\n", __func__, __LINE__);	\
 } while (0)
 
 
@@ -133,16 +129,15 @@ static _osal_inline_ INT32 stp_uart_tx_wakeup(struct tty_struct *tty)
 	/* UINT32 flags; */
 	/* get data from ring buffer */
 /* down(&buf_mtx); */
-	UART_DBG_FUNC("++\n");
 /* //    spin_lock_irqsave(&buf_lock, flags); */
 
 #if 0
 	if ((i > 1000) && (i % 5) == 0) {
-		UART_INFO_FUNC("i=(%d), ****** drop data from uart******\n", i);
+		UART_PR_INFO("i=(%d), ****** drop data from uart******\n", i);
 		i++;
 		return 0;
 	}
-	UART_INFO_FUNC("i=(%d)at stp uart **\n", i);
+	UART_PR_INFO("i=(%d)at stp uart **\n", i);
 #endif
 
 	len = (wr_idx >= rd_idx) ? (wr_idx - rd_idx) : (MTKSTP_BUFFER_SIZE - rd_idx);
@@ -157,7 +152,7 @@ static _osal_inline_ INT32 stp_uart_tx_wakeup(struct tty_struct *tty)
 		set_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
 		written = tty->ops->write(tty, &tx_buf[rd_idx], len);
 		if (written != len) {
-			UART_ERR_FUNC
+			UART_PR_ERR
 			    ("Error(i-%d):[pid(%d)(%s)]tty-ops->write FAIL!len(%d)wr(%d)wr_i(%d)rd_i(%d)\n\r",
 			     i, current->pid, current->comm, len, written, wr_idx, rd_idx);
 			return -1;
@@ -171,27 +166,26 @@ static _osal_inline_ INT32 stp_uart_tx_wakeup(struct tty_struct *tty)
 			set_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
 			written = tty->ops->write(tty, &tx_buf[rd_idx], len);
 			if (written != len) {
-				UART_ERR_FUNC("Error(i-%d):[pid(%d)(%s)]len(%d)wr(%d)wr_i(%d)rd_i(%d)\n\r",
+				UART_PR_ERR("Error(i-%d):[pid(%d)(%s)]len(%d)wr(%d)wr_i(%d)rd_i(%d)\n\r",
 				     i, current->pid, current->comm, len, written, wr_idx, rd_idx);
 				return -1;
 			}
 			rd_idx = ((rd_idx + written) % MTKSTP_BUFFER_SIZE);
 			written_count += written;
 		} else if (len < 0 || len >= MAX_PACKET_ALLOWED) {
-			UART_ERR_FUNC("Warnning(i-%d):[pid(%d)(%s)]length verfication(external)\n",
+			UART_PR_ERR("Warnning(i-%d):[pid(%d)(%s)]length verfication(external)\n",
 					i, current->pid, current->comm);
-			UART_ERR_FUNC("warnning,len(%d), wr_idx(%d), rd_idx(%d)!\n\r", len, wr_idx, rd_idx);
+			UART_PR_ERR("warnning,len(%d), wr_idx(%d), rd_idx(%d)!\n\r", len, wr_idx, rd_idx);
 			return -1;
 		}
 	} else {
-		UART_ERR_FUNC("Warnning(i-%d):[pid(%d)(%s)]length verfication(external)\n",
+		UART_PR_ERR("Warnning(i-%d):[pid(%d)(%s)]length verfication(external)\n",
 				i, current->pid, current->comm);
-		UART_ERR_FUNC("warnning,len(%d), wr_idx(%d), rd_idx(%d)!\n\r", len, wr_idx, rd_idx);
+		UART_PR_ERR("warnning,len(%d), wr_idx(%d), rd_idx(%d)!\n\r", len, wr_idx, rd_idx);
 		return -1;
 	}
 	/* up(&buf_mtx); */
 /* //    spin_unlock_irqrestore(&buf_lock, flags); */
-	UART_DBG_FUNC("--\n");
 	return written_count;
 }
 
@@ -207,7 +201,7 @@ static _osal_inline_ INT32 stp_uart_tx_wakeup(struct tty_struct *tty)
  */
 static INT32 stp_uart_tty_open(struct tty_struct *tty)
 {
-	UART_DBG_FUNC("stp_uart_tty_opentty: %p\n", tty);
+	UART_PR_DBG("stp_uart_tty_opentty: %p\n", tty);
 
 	tty->receive_room = 65536;
 	tty->port->low_latency = 1;
@@ -240,7 +234,7 @@ static INT32 stp_uart_tty_open(struct tty_struct *tty)
  */
 static VOID stp_uart_tty_close(struct tty_struct *tty)
 {
-	UART_DBG_FUNC("stp_uart_tty_close(): tty %p\n", tty);
+	UART_PR_DBG("stp_uart_tty_close(): tty %p\n", tty);
 	mtk_wcn_stp_register_if_tx(STP_UART_IF_TX, NULL);
 }
 
@@ -282,12 +276,12 @@ static INT32 stp_uart_fifo_init(VOID)
 	g_stp_uart_rx_fifo = kzalloc(sizeof(struct kfifo), GFP_ATOMIC);
 	if (g_stp_uart_rx_fifo == NULL) {
 		err = -2;
-		UART_ERR_FUNC("kzalloc for g_stp_uart_rx_fifo failed (kernel version > 2.6.35)\n");
+		UART_PR_ERR("kzalloc for g_stp_uart_rx_fifo failed (kernel version > 2.6.35)\n");
 			return err;
 	}
 	err = kfifo_alloc(g_stp_uart_rx_fifo, LDISC_RX_FIFO_SIZE, GFP_ATOMIC);
 	if (err != 0) {
-		UART_ERR_FUNC("kfifo_alloc failed, errno(%d)(kernel version > 2.6.35)\n", err);
+		UART_PR_ERR("kfifo_alloc failed, errno(%d)(kernel version > 2.6.35)\n", err);
 		kfree(g_stp_uart_rx_fifo);
 		g_stp_uart_rx_fifo = NULL;
 		err = -3;
@@ -296,15 +290,15 @@ static INT32 stp_uart_fifo_init(VOID)
 	if (err == 0) {
 		if (g_stp_uart_rx_fifo != NULL) {
 			kfifo_reset(g_stp_uart_rx_fifo);
-			UART_DBG_FUNC("stp_uart_fifo_init() success.\n");
+			UART_PR_DBG("stp_uart_fifo_init() success.\n");
 		} else {
 			err = -4;
-			UART_ERR_FUNC
+			UART_PR_ERR
 			    ("abnormal case, err = 0 but g_stp_uart_rx_fifo = NULL, set err to %d\n",
 			     err);
 		}
 	} else
-		UART_ERR_FUNC("stp_uart_fifo_init() failed.\n");
+		UART_PR_ERR("stp_uart_fifo_init() failed.\n");
 
 	return err;
 }
@@ -330,19 +324,19 @@ static VOID stp_uart_rx_handling(ULONG func_data)
 
 	if (how_much_to_get >= RX_BUFFER_LEN) {
 		flag = 1;
-		UART_INFO_FUNC("fifolen(%d)\n", how_much_to_get);
+		UART_PR_INFO("fifolen(%d)\n", how_much_to_get);
 	}
 
 	do {
 		how_much_get = kfifo_out(g_stp_uart_rx_fifo, g_rx_data, RX_BUFFER_LEN);
-		/* UART_INFO_FUNC ("fifoget(%d)\n", how_much_get); */
+		/* UART_PR_INFO ("fifoget(%d)\n", how_much_get); */
 		mtk_wcn_stp_parser_data((UINT8 *) g_rx_data, how_much_get);
 		how_much_to_get = kfifo_len(g_stp_uart_rx_fifo);
 	} while (how_much_to_get > 0);
 
 /* read_unlock(&g_stp_uart_rx_handling_lock); */
 	if (flag == 1)
-		UART_INFO_FUNC("finish, fifolen(%d)\n", kfifo_len(g_stp_uart_rx_fifo));
+		UART_PR_INFO("finish, fifolen(%d)\n", kfifo_len(g_stp_uart_rx_fifo));
 }
 
 static VOID stp_uart_tty_receive(struct tty_struct *tty, const unsigned char *data, PINT8 flags, INT32 count)
@@ -361,17 +355,17 @@ static VOID stp_uart_tty_receive(struct tty_struct *tty, const unsigned char *da
 /* write_lock(&g_stp_uart_rx_handling_lock); */
 	if (count > 2000) {
 		/*this is abnormal */
-		UART_ERR_FUNC("abnormal: buffer count = %d\n", count);
+		UART_PR_ERR("abnormal: buffer count = %d\n", count);
 	}
 	/*How much empty seat? */
 	if (fifo_avail_len > 0) {
-		/* UART_INFO_FUNC ("fifo left(%d), count(%d)\n", fifo_avail_len, count); */
+		/* UART_PR_INFO ("fifo left(%d), count(%d)\n", fifo_avail_len, count); */
 		how_much_put = kfifo_in(g_stp_uart_rx_fifo, (PUINT8) data, count);
 
 		/*schedule it! */
 		tasklet_schedule(&g_stp_uart_rx_fifo_tasklet);
 	} else {
-		UART_ERR_FUNC("stp_uart_tty_receive rxfifo is full!!\n");
+		UART_PR_ERR("stp_uart_tty_receive rxfifo is full!!\n");
 	}
 
 #if 0
@@ -394,12 +388,12 @@ static INT32 stp_uart_fifo_init(VOID)
 
 	g_stp_uart_rx_buf = vzalloc(LDISC_RX_BUF_SIZE);
 	if (!g_stp_uart_rx_buf) {
-		UART_ERR_FUNC("kfifo_alloc failed (kernel version >= 2.6.37)\n");
+		UART_PR_ERR("kfifo_alloc failed (kernel version >= 2.6.37)\n");
 		err = -4;
 		goto fifo_init_end;
 	}
 
-	UART_INFO_FUNC("g_stp_uart_rx_buf alloc ok(0x%p, %d)\n",
+	UART_PR_INFO("g_stp_uart_rx_buf alloc ok(0x%p, %d)\n",
 		       g_stp_uart_rx_buf, LDISC_RX_BUF_SIZE);
 
 	/*add rx fifo */
@@ -407,31 +401,31 @@ static INT32 stp_uart_fifo_init(VOID)
 	g_stp_uart_rx_fifo = kzalloc(sizeof(struct kfifo), GFP_KERNEL);
 	if (g_stp_uart_rx_fifo == NULL) {
 		err = -2;
-		UART_ERR_FUNC("kzalloc struct kfifo failed (kernel version > 2.6.33)\n");
+		UART_PR_ERR("kzalloc struct kfifo failed (kernel version > 2.6.33)\n");
 		goto fifo_init_end;
 	}
 
 	/* allocate kfifo data buffer then */
 	err = kfifo_alloc(g_stp_uart_rx_fifo, LDISC_RX_FIFO_SIZE, GFP_KERNEL);
 	if (err != 0) {
-		UART_ERR_FUNC("kfifo_alloc failed, err(%d)(kernel version > 2.6.33)\n", err);
+		UART_PR_ERR("kfifo_alloc failed, err(%d)(kernel version > 2.6.33)\n", err);
 		kfree(g_stp_uart_rx_fifo);
 		g_stp_uart_rx_fifo = NULL;
 		err = -3;
 		goto fifo_init_end;
 	}
-	UART_INFO_FUNC("g_stp_uart_rx_fifo alloc ok\n");
+	UART_PR_INFO("g_stp_uart_rx_fifo alloc ok\n");
 
 fifo_init_end:
 
 	if (err == 0) {
 		/* kfifo init ok */
 		kfifo_reset(g_stp_uart_rx_fifo);
-		UART_DBG_FUNC("g_stp_uart_rx_fifo init success\n");
+		UART_PR_DBG("g_stp_uart_rx_fifo init success\n");
 	} else {
-		UART_ERR_FUNC("stp_uart_fifo_init() fail(%d)\n", err);
+		UART_PR_ERR("stp_uart_fifo_init() fail(%d)\n", err);
 		if (g_stp_uart_rx_buf) {
-			UART_ERR_FUNC("free g_stp_uart_rx_buf\n");
+			UART_PR_DBG("free g_stp_uart_rx_buf\n");
 			vfree(g_stp_uart_rx_buf);
 			g_stp_uart_rx_buf = NULL;
 		}
@@ -460,11 +454,11 @@ static VOID stp_uart_rx_worker(struct work_struct *work)
 	UINT32 read;
 
 	if (unlikely(!g_stp_uart_rx_fifo)) {
-		UART_ERR_FUNC("NULL rx fifo!\n");
+		UART_PR_ERR("NULL rx fifo!\n");
 		return;
 	}
 	if (unlikely(!g_stp_uart_rx_buf)) {
-		UART_ERR_FUNC("NULL rx buf!\n");
+		UART_PR_ERR("NULL rx buf!\n");
 		return;
 	}
 
@@ -472,7 +466,6 @@ static VOID stp_uart_rx_worker(struct work_struct *work)
 	/* run until fifo becomes empty */
 	while (!kfifo_is_empty(g_stp_uart_rx_fifo)) {
 		read = kfifo_out(g_stp_uart_rx_fifo, g_stp_uart_rx_buf, LDISC_RX_BUF_SIZE);
-		UART_DBG_FUNC("kfifo_out(%d)\n", read);
 		/* pr_debug("rx_work:%d\n\r",read); */
 		if (likely(read)) {
 			/* UART_LOUD_FUNC("->%d\n", read); */
@@ -500,10 +493,10 @@ static VOID stp_uart_tty_receive(struct tty_struct *tty, const PUINT8 data, PINT
 
 	/* UART_LOUD_FUNC("URX:%d\n", count); */
 	if (unlikely(count > 2000))
-		UART_WARN_FUNC("abnormal: buffer count = %d\n", count);
+		UART_PR_WARN("abnormal: buffer count = %d\n", count);
 
 	if (unlikely(!g_stp_uart_rx_fifo || !g_stp_uart_rx_work || !g_stp_uart_rx_wq)) {
-		UART_ERR_FUNC
+		UART_PR_ERR
 		    ("abnormal g_stp_uart_rx_fifo(0x%p),g_stp_uart_rx_work(0x%p),g_stp_uart_rx_wq(0x%p)\n",
 		     g_stp_uart_rx_fifo, g_stp_uart_rx_work, g_stp_uart_rx_wq);
 		return;
@@ -519,7 +512,7 @@ static VOID stp_uart_tty_receive(struct tty_struct *tty, const PUINT8 data, PINT
 	queue_work(g_stp_uart_rx_wq, g_stp_uart_rx_work);
 
 	if (unlikely(written != count))
-		UART_ERR_FUNC("c(%d),w(%d) bytes dropped\n", count, written);
+		UART_PR_ERR("c(%d),w(%d) bytes dropped\n", count, written);
 }
 
 #else
@@ -533,16 +526,13 @@ static VOID stp_uart_tty_receive(struct tty_struct *tty, const PUINT8 data, PINT
 
 	if (count > 2000) {
 		/*this is abnormal */
-		UART_ERR_FUNC("stp_uart_tty_receive buffer count = %d\n", count);
+		UART_PR_ERR("stp_uart_tty_receive buffer count = %d\n", count);
 	}
 #if 0
 	{
 		struct timeval now;
 
 		do_gettimeofday(&now);
-
-		pr_warn("[+STP][  ][R] %4d --> sec = %d, --> usec --> %d\n",
-			count, now.tv_sec, now.tv_usec);
 	}
 #endif
 
@@ -562,9 +552,6 @@ static VOID stp_uart_tty_receive(struct tty_struct *tty, const PUINT8 data, PINT
 		struct timeval now;
 
 		do_gettimeofday(&now);
-
-		pr_warn("[-STP][  ][R] %4d --> sec = %d, --> usec --> %d\n",
-			count, now.tv_sec, now.tv_usec);
 	}
 #endif
 }
@@ -587,20 +574,17 @@ static INT32 stp_uart_tty_ioctl(struct tty_struct *tty, struct file *file, UINT3
 {
 	INT32 err = 0;
 
-	UART_DBG_FUNC("%s =>\n", __func__);
-
 	switch (cmd) {
 	case HCIUARTSETPROTO:
-		UART_DBG_FUNC("<!!> Set low_latency to TRUE <!!>\n");
+		UART_PR_DBG("<!!> Set low_latency to TRUE <!!>\n");
 		tty->port->low_latency = 1;
 
 		break;
 	default:
-		UART_DBG_FUNC("<!!> n_tty_ioctl_helper <!!>\n");
+		UART_PR_DBG("<!!> n_tty_ioctl_helper <!!>\n");
 		err = n_tty_ioctl_helper(tty, file, cmd, arg);
 		break;
 	};
-	UART_DBG_FUNC("%s <=\n", __func__);
 
 	return err;
 }
@@ -637,7 +621,7 @@ INT32 mtk_wcn_uart_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size
 
 	if (stp_tty == NULL)
 		return -1;
-	UART_DBG_FUNC("++\n");
+
 	(*written_size) = 0;
 	/* put data into ring buffer */
 	/* down(&buf_mtx); */
@@ -652,23 +636,21 @@ INT32 mtk_wcn_uart_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size
 	room =
 	    (wr_idx >=
 	     rd_idx) ? (MTKSTP_BUFFER_SIZE - (wr_idx - rd_idx) - 1) : (rd_idx - wr_idx - 1);
-	UART_DBG_FUNC("r(%d)s(%d)wr_i(%d)rd_i(%d)\n\r", room, size, wr_idx, rd_idx);
+	UART_PR_DBG("r(%d)s(%d)wr_i(%d)rd_i(%d)\n\r", room, size, wr_idx, rd_idx);
 	/*
 	 * [PatchNeed]
 	 * Block copy instead of byte copying
 	 */
 	if (data == NULL) {
-		UART_ERR_FUNC("pid(%d)(%s): data is NULL\n", current->pid, current->comm);
+		UART_PR_ERR("pid(%d)(%s): data is NULL\n", current->pid, current->comm);
 		(*written_size) = 0;
-		UART_DBG_FUNC("--\n");
 		return -2;
 	}
 #if 1
 	if (unlikely(size > room)) {
-		UART_ERR_FUNC
+		UART_PR_ERR
 		    ("pid(%d)(%s)room is not available, size needed(%d), wr_idx(%d), rd_idx(%d), room left(%d)\n",
 		     current->pid, current->comm, size, wr_idx, rd_idx, room);
-		UART_DBG_FUNC("--\n");
 		(*written_size) = 0;
 		return -3;
 	}
@@ -678,7 +660,7 @@ INT32 mtk_wcn_uart_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size
 	memcpy(&tx_buf[wr_idx], &data[0], len);
 	memcpy(&tx_buf[0], &data[len], size - len);
 	wr_idx = (wr_idx + size) % MTKSTP_BUFFER_SIZE;
-	UART_DBG_FUNC("r(%d)s(%d)wr_i(%d)rd_i(%d)\n\r", room, size, wr_idx, rd_idx);
+	UART_PR_DBG("r(%d)s(%d)wr_i(%d)rd_i(%d)\n\r", room, size, wr_idx, rd_idx);
 	i++;
 		if (size == 0) {
 			(*written_size) = 0;
@@ -693,7 +675,7 @@ INT32 mtk_wcn_uart_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size
 				*written_size = ret;
 	} else {
 		/* we filter all packet with size > 2000 */
-		UART_ERR_FUNC("Warnning(i-%d):[pid(%d)(%s)]len(%d)size(%d)wr_i(%d)rd_i(%d)\n\r",
+		UART_PR_ERR("Warnning(i-%d):[pid(%d)(%s)]len(%d)size(%d)wr_i(%d)rd_i(%d)\n\r",
 				i, current->pid, current->comm, len, size, wr_idx, rd_idx);
 		(*written_size) = 0;
 	}
@@ -718,7 +700,7 @@ INT32 mtk_wcn_uart_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size
 	/* spin_lock_irqsave(&buf_lock, flags); */
 
 	/*[PatchNeed]To add a tasklet to shedule Uart Tx */
-	UART_DBG_FUNC("--\n");
+
 	return 0;
 }
 
@@ -728,7 +710,7 @@ static INT32 mtk_wcn_stp_uart_init(VOID)
 	INT32 err;
 	INT32 fifo_init_done = 0;
 
-	UART_DBG_FUNC("mtk_wcn_stp_uart_init(): MTK STP UART driver\n");
+	UART_PR_DBG("mtk_wcn_stp_uart_init(): MTK STP UART driver\n");
 
 #if  (LDISC_RX == LDISC_RX_TASKLET)
 	err = stp_uart_fifo_init();
@@ -742,7 +724,7 @@ static INT32 mtk_wcn_stp_uart_init(VOID)
 #elif (LDISC_RX == LDISC_RX_WORK)
 	err = stp_uart_fifo_init();
 	if (err != 0) {
-		UART_ERR_FUNC("stp_uart_fifo_init(WORK) error(%d)\n", err);
+		UART_PR_ERR("stp_uart_fifo_init(WORK) error(%d)\n", err);
 		err = -EFAULT;
 		goto init_err;
 	}
@@ -750,14 +732,14 @@ static INT32 mtk_wcn_stp_uart_init(VOID)
 
 	g_stp_uart_rx_work = vmalloc(sizeof(struct work_struct));
 	if (!g_stp_uart_rx_work) {
-		UART_ERR_FUNC("vmalloc work_struct(%d) fail\n", sizeof(struct work_struct));
+		UART_PR_ERR("vmalloc work_struct(%d) fail\n", sizeof(struct work_struct));
 		err = -ENOMEM;
 		goto init_err;
 	}
 
 	g_stp_uart_rx_wq = create_singlethread_workqueue("mtk_urxd");
 	if (!g_stp_uart_rx_wq) {
-		UART_ERR_FUNC("create_singlethread_workqueue fail\n");
+		UART_PR_ERR("create_singlethread_workqueue fail\n");
 		err = -ENOMEM;
 		goto init_err;
 	}
@@ -783,7 +765,7 @@ static INT32 mtk_wcn_stp_uart_init(VOID)
 
 	err = tty_register_ldisc(N_MTKSTP, &stp_uart_ldisc);
 	if (err) {
-		UART_ERR_FUNC("MTK STP line discipline registration failed. (%d)\n", err);
+		UART_PR_ERR("MTK STP line discipline registration failed. (%d)\n", err);
 		goto init_err;
 	}
 
@@ -810,7 +792,7 @@ init_err:
 	if (fifo_init_done)
 		stp_uart_fifo_deinit();
 #endif
-	UART_ERR_FUNC("init fail, return(%d)\n", err);
+	UART_PR_ERR("init fail, return(%d)\n", err);
 
 	return err;
 
@@ -825,7 +807,7 @@ static VOID mtk_wcn_stp_uart_exit(VOID)
 	/* Release tty registration of line discipline */
 	err = tty_unregister_ldisc(N_MTKSTP);
 	if (err)
-		UART_ERR_FUNC("Can't unregister MTK STP line discipline (%d)\n", err);
+		UART_PR_ERR("Can't unregister MTK STP line discipline (%d)\n", err);
 
 #if (LDISC_RX == LDISC_RX_TASKLET)
 	tasklet_kill(&g_stp_uart_rx_fifo_tasklet);
