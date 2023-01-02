@@ -155,6 +155,8 @@ typedef UINT32(*CONSYS_IC_STORE_RESET_CONTROL) (struct platform_device *pdev);
 typedef MTK_WCN_BOOL(*CONSYS_IC_NEED_GPS) (VOID);
 typedef VOID(*CONSYS_IC_SET_IF_PINMUX) (MTK_WCN_BOOL enable);
 typedef VOID(*CONSYS_IC_SET_DL_ROM_PATCH_FLAG) (INT32 flag);
+typedef INT32(*CONSYS_IC_DEDICATED_LOG_PATH_INIT) (struct platform_device *pdev);
+typedef VOID(*CONSYS_IC_DEDICATED_LOG_PATH_DEINIT) (VOID);
 
 typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_CLOCK_BUFFER_CTRL consys_ic_clock_buffer_ctrl;
@@ -190,6 +192,8 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_NEED_GPS consys_ic_need_gps;
 	CONSYS_IC_SET_IF_PINMUX consys_ic_set_if_pinmux;
 	CONSYS_IC_SET_DL_ROM_PATCH_FLAG consys_ic_set_dl_rom_patch_flag;
+	CONSYS_IC_DEDICATED_LOG_PATH_INIT consys_ic_dedicated_log_path_init;
+	CONSYS_IC_DEDICATED_LOG_PATH_DEINIT consys_ic_dedicated_log_path_deinit;
 } WMT_CONSYS_IC_OPS, *P_WMT_CONSYS_IC_OPS;
 /*******************************************************************************
 *                            P U B L I C   D A T A
