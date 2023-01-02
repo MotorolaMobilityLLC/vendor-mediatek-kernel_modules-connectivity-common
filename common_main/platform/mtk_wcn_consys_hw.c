@@ -283,6 +283,14 @@ static INT32 mtk_wmt_resume(struct platform_device *pdev)
 	return 0;
 }
 
+PUINT32 mtk_wcn_consys_read_dump_info_reg(VOID)
+{
+	if (wmt_consys_ic_ops->consys_ic_resume_dump_info)
+		return wmt_consys_ic_ops->consys_ic_resume_dump_info();
+	else
+		return NULL;
+}
+
 INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 {
 	INT32 iRet = 0;
