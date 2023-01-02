@@ -31,6 +31,8 @@ VOID wmt_dev_patch_info_free(VOID);
 VOID wmt_dev_send_cmd_to_daemon(UINT32 cmd);
 MTK_WCN_BOOL wmt_dev_get_early_suspend_state(VOID);
 INT32 wmt_lpbk_handler(UINT32 on_off_flag, UINT32 retry);
+VOID wmt_dev_blank_handler(VOID);
+UINT32 wmt_dev_get_blank_state(VOID);
 INT32 wmt_dev_apo_ctrl(UINT32 enable);
 extern LONG wmt_dev_tm_temp_query(VOID);
 
