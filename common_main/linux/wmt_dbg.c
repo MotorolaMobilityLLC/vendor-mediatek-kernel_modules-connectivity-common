@@ -30,11 +30,7 @@
 #include "stp_core.h"
 #include "stp_dbg.h"
 #include "connsys_debug_utility.h"
-#include "wmt_step.h"
 #include "wmt_alarm.h"
-#ifdef CONFIG_MTK_ENG_BUILD
-#include "wmt_step_test.h"
-#endif
 
 #ifdef DFT_TAG
 #undef DFT_TAG
@@ -126,15 +122,11 @@ static INT32 wmt_dbg_emi_dump(INT32 par1, INT32 offset, INT32 size);
 static INT32 wmt_dbg_suspend_debug(INT32 par1, INT32 offset, INT32 size);
 static INT32 wmt_dbg_fw_log_ctrl(INT32 par1, INT32 onoff, INT32 level);
 static INT32 wmt_dbg_pre_pwr_on_ctrl(INT32 par1, INT32 enable, INT32 par3);
-#ifdef CONFIG_MTK_ENG_BUILD
-static INT32 wmt_dbg_step_test(INT32 par1, INT32 address, INT32 value);
-#endif
 
 static INT32 wmt_dbg_alarm_ctrl(INT32 par1, INT32 offset, INT32 size);
 
 static INT32 wmt_dbg_thermal_query(INT32 par1, INT32 count, INT32 interval);
 static INT32 wmt_dbg_thermal_ctrl(INT32 par1, INT32 par2, INT32 par3);
-static INT32 wmt_dbg_step_ctrl(INT32 par1, INT32 par2, INT32 par3);
 
 static INT32 wmt_dbg_gps_suspend(INT32 par1, INT32 par2, INT32 par3);
 static INT32 wmt_dbg_set_bt_link_status(INT32 par1, INT32 par2, INT32 par3);
@@ -189,7 +181,6 @@ static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x28] = wmt_dbg_pre_pwr_on_ctrl,
 	[0x29] = wmt_dbg_thermal_query,
 	[0x2a] = wmt_dbg_thermal_ctrl,
-	[0x2b] = wmt_dbg_step_ctrl,
 #ifdef CONFIG_MTK_CONNSYS_DEDICATED_LOG_PATH
 	[0x2c] = wmt_dbg_set_fw_log_mode,
 	[0x2d] = wmt_dbg_emi_dump,
@@ -199,9 +190,6 @@ static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x30] = wmt_dbg_show_thread_debug_info,
 	[0x31] = wmt_dbg_gps_suspend,
 	[0x32] = wmt_dbg_alarm_ctrl,
-#ifdef CONFIG_MTK_ENG_BUILD
-	[0xa0] = wmt_dbg_step_test,
-#endif
 };
 
 static VOID wmt_dbg_fwinfor_print_buff(UINT32 len)
@@ -933,15 +921,6 @@ INT32 wmt_dbg_pre_pwr_on_ctrl(INT32 par1, INT32 enable, INT32 par3)
 	return 0;
 }
 
-#ifdef CONFIG_MTK_ENG_BUILD
-INT32 wmt_dbg_step_test(INT32 par1, INT32 par2, INT32 par3)
-{
-	wmt_step_test_all();
-
-	return 0;
-}
-#endif
-
 INT32 wmt_dbg_thermal_query(INT32 par1, INT32 count, INT32 interval)
 {
 	LONG tm;
@@ -972,20 +951,6 @@ INT32 wmt_dbg_thermal_ctrl(INT32 par1, INT32 par2, INT32 par3)
 			return -1;
 		}
 		wmt_dev_set_temp_threshold(par3);
-	}
-
-	return 0;
-}
-
-static INT32 wmt_dbg_step_ctrl(INT32 par1, INT32 par2, INT32 par3)
-{
-	if (par2 == 0)
-		wmt_step_print_version();
-	else if (par2 == 1) {
-		WMT_INFO_FUNC("STEP show: Start to change config\n");
-		wmt_step_deinit();
-		wmt_step_init();
-		WMT_INFO_FUNC("STEP show: End to change config\n");
 	}
 
 	return 0;
