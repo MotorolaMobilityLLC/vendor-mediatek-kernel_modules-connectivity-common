@@ -912,6 +912,7 @@ ssize_t connsys_log_read_to_user(int conn_type, char __user *buf, size_t count)
 {
 	int retval;
 	unsigned int written = 0;
+	static DEFINE_RATELIMIT_STATE(_rs, 10 * HZ, 1);
 #ifdef EMI_TO_CACHE_SUPPORT
 	unsigned int cache_buf_size;
 	struct ring_segment ring_seg;
@@ -928,7 +929,8 @@ ssize_t connsys_log_read_to_user(int conn_type, char __user *buf, size_t count)
 	RING_READ_FOR_EACH(size, ring_seg, ring) {
 		retval = copy_to_user(buf + written, ring_seg.ring_pt, ring_seg.sz);
 		if (retval) {
-			pr_err("copy to user buffer failed, ret:%d\n", retval);
+			if (__ratelimit(&_rs))
+				pr_err("copy to user buffer failed, ret:%d\n", retval);
 			goto done;
 		}
 		cache_buf_size -= ring_seg.sz;
@@ -948,7 +950,8 @@ ssize_t connsys_log_read_to_user(int conn_type, char __user *buf, size_t count)
 	RING_EMI_READ_ALL_FOR_EACH(ring_emi_seg, ring_emi) {
 		retval = copy_to_user(buf + written, ring_emi_seg.ring_emi_pt, ring_emi_seg.sz);
 		if (retval) {
-			pr_err("copy to user buffer failed, ret:%d\n", retval);
+			if (__ratelimit(&_rs))
+				pr_err("copy to user buffer failed, ret:%d\n", retval);
 			goto done;
 		}
 		buf_size -= ring_emi_seg.sz;
