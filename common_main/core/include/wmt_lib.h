@@ -277,9 +277,6 @@ typedef struct _DEV_WMT_ {
 	UINT32 hw_ver;
 	UINT32 fw_ver;
 	UINT32 ip_ver;
-	/* TODO:  [FixMe][GeorgeKuo] remove this translated version code in the */
-	/* future. Just return the above 3 info to querist */
-	ENUM_WMTHWVER_TYPE_T eWmtHwVer;
 
 	UINT32 ext_ldo_flag;
 	P_WMT_PATCH_INFO pWmtPatchInfo;
