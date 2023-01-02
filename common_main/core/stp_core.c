@@ -375,13 +375,14 @@ static VOID stp_sdio_trace32_dump(VOID)
 			if (stp_core_ctx.assert_info_cnt == 0) {
 				dmp_num = stp_parser_dmp_num(stp_core_ctx.rx_buf);
 				if (dmp_num > 0 && dmp_num < PARSER_CORE_DUMP_NUM) {
-					STP_INFO_FUNC("parser dmp_num is %d\n", dmp_num);
+					STP_INFO_FUNC("parser dmp_num is %ld\n", dmp_num);
 					stp_dbg_dump_num(dmp_num);
 				} else if (dmp_num > PARSER_CORE_DUMP_NUM) {
-					STP_INFO_FUNC("parser dmp_num is out of range %d\n", dmp_num);
+					STP_INFO_FUNC("parser dmp_num is out of range %ld\n",
+							dmp_num);
 					stp_dbg_dump_num(PARSER_CORE_DUMP_NUM);
 				} else {
-					STP_INFO_FUNC("parser dmp_num not found %d\n", dmp_num);
+					STP_INFO_FUNC("parser dmp_num not found %ld\n", dmp_num);
 					stp_dbg_dump_num(CORE_DUMP_NUM);
 				}
 			}
