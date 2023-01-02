@@ -389,6 +389,8 @@ VOID osal_get_local_time(PUINT64 sec, PULONG nsec);
 UINT64 osal_elapsed_us(UINT64 ts, ULONG usec);
 
 VOID osal_buffer_dump(const PUINT8 buf, const PUINT8 title, UINT32 len, UINT32 limit);
+VOID osal_buffer_dump_data(const PUINT32 buf, const PUINT8 title, const UINT32 len, const UINT32 limit,
+			   const INT32 flag);
 
 UINT32 osal_op_get_id(P_OSAL_OP pOp);
 MTK_WCN_BOOL osal_op_is_wait_for_signal(P_OSAL_OP pOp);
