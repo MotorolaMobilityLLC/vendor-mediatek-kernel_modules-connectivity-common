@@ -863,6 +863,7 @@ static INT32 wmt_lib_ps_handler(MTKSTP_PSM_ACTION_T action)
 {
 	INT32 ret;
 	MTK_WCN_BOOL bRet = MTK_WCN_BOOL_FALSE;
+	static DEFINE_RATELIMIT_STATE(_rs, 2 * HZ, 1);
 
 	ret = 0;		/* TODO:[FixMe][George] initial value or compile warning? */
 	/* if(g_block_tx && (action == SLEEP)) */
@@ -991,6 +992,8 @@ static INT32 wmt_lib_ps_handler(MTKSTP_PSM_ACTION_T action)
 		WMT_DBG_FUNC("send op --------------------------------> eirq job\n");
 
 		if (!mtk_wcn_stp_is_sdio_mode()) {
+			if (__ratelimit(&_rs))
+				pr_info("conn2ap_btif0_wakeup_out_b EIRQ handler\n");
 			WMT_DBG_FUNC("disable host eirq\n");
 			/* Disable interrupt */
 			/*wmt_plat_eirq_ctrl(PIN_BGF_EINT, PIN_STA_EINT_DIS);*/
