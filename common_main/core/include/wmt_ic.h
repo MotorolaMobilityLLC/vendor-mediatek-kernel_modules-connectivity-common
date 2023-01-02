@@ -122,7 +122,7 @@ typedef struct _WMT_IC_INFO_S {
 ********************************************************************************
 */
 
-INT32 mtk_wcn_soc_rom_patch_dwn(UINT32 ip_ver);
+INT32 mtk_wcn_soc_rom_patch_dwn(UINT32 ip_ver, UINT32 fw_ver);
 WMT_CO_CLOCK mtk_wcn_soc_co_clock_get(VOID);
 
 #endif				/* _WMT_IC_H_ */
