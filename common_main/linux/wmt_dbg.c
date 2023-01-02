@@ -117,6 +117,7 @@ static INT32 wmt_dbg_step_test(INT32 par1, INT32 address, INT32 value);
 #endif
 
 static INT32 wmt_dbg_thermal_query(INT32 par1, INT32 count, INT32 interval);
+static INT32 wmt_dbg_thermal_ctrl(INT32 par1, INT32 par2, INT32 par3);
 
 static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x0] = wmt_dbg_psm_ctrl,
@@ -168,6 +169,7 @@ static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x27] = wmt_dbg_fw_log_ctrl,
 	[0x28] = wmt_dbg_pre_pwr_on_ctrl,
 	[0x29] = wmt_dbg_thermal_query,
+	[0x2a] = wmt_dbg_thermal_ctrl,
 	[0x99] = wmt_dbg_emi_dump,
 #ifdef CONFIG_MTK_ENG_BUILD
 	[0xa0] = wmt_dbg_step_test,
@@ -869,6 +871,19 @@ INT32 wmt_dbg_thermal_query(INT32 par1, INT32 count, INT32 interval)
 		if (count > 0)
 			osal_sleep_ms(interval);
 	}
+	return 0;
+}
+
+INT32 wmt_dbg_thermal_ctrl(INT32 par1, INT32 par2, INT32 par3)
+{
+	if (par2 == 0) {
+		if (par3 >= 99) {
+			WMT_INFO_FUNC("Can`t set temp threshold greater or queal 99\n");
+			return -1;
+		}
+		wmt_dev_set_temp_threshold(par3);
+	}
+
 	return 0;
 }
 
