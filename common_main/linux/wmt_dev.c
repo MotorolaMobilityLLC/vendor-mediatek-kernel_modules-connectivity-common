@@ -107,6 +107,7 @@
 #define WMT_IOCTL_FDB_CTRL		_IOW(WMT_IOC_MAGIC, 32, char*)
 #define WMT_IOCTL_GET_EMI_PHY_SIZE  _IOR(WMT_IOC_MAGIC, 33, unsigned int)
 #define WMT_IOCTL_FW_PATCH_UPDATE_RST	_IOR(WMT_IOC_MAGIC, 34, int)
+#define WMT_IOCTL_GET_DIRECT_PATH_EMI_SIZE	_IOR(WMT_IOC_MAGIC, 42, unsigned int)
 
 #define MTK_WMT_VERSION  "Consys WMT Driver - v1.0"
 #define MTK_WMT_DATE     "2013/01/20"
@@ -1397,6 +1398,18 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 	case WMT_IOCTL_FW_PATCH_UPDATE_RST:
 		wmt_lib_fw_patch_update_rst_ctrl(arg);
 		break;
+	case WMT_IOCTL_GET_DIRECT_PATH_EMI_SIZE:
+		do {
+			P_CONSYS_EMI_ADDR_INFO emiInfo = mtk_wcn_consys_soc_get_emi_phy_add();
+
+			if (emiInfo == NULL) {
+				WMT_INFO_FUNC("Get emi info fail. Return 0.\n");
+				return 0;
+			}
+			WMT_INFO_FUNC("Direct path emi size=%d\n", emiInfo->emi_direct_path_size);
+			return (UINT32)emiInfo->emi_direct_path_size;
+		} while (0);
+		break;
 	default:
 		iRet = -EINVAL;
 		WMT_WARN_FUNC("unknown cmd (0x%x)\n", cmd);
@@ -1482,12 +1495,34 @@ static INT32 WMT_close(struct inode *inode, struct file *file)
 
 static INT32 WMT_mmap(struct file *pFile, struct vm_area_struct *pVma)
 {
-	if (pVma->vm_end - pVma->vm_start > gConEmiSize)
-		return -1;
-	WMT_INFO_FUNC("WMT_mmap size: %p\n", pVma->vm_end - pVma->vm_start);
-	if (remap_pfn_range(pVma, pVma->vm_start, gConEmiPhyBase >> PAGE_SHIFT,
-		pVma->vm_end - pVma->vm_start, pVma->vm_page_prot))
-		return -EAGAIN;
+	unsigned long bufId = pVma->vm_pgoff;
+	P_CONSYS_EMI_ADDR_INFO emiInfo = mtk_wcn_consys_soc_get_emi_phy_add();
+
+	WMT_INFO_FUNC("WMT_mmap start:%p end:%p size: %p buffer id=%d\n",
+		pVma->vm_start, pVma->vm_end,
+		pVma->vm_end - pVma->vm_start, bufId);
+
+	if (bufId == 0) {
+		if (pVma->vm_end - pVma->vm_start > gConEmiSize)
+			return -1;
+		WMT_INFO_FUNC("WMT_mmap size: %p\n", pVma->vm_end - pVma->vm_start);
+		if (remap_pfn_range(pVma, pVma->vm_start, gConEmiPhyBase >> PAGE_SHIFT,
+			pVma->vm_end - pVma->vm_start, pVma->vm_page_prot))
+			return -EAGAIN;
+	} else if (bufId == 1) {
+		if (emiInfo == NULL)
+			return -1;
+		if (emiInfo->emi_direct_path_size == 0 ||
+		    pVma->vm_end - pVma->vm_start > emiInfo->emi_direct_path_size)
+			return -1;
+		WMT_INFO_FUNC("MD direct path size=%d map size=%p\n",
+			emiInfo->emi_direct_path_size,
+			pVma->vm_end - pVma->vm_start);
+		if (remap_pfn_range(pVma, pVma->vm_start,
+			emiInfo->emi_direct_path_ap_phy_addr >> PAGE_SHIFT,
+			pVma->vm_end - pVma->vm_start, pVma->vm_page_prot))
+			return -EAGAIN;
+	}
 	return 0;
 }
 
