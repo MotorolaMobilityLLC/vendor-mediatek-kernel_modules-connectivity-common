@@ -51,6 +51,30 @@
 }
 #define CONSYS_REG_READ(addr) (*((volatile UINT32 *)(addr)))
 #define CONSYS_REG_WRITE(addr, data)  mt_reg_sync_writel(data, addr)
+#define CONSYS_REG_WRITE_RANGE(reg, data, end, begin) {\
+	UINT32 val = CONSYS_REG_READ(reg); \
+	SET_BIT_RANGE(&val, data, end, begin); \
+	CONSYS_REG_WRITE(reg, val); \
+}
+
+/*
+ * Write value with value_offset bits of right shift and size bits,
+ * to the reg_offset-th bit of address reg
+ * value  -----------XXXXXXXXXXXX-------------------
+ *                   |<--size-->|<--value_offset-->|
+ * reg    -------------OOOOOOOOOOOO-----------------
+ *                     |<--size-->|<--reg_offset-->|
+ * result -------------XXXXXXXXXXXX-----------------
+ */
+#define CONSYS_REG_WRITE_OFFSET_RANGE(reg, value, reg_offset, value_offset, size) ({\
+	UINT32 data = (value) >> (value_offset); \
+	data = GET_BIT_RANGE(data, size, 0); \
+	data = data << (reg_offset); \
+	CONSYS_REG_WRITE_RANGE(reg, data, ((reg_offset) + ((size) - 1)), reg_offset); \
+})
+
+#define CONSYS_REG_WRITE_BIT(reg, offset, val) CONSYS_REG_WRITE_OFFSET_RANGE(reg, ((val) & 1), offset, 0, 1)
+
 /*force fw assert pattern*/
 #define EXP_APMEM_HOST_OUTBAND_ASSERT_MAGIC_W1   (0x19b30bb1)
 
