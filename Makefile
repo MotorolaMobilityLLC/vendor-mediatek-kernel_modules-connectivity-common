@@ -216,12 +216,8 @@ endif
 # Customer eng/userdebug load: Support
 # Customer user load: Not support
 
-ifeq ($(wildcard vendor/mediatek/proprietary/external/aee_config_internal/init.aee.mtk.system.rc),)
+ifneq ($(TARGET_BUILD_VARIANT),user)
 	ccflags-y += -D CFG_WMT_STEP
-else
-	ifneq ($(TARGET_BUILD_VARIANT),user)
-		ccflags-y += -D CFG_WMT_STEP
-	endif
 endif
 
 ifeq ($(findstring evb, $(MTK_PROJECT)), evb)
@@ -264,6 +260,7 @@ $(MODULE_NAME)-objs += common_main/linux/wmt_idc.o
 $(MODULE_NAME)-objs += common_main/linux/stp_uart.o
 $(MODULE_NAME)-objs += common_main/linux/wmt_dbg.o
 $(MODULE_NAME)-objs += common_main/linux/stp_dbg.o
+$(MODULE_NAME)-objs += common_main/linux/wmt_user_proc.o
 
 $(MODULE_NAME)-objs += common_main/linux/wmt_proc_dbg.o
 $(MODULE_NAME)-objs += common_main/linux/wmt_alarm.o
