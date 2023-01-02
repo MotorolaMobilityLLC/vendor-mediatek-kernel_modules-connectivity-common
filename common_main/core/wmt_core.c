@@ -3834,7 +3834,8 @@ INT32 opfunc_dump_pc_log(P_WMT_OP pWmtOp)
 		WMT_INFO_FUNC("WMT is not on");
 		return -1;
 	}
-	mtk_wcn_consys_pc_log_dump();
+	if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC)
+		mtk_wcn_consys_pc_log_dump();
 
 	return 0;
 }
