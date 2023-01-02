@@ -52,7 +52,7 @@
 #define STP_LOG_WARN                 1
 #define STP_LOG_ERR                  0
 
-extern UINT32 gStpDbgLvl;
+extern INT32 gStpDbgLvl;
 
 #define STP_DBG_FUNC(fmt, arg...)    do {\
 	if (gStpDbgLvl >= STP_LOG_DBG)\
@@ -627,7 +627,7 @@ extern VOID mtk_wcn_stp_set_if_tx_type(ENUM_STP_TX_IF_TYPE stp_if_type);
 
 extern INT32 mtk_wcn_sys_if_rx(PUINT8 data, INT32 size);
 
-extern MTK_WCN_BOOL mtk_wcn_stp_dbg_level(UINT32 dbglevel);
+extern MTK_WCN_BOOL mtk_wcn_stp_dbg_level(INT32 dbglevel);
 
 extern INT32 mtk_wcn_stp_dbg_dump_package(VOID);
 
