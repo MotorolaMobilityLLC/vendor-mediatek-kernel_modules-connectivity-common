@@ -42,19 +42,20 @@
 #define CFG_WMT_LTE_COEX_HANDLING 0
 #endif
 
-#define BT_TASK_INDX        (0)
-#define FM_TASK_INDX        (1)
-#define GPS_TASK_INDX       (2)
-#define WIFI_TASK_INDX      (3)
-#define WMT_TASK_INDX       (4)
-#define STP_TASK_INDX       (5)
-#define INFO_TASK_INDX      (6)
-#define ANT_TASK_INDX       (7)
+#define BT_TASK_INDX          (0)
+#define FM_TASK_INDX          (1)
+#define GPS_TASK_INDX         (2)
+#define WIFI_TASK_INDX        (3)
+#define WMT_TASK_INDX         (4)
+#define STP_TASK_INDX         (5)
+#define GPSL5_TASK_INDX       (6)
+#define INFO_TASK_INDX        (6)
+#define ANT_TASK_INDX         (7)
 #if CFG_WMT_LTE_COEX_HANDLING
-#define COEX_TASK_INDX		(8)
-#define MTKSTP_MAX_TASK_NUM (9)
+#define COEX_TASK_INDX        (8)
+#define MTKSTP_MAX_TASK_NUM   (9)
 #else
-#define MTKSTP_MAX_TASK_NUM	(8)
+#define MTKSTP_MAX_TASK_NUM   (8)
 #endif
 
 #define MTKSTP_BUFFER_SIZE  (16384)	/* Size of RX Queue */
