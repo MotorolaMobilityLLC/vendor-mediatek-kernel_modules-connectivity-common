@@ -30,10 +30,6 @@ ifneq ($(KERNEL_OUT),)
     ccflags-y += -imacros $(KERNEL_OUT)/include/generated/autoconf.h
 endif
 
-ifeq ($(CONFIG_MTK_COMBO_CHIP),)
-    $(error CONFIG_MTK_COMBO_CHIP not defined)
-endif
-
 ifeq ($(TARGET_BUILD_VARIANT),$(filter $(TARGET_BUILD_VARIANT),userdebug user))
     #ldflags-y += -s
 endif
@@ -90,18 +86,18 @@ ccflags-y += -I$(srctree)/drivers/gpu/drm/mediatek/mediatek_v2
 
 ccflags-y += -Werror
 
-ifneq ($(filter "MT6628",$(CONFIG_MTK_COMBO_CHIP)),)
+ifeq ($(CONFIG_MTK_COMBO_CHIP_MT6628),y)
     ccflags-y += -D MT6628
     ccflags-y += -D MERGE_INTERFACE_SUPPORT
 endif
-ifneq ($(filter "MT6630",$(CONFIG_MTK_COMBO_CHIP)),)
+ifeq ($(CONFIG_MTK_COMBO_CHIP_MT6630),y)
     ccflags-y += -D MT6630
 ifneq ($(CONFIG_ARCH_MT2601),y)
     ccflags-y += -D MERGE_INTERFACE_SUPPORT
 endif
 endif
 
-ifneq ($(filter "MT6632",$(CONFIG_MTK_COMBO_CHIP)),)
+ifeq ($(CONFIG_MTK_COMBO_CHIP_MT6632),y)
     ccflags-y += -D MT6632
     ccflags-y += -D MERGE_INTERFACE_SUPPORT
 endif
@@ -132,24 +128,20 @@ ccflags-y += -I$(srctree)/arch/arm/mach-$(MTK_PLATFORM)/$(ARCH_MTK_PROJECT)/dct/
 ccflags-y += -DWMT_PLAT_ALPS=1
 
 COMBO_CHIP_SUPPORT := false
-ifneq ($(filter "MT6620E3",$(CONFIG_MTK_COMBO_CHIP)),)
+ifeq ($(CONFIG_MTK_COMBO_CHIP_MT6620E3),y)
     COMBO_CHIP_SUPPORT := true
 endif
-ifneq ($(filter "MT6628",$(CONFIG_MTK_COMBO_CHIP)),)
+ifeq ($(CONFIG_MTK_COMBO_CHIP_MT6628),y)
     COMBO_CHIP_SUPPORT := true
 endif
-ifneq ($(filter "MT6630",$(CONFIG_MTK_COMBO_CHIP)),)
+ifeq ($(CONFIG_MTK_COMBO_CHIP_MT6630),y)
     COMBO_CHIP_SUPPORT := true
 endif
-ifneq ($(filter "MT6632",$(CONFIG_MTK_COMBO_CHIP)),)
+ifeq ($(CONFIG_MTK_COMBO_CHIP_MT6632),y)
     COMBO_CHIP_SUPPORT := true
 endif
 ifeq ($(COMBO_CHIP_SUPPORT), true)
     ccflags-y += -D MTK_WCN_COMBO_CHIP_SUPPORT
-endif
-
-ifneq ($(filter "CONSYS_%",$(CONFIG_MTK_COMBO_CHIP)),)
-    ccflags-y += -D MTK_WCN_SOC_CHIP_SUPPORT
 endif
 
 ccflags-y += -I$(src)/common_main/linux/include
@@ -162,21 +154,6 @@ $(MODULE_NAME)-objs += common_detect/wmt_detect.o
 $(MODULE_NAME)-objs += common_detect/sdio_detect.o
 $(MODULE_NAME)-objs += common_detect/mtk_wcn_stub_alps.o
 $(MODULE_NAME)-objs += common_detect/wmt_gpio.o
-
-
-ifneq ($(filter "MT6630",$(CONFIG_MTK_COMBO_CHIP)),)
-	ccflags-y += -D MTK_WCN_WLAN_GEN3
-endif
-
-ifneq ($(filter "MT6632",$(CONFIG_MTK_COMBO_CHIP)),)
-        ccflags-y += -D MTK_WCN_WLAN_GEN4
-endif
-
-ifneq ($(filter "CONSYS_6797" "CONSYS_6759" "CONSYS_6758" "CONSYS_6771" "CONSYS_6775",$(CONFIG_MTK_COMBO_CHIP)),)
-	ccflags-y += -D MTK_WCN_WLAN_GEN3
-else ifneq ($(filter "CONSYS_%",$(CONFIG_MTK_COMBO_CHIP)),)
-	ccflags-y += -D MTK_WCN_WLAN_GEN2
-endif
 
 $(MODULE_NAME)-objs += common_detect/drv_init/fm_drv_init.o
 $(MODULE_NAME)-objs += common_detect/drv_init/conn_drv_init.o
@@ -226,9 +203,31 @@ ifeq ($(findstring evb, $(MTK_PROJECT)), evb)
 ccflags-y += -D CFG_WMT_EVB
 endif
 
-ifneq ($(filter "CONSYS_%",$(CONFIG_MTK_COMBO_CHIP)),)
+KERNEL_VERSION_SUPPORT_CHIPID_LIST := $(patsubst %Y,%,$(patsubst %N,,$(patsubst %Ny,%Y,$(foreach chipid,$(patsubst mt%.c,%,$(notdir $(wildcard $(src)/common_main/platform/mt[0-9][0-9][0-9][0-9].c))),$(chipid)N$(CONFIG_MTK_COMBO_CHIP_CONSYS_$(chipid))))))
+$(warning KERNEL_VERSION_SUPPORT_CHIPID_LIST=[$(KERNEL_VERSION_SUPPORT_CHIPID_LIST)])
+
+ifeq ($(KERNEL_VERSION_SUPPORT_CHIPID_LIST),)
+ifneq ($(CONNSYS_PLATFORM),)
+ifneq ($(wildcard $(src)/common_main/platform/$(CONNSYS_PLATFORM).c),)
 $(MODULE_NAME)-objs += common_main/platform/$(CONNSYS_PLATFORM).o
+ifneq ($(wildcard $(src)/common_main/platform/$(CONNSYS_PLATFORM)_dbg.c),)
 $(MODULE_NAME)-objs += common_main/platform/$(CONNSYS_PLATFORM)_dbg.o
+endif
+ifneq ($(wildcard $(src)/common_main/platform/$(CONNSYS_PLATFORM)_pos_gen.c),)
+$(MODULE_NAME)-objs += common_main/platform/$(CONNSYS_PLATFORM)_pos_gen.o
+endif
+endif
+endif
+else
+$(MODULE_NAME)-objs += $(patsubst %,common_main/platform/mt%.o,$(KERNEL_VERSION_SUPPORT_CHIPID_LIST))
+SUPPORT_DEBUG_CHIPID_LIST = $(patsubst %.c,common_main/platform/%.o,$(notdir $(wildcard $(patsubst %,$(src)/common_main/platform/mt%_dbg.c,$(KERNEL_VERSION_SUPPORT_CHIPID_LIST)))))
+ifneq ($(SUPPORT_DEBUG_CHIPID_LIST),)
+$(MODULE_NAME)-objs += $(SUPPORT_DEBUG_CHIPID_LIST)
+endif
+SUPPORT_AUTO_GEN_CHIPID_LIST = $(patsubst %.c,common_main/platform/%.o,$(notdir $(wildcard $(patsubst %,$(src)/common_main/platform/mt%_pos_gen.c,$(KERNEL_VERSION_SUPPORT_CHIPID_LIST)))))
+ifneq ($(SUPPORT_AUTO_GEN_CHIPID_LIST),)
+$(MODULE_NAME)-objs += $(SUPPORT_AUTO_GEN_CHIPID_LIST)
+endif
 endif
 
 #$(MODULE_NAME)-objs += common_main/platform/wmt_plat_stub.o
