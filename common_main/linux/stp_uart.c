@@ -597,7 +597,11 @@ static VOID stp_uart_tty_receive(
  *
  * Return Value:    Command dependent
  */
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 17, 0))
+static INT32 stp_uart_tty_ioctl(struct tty_struct *tty, UINT32 cmd, ULONG arg)
+#else
 static INT32 stp_uart_tty_ioctl(struct tty_struct *tty, struct file *file, UINT32 cmd, ULONG arg)
+#endif
 {
 	INT32 err = 0;
 
@@ -610,7 +614,11 @@ static INT32 stp_uart_tty_ioctl(struct tty_struct *tty, struct file *file, UINT3
 		break;
 	default:
 		UART_PR_DBG("<!!> n_tty_ioctl_helper <!!>\n");
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 17, 0))
+		err = n_tty_ioctl_helper(tty, cmd, arg);
+#else
 		err = n_tty_ioctl_helper(tty, file, cmd, arg);
+#endif
 		break;
 	};
 
