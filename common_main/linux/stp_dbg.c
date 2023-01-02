@@ -401,8 +401,8 @@ static _osal_inline_ INT32 stp_dbg_core_dump_post_handle(P_WCN_CORE_DUMP_T dmp)
 		if (pStr != NULL) {
 			pDtr = osal_strchr(pStr, '-');
 			if (pDtr != NULL) {
-				tmp = pDtr - pStr;
-				tmp = (tmp > STP_CORE_DUMP_INFO_SZ) ? STP_CORE_DUMP_INFO_SZ : tmp;
+				tmp = STP_CORE_DUMP_INFO_SZ - osal_strlen(INFO_HEAD);
+				tmp = ((pDtr - pStr) > tmp) ? tmp : (pDtr - pStr);
 				osal_memcpy(&dmp->info[osal_strlen(INFO_HEAD)], pStr, tmp);
 				dmp->info[osal_strlen(dmp->info) + 1] = '\0';
 			} else {
@@ -1783,6 +1783,7 @@ INT32 stp_dbg_dump_num(LONG dmp_num)
 
 static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO_PARSER_TYPE type)
 {
+#define WDT_INFO_HEAD "Watch Dog Timeout"
 	PINT8 pStr = NULL;
 	PINT8 pDtr = NULL;
 	PINT8 pTemp = NULL;
@@ -1971,10 +1972,10 @@ static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO
 		osal_memcpy(&tempBuf[0], pDtr, len);
 		tempBuf[len] = '\0';
 
-		if (osal_memcmp(tempBuf, "*", len) == 0)
+		if (osal_memcmp(tempBuf, "*", osal_strlen("*")) == 0)
 			osal_memcpy(&g_stp_dbg_cpupcr->assert_type[0], "general assert",
 					osal_strlen("general assert"));
-		if (osal_memcmp(tempBuf, "Watch Dog Timeout", len) == 0)
+		if (osal_memcmp(tempBuf, WDT_INFO_HEAD, osal_strlen(WDT_INFO_HEAD)) == 0)
 			osal_memcpy(&g_stp_dbg_cpupcr->assert_type[0], "wdt", osal_strlen("wdt"));
 		if (osal_memcmp(tempBuf, "RB_FULL", osal_strlen("RB_FULL")) == 0) {
 			osal_memcpy(&g_stp_dbg_cpupcr->assert_type[0], tempBuf, len);
@@ -2114,7 +2115,7 @@ INT32 stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
 	osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 
 	if (cmd) {
-		UINT8 str[160] = {""};
+		UINT8 str[DBG_LOG_STR_SIZE] = {""};
 		PUINT8 p = str;
 		INT32 str_len = 0;
 
@@ -2349,7 +2350,7 @@ VOID stp_dbg_set_keyword(PINT8 keyword)
 		else if (osal_strchr(keyword, '<') != NULL || osal_strchr(keyword, '>') != NULL)
 			STP_DBG_PR_INFO("Keyword has < or >, keywrod: %s\n", keyword);
 		else
-			osal_strncat(&g_stp_dbg_cpupcr->keyword[0], keyword, STP_DBG_KEYWORD_SIZE);
+			osal_strncat(&g_stp_dbg_cpupcr->keyword[0], keyword, osal_strlen(keyword));
 	} else {
 		g_stp_dbg_cpupcr->keyword[0] = '\0';
 	}
