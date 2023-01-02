@@ -2183,7 +2183,7 @@ void wmt_step_test_create_cond_emi_action(struct step_test_report *p_report)
 	params[1] = "0";
 	params[2] = "0x50";
 	params[3] = "0x00000030";
-	params[3] = "$1";
+	params[4] = "$1";
 	param_num = 5;
 	__wmt_step_test_create_action(act_id, param_num, params, -1, check_params, &temp_report,
 		"STEP test case failed: (Create action TC-6) Condition emi create wrong symbol");
