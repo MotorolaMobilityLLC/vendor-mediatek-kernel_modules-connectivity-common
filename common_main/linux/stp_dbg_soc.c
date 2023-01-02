@@ -303,9 +303,6 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 		if (dump_len <= 32 * 1024) {
 			STP_DBG_PR_DBG("coredump mode: %d!\n", dump_sink);
 			switch (dump_sink) {
-			case 0:
-				STP_DBG_PR_INFO("coredump is disabled!\n");
-				return 0;
 			case 1:
 				ret = stp_dbg_aee_send(&g_paged_dump_buffer[0], dump_len, 0);
 				if (ret == 0)
