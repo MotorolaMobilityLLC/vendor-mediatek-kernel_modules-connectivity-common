@@ -94,11 +94,15 @@ typedef enum _ENUM_WMTRSTRET_TYPE_T {
 
 #define MAX_GPIO_CTRL_TIME (2000)	/* [FixMe][GeorgeKuo] a temp value */
 
-#define MAX_PATCH_NUM 10
 #define UTC_SYNC_TIME (60 * 60 * 1000)
 
 #define WMT_IDC_MSG_BUFFER 2048
 #define WMT_IDC_MSG_MAX_SIZE (WMT_IDC_MSG_BUFFER - 7) /* Subtract STP payload cmd size */
+
+#define MAX_PATCH_NUM (10)
+
+#define WMT_FIRMWARE_VERSION_LENGTH       (14)
+#define WMT_FIRMWARE_MAX_FILE_NAME_LENGTH (50)
 
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
@@ -176,6 +180,37 @@ struct wmt_fdb_ctrl {
 	UINT32 offset;
 	UINT32 value;
 };
+
+struct wmt_vendor_patch {
+	union {
+		INT32 id;
+		INT32 type;
+	};
+	UINT8 file_name[WMT_FIRMWARE_MAX_FILE_NAME_LENGTH + 1];
+	UINT8 version[WMT_FIRMWARE_VERSION_LENGTH + 1];
+};
+
+struct vendor_patch_table {
+	UINT32 capacity;
+	UINT32 num;
+	INT8   status;
+	INT8   need_update;
+	UINT8  active_version[WMT_FIRMWARE_VERSION_LENGTH + 1];
+	struct wmt_vendor_patch *patch;
+};
+
+enum wmt_patch_type {
+	WMT_PATCH_TYPE_ROM = 0,
+	WMT_PATCH_TYPE_RAM,
+	WMT_PATCH_TYPE_WIFI
+};
+
+enum wmt_cp_status {
+	WMT_CP_INIT = 0,
+	WMT_CP_READY_TO_CHECK,
+	WMT_CP_CHECK_DONE
+};
+
 
 /* OS independent wrapper for WMT_OP */
 typedef struct _DEV_WMT_ {
@@ -261,6 +296,8 @@ typedef struct _DEV_WMT_ {
 	struct osal_op_history wmtd_op_history;
 	struct osal_op_history worker_op_history;
 	UINT8 msg_local_buffer[WMT_IDC_MSG_BUFFER];
+	struct vendor_patch_table patch_table;
+
 } DEV_WMT, *P_DEV_WMT;
 
 
@@ -420,6 +457,17 @@ UINT32 wmt_lib_get_gps_lna_pin_num(VOID);
 extern INT32 wmt_lib_fw_log_ctrl(enum wmt_fw_log_type type, UINT8 onoff, UINT8 level);
 VOID wmt_lib_print_wmtd_op_history(VOID);
 VOID wmt_lib_print_worker_op_history(VOID);
+
+extern INT32 wmt_lib_get_vendor_patch_num(VOID);
+extern INT32 wmt_lib_set_vendor_patch_version(struct wmt_vendor_patch *p);
+extern INT32 wmt_lib_get_vendor_patch_version(struct wmt_vendor_patch *p);
+extern INT32 wmt_lib_set_check_patch_status(INT32 status);
+extern INT32 wmt_lib_get_check_patch_status(VOID);
+extern INT32 wmt_lib_set_active_patch_version(PUINT8 version);
+extern INT32 wmt_lib_get_active_patch_version(PUINT8 version);
+extern INT32 wmt_lib_get_need_update_patch_version(VOID);
+extern INT32 wmt_lib_set_need_update_patch_version(INT32 need);
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
