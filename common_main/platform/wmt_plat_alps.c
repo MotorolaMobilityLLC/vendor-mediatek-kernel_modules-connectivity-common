@@ -727,7 +727,7 @@ INT32 wmt_plat_gpio_ctrl(ENUM_PIN_ID id, ENUM_PIN_STATE state)
 {
 	INT32 iret = -1;
 
-	if ((id < PIN_ID_MAX) && (state < PIN_STA_MAX)) {
+	if ((id >= 0) && (id < PIN_ID_MAX) && (state < PIN_STA_MAX)) {
 		/* TODO: [FixMe][GeorgeKuo] do sanity check to const function table when init and skip checking here */
 		if (gfp_set_pin_table[id])
 			iret = (*(gfp_set_pin_table[id]))(state);	/* .handler */
