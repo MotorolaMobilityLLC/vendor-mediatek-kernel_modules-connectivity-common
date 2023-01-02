@@ -1218,7 +1218,7 @@ static VOID wmt_lib_wmtd_worker_thread_work_handler(struct work_struct *work)
 			len = osal_strlen(pbuf);
 		break;
 		}
-		stp_dbg_trigger_collect_ftrace(pbuf, len);
+		wmt_lib_trigger_assert(WMTDRV_TYPE_WIFI, 30);
 	}
 }
 
@@ -1846,6 +1846,11 @@ INT32 wmt_lib_try_pwr_off(VOID)
 	WMT_DBG_FUNC("wmt_lib_try_pwr_off OPID(%d) ok\n", pOp->op.opId);
 
 	return 0;
+}
+
+P_WMT_PATCH_INFO wmt_lib_get_patch_info(VOID)
+{
+	return gDevWmt.pWmtPatchInfo;
 }
 
 /*!
