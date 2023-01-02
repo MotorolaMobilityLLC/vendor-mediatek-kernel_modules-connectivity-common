@@ -252,9 +252,9 @@ static INT32 _stp_btm_put_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP_Q pOpQ, P_OSAL_OP 
 				STP_BTM_PR_DBG("latest: 0x%x\n", pOp_latest->op.opId);
 				flag_latest = 0;
 			}
-			if ((pOp_latest->op.opId == pOp->op.opId)
+			if (pOp_latest->op.opId == pOp->op.opId
 #if CFG_WMT_LTE_COEX_HANDLING
-			&& (pOp->op.opId != STP_OPID_BTM_WMT_LTE_COEX)
+			    && pOp->op.opId != STP_OPID_BTM_WMT_LTE_COEX
 #endif
 			) {
 				flag_latest = 0;
