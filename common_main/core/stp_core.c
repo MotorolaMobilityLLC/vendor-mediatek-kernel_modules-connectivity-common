@@ -104,6 +104,10 @@ static mtkstp_context_struct stp_core_ctx = { 0 };
 #define STP_ASSERT(x)		((x).f_evt_err_assert)
 #define STP_SET_ASSERT(x, v)	((x).f_evt_err_assert = (v))
 
+#define STP_ASSERT_IN_PROGRESS(x)           ((x).f_assert_in_progress)
+#define STP_SET_ASSERT_IN_PROGRESS(x, v)    ((x).f_assert_in_progress = (v))
+
+
 /*[PatchNeed]Need to calculate the timeout value*/
 static UINT32 mtkstp_tx_timeout = MTKSTP_TX_TIMEOUT;
 static mtkstp_parser_state prev_state = -1;
@@ -1521,6 +1525,7 @@ INT32 mtk_wcn_stp_init(const mtkstp_callback * const cb_func)
 	STP_SET_WMT_LAST_CLOSE(stp_core_ctx, 0);
 	STP_SET_EMI_DUMP_FLAG(stp_core_ctx, 0);
 	STP_SET_ASSERT(stp_core_ctx, 0);
+	STP_SET_ASSERT_IN_PROGRESS(stp_core_ctx, 0);
 
 	if (!STP_PSM_CORE(stp_core_ctx)) {
 		ret = (-3);
@@ -1926,6 +1931,7 @@ static INT32 stp_parser_data_in_mand_mode(UINT32 length, UINT8 *p_data)
 				}
 				continue;
 			}
+			mtk_wcn_stp_assert_flow_ctrl(1);
 			mtk_wcn_stp_coredump_start_ctrl(1);
 			if (mtk_wcn_stp_get_wmt_trg_assert() == 1)
 				stp_btm_stop_trigger_assert_timer(STP_BTM_CORE(stp_core_ctx));
@@ -2252,6 +2258,7 @@ static INT32 stp_parser_data_in_full_mode(UINT32 length, UINT8 *p_data)
 				osal_assert(0);
 			}
 
+			mtk_wcn_stp_assert_flow_ctrl(1);
 			if (mtk_wcn_stp_coredump_start_get() == 0 && stp_core_ctx.rx_counter == 0 &&
 			    STP_IS_ENABLE_DBG(stp_core_ctx) && (stp_core_ctx.parser.type == STP_TASK_INDX)) {
 				mtk_wcn_stp_coredump_start_ctrl(1);
@@ -3531,4 +3538,15 @@ INT32 mtk_stp_check_rx_has_pending_data(VOID)
 P_OSAL_THREAD mtk_stp_rx_thread_get(VOID)
 {
 	return sys_rx_thread_get();
+}
+
+VOID mtk_wcn_stp_assert_flow_ctrl(UINT32 on)
+{
+	STP_DBG_FUNC("Set assert progress flag to %d\n", on);
+	STP_SET_ASSERT_IN_PROGRESS(stp_core_ctx, on);
+}
+
+UINT32 mtk_wcn_stp_assert_flow_get(VOID)
+{
+	return STP_ASSERT_IN_PROGRESS(stp_core_ctx);
 }
