@@ -373,7 +373,7 @@ INT32 wmt_dbg_cmd_test_api(ENUM_WMTDRV_CMD_T cmd)
 		pOp->op.au4OpData[3] = osal_sizeof(gCoexBuf.buffer);
 		break;
 	}
-	WMT_INFO_FUNC("CMD_TEST, opid(%d), par(%lu, %lu)\n", pOp->op.opId, pOp->op.au4OpData[0],
+	WMT_INFO_FUNC("CMD_TEST, opid(%d), par(%zu, %zu)\n", pOp->op.opId, pOp->op.au4OpData[0],
 		      pOp->op.au4OpData[1]);
 	/*wake up chip first */
 	if (DISABLE_PSM_MONITOR()) {
@@ -396,7 +396,7 @@ INT32 wmt_dbg_cmd_test_api(ENUM_WMTDRV_CMD_T cmd)
 		}
 	}
 	/* wmt_lib_host_awake_put(); */
-	WMT_INFO_FUNC("CMD_TEST, opid (%d), par(%lu, %lu), ret(%d), result(%s)\n",
+	WMT_INFO_FUNC("CMD_TEST, opid (%d), par(%zu, %zu), ret(%d), result(%s)\n",
 		      pOp->op.opId,
 		      pOp->op.au4OpData[0],
 		      pOp->op.au4OpData[1],
