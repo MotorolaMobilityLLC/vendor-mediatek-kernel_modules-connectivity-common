@@ -2389,3 +2389,39 @@ static VOID wmt_lib_utc_sync_worker_handler(struct work_struct *work)
 {
 	wmt_lib_utc_time_sync();
 }
+
+INT32 wmt_lib_fw_log_ctrl(enum wmt_fw_log_type type, UINT8 onoff, UINT8 level)
+{
+	P_OSAL_OP pOp;
+	MTK_WCN_BOOL bRet;
+	P_OSAL_SIGNAL pSignal;
+
+	pOp = wmt_lib_get_free_op();
+	if (!pOp) {
+		WMT_WARN_FUNC("get_free_lxop fail\n");
+		return -1;
+	}
+
+	pSignal = &pOp->signal;
+	pSignal->timeoutValue = 0;
+	pOp->op.opId = WMT_OPID_FW_LOG_CTRL;
+	pOp->op.au4OpData[0] = type;
+	pOp->op.au4OpData[1] = onoff;
+	pOp->op.au4OpData[2] = level;
+
+	if (DISABLE_PSM_MONITOR()) {
+		WMT_ERR_FUNC("wake up failed\n");
+		wmt_lib_put_op_to_free_queue(pOp);
+		return -2;
+	}
+
+	bRet = wmt_lib_put_act_op(pOp);
+	ENABLE_PSM_MONITOR();
+	if (bRet == MTK_WCN_BOOL_FALSE) {
+		WMT_WARN_FUNC("OPID(%d) fail\n", pOp->op.opId);
+		return -3;
+	}
+	WMT_DBG_FUNC("OPID(%d) ok\n", pOp->op.opId);
+
+	return 0;
+}
