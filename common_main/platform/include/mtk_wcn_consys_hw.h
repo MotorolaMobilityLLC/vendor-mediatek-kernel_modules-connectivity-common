@@ -114,6 +114,7 @@ struct CONSYS_BASE_ADDRESS {
 	SIZE_T mcu_conn_hif_pdma_base;
 	SIZE_T ap_pccif4_base;
 	SIZE_T infra_ao_pericfg_base;
+	SIZE_T infracfg_reg_base;
 };
 
 enum CONSYS_BASE_ADDRESS_INDEX {
@@ -129,6 +130,7 @@ enum CONSYS_BASE_ADDRESS_INDEX {
 	MCU_CONN_HIF_PDMA_BASE_INDEX,
 	AP_PCCIF4_BASE_INDEX,
 	INFRA_AO_PERICFG_BASE_INDEX,
+	INFRACFG_REG_BASE_INDEX,
 };
 
 typedef enum _ENUM_EMI_CTRL_STATE_OFFSET_ {
@@ -206,6 +208,7 @@ typedef VOID(*CONSYS_IC_SET_PDMA_AXI_RREADY_FORCE_HIGH) (UINT32 enable);
 typedef VOID(*CONSYS_IC_SET_MCIF_EMI_MPU_PROTECTION)(MTK_WCN_BOOL enable);
 typedef INT32(*CONSYS_IC_CALIBRATION_BACKUP_RESTORE) (VOID);
 typedef VOID(*CONSYS_IC_REGISTER_DEVAPC_CB) (VOID);
+typedef VOID(*CONSYS_IC_INFRA_REG_DUMP)(VOID);
 
 typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_CLOCK_BUFFER_CTRL consys_ic_clock_buffer_ctrl;
@@ -253,6 +256,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_SET_MCIF_EMI_MPU_PROTECTION consys_ic_set_mcif_emi_mpu_protection;
 	CONSYS_IC_CALIBRATION_BACKUP_RESTORE consys_ic_calibration_backup_restore;
 	CONSYS_IC_REGISTER_DEVAPC_CB consys_ic_register_devapc_cb;
+	CONSYS_IC_INFRA_REG_DUMP consys_ic_infra_reg_dump;
 } WMT_CONSYS_IC_OPS, *P_WMT_CONSYS_IC_OPS;
 /*******************************************************************************
 *                            P U B L I C   D A T A
