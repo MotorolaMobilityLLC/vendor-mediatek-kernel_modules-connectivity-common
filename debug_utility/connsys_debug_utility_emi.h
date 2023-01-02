@@ -12,6 +12,7 @@
 #define CONNLOG_EMI_32_BYTE_ALIGNED 32 /* connsys EMI cache is 32-byte aligned */
 #define CONNLOG_CONTROL_RING_BUFFER_BASE_SIZE 64 /* Reserve for setup ring buffer base address  */
 #define CONNLOG_CONTROL_RING_BUFFER_RESERVE_SIZE 32
+#define CONNLOG_IRQ_COUNTER_BASE 48
 #define CONNLOG_READY_PATTERN_BASE 56
 #define CONNLOG_READY_PATTERN_BASE_SIZE 8
 
