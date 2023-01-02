@@ -43,7 +43,6 @@
 #include <linux/of_reserved_mem.h>
 #include <linux/pinctrl/consumer.h>
 #include <linux/of_gpio.h>
-#include <linux/syscore_ops.h>
 #include <connectivity_build_in_adapter.h>
 #include "wmt_lib.h"
 
@@ -74,8 +73,8 @@
 */
 static INT32 mtk_wmt_probe(struct platform_device *pdev);
 static INT32 mtk_wmt_remove(struct platform_device *pdev);
-static INT32 mtk_wmt_suspend(VOID);
-static void mtk_wmt_resume(VOID);
+static INT32 mtk_wmt_suspend(struct device *dev);
+static INT32 mtk_wmt_resume(struct device *dev);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -139,6 +138,11 @@ const struct of_device_id apwmt_of_ids[] = {
 struct CONSYS_BASE_ADDRESS conn_reg;
 #endif
 
+static const struct dev_pm_ops wmt_drv_pm_ops = {
+	.suspend_noirq = mtk_wmt_suspend,
+	.resume_noirq = mtk_wmt_resume,
+};
+
 static struct platform_driver mtk_wmt_dev_drv = {
 	.probe = mtk_wmt_probe,
 	.remove = mtk_wmt_remove,
@@ -148,12 +152,8 @@ static struct platform_driver mtk_wmt_dev_drv = {
 #ifdef CONFIG_OF
 		   .of_match_table = apwmt_of_ids,
 #endif
+		   .pm = &wmt_drv_pm_ops,
 		   },
-};
-
-static struct syscore_ops wmt_dbg_syscore_ops = {
-	.suspend = mtk_wmt_suspend,
-	.resume = mtk_wmt_resume,
 };
 
 /* GPIO part */
@@ -438,7 +438,7 @@ static INT32 mtk_wmt_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static INT32 mtk_wmt_suspend(VOID)
+static INT32 mtk_wmt_suspend(struct device *dev)
 {
 	WMT_PLAT_PR_INFO(" mtk_wmt_suspend !!");
 	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_WHEN_AP_SUSPEND);
@@ -492,10 +492,12 @@ static void plat_resume_handler(struct work_struct *work)
 	}
 }
 
-static void mtk_wmt_resume(VOID)
+static INT32 mtk_wmt_resume(struct device *dev)
 {
 	WMT_PLAT_PR_INFO(" mtk_wmt_resume !!");
 	schedule_work(&plt_resume_worker);
+
+	return 0;
 }
 
 INT32 mtk_wcn_consys_sleep_info_read_all_ctrl(P_CONSYS_STATE state)
@@ -966,7 +968,6 @@ INT32 mtk_wcn_consys_hw_init(VOID)
 			retry++;
 			WMT_PLAT_PR_INFO("g_probe_called = 0, retry = %d\n", retry);
 		}
-		register_syscore_ops(&wmt_dbg_syscore_ops);
 	}
 
 	return iRet;
@@ -985,7 +986,6 @@ INT32 mtk_wcn_consys_hw_deinit(VOID)
 #endif
 
 	platform_driver_unregister(&mtk_wmt_dev_drv);
-	unregister_syscore_ops(&wmt_dbg_syscore_ops);
 
 	if (wmt_consys_ic_ops)
 		wmt_consys_ic_ops = NULL;
