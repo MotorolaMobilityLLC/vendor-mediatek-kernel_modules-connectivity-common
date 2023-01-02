@@ -3133,7 +3133,7 @@ INT32 wmt_lib_set_active_patch_version(struct wmt_vendor_patch *p)
 	struct vendor_patch_table *table = &(gDevWmt.patch_table);
 
 	if (p->id < 0 || p->id >= table->num) {
-		WMT_ERR_FUNC("patch id: %s is invalid. num = %d", p->id, table->num);
+		WMT_ERR_FUNC("patch id: %d is invalid. num = %d", p->id, table->num);
 		return -1;
 	}
 
