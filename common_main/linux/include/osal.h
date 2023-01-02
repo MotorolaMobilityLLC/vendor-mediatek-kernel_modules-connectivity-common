@@ -134,7 +134,20 @@ do { \
 ********************************************************************************
 */
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+typedef VOID(*P_TIMEOUT_HANDLER) (struct timer_list *t);
+typedef struct timer_list *timer_handler_arg;
+#define GET_HANDLER_DATA(arg, data) \
+do { \
+	P_OSAL_TIMER osal_timer = from_timer(osal_timer, arg, timer); \
+	data = osal_timer->timeroutHandlerData; \
+} while (0)
+#else
 typedef VOID(*P_TIMEOUT_HANDLER) (ULONG);
+typedef ULONG timer_handler_arg;
+#define GET_HANDLER_DATA(arg, data) (data = arg)
+#endif
+
 typedef INT32(*P_COND) (PVOID);
 
 typedef struct _OSAL_TIMER_ {
