@@ -2157,6 +2157,10 @@ ENUM_WMTRSTRET_TYPE_T wmt_lib_cmb_rst(ENUM_WMTRSTSRC_TYPE_T src)
 		"WMTRSTSRC_RESET_STP",
 		"WMTRSTSRC_RESET_TEST"
 	};
+	INT32 coredump_mode = mtk_wcn_stp_coredump_flag_get();
+
+	WMT_INFO_FUNC("coredump mode == %d. Connsys coredump is %s.",
+			coredump_mode, coredump_mode ? "enabled" : "disabled");
 
 	if (src < WMTRSTSRC_RESET_MAX)
 		WMT_INFO_FUNC("reset source = %s\n", srcName[src]);
