@@ -460,8 +460,14 @@ static INT32 osal_thread_sched_retrieve(P_OSAL_THREAD pThread, P_OSAL_THREAD_SCH
 
 	sched->time = sec*1000 + usec/1000;
 	sched->exec = se.sum_exec_runtime;
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 17, 0))
+	sched->runnable = pThread->pThread->stats.wait_sum;
+	sched->iowait = pThread->pThread->stats.iowait_sum;
+#else
 	sched->runnable = se.statistics.wait_sum;
 	sched->iowait = se.statistics.iowait_sum;
+#endif
+
 
 	return 0;
 #else
