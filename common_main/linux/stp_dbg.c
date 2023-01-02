@@ -2683,10 +2683,6 @@ MTKSTP_DBG_T *stp_dbg_init(PVOID btm_half)
 		STP_DBG_PR_ERR("-ENOMEM stp_dbg_dmaregs_init fail!");
 		goto ERR_EXIT2;
 	}
-
-	/* init netlink here in case stp_dump3 binds socket before netlink init done */
-	stp_dbg_nl_init();
-
 	return stp_dbg;
 
 ERR_EXIT2:
