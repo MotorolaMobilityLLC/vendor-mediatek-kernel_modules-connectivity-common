@@ -2538,7 +2538,7 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 			osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 
 		} else if (issue_type == STP_FW_ABT) {
-			INT32 copyLen = (len <= STP_ASSERT_INFO_SIZE ? len : STP_ASSERT_INFO_SIZE);
+			INT32 copyLen = (len < STP_ASSERT_INFO_SIZE ? len : STP_ASSERT_INFO_SIZE - 1);
 
 			osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 			osal_memcpy(&g_stp_dbg_cpupcr->assert_info[0], tempbuf, copyLen);
