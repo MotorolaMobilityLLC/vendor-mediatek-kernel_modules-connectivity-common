@@ -2509,7 +2509,7 @@ INT32 mtk_wcn_stp_send_data(const PUINT8 buffer, const UINT32 length, const UINT
 	}
 	/* if(g_block_tx) */
 	if (mtk_wcn_stp_coredump_start_get() != 0) {
-		STP_ERR_FUNC("STP fw coredump start flag set...\n");
+		STP_WARN_RATELIMITED_FUNC("STP fw coredump start flag set...\n");
 		return length;
 	}
 #ifdef CONFIG_POWER_SAVING_SUPPORT
@@ -2561,11 +2561,9 @@ DONT_MONITOR:
 		/* no-op */
 	} else if (STP_NOT_ENABLE(stp_core_ctx) && WMT_TASK_INDX == type) {
 		/* ret = mtk_wcn_stp_send_data_raw(buffer, length, type); */
-		/* STP over SDIO */
 	} else if ((mtk_wcn_stp_is_sdio_mode() || mtk_wcn_stp_is_uart_mand_mode() || mtk_wcn_stp_is_btif_mand_mode())
 		 && STP_IS_ENABLE(stp_core_ctx)) {
 
-		/* osal_printtimeofday("[ STP][SDIO][ B][W]"); */
 		/*mtkstp_header[0] = 0x80;*/
 		mtkstp_header[0] = 0x80 + (stp_core_ctx.sequence.txseq << 3);	/* for debug purpose */
 		mtkstp_header[1] = (type << 4) + (((length) >> 8) & 0x0f);
@@ -2594,22 +2592,14 @@ DONT_MONITOR:
 			ret = 0;
 		} else
 			ret = (INT32) length;
-
-		/* osal_printtimeofday("[ STP][SDIO][ E][W]"); */
 	}
-	/* STP over UART */
 	else if ((mtk_wcn_stp_is_uart_fullset_mode() || mtk_wcn_stp_is_btif_fullset_mode())
 		&& STP_IS_ENABLE(stp_core_ctx)) {
 
-		/* osal_printtimeofday("[ STP][UART][ B][W]"); */
-		/* STP_INFO_FUNC("Write byte %d\n", length); */
 		if ((stp_core_ctx.sequence.winspace > 0) &&
 		    (stp_core_ctx.inband_rst_set == 0) &&
 		    (stp_is_tx_res_available(MTKSTP_HEADER_SIZE + length + MTKSTP_CRC_SIZE))) {
 			/*Make Header */
-			/* (*sys_dbg_print)("mtk_wcn_stp_send_data 1, txseq = %d, winspace = %d",
-			 * stp_core_ctx.sequence.txseq, stp_core_ctx.sequence.winspace);
-			 */
 			mtkstp_header[0] =
 			    0x80 + (stp_core_ctx.sequence.txseq << 3) + stp_core_ctx.sequence.txack;
 			mtkstp_header[1] = (type << 4) + ((length & 0xf00) >> 8);
@@ -2640,7 +2630,7 @@ DONT_MONITOR:
 					stp_core_ctx.sequence.txseq,
 					crc, PKT_DIR_TX, buffer, length);
 
-			/*Kick to UART */
+			/*Kick to BUS */
 			stp_send_tx_queue(stp_core_ctx.sequence.txseq);
 
 			INDEX_INC(stp_core_ctx.sequence.txseq);
@@ -2658,15 +2648,13 @@ DONT_MONITOR:
 			 *  No winspace to send. Let caller retry
 			 */
 			if (stp_core_ctx.inband_rst_set == 1)
-				STP_WARN_FUNC
+				STP_WARN_RATELIMITED_FUNC
 				    ("Now it's inband reset process and drop sent packet.\n");
 			else
-				STP_ERR_FUNC("%s: There is no winspace/txqueue to send !!!\n",
+				STP_WARN_RATELIMITED_FUNC("%s: There is no winspace/txqueue to send !!!\n",
 					     __func__);
 			ret = 0;
 		}
-
-		/* osal_printtimeofday("[ STP][UART][ E][W]"); */
 	}
 	stp_ctx_unlock(&stp_core_ctx);
 STP_LOCK_FAIL:
