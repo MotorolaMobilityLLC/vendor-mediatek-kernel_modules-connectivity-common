@@ -244,7 +244,7 @@ int wmt_step_test_check_create_write_reg(struct step_reigster_info *p_reg_info,
 			p_reg_info->offset != check_params[check_index + 2] ||
 			p_reg_info->value != check_params[check_index + 3]) {
 			WMT_ERR_FUNC(
-				"%s, C2 reg params: %d, %p, %d, %d\n",
+				"%s, C2 reg params: %d, %d, %d, %d\n",
 				err_result, p_reg_info->is_write, p_reg_info->address_type,
 				p_reg_info->offset, p_reg_info->value);
 			result = TEST_FAIL;
@@ -593,20 +593,20 @@ void wmt_step_test_check_reg_write_act(unsigned int len, ...)
 		if (g_step_test_check.step_check_write_value == value) {
 			g_step_test_check.step_check_result = TEST_PASS;
 		} else {
-			WMT_ERR_FUNC("STEP test failed: Value is %d, expect %lu", value,
+			WMT_ERR_FUNC("STEP test failed: Value is %d, expect %zu", value,
 				g_step_test_check.step_check_write_value);
 			g_step_test_check.step_check_result = TEST_FAIL;
 		}
 	} else {
 		if ((mask & value) != (mask & g_step_test_check.step_check_write_value)) {
-			WMT_ERR_FUNC("STEP test failed: Overrite:%d, expect:%lu origin %d mask %d",
+			WMT_ERR_FUNC("STEP test failed: Overrite:%d, expect:%zu origin %d mask %d",
 				value,
 				g_step_test_check.step_check_write_value,
 				g_step_test_check.step_recovery_value,
 				mask);
 			g_step_test_check.step_check_result = TEST_FAIL;
 		} else if ((~mask & value) != (~mask & g_step_test_check.step_recovery_value)) {
-			WMT_ERR_FUNC("STEP test failed: No change:%d, expect:%lu origin %d mask %d",
+			WMT_ERR_FUNC("STEP test failed: No change:%d, expect:%zu origin %d mask %d",
 				value,
 				g_step_test_check.step_check_write_value,
 				g_step_test_check.step_recovery_value,
