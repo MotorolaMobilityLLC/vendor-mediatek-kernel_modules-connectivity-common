@@ -103,6 +103,8 @@ static OSAL_SLEEPABLE_LOCK g_adie_chipid_lock;
 static atomic64_t g_sleep_counter_enable = ATOMIC64_INIT(1);
 static OSAL_UNSLEEPABLE_LOCK g_sleep_counter_spinlock;
 
+static atomic_t g_probe_called = ATOMIC_INIT(0);
+
 #ifdef CONFIG_OF
 const struct of_device_id apwmt_of_ids[] = {
 	{.compatible = "mediatek,mt3967-consys",},
@@ -370,6 +372,8 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 
 	INIT_WORK(&plt_resume_worker, plat_resume_handler);
 
+	atomic_set(&g_probe_called, 1);
+
 	return 0;
 }
 
@@ -393,6 +397,7 @@ static INT32 mtk_wmt_remove(struct platform_device *pdev)
 	osal_unsleepable_lock_deinit(&g_sleep_counter_spinlock);
 	osal_sleepable_lock_deinit(&g_adie_chipid_lock);
 
+	atomic_set(&g_probe_called, 0);
 	return 0;
 }
 
@@ -896,7 +901,7 @@ INT32 mtk_wcn_consys_hw_restore(struct device *device)
 
 INT32 mtk_wcn_consys_hw_init(VOID)
 {
-	INT32 iRet = -1;
+	INT32 iRet = -1, retry = 0;
 
 	if (wmt_consys_ic_ops == NULL)
 		wmt_consys_ic_ops = mtk_wcn_get_consys_ic_ops();
@@ -904,8 +909,14 @@ INT32 mtk_wcn_consys_hw_init(VOID)
 	iRet = platform_driver_register(&mtk_wmt_dev_drv);
 	if (iRet)
 		WMT_PLAT_PR_ERR("WMT platform driver registered failed(%d)\n", iRet);
-
-	register_syscore_ops(&wmt_dbg_syscore_ops);
+	else {
+		while (atomic_read(&g_probe_called) == 0 && retry < 100) {
+			osal_sleep_ms(50);
+			retry++;
+			WMT_PLAT_PR_INFO("g_probe_called = 0, retry = %d\n", retry);
+		}
+		register_syscore_ops(&wmt_dbg_syscore_ops);
+	}
 
 	return iRet;
 
