@@ -1491,17 +1491,18 @@ static INT32 WMT_mmap(struct file *pFile, struct vm_area_struct *pVma)
 
 	if (bufId == 0) {
 		if (pVma->vm_end - pVma->vm_start > gConEmiSize)
-			return -1;
+			return -EINVAL;
 		WMT_INFO_FUNC("WMT_mmap size: %lu\n", pVma->vm_end - pVma->vm_start);
 		if (remap_pfn_range(pVma, pVma->vm_start, gConEmiPhyBase >> PAGE_SHIFT,
 			pVma->vm_end - pVma->vm_start, pVma->vm_page_prot))
 			return -EAGAIN;
+		return 0;
 	} else if (bufId == 1) {
 		if (emiInfo == NULL)
-			return -1;
+			return -EINVAL;
 		if (emiInfo->emi_direct_path_size == 0 ||
 		    pVma->vm_end - pVma->vm_start > emiInfo->emi_direct_path_size)
-			return -1;
+			return -EINVAL;
 		WMT_INFO_FUNC("MD direct path size=%d map size=%lu\n",
 			emiInfo->emi_direct_path_size,
 			pVma->vm_end - pVma->vm_start);
@@ -1509,8 +1510,10 @@ static INT32 WMT_mmap(struct file *pFile, struct vm_area_struct *pVma)
 			emiInfo->emi_direct_path_ap_phy_addr >> PAGE_SHIFT,
 			pVma->vm_end - pVma->vm_start, pVma->vm_page_prot))
 			return -EAGAIN;
+		return 0;
 	}
-	return 0;
+	/* Invalid buff id */
+	return -EINVAL;
 }
 
 const struct file_operations gWmtFops = {
