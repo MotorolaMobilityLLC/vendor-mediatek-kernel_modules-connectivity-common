@@ -175,10 +175,22 @@ static void plat_resume_handler(struct work_struct *work);
 struct regmap *g_regmap;
 #endif
 
+#if (KERNEL_VERSION(6, 1, 0) <= LINUX_VERSION_CODE)
+static int wmt_thermal_get_temp_cb(struct thermal_zone_device *tz,
+		int *temp);
+#else
 static int wmt_thermal_get_temp_cb(void *data, int *temp);
+#endif
+
+#if (KERNEL_VERSION(6, 1, 0) <= LINUX_VERSION_CODE)
+static const struct thermal_zone_device_ops tz_wmt_thermal_ops = {
+	.get_temp = wmt_thermal_get_temp_cb,
+};
+#else
 static const struct thermal_zone_of_device_ops tz_wmt_thermal_ops = {
 	.get_temp = wmt_thermal_get_temp_cb,
 };
+#endif
 
 /*******************************************************************************
 *                           P R I V A T E   D A T A
@@ -324,7 +336,12 @@ static int wmt_allocate_connsys_emi_by_lk2(struct platform_device *pdev)
 	return 0;
 }
 
+#if (KERNEL_VERSION(6, 1, 0) <= LINUX_VERSION_CODE)
+static int wmt_thermal_get_temp_cb(struct thermal_zone_device *tz,
+		int *temp)
+#else
 static int wmt_thermal_get_temp_cb(void *data, int *temp)
+#endif
 {
 	if (temp) {
 		*temp = wmt_lib_tm_temp_query() * 1000;
@@ -339,8 +356,13 @@ static INT32 wmt_thermal_register(struct platform_device *pdev)
 	int ret;
 
 	/* register thermal zone */
+#if (KERNEL_VERSION(6, 1, 0) <= LINUX_VERSION_CODE)
+	tz = devm_thermal_of_zone_register(
+		&pdev->dev, 0, NULL, &tz_wmt_thermal_ops);
+#else
 	tz = devm_thermal_zone_of_sensor_register(
 		&pdev->dev, 0, NULL, &tz_wmt_thermal_ops);
+#endif
 
 	if (IS_ERR(tz)) {
 		ret = PTR_ERR(tz);
