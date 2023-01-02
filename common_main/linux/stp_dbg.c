@@ -2598,6 +2598,8 @@ INT32 stp_dbg_cpupcr_infor_format(PUINT8 buf, UINT32 max_len)
 	g_stp_dbg_cpupcr->host_assert_info.drv_type = 0;
 	g_stp_dbg_cpupcr->issue_type = STP_FW_ISSUE_TYPE_INVALID;
 	g_stp_dbg_cpupcr->keyword[0] = '\0';
+	g_stp_dbg_cpupcr->fwRrq = 0;
+	g_stp_dbg_cpupcr->fwIsr = 0;
 	osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 
 	return len;
