@@ -630,6 +630,18 @@ INT32 wmt_core_reg_rw_raw(UINT32 isWrite, UINT32 offset, PUINT32 pVal, UINT32 ma
 	iRet = wmt_core_rx(evtBuf, evtLen, &u4Res);
 	if ((iRet) || (u4Res != evtLen)) {
 		WMT_ERR_FUNC("Rx REG_EVT fail!(%d) len(%d, %d)\n", iRet, u4Res, evtLen);
+		if (isWrite)
+			WMT_INFO_FUNC("buf:[%2X,%2X,%2X,%2X,%2X] evt:[%2X,%2X,%2X,%2X,%2X]\n",
+					evtBuf[0], evtBuf[1], evtBuf[2], evtBuf[3], evtBuf[4],
+					WMT_SET_REG_WR_EVT[0], WMT_SET_REG_WR_EVT[1],
+					WMT_SET_REG_WR_EVT[2], WMT_SET_REG_WR_EVT[3],
+					WMT_SET_REG_WR_EVT[4]);
+		else
+			WMT_INFO_FUNC("buf:[%2X,%2X,%2X,%2X,%2X] evt:[%2X,%2X,%2X,%2X,%2X]\n",
+					evtBuf[0], evtBuf[1], evtBuf[2], evtBuf[3], evtBuf[4],
+					WMT_SET_REG_RD_EVT[0], WMT_SET_REG_RD_EVT[1],
+					WMT_SET_REG_RD_EVT[2], WMT_SET_REG_RD_EVT[3],
+					WMT_SET_REG_RD_EVT[4]);
 		mtk_wcn_stp_dbg_dump_package();
 		wmt_core_trigger_assert();
 		return -3;
@@ -2171,8 +2183,13 @@ static INT32 opfunc_efuse_rw(P_WMT_OP pWmtOp)
 
 	evtLen = osal_sizeof(WMT_EFUSE_EVT);
 	iRet = wmt_core_rx(evtBuf, evtLen, &u4Res);
-	if (iRet || (u4Res != evtLen))
+	if (iRet || (u4Res != evtLen)) {
 		WMT_ERR_FUNC("WMT-CORE: read REG_EVB fail(%d) len(%d, %d)\n", iRet, u4Res, evtLen);
+		WMT_INFO_FUNC("buf:[%2X,%2X,%2X,%2X,%2X] evt:[%2X,%2X,%2X,%2X,%2X]\n",
+				evtBuf[0], evtBuf[1], evtBuf[2], evtBuf[3], evtBuf[4],
+				WMT_EFUSE_EVT[0], WMT_EFUSE_EVT[1], WMT_EFUSE_EVT[2],
+				WMT_EFUSE_EVT[3], WMT_EFUSE_EVT[4]);
+	}
 	wmt_core_dump_data(&evtBuf[0], "efuse_evt", osal_sizeof(evtBuf));
 
 	return iRet;
