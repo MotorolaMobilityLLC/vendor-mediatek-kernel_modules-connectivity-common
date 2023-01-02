@@ -1,3 +1,4 @@
+MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 ###############################################################################
 # Necessary Check
 
