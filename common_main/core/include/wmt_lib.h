@@ -95,6 +95,9 @@ typedef enum _ENUM_WMTRSTRET_TYPE_T {
 #define MAX_PATCH_NUM 10
 #define UTC_SYNC_TIME (60 * 60 * 1000)
 
+#define WMT_IDC_MSG_BUFFER 2048
+#define WMT_IDC_MSG_MAX_SIZE (WMT_IDC_MSG_BUFFER - 7) /* Subtract STP payload cmd size */
+
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
@@ -254,6 +257,7 @@ typedef struct _DEV_WMT_ {
 	struct work_struct wmtd_worker_thread_work;
 	struct osal_op_history wmtd_op_history;
 	struct osal_op_history worker_op_history;
+	UINT8 msg_local_buffer[WMT_IDC_MSG_BUFFER];
 } DEV_WMT, *P_DEV_WMT;
 
 
