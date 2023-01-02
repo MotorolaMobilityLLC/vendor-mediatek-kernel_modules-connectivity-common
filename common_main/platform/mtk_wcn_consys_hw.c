@@ -317,6 +317,7 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 			if (wmt_consys_ic_ops->consys_ic_store_pdev)
 				wmt_consys_ic_ops->consys_ic_store_pdev(pdev);
 			pm_runtime_enable(&pdev->dev);
+			dev_pm_syscore_device(&pdev->dev, true);
 		}
 	}
 
