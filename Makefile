@@ -221,26 +221,19 @@ ifeq ($(CONFIG_ARCH_MT6580), y)
 ccflags-y += -D CFG_WMT_READ_EFUSE_VCN33
 endif
 
-# STEP: (Support Connac)
-# MTK eng/userdebug/user load: Support
-# Customer eng/userdebug load: Support
-# Customer user load: Not support
-
-ifneq ($(TARGET_BUILD_VARIANT),user)
-	ccflags-y += -D CFG_WMT_STEP
-endif
-
 ifeq ($(findstring evb, $(MTK_PROJECT)), evb)
 ccflags-y += -D CFG_WMT_EVB
 endif
 
 ifneq ($(filter "CONSYS_%",$(CONFIG_MTK_COMBO_CHIP)),)
 $(MODULE_NAME)-objs += common_main/platform/$(CONNSYS_PLATFORM).o
+$(MODULE_NAME)-objs += common_main/platform/$(CONNSYS_PLATFORM)_dbg.o
 endif
 
 #$(MODULE_NAME)-objs += common_main/platform/wmt_plat_stub.o
 $(MODULE_NAME)-objs += common_main/platform/wmt_plat_alps.o
 $(MODULE_NAME)-objs += common_main/platform/mtk_wcn_consys_hw.o
+$(MODULE_NAME)-objs += common_main/platform/mtk_wcn_dump_util.o
 $(MODULE_NAME)-objs += common_main/platform/mtk_wcn_cmb_hw.o
 
 $(MODULE_NAME)-objs += common_main/core/wmt_ic_6628.o
@@ -278,7 +271,6 @@ $(MODULE_NAME)-objs += common_main/linux/wmt_alarm.o
 ifneq ($(CONFIG_MTK_CONNSYS_DEDICATED_LOG_PATH),)
 $(MODULE_NAME)-objs += common_main/linux/fw_log_wmt.o
 endif
-$(MODULE_NAME)-objs += common_main/linux/wmt_step.o
 
 ifeq ($(CONFIG_MTK_BTIF),$(filter $(CONFIG_MTK_BTIF),y m))
 $(MODULE_NAME)-objs += common_main/linux/stp_btif.o
@@ -292,10 +284,6 @@ $(MODULE_NAME)-objs += debug_utility/connsys_debug_utility.o
 ###############################################################################
 ifeq ($(TARGET_BUILD_VARIANT),eng)
 ccflags-y += -I$(src)/test/include
-endif
-
-ifeq ($(TARGET_BUILD_VARIANT),eng)
-$(MODULE_NAME)-objs += test/wmt_step_test.o
 endif
 
 endif
