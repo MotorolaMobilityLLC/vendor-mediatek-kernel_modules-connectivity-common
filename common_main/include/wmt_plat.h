@@ -47,7 +47,7 @@
 #define WMT_PLAT_LOG_WARN                 1
 #define WMT_PLAT_LOG_ERR                  0
 
-extern UINT32 wmtPlatLogLvl;
+extern INT32 wmtPlatLogLvl;
 
 #define WMT_PLAT_PR_LOUD(fmt, arg...) \
 do { \
@@ -297,7 +297,7 @@ typedef INT32(*deep_idle_ctrl_cb) (UINT32);
 *                            P U B L I C   D A T A
 ********************************************************************************
 */
-extern UINT32 gWmtDbgLvl;
+extern INT32 gWmtDbgLvl;
 extern struct device *wmt_dev;
 #ifdef CFG_WMT_READ_EFUSE_VCN33
 extern INT32 wmt_set_pmic_voltage(UINT32 level);

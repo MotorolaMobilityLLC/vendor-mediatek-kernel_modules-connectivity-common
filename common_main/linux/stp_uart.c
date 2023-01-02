@@ -57,7 +57,7 @@
 #define MAX_PACKET_ALLOWED                2000
 
 
-static UINT32 gDbgLevel = UART_LOG_INFO;
+static INT32 gDbgLevel = UART_LOG_INFO;
 
 #define UART_PR_DBG(fmt, arg...)	\
 do { if (gDbgLevel >= UART_LOG_DBG)	\
