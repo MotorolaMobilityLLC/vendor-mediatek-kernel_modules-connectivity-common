@@ -164,6 +164,13 @@ static UINT32 g_buf_len;
 static PUINT8 pBuf;
 #endif
 
+#if CFG_WMT_PROC_FOR_DUMP_INFO
+static struct proc_dir_entry *gWmtdumpinfoEntry;
+#define WMT_DUMP_INFO_PROCNAME "driver/wmt_dump_info"
+static UINT32 g_dump_info_buf_len;
+static PUINT8 dump_info_pBuf;
+#endif
+
 #if WMT_CREATE_NODE_DYNAMIC
 struct class *wmt_class;
 struct device *wmt_dev;
@@ -182,6 +189,7 @@ static atomic_t g_es_lr_flag_for_blank = ATOMIC_INIT(0); /* for ctrl blank flag 
 /* Prevent race condition when wmt_dev_tm_temp_query is called concurrently */
 static OSAL_UNSLEEPABLE_LOCK g_temp_query_spinlock;
 static OSAL_SLEEPABLE_LOCK g_aee_read_lock;
+static OSAL_SLEEPABLE_LOCK g_dump_info_read_lock;
 
 #ifdef CONFIG_EARLYSUSPEND
 static VOID wmt_dev_early_suspend(struct early_suspend *h)
@@ -441,6 +449,98 @@ INT32 wmt_dev_proc_for_aee_remove(VOID)
 	return 0;
 }
 #endif /* CFG_WMT_PROC_FOR_AEE */
+
+#if CFG_WMT_PROC_FOR_DUMP_INFO
+static ssize_t wmt_dev_proc_for_dump_info_read(struct file *filp, char __user *buf, size_t count,
+		loff_t *f_pos)
+{
+	INT32 retval = 0;
+	UINT32 len = 0;
+
+	WMT_INFO_FUNC("%s: count %d pos %lld\n", __func__, count, *f_pos);
+
+	if (osal_lock_sleepable_lock(&g_dump_info_read_lock)) {
+		WMT_ERR_FUNC("lock failed\n");
+		return 0;
+	}
+
+	if (*f_pos == 0) {
+		dump_info_pBuf = wmt_lib_get_cpupcr_reg_info(&len, mtk_wcn_consys_read_dump_info_reg());
+		g_dump_info_buf_len = len;
+		WMT_INFO_FUNC("wmt_dev:wmt for dump info buffer len(%d)\n", g_dump_info_buf_len);
+	}
+
+	if (g_dump_info_buf_len >= count) {
+		retval = copy_to_user(buf, dump_info_pBuf, count);
+		if (retval) {
+			WMT_ERR_FUNC("copy to dump info buffer failed, ret:%d\n", retval);
+			retval = -EFAULT;
+			goto dump_info_err_exit;
+		}
+
+		*f_pos += count;
+		g_dump_info_buf_len -= count;
+		dump_info_pBuf += count;
+		WMT_INFO_FUNC("wmt_dev:after read,wmt for dump info buffer len(%d)\n", g_dump_info_buf_len);
+
+		retval = count;
+	} else if (g_dump_info_buf_len != 0) {
+		retval = copy_to_user(buf, dump_info_pBuf, g_dump_info_buf_len);
+		if (retval) {
+			WMT_ERR_FUNC("copy to dump info buffer failed, ret:%d\n", retval);
+			retval = -EFAULT;
+			goto dump_info_err_exit;
+		}
+
+		*f_pos += g_dump_info_buf_len;
+		len = g_dump_info_buf_len;
+		g_dump_info_buf_len = 0;
+		dump_info_pBuf += len;
+		retval = len;
+		WMT_INFO_FUNC("wmt_dev:after read,wmt for dump info buffer len(%d)\n", g_dump_info_buf_len);
+	} else {
+		WMT_INFO_FUNC("wmt_dev: no data available for dump info\n");
+		retval = 0;
+	}
+
+dump_info_err_exit:
+	osal_unlock_sleepable_lock(&g_dump_info_read_lock);
+
+	return retval;
+}
+
+static ssize_t wmt_dev_proc_for_dump_info_write(struct file *filp, const char __user *buf, size_t count,
+		loff_t *f_pos)
+{
+	WMT_TRC_FUNC();
+	return 0;
+}
+
+INT32 wmt_dev_proc_for_dump_info_setup(VOID)
+{
+	static const struct file_operations wmt_dump_info_fops = {
+		.owner = THIS_MODULE,
+		.read = wmt_dev_proc_for_dump_info_read,
+		.write = wmt_dev_proc_for_dump_info_write,
+	};
+
+	gWmtdumpinfoEntry = proc_create(WMT_DUMP_INFO_PROCNAME, 0664, NULL, &wmt_dump_info_fops);
+	if (gWmtdumpinfoEntry == NULL) {
+		WMT_ERR_FUNC("Unable to create /proc entry\n\r");
+		return -1;
+	}
+
+	return 0;
+}
+
+INT32 wmt_dev_proc_for_dump_info_remove(VOID)
+{
+	if (gWmtdumpinfoEntry != NULL)
+		remove_proc_entry(WMT_DUMP_INFO_PROCNAME, NULL);
+
+	return 0;
+}
+#endif /* CFG_WMT_PROC_FOR_DUMP_INFO */
 
 VOID wmt_dev_rx_event_cb(VOID)
 {
@@ -1722,6 +1822,10 @@ static INT32 WMT_init(VOID)
 	wmt_dev_proc_for_aee_setup();
 #endif
 
+#if CFG_WMT_PROC_FOR_DUMP_INFO
+	wmt_dev_proc_for_dump_info_setup();
+#endif
+
 	WMT_STEP_INIT_FUNC();
 
 	chip_type = wmt_detect_get_chip_type();
@@ -1731,6 +1835,7 @@ static INT32 WMT_init(VOID)
 	WMT_DBG_FUNC("wmt_dev register thermal cb\n");
 	osal_unsleepable_lock_init(&g_temp_query_spinlock);
 	osal_sleepable_lock_init(&g_aee_read_lock);
+	osal_sleepable_lock_init(&g_dump_info_read_lock);
 	wmt_lib_register_thermal_ctrl_cb(wmt_dev_tm_temp_query);
 
 	if (chip_type == WMT_CHIP_TYPE_SOC)
@@ -1795,6 +1900,7 @@ static VOID WMT_exit(VOID)
 
 	osal_unsleepable_lock_deinit(&g_temp_query_spinlock);
 	osal_sleepable_lock_deinit(&g_aee_read_lock);
+	osal_sleepable_lock_deinit(&g_dump_info_read_lock);
 #ifdef CONFIG_EARLYSUSPEND
 	unregister_early_suspend(&wmt_early_suspend_handler);
 	WMT_INFO_FUNC("unregister_early_suspend finished\n");
@@ -1819,6 +1925,11 @@ static VOID WMT_exit(VOID)
 #if CFG_WMT_PROC_FOR_AEE
 	wmt_dev_proc_for_aee_remove();
 #endif
+
+#if CFG_WMT_PROC_FOR_DUMP_INFO
+	wmt_dev_proc_for_dump_info_remove();
+#endif
+
 #if WMT_CREATE_NODE_DYNAMIC
 	if (wmt_dev) {
 		device_destroy(wmt_class, dev);
