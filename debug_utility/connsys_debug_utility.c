@@ -864,8 +864,8 @@ static int connlog_emi_init(phys_addr_t emi_base, const struct connlog_emi_confi
 		emi_config->emi_offset, emi_config->emi_size_total);
 	if (gDev.virAddrEmiLogBase) {
 		pr_info("EMI mapping OK virtual(0x%p) physical(0x%x)\n",
-				gDev.virAddrEmiLogBase, (unsigned int) gDev.phyAddrEmiBase +
-				emi_config->emi_offset);
+				gDev.virAddrEmiLogBase,
+				(unsigned int)(gDev.phyAddrEmiBase + emi_config->emi_offset));
 		memset_io(gDev.virAddrEmiLogBase, 0, emi_config->emi_size_total);
 	} else
 		pr_err("EMI mapping fail\n");
