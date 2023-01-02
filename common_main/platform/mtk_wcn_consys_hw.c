@@ -38,6 +38,7 @@
 */
 #include "osal_typedef.h"
 #include "mtk_wcn_consys_hw.h"
+#include "wmt_step.h"
 #include <linux/of_reserved_mem.h>
 #include <linux/pinctrl/consumer.h>
 
@@ -57,6 +58,8 @@
 */
 static INT32 mtk_wmt_probe(struct platform_device *pdev);
 static INT32 mtk_wmt_remove(struct platform_device *pdev);
+static INT32 mtk_wmt_suspend(struct platform_device *pdev, pm_message_t state);
+static INT32 mtk_wmt_resume(struct platform_device *pdev);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -96,6 +99,8 @@ struct CONSYS_BASE_ADDRESS conn_reg;
 static struct platform_driver mtk_wmt_dev_drv = {
 	.probe = mtk_wmt_probe,
 	.remove = mtk_wmt_remove,
+	.suspend = mtk_wmt_suspend,
+	.resume = mtk_wmt_resume,
 	.driver = {
 		   .name = "mtk_wmt",
 		   .owner = THIS_MODULE,
@@ -258,6 +263,20 @@ static INT32 mtk_wmt_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static INT32 mtk_wmt_suspend(struct platform_device *pdev, pm_message_t state)
+{
+	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_WHEN_AP_SUSPEND);
+
+	return 0;
+}
+
+static INT32 mtk_wmt_resume(struct platform_device *pdev)
+{
+	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_WHEN_AP_RESUME);
+
+	return 0;
+}
+
 INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 {
 	INT32 iRet = 0;
@@ -308,6 +327,9 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 
 		if (wmt_consys_ic_ops->consys_ic_ahb_clock_ctrl)
 			wmt_consys_ic_ops->consys_ic_ahb_clock_ctrl(ENABLE);
+
+		WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_BEFORE_GET_CONNSYS_ID);
+
 		if (wmt_consys_ic_ops->polling_consys_ic_chipid)
 			wmt_consys_ic_ops->polling_consys_ic_chipid();
 		if (wmt_consys_ic_ops->update_consys_rom_desel_value)
@@ -449,6 +471,7 @@ INT32 mtk_wcn_consys_hw_pwr_on(UINT32 co_clock_type)
 {
 	INT32 iRet = 0;
 
+	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_START);
 	WMT_PLAT_INFO_FUNC("CONSYS-HW-PWR-ON, start\n");
 	if (!gConEmiPhyBase) {
 		WMT_PLAT_ERR_FUNC("EMI base address is invalid, CONNSYS can not be powered on!");
@@ -467,6 +490,7 @@ INT32 mtk_wcn_consys_hw_pwr_off(UINT32 co_clock_type)
 {
 	INT32 iRet = 0;
 
+	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_BEFORE_POWER_OFF);
 	WMT_PLAT_INFO_FUNC("CONSYS-HW-PWR-OFF, start\n");
 
 	iRet += mtk_wcn_consys_hw_reg_ctrl(0, co_clock_type);
