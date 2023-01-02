@@ -30,6 +30,9 @@
 #include "stp_core.h"
 #include "stp_dbg.h"
 #include "connsys_debug_utility.h"
+#ifdef CONFIG_MTK_ENG_BUILD
+#include "wmt_step_test.h"
+#endif
 
 #ifdef DFT_TAG
 #undef DFT_TAG
@@ -109,6 +112,9 @@ static INT32 wmt_dbg_met_ctrl(INT32 par1, INT32 met_ctrl, INT32 log_ctrl);
 static INT32 wmt_dbg_emi_dump(INT32 par1, INT32 offset, INT32 size);
 static INT32 wmt_dbg_fw_log_ctrl(INT32 par1, INT32 onoff, INT32 level);
 static INT32 wmt_dbg_pre_pwr_on_ctrl(INT32 par1, INT32 enable, INT32 par3);
+#ifdef CONFIG_MTK_ENG_BUILD
+static INT32 wmt_dbg_step_test(INT32 par1, INT32 address, INT32 value);
+#endif
 
 static INT32 wmt_dbg_thermal_query(INT32 par1, INT32 count, INT32 interval);
 
@@ -163,6 +169,9 @@ static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x28] = wmt_dbg_pre_pwr_on_ctrl,
 	[0x29] = wmt_dbg_thermal_query,
 	[0x99] = wmt_dbg_emi_dump,
+#ifdef CONFIG_MTK_ENG_BUILD
+	[0xa0] = wmt_dbg_step_test,
+#endif
 };
 
 static VOID wmt_dbg_fwinfor_print_buff(UINT32 len)
@@ -260,6 +269,9 @@ INT32 wmt_dbg_assert_test(INT32 par1, INT32 par2, INT32 par3)
 	} else if (par3 == 3) {
 		/* firmware trace test - for soc usage, not used in combo chip */
 		return wmt_dbg_cmd_test_api(WMTDRV_CMD_FWTRACE_TEST);
+	} else if (par3 == 4) {
+		wmt_lib_trigger_assert(par2, 30);
+		return 0;
 	}
 
 	times = par3;
@@ -823,6 +835,15 @@ INT32 wmt_dbg_pre_pwr_on_ctrl(INT32 par1, INT32 enable, INT32 par3)
 
 	return 0;
 }
+
+#ifdef CONFIG_MTK_ENG_BUILD
+INT32 wmt_dbg_step_test(INT32 par1, INT32 par2, INT32 par3)
+{
+	wmt_step_test_all();
+
+	return 0;
+}
+#endif
 
 INT32 wmt_dbg_thermal_query(INT32 par1, INT32 count, INT32 interval)
 {
