@@ -1409,6 +1409,38 @@ VOID osal_buffer_dump(const PUINT8 buf, const PUINT8 title, const UINT32 len, co
 	pr_info("end of dump\n");
 }
 
+VOID osal_buffer_dump_data(const PUINT32 buf, const PUINT8 title, const UINT32 len, const UINT32 limit,
+			   const INT32 flag)
+{
+	INT32 k;
+	UINT32 dump_len;
+	char str[100] = {""};
+	INT32 strlen = 0;
+	char *p;
+
+	dump_len = ((limit != 0) && (len > limit)) ? limit : len;
+	p = str;
+	for (k = 0; k < dump_len; k++) {
+		if ((k+1) % 8 != 0) {
+			strlen = osal_sprintf(p, "0x%08x,", buf[k]);
+			p += strlen;
+		} else {
+			strlen = osal_sprintf(p, "0x%08x\n", buf[k]);
+			if (flag)
+				osal_ftrace_print("%s%s", title, str);
+			else
+				pr_info("%s%s", title, str);
+			p = str;
+		}
+	}
+	if (k % 8 != 0) {
+		if (flag)
+			osal_ftrace_print("%s%s", title, str);
+		else
+			pr_info("%s%s", title, str);
+	}
+}
+
 UINT32 osal_op_get_id(P_OSAL_OP pOp)
 {
 	return (pOp) ? pOp->op.opId : 0xFFFFFFFF;
