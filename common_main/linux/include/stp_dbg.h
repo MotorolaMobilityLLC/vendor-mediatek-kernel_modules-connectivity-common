@@ -53,7 +53,7 @@
 #define STP_DBG_LOG_WARN                 1
 #define STP_DBG_LOG_ERR                  0
 
-extern UINT32 gStpDbgDbgLevel;
+extern INT32 gStpDbgDbgLevel;
 
 #define STP_DBG_PR_LOUD(fmt, arg...) \
 do { \
