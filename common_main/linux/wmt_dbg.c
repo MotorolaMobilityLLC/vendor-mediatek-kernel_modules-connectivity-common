@@ -127,6 +127,7 @@ static INT32 wmt_dbg_thermal_ctrl(INT32 par1, INT32 par2, INT32 par3);
 static INT32 wmt_dbg_step_ctrl(INT32 par1, INT32 par2, INT32 par3);
 
 static INT32 wmt_dbg_gps_suspend(INT32 par1, INT32 par2, INT32 par3);
+static INT32 wmt_dbg_set_bt_link_status(INT32 par1, INT32 par2, INT32 par3);
 
 static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x0] = wmt_dbg_psm_ctrl,
@@ -184,6 +185,7 @@ static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x2d] = wmt_dbg_emi_dump,
 #endif
 	[0x2e] = wmt_dbg_suspend_debug,
+	[0x2f] = wmt_dbg_set_bt_link_status,
 	[0x30] = wmt_dbg_show_thread_debug_info,
 	[0x31] = wmt_dbg_gps_suspend,
 #ifdef CONFIG_MTK_ENG_BUILD
@@ -732,6 +734,15 @@ static INT32 wmt_dbg_suspend_debug(INT32 par1, INT32 par2, INT32 par3)
 		connsys_log_alarm_enable(par2);
 	else
 		connsys_log_alarm_disable();
+	return 0;
+}
+
+static INT32 wmt_dbg_set_bt_link_status(INT32 par1, INT32 par2, INT32 par3)
+{
+	if (par2 != 0 && par2 != 1)
+		return 0;
+
+	wmt_lib_set_bt_link_status(par2, par3);
 	return 0;
 }
 
@@ -1447,8 +1458,12 @@ ssize_t wmt_dbg_write(struct file *filp, const char __user *buffer, size_t count
 
 	pToken = osal_strsep(&pBuf, "\t\n ");
 	if (pToken != NULL) {
-		osal_strtol(pToken, 16, &res);
-		z = (INT32)res;
+		if (0x2f == x)
+			z = osal_strcmp(pToken, "true") ? 0 : 1;
+		else {
+			osal_strtol(pToken, 16, &res);
+			z = (INT32)res;
+		}
 	} else {
 		z = 10;
 		/*efuse, register read write default value */
@@ -1467,9 +1482,12 @@ ssize_t wmt_dbg_write(struct file *filp, const char __user *buffer, size_t count
 		return len;
 	}
 #endif
-	/* For user load, only 0x15 is allowed to execute */
-	/* allow command 0x2e to enable catch connsys log on userload  */
-	if (0 == dbgEnabled && 0x15 != x && 0x2e != x) {
+	/* Commands allowed to execute in user load
+	 * 0x15: assert control
+	 * 0x2e: enable catch connsys log
+	 * 0x2f: set bt link status
+	 */
+	if (0 == dbgEnabled && 0x15 != x && 0x2e != x && 0x2f != x) {
 		WMT_INFO_FUNC("please enable WMT debug first\n\r");
 		return len;
 	}
