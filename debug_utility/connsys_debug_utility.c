@@ -169,7 +169,7 @@ void *connlog_cache_allocate(size_t size)
 {
 	void *pBuffer = NULL;
 
-	pBuffer = kmalloc(size, GFP_KERNEL);
+	pBuffer = vmalloc(size);
 	if (!pBuffer)
 		return NULL;
 	return pBuffer;
@@ -915,10 +915,10 @@ static void connlog_ring_buffer_deinit(void)
 	int i = 0;
 
 	for (i = 0; i < CONNLOG_TYPE_END; i++) {
-		kfree(connlog_buffer_table[i].cache_base);
+		kvfree(connlog_buffer_table[i].cache_base);
 		connlog_buffer_table[i].cache_base = NULL;
 	}
-	kfree(gDev.log_data);
+	kvfree(gDev.log_data);
 	gDev.log_data = NULL;
 }
 
