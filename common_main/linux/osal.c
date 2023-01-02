@@ -1526,3 +1526,20 @@ VOID osal_opq_dump(const char *qName, P_OSAL_OP_Q pOpQ)
 	osal_unlock_sleepable_lock(&pOpQ->sLock);
 }
 
+MTK_WCN_BOOL osal_opq_has_op(P_OSAL_OP_Q pOpQ, P_OSAL_OP pOp)
+{
+	UINT32 rd;
+	UINT32 wt;
+	P_OSAL_OP op;
+
+	rd = pOpQ->read;
+	wt = pOpQ->write;
+
+	while (rd != wt) {
+		op = pOpQ->queue[rd & RB_MASK(pOpQ)];
+		if (op == pOp)
+			return MTK_WCN_BOOL_TRUE;
+		rd++;
+	}
+	return MTK_WCN_BOOL_FALSE;
+}
