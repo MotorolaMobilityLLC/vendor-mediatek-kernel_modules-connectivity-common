@@ -3355,7 +3355,7 @@ INT32 wmt_lib_reg_readable(VOID)
 
 INT32 wmt_lib_reg_readable_by_addr(SIZE_T addr)
 {
-	if (wmt_lib_get_drv_status(WMTDRV_TYPE_WMT) != DRV_STS_FUNC_ON
+	if (wmt_lib_get_drv_status(WMTDRV_TYPE_WMT) == DRV_STS_POWER_OFF
 			|| osal_test_bit(WMT_STAT_PWR, &gDevWmt.state) == 0) {
 		return MTK_WCN_BOOL_FALSE;
 	}
