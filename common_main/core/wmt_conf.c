@@ -370,7 +370,7 @@ static INT32 wmt_conf_parse_byte_array(P_DEV_WMT pWmtDev,
 		WMT_ERR_FUNC("wmtcfg==> %s has no value assigned\n",
 			data->name);
 		return -1;
-	} else if (size & 0x1) {
+	} else if (osal_strlen(pos) & 0x1) {
 		WMT_ERR_FUNC("wmtcfg==> %s, length should be even\n", data->name);
 		return -1;
 	}
