@@ -1975,6 +1975,7 @@ INT32 stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
 	UINT8 cccr_value = 0x0;
 	INT32 chip_id = -1;
 	INT32 i_ret = 0;
+	INT32 count = 0;
 
 	if (!g_stp_dbg_cpupcr) {
 		STP_DBG_PR_ERR("NULL reference pointer\n");
@@ -2020,12 +2021,14 @@ INT32 stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
 		UINT8 str[160] = {""};
 		PUINT8 p = str;
 		INT32 str_len = 0;
+
 		for (i = 0; i < STP_DBG_CPUPCR_NUM; i++) {
-			if (g_stp_dbg_cpupcr->sec_buffer[i] == 0 ||
+			if (g_stp_dbg_cpupcr->sec_buffer[i] == 0 &&
 			    g_stp_dbg_cpupcr->nsec_buffer[i] == 0)
 				continue;
 
-			if ((i+1) % 4 != 0) {
+			count++;
+			if (count % 4 != 0) {
 				str_len = osal_sprintf(p, "%llu.%06lu/0x%08x;",
 						       g_stp_dbg_cpupcr->sec_buffer[i],
 						       g_stp_dbg_cpupcr->nsec_buffer[i],
@@ -2040,7 +2043,7 @@ INT32 stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
 				p = str;
 			}
 		}
-		if (i % 4 != 0)
+		if (count % 4 != 0)
 			STP_DBG_PR_INFO("TIME/CPUPCR: %s\n", str);
 
 		if (chip_type == WMT_CHIP_TYPE_SOC && mtk_consys_check_reg_readable()) {
