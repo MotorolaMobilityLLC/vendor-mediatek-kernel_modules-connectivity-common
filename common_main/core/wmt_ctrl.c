@@ -275,6 +275,7 @@ INT32 wmt_ctrl_rx(P_WMT_CTRL_DATA pWmtCtrlData /*UINT8 *pBuff, UINT32 buffLen, U
 			leftCnt--;
 			/* dump btif_rxd's backtrace to check whether it is blocked or not */
 			osal_dump_thread_state("btif_rxd");
+			stp_dbg_poll_cpupcr(5, 1, 1);
 			if (!mtk_wcn_stp_is_sdio_mode())
 				mtk_wcn_consys_stp_btif_logger_ctrl(BTIF_DUMP_BTIF_IRQ);
 
