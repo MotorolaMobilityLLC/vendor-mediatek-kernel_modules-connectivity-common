@@ -169,6 +169,7 @@ static const struct parse_data wmtcfg_fields[] = {
 
 	CHAR(wifi_ant_swap_mode),
 	CHAR(wifi_main_ant_polarity),
+	CHAR(wifi_ant_swap_ant_sel_gpio),
 };
 
 #define NUM_WMTCFG_FIELDS (osal_sizeof(wmtcfg_fields) / osal_sizeof(wmtcfg_fields[0]))
