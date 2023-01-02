@@ -264,8 +264,10 @@ INT32 osal_dbg_assert_aee(const PINT8 module, const PINT8 detail_description, ..
 		/* There exists Format-String vulnerability. For safety, we must use the %s
 		 * format parameter to read data.
 		 */
+#if IS_ENABLED(CONFIG_MTK_AEE_AED)
 		aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_WCN_ISSUE_INFO, module,
 			detail_description, "%s", tempString);
+#endif
 #endif
 	}
 	va_end(args);
@@ -348,7 +350,9 @@ UINT16 osal_crc16(const PUINT8 buffer, const UINT32 length)
 
 VOID osal_dump_thread_state(const PUINT8 name)
 {
-	return connectivity_export_dump_thread_state(name);
+#if defined(KERNEL_dump_thread_state)
+	return KERNEL_dump_thread_state(name);
+#endif
 }
 
 VOID osal_thread_show_stack(P_OSAL_THREAD pThread)
@@ -1380,7 +1384,7 @@ INT32 osal_gettimeofday(PINT32 sec, PINT32 usec)
 	INT32 ret = 0;
 	struct timeval now;
 
-	do_gettimeofday(&now);
+	osal_do_gettimeofday(&now);
 
 	if (sec != NULL)
 		*sec = now.tv_sec;
@@ -1393,6 +1397,15 @@ INT32 osal_gettimeofday(PINT32 sec, PINT32 usec)
 		ret = -1;
 
 	return ret;
+}
+
+void osal_do_gettimeofday(struct timeval *tv)
+{
+	struct timespec64 now;
+
+	ktime_get_real_ts64(&now);
+	tv->tv_sec = now.tv_sec;
+	tv->tv_usec = now.tv_nsec / NSEC_PER_USEC;
 }
 
 INT32 osal_printtimeofday(const PUINT8 prefix)

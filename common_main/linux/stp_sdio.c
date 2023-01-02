@@ -1904,7 +1904,7 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 				wake_up_interruptible(&pb->fullwait_q);
 			}
 			spin_unlock_irqrestore(&pb->rd_cnt_lock, pb->rd_irq_flag);
-			do_gettimeofday(&old);
+			osal_do_gettimeofday(&old);
 		} else {
 			/* tx FIFO free space < packet size, wait next time */
 #if STP_SDIO_DBG_SUPPORT && STP_SDIO_TXPERFDBG
@@ -1913,7 +1913,7 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 			++stp_sdio_txperf_fifo_lmt_cnt;
 #endif
 
-			do_gettimeofday(&now);
+			osal_do_gettimeofday(&now);
 			if ((now.tv_sec - old.tv_sec) > TX_NO_ACK_TIMEOUT_ASSERT) {
 				STPSDIO_PR_INFO("tx_fifo_size(%d), four_byte_align_len(%d), tx_packet_num(%d)\n",
 						p_info->firmware_info.tx_fifo_size, four_byte_align_len,
@@ -2091,7 +2091,7 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 			}
 			spin_unlock_irqrestore(&p_info->pkt_buf.rd_idx_lock,
 					       p_info->pkt_buf.rd_irq_flag);
-			do_gettimeofday(&old);
+			osal_do_gettimeofday(&old);
 		} else {
 #if STP_SDIO_DBG_SUPPORT && STP_SDIO_TXPERFDBG
 			stp_sdio_txperf_fifo_left += p_info->firmware_info.tx_fifo_size;
@@ -2099,7 +2099,7 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 			++stp_sdio_txperf_fifo_lmt_cnt;
 #endif
 			/* (tx FIFO free space < packet size) or (the number of tx packets >= 7) */
-			do_gettimeofday(&now);
+			osal_do_gettimeofday(&now);
 			if ((now.tv_sec - old.tv_sec) > TX_NO_ACK_TIMEOUT_ASSERT) {
 				STPSDIO_PR_INFO("tx_fifo_size(%d), four_byte_align_len(%d), tx_packet_num(%d)\n",
 						p_info->firmware_info.tx_fifo_size, four_byte_align_len,
