@@ -48,7 +48,7 @@ static PUINT8 soc_task_str[SOC_TASK_ID_INDX_MAX][SOC_GEN3_TASK_ID_MAX] = {
 	"Task_FM",
 	"Task_GPS",
 	"Task_FLP",
-	"Task_NULL",
+	"Task_BT2",
 	"Task_Idle",
 	"Task_DrvStp",
 	"Task_DrvBtif",
@@ -438,6 +438,7 @@ PUINT8 stp_dbg_soc_id_to_task(UINT32 id)
 	case 0x6758:
 	case 0x6775:
 	case 0x6771:
+	case 0x6765:
 		task_id_indx = SOC_TASK_ID_GEN3;
 		if (id >= SOC_GEN3_TASK_ID_MAX)
 			task_id_flag = SOC_GEN3_TASK_ID_MAX;
