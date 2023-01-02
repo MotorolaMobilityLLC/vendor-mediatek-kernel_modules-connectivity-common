@@ -1463,7 +1463,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 
 	if (iRet) {
 		WMT_ERR_FUNC("init_wifi_ant_swap fail(%d)\n", iRet);
-		return -23;
+		WMT_INFO_FUNC("A-DIE chip id=0x%x", mtk_wcn_consys_get_adie_chipid());
 	}
 
 	/* 7. start RF calibration data */
