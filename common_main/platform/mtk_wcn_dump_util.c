@@ -89,8 +89,8 @@ static struct reg_map_addr *get_mapped_reg(unsigned int mapped_tbl_idx)
 		addr = ioremap(reg_addr->phy_addr, reg_addr->size);
 		if (addr == NULL)
 			return NULL;
-		WMT_PLAT_PR_INFO("mapidx=[%d] phy[%x] addr=[%x] sz=[%d]",
-				mapped_tbl_idx, reg_addr->phy_addr, addr, reg_addr->size);
+		WMT_PLAT_PR_INFO("mapidx=[%d] phy[%x] addr=[%p] sz=[%d]",
+				mapped_tbl_idx, reg_addr->phy_addr, (void *)addr, reg_addr->size);
 		reg_addr->vir_addr = addr;
 	}
 	return reg_addr;
@@ -128,7 +128,8 @@ INT32 execute_dump_action(const char *trg_str, const char *dump_prefix, struct c
 
 		reg_addr = get_mapped_reg(dump_item->base_addr);
 		if (reg_addr == NULL) {
-			WMT_PLAT_PR_WARN("[%s] can't get reg_addr [%d]", dump_item->base_addr);
+			WMT_PLAT_PR_WARN("[%s] can't get reg_addr [%d]",
+								__func__, dump_item->base_addr);
 			return -1;
 		}
 
@@ -141,7 +142,8 @@ INT32 execute_dump_action(const char *trg_str, const char *dump_prefix, struct c
 			CONSYS_REG_WRITE_MASK(addr + dump_item->offset,
 									dump_item->value, mask_tmp);
 #if DUMP_ACTION_PRINT
-			WMT_PLAT_PR_INFO("[W] addr=[%x] offset=[%x] value=[%x] mask=[%x]", addr, dump_item->offset,
+			WMT_PLAT_PR_INFO("[W] addr=[%p] offset=[%x] value=[%x] mask=[%x]",
+								(void *)addr, dump_item->offset,
 								dump_item->value, dump_item->mask);
 #endif
 			break;
@@ -151,7 +153,7 @@ INT32 execute_dump_action(const char *trg_str, const char *dump_prefix, struct c
 					CONSYS_REG_READ(addr + dump_item->offset));
 
 #if DUMP_ACTION_PRINT
-			WMT_PLAT_PR_INFO("[R] addr=[%x] offset=[%x] value=[%s] ", addr, dump_item->offset,
+			WMT_PLAT_PR_INFO("[R] addr=[%p] offset=[%x] value=[%s] ", (void *)addr, dump_item->offset,
 								buf);
 #endif
 			if (len > 0) {
@@ -260,8 +262,8 @@ VOID mtk_wcn_dump_util_init(UINT32 chipid)
 			addr = ioremap(reg_addr->phy_addr, reg_addr->size);
 			if (addr == NULL)
 				return;
-			WMT_PLAT_PR_INFO("mapidx=[%d] phy[%x] addr=[%x] sz=[%d]",
-				i, reg_addr->phy_addr, addr, reg_addr->size);
+			WMT_PLAT_PR_INFO("mapidx=[%d] phy[%x] addr=[%p] sz=[%d]",
+				i, reg_addr->phy_addr, (void *)addr, reg_addr->size);
 			reg_addr->vir_addr = addr;
 		}
 	}
