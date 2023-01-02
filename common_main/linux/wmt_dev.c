@@ -606,6 +606,7 @@ INT32 wmt_dev_patch_get(PUINT8 pPatchName, osal_firmware **ppPatch)
 	} while (iRet == -EAGAIN);
 	if (iRet != 0) {
 		WMT_ERR_FUNC("failed to open or read!(%s)\n", pPatchName);
+		release_firmware(fw);
 		return -1;
 	}
 	WMT_DBG_FUNC("loader firmware %s  ok!!\n", pPatchName);
@@ -649,6 +650,7 @@ MTK_WCN_BOOL wmt_dev_is_file_exist(PUINT8 pFileName)
 	iRet = request_firmware((const struct firmware **)&fw, pFileName, NULL);
 	if (iRet != 0) {
 		WMT_ERR_FUNC("failed to open or read!(%s)\n", pFileName);
+		release_firmware(fw);
 		return MTK_WCN_BOOL_FALSE;
 	}
 	release_firmware(fw);
