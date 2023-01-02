@@ -45,7 +45,7 @@
 
 /* ALPS header files */
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0))
-#ifndef CONFIG_RTC_DRV_MT6397
+#ifndef CONFIG_DEVICE_MODULES_RTC_DRV_MT6397
 #include <mtk_rtc.h>
 #else
 #include <linux/mfd/mt6397/rtc_misc.h>
