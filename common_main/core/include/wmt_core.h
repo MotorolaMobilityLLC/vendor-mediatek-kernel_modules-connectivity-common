@@ -465,6 +465,8 @@ extern VOID wmt_core_dump_data(PUINT8 pData, PUINT8 pTitle, UINT32 len);
 
 extern MTK_WCN_BOOL wmt_core_patch_check(UINT32 u4PatchVer, UINT32 u4HwVer);
 
+extern INT32 wmt_core_init_script_retry(struct init_script *script, INT32 count, INT32 retry, INT32 dump_err_log);
+
 extern INT32 wmt_core_init_script(struct init_script *script, INT32 count);
 
 extern INT32 wmt_core_rx(PUINT8 pBuf, UINT32 bufLen, PUINT32 readSize);
