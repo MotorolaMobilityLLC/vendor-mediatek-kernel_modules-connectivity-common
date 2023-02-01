@@ -3542,7 +3542,7 @@ INT32 wmt_lib_get_firmware_version(char *buffer, UINT32 buffer_len)
 	void __iomem *virt_addr;
 
 	if (buffer == NULL || buffer_len == 0) {
-		WMT_INFO_FUNC("invalid parameter buffer(%x) len(%u).\n", buffer, buffer_len);
+		WMT_INFO_FUNC("invalid parameter buffer(%p) len(%u).\n", buffer, buffer_len);
 		return -1;
 	}
 
