@@ -234,8 +234,14 @@ INT32 mtk_wcn_consys_stp_btif_dpidle_ctrl(UINT32 en_flag)
 		WMT_WARN_FUNC("NULL BTIF ID reference!\n");
 		iRet = -1;
 	} else {
-		mtk_wcn_btif_dpidle_ctrl(g_stp_btif.stpBtifId, (enum _ENUM_BTIF_DPIDLE_) en_flag);
-		WMT_DBG_FUNC("stp btif dpidle ctrl done,en_flag(%d)\n", en_flag);
+		iRet = mtk_wcn_btif_dpidle_ctrl(
+			g_stp_btif.stpBtifId, (enum _ENUM_BTIF_DPIDLE_) en_flag);
+		if (iRet != 0) {
+			pr_notice("[%s] stp btif dpidle ctrl fail,iRet=[%d],en_flag=[%u]\n",
+				__func__, iRet, en_flag);
+			iRet = -1;
+		} else
+			WMT_DBG_FUNC("stp btif dpidle ctrl done,en_flag(%u)\n", en_flag);
 	}
 
 	return iRet;
