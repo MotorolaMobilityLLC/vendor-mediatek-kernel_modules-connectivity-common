@@ -371,15 +371,21 @@ static _osal_inline_ INT32 stp_dbg_core_dump_in(P_WCN_CORE_DUMP_T dmp, PUINT8 bu
 static _osal_inline_ INT32 stp_dbg_core_dump_post_handle(P_WCN_CORE_DUMP_T dmp)
 {
 #define INFO_HEAD ";CONSYS FW CORE, "
+	INT32 len;
 	INT32 ret = 0;
-	INT32 tmp = 0;
 	ENUM_STP_FW_ISSUE_TYPE issue_type;
+
+	/* first package, copy to info buffer */
+	len = snprintf(dmp->info, STP_CORE_DUMP_INFO_SZ + 1, "%s", INFO_HEAD);
+	if (len < 0) {
+		STP_DBG_PR_INFO("snprintf failed. ret(%d)\n", ret);
+		return len;
+	}
 
 	if ((dmp->p_head != NULL)
 	    && ((osal_strnstr(dmp->p_head, "<ASSERT>", dmp->head_len)) != NULL ||
 		stp_dbg_get_host_trigger_assert())) {
 		PINT8 pStr = dmp->p_head;
-		PINT8 pDtr = NULL;
 
 		if (stp_dbg_get_host_trigger_assert())
 			issue_type = STP_HOST_TRIGGER_FW_ASSERT;
@@ -394,48 +400,33 @@ static _osal_inline_ INT32 stp_dbg_core_dump_post_handle(P_WCN_CORE_DUMP_T dmp)
 			stp_dbg_set_fw_info("Fw Warm reset", osal_strlen("Fw Warm reset"),
 					    STP_FW_WARM_RST_ISSUE);
 		}
-		/* first package, copy to info buffer */
-		osal_strcpy(&dmp->info[0], INFO_HEAD);
-
 		/* set f/w assert information to warm reset */
 		pStr = osal_strnstr(pStr, "<ASSERT>", dmp->head_len);
 		if (pStr != NULL) {
-			pDtr = osal_strchr(pStr, '-');
-			if (pDtr != NULL) {
-				tmp = STP_CORE_DUMP_INFO_SZ - osal_strlen(INFO_HEAD);
-				tmp = ((pDtr - pStr) > tmp) ? tmp : (pDtr - pStr);
-				osal_memcpy(&dmp->info[osal_strlen(INFO_HEAD)], pStr, tmp);
-				dmp->info[osal_strlen(dmp->info) + 1] = '\0';
-			} else {
-				tmp = STP_CORE_DUMP_INFO_SZ - osal_strlen(INFO_HEAD);
-				tmp = (dmp->head_len > tmp) ? tmp : dmp->head_len;
-				osal_memcpy(&dmp->info[osal_strlen(INFO_HEAD)], pStr, tmp);
-				dmp->info[STP_CORE_DUMP_INFO_SZ] = '\0';
-			}
+			ret = snprintf(dmp->info + len, (STP_CORE_DUMP_INFO_SZ + 1 - len),
+				"%s", pStr);
+			if (ret < 0)
+				STP_DBG_PR_INFO("snprintf failed. ret (%d)\n", ret);
 		}
 	} else if ((dmp->p_head != NULL)
 			&& ((osal_strnstr(dmp->p_head, "<EXCEPTION>", dmp->head_len) != NULL)
 			|| (osal_strnstr(dmp->p_head, "ABT", dmp->head_len) != NULL))) {
 		stp_dbg_set_fw_info(dmp->p_head, dmp->head_len, STP_FW_ABT);
-		osal_strcpy(&dmp->info[0], INFO_HEAD);
-		osal_memcpy(&dmp->info[osal_strlen(INFO_HEAD)], "Fw ABT Exception...",
-			    osal_strlen("Fw ABT Exception..."));
-		dmp->info[osal_strlen(INFO_HEAD) + osal_strlen("Fw ABT Exception...") + 1] = '\0';
+		ret = snprintf(dmp->info + len, (STP_CORE_DUMP_INFO_SZ + 1 - len),
+			"%s", "Fw ABT Exception...");
+		if (ret < 0)
+			STP_DBG_PR_INFO("snprintf failed. ret (%d)\n", ret);
 	} else {
 		STP_DBG_PR_INFO(" <ASSERT> string not found, dmp->head_len:%d\n", dmp->head_len);
 		if (dmp->p_head == NULL)
 			STP_DBG_PR_INFO(" dmp->p_head is NULL\n");
 		else
 			STP_DBG_PR_INFO(" dmp->p_head:%s\n", dmp->p_head);
-
-		/* first package, copy to info buffer */
-		osal_strcpy(&dmp->info[0], INFO_HEAD);
 		/* set f/w assert information to warm reset */
-		osal_memcpy(&dmp->info[osal_strlen(INFO_HEAD)], "Fw warm reset exception...",
-			    osal_strlen("Fw warm reset exception..."));
-		dmp->info[osal_strlen(INFO_HEAD) + osal_strlen("Fw warm reset exception...") + 1] =
-		    '\0';
-
+		ret = snprintf(dmp->info + len, (STP_CORE_DUMP_INFO_SZ + 1 - len),
+			"%s", "Fw warm reset exception...");
+		if (ret < 0)
+			STP_DBG_PR_INFO("snprintf failed. ret (%d)\n", ret);
 	}
 	dmp->head_len = 0;
 
