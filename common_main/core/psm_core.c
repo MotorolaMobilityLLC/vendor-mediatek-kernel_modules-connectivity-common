@@ -1973,7 +1973,11 @@ MTKSTP_PSM_T *stp_psm_init(VOID)
 
 /* osal_unsleepable_lock_init(&stp_psm->flagSpinlock); */
 
-	osal_memcpy(stp_psm->wake_lock.name, "MT662x", 6);
+	ret = snprintf(stp_psm->wake_lock.name, MAX_WAKE_LOCK_NAME_LEN, "%s", "MT662x");
+	if (ret < 0) {
+		WMT_INFO_FUNC("snprintf stp_psm->wake_lock.name fail\n");
+		goto ERR_EXIT4;
+	}
 	stp_psm->wake_lock.init_flag = 0;
 	osal_wake_lock_init(&stp_psm->wake_lock);
 	osal_event_init(&stp_psm->STPd_event);
