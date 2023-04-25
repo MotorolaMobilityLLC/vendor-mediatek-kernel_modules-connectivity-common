@@ -2922,6 +2922,66 @@ static INT32 consys_common_dump(const char *trg_str)
 	return ret;
 }
 
+#define PERI_PAR_AO_BUS		0x11037000
+#define DEBUG0_DATA_EXCHANGE	0x0D0A0000
+#define PERI_BUS_LOG_SIZE	128
+static VOID _dump_peri_bus_log(const char *str, char *buf, UINT8 *addr, int idx1, int idx2)
+{
+	UINT32 i, ret;
+	char temp[16];
+
+	CONSYS_REG_WRITE(addr + 0xD4, idx1 << 1);
+
+	buf[0] = '\0';
+	buf[PERI_BUS_LOG_SIZE] = '\0';
+	for (i = 0; i <= idx2; i++) {
+		/* set debugsys_ctrl */
+		CONSYS_REG_WRITE(addr + 0xDC, 0x01 | (i << 1));
+
+		/* read debug_mon */
+		ret = CONSYS_REG_READ(addr + 0xD8);
+		if (snprintf(temp, sizeof(temp), "%d:0x%x,", i, ret) > 0)
+			strncat(buf, temp, PERI_BUS_LOG_SIZE);
+	}
+	pr_info("%s %s\n", str, buf);
+}
+
+static VOID dump_peri_bus_log(VOID)
+{
+	UINT8 *peri_reg = NULL;
+	UINT8 *dem_reg = NULL;
+	char *buf;
+
+	peri_reg = ioremap(PERI_PAR_AO_BUS, 0x100);
+	dem_reg = ioremap(DEBUG0_DATA_EXCHANGE, 0x100);
+	buf = osal_malloc(PERI_BUS_LOG_SIZE + 1);
+
+	if (peri_reg == NULL || dem_reg == NULL || buf == NULL) {
+		pr_notice("%s failed\n", __func__);
+		goto exit;
+	}
+
+	/* enable infrabus debug_enable */
+	CONSYS_REG_WRITE(peri_reg, 0x10);
+
+	/* infra debug_mon control / set dbg_mon4_en / enable debug_mon4 */
+	CONSYS_REG_WRITE(dem_reg + 0xDC, 0x1);
+
+	_dump_peri_bus_log("debug_mon7", buf, dem_reg, 0x7, 0x7);
+	_dump_peri_bus_log("debug_mon8", buf, dem_reg, 0x8, 0x1);
+	_dump_peri_bus_log("debug_mon9", buf, dem_reg, 0x9, 0x3);
+
+exit:
+	if (peri_reg)
+		iounmap(peri_reg);
+
+	if (dem_reg)
+		iounmap(dem_reg);
+
+	if (buf)
+		osal_free(buf);
+}
+
 #define CLK_FREQ_BUFFER_SIZE 512
 static VOID dump_all_clk_freq(VOID)
 {
@@ -2984,12 +3044,14 @@ static VOID dump_all_clk_freq(VOID)
 
 INT32 consys_cmd_tx_timeout_dump(VOID)
 {
+	dump_peri_bus_log();
 	dump_all_clk_freq();
 	return consys_common_dump("tx_timeout");
 }
 
 INT32 consys_cmd_rx_timeout_dump(VOID)
 {
+	dump_peri_bus_log();
 	dump_all_clk_freq();
 	return consys_common_dump("rx_timeout");
 }
