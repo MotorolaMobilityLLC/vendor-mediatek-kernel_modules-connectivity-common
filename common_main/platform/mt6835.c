@@ -65,6 +65,8 @@
 #endif
 
 #include <linux/pm_runtime.h>
+#include <clk-fmeter.h>
+#include <clk-mt6835-fmeter.h>
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -2920,13 +2922,75 @@ static INT32 consys_common_dump(const char *trg_str)
 	return ret;
 }
 
+#define CLK_FREQ_BUFFER_SIZE 512
+static VOID dump_all_clk_freq(VOID)
+{
+#if WMT_DBG_SUPPORT
+	int i;
+	char temp[32];
+	char *buffer;
+	int freq;
+
+	buffer = osal_malloc(CLK_FREQ_BUFFER_SIZE + 1);
+	if (buffer == NULL) {
+		pr_info("%s osal_malloc failed\n", __func__);
+		return;
+	}
+
+	buffer[CLK_FREQ_BUFFER_SIZE] = '\0';
+	buffer[0] = '\0';
+	for (i = FM_AXI_CK; i < FM_CKGEN_NUM; i++) {
+		freq = mt_get_fmeter_freq(i, CKGEN);
+		if (freq == 0)
+			continue;
+		if (snprintf(temp, sizeof(temp), "%d:%d,", i, freq) > 0)
+			strncat(buffer, temp, CLK_FREQ_BUFFER_SIZE);
+	}
+	pr_info("ckgen_freq: %s\n", buffer);
+
+	buffer[0] = '\0';
+	for (i = FM_APLL1_CK; i < FM_ABIST_NUM; i++) {
+		freq = mt_get_fmeter_freq(i, ABIST);
+		if (freq == 0)
+			continue;
+		if (snprintf(temp, sizeof(temp), "%d:%d,", i, freq) > 0)
+			strncat(buffer, temp, CLK_FREQ_BUFFER_SIZE);
+	}
+	pr_info("abist_freq: %s\n", buffer);
+
+	buffer[0] = '\0';
+	for (i = FM_CKMON4_CK; i < FM_ABIST2_NUM; i++) {
+		freq = mt_get_fmeter_freq(i, ABIST_2);
+		if (freq == 0)
+			continue;
+		if (snprintf(temp, sizeof(temp), "%d:%d,", i, freq) > 0)
+			strncat(buffer, temp, CLK_FREQ_BUFFER_SIZE);
+	}
+	pr_info("abist2_freq: %s\n", buffer);
+
+	buffer[0] = '\0';
+	for (i = FM_SCP_CK; i < FM_VLPCK_NUM; i++) {
+		freq = mt_get_fmeter_freq(i, VLPCK);
+		if (freq == 0)
+			continue;
+		if (snprintf(temp, sizeof(temp), "%d:%d,", i, freq) > 0)
+			strncat(buffer, temp, CLK_FREQ_BUFFER_SIZE);
+	}
+	pr_info("vlpck_freq: %s\n", buffer);
+	osal_free(buffer);
+#endif
+
+}
+
 INT32 consys_cmd_tx_timeout_dump(VOID)
 {
+	dump_all_clk_freq();
 	return consys_common_dump("tx_timeout");
 }
 
 INT32 consys_cmd_rx_timeout_dump(VOID)
 {
+	dump_all_clk_freq();
 	return consys_common_dump("rx_timeout");
 }
 
