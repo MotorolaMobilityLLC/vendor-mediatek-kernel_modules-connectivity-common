@@ -1597,16 +1597,19 @@ static VOID consys_hw_vcn28_rc_mode(UINT32 enable)
 	if (!g_regmap)
 		return;
 
+	if (enable > 0)
+		enable = 1;
+
 	/* HW_OP_EN = 1, HW_OP_CFG = 0 */
-	regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_EN_SET_ADDR, enable << 7);
-	regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_CFG_SET_ADDR, 0 << 7);
-	regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_EN_SET_ADDR, enable << 4);
-	regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_CFG_SET_ADDR, 0 << 4);
+	regmap_update_bits(g_regmap, PMIC_RG_LDO_VCN33_2_OP_EN_ADDR, 1 << 7, enable << 7);
+	regmap_update_bits(g_regmap, PMIC_RG_LDO_VCN33_2_OP_CFG_ADDR, 1 << 7, 0 << 7);
+	regmap_update_bits(g_regmap, PMIC_RG_LDO_VCN33_2_OP_EN_ADDR, 1 << 4, enable << 4);
+	regmap_update_bits(g_regmap, PMIC_RG_LDO_VCN33_2_OP_CFG_ADDR, 1 << 4, 0 << 4);
 	if (wmt_plat_soc_co_clock_flag_get() == 0) {
-		regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_EN_SET_ADDR, enable << 6);
-		regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_CFG_SET_ADDR, 0 << 6);
-		regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_EN_SET_ADDR, enable << 5);
-		regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_CFG_SET_ADDR, 0 << 5);
+		regmap_update_bits(g_regmap, PMIC_RG_LDO_VCN33_2_OP_EN_ADDR, 1 << 6, enable << 6);
+		regmap_update_bits(g_regmap, PMIC_RG_LDO_VCN33_2_OP_CFG_ADDR, 1 << 6, 0 << 6);
+		regmap_update_bits(g_regmap, PMIC_RG_LDO_VCN33_2_OP_EN_ADDR, 1 << 5, enable << 5);
+		regmap_update_bits(g_regmap, PMIC_RG_LDO_VCN33_2_OP_CFG_ADDR, 1 << 5, 0 << 5);
 	}
 
 	regmap_update_bits(g_regmap,
@@ -1633,8 +1636,8 @@ static VOID consys_hw_vcn28_legacy_mode_enable(VOID)
 		return;
 
 	/* HW_OP_EN = 1, HW_OP_CFG = 0 */
-	regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_EN_SET_ADDR, 1 << 0);
-	regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_CFG_SET_ADDR, 0 << 0);
+	regmap_update_bits(g_regmap, PMIC_RG_LDO_VCN33_2_OP_EN_ADDR, 1 << 0, 1 << 0);
+	regmap_update_bits(g_regmap, PMIC_RG_LDO_VCN33_2_OP_CFG_ADDR, 1 << 0, 0 << 0);
 	/* SW_LP =0 */
 	regmap_update_bits(g_regmap,
 		PMIC_RG_LDO_VCN33_2_LP_ADDR,
@@ -1901,8 +1904,8 @@ static VOID consys_hw_wifi_vcn33_rc_mode_enable(VOID)
 
 		regulator_set_voltage(reg_VCN33_1_WIFI, 3300000, 3300000);
 
-		regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_EN_SET_ADDR, 1 << 6);
-		regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_CFG_SET_ADDR, 0 << 6);
+		regmap_update_bits(g_regmap, PMIC_RG_LDO_VCN33_2_OP_EN_ADDR, 1 << 6, 1 << 6);
+		regmap_update_bits(g_regmap, PMIC_RG_LDO_VCN33_2_OP_CFG_ADDR, 1 << 6, 0 << 6);
 		regmap_update_bits(g_regmap,
 			PMIC_RG_LDO_VCN33_2_LP_ADDR,
 			PMIC_RG_LDO_VCN33_2_LP_MASK << PMIC_RG_LDO_VCN33_2_LP_SHIFT,
@@ -1947,8 +1950,8 @@ static VOID consys_hw_wifi_vcn33_legacy_mode_enable(VOID)
 			if (regulator_enable(reg_VCN33_1_WIFI))
 				WMT_PLAT_PR_INFO("WMT do WIFI PMIC on fail!\n");
 		}
-		regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_EN_SET_ADDR, 1 << 0);
-		regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_CFG_SET_ADDR, 0 << 0);
+		regmap_update_bits(g_regmap, PMIC_RG_LDO_VCN33_2_OP_EN_ADDR, 1 << 0, 1 << 0);
+		regmap_update_bits(g_regmap, PMIC_RG_LDO_VCN33_2_OP_CFG_ADDR, 1 << 0, 0 << 0);
 		regmap_update_bits(g_regmap,
 			PMIC_RG_LDO_VCN33_2_LP_ADDR,
 			PMIC_RG_LDO_VCN33_2_LP_MASK << PMIC_RG_LDO_VCN33_2_LP_SHIFT,
@@ -1999,8 +2002,8 @@ static VOID consys_hw_wifi_vcn33_legacy_mode_disable(VOID)
 		regulator_disable(reg_VCN33_1_WIFI);
 
 	/*Set VCN33_2 as low-power mode(1), HW0_OP_EN as 0, HW0_OP_CFG as HW_OFF(0)*/
-	regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_EN_SET_ADDR, 0 << 0);
-	regmap_write(g_regmap, PMIC_RG_LDO_VCN33_2_OP_CFG_SET_ADDR, 0 << 0);
+	regmap_update_bits(g_regmap, PMIC_RG_LDO_VCN33_2_OP_EN_ADDR, 1 << 0, 0 << 0);
+	regmap_update_bits(g_regmap, PMIC_RG_LDO_VCN33_2_OP_CFG_ADDR, 1 << 0, 0 << 0);
 	if (reg_VCN33_2_WIFI)
 		regulator_disable(reg_VCN33_2_WIFI);
 #else

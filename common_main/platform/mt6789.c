@@ -2096,7 +2096,7 @@ static INT32 consys_common_dump(const char *trg_str)
 	ret += dump_conn_mcu_uart_dbg_loop_mt6789(trg_str);
 	ret += dump_conn_cfg_on_Debug_Signal_mt6789(trg_str);
 	ret += dump_conn_cfg_on_register_mt6789(trg_str);
-	ret += dump_conn_cmdbt_debug_signal_mt6789(trg_str);
+	/* Not dump_conn_cmdbt_debug_signal to prevent hang issue */
 	ret += dump_conn_cmdbt_register_mt6789(trg_str);
 	ret += dump_conn_emi_detect_mt6789(trg_str);
 	ret += dump_conn_cmdbt_debug_mt6789(trg_str);

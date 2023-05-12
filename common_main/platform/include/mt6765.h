@@ -24,6 +24,13 @@
 *                         C O M P I L E R   F L A G S
 ********************************************************************************
 */
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0))
+#define COMMON_KERNEL_PMIC_SUPPORT	1
+#define COMMON_KERNEL_CLK_SUPPORT	1
+#else
+#define COMMON_KERNEL_PMIC_SUPPORT	0
+#define COMMON_KERNEL_CLK_SUPPORT	0
+#endif
 
 #define CONSYS_BT_WIFI_SHARE_V33	0
 #define CONSYS_PMIC_CTRL_ENABLE		1

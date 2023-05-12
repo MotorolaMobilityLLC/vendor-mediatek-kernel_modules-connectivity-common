@@ -1348,11 +1348,14 @@ static INT32 consys_hw_vcn28_ctrl(UINT32 enable)
 				WMT_PLAT_PR_ERR("Enable VCN33_2. ret=%d\n", ret);
 		}
 
+		if (enable > 0)
+			enable = 1;
+
 		consys_pmic_regmap_set_value(r, MT6369_RG_LDO_VCN33_2_RC9_OP_MODE_ADDR, 1 << 1, 0 << 1);
-		consys_pmic_regmap_set_value(r, MT6369_RG_LDO_VCN33_2_RC9_OP_EN_ADDR,   1 << 1, 1 << 1);
+		consys_pmic_regmap_set_value(r, MT6369_RG_LDO_VCN33_2_RC9_OP_EN_ADDR,   1 << 1, enable << 1);
 		consys_pmic_regmap_set_value(r, MT6369_RG_LDO_VCN33_2_RC9_OP_CFG_ADDR,  1 << 1, 0 << 1);
 		consys_pmic_regmap_set_value(r, MT6369_RG_LDO_VCN33_2_RC6_OP_MODE_ADDR, 1 << 6, 0 << 6);
-		consys_pmic_regmap_set_value(r, MT6369_RG_LDO_VCN33_2_RC6_OP_EN_ADDR,   1 << 6, 1 << 6);
+		consys_pmic_regmap_set_value(r, MT6369_RG_LDO_VCN33_2_RC6_OP_EN_ADDR,   1 << 6, enable << 6);
 		consys_pmic_regmap_set_value(r, MT6369_RG_LDO_VCN33_2_RC6_OP_CFG_ADDR,  1 << 6, 0 << 6);
 	} else {
 		if (enable) {
