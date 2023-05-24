@@ -309,6 +309,7 @@ typedef INT32(*CONSYS_IC_POLLING_GOTO_IDLE) (VOID);
 /* timeout debug dump */
 typedef INT32(*CONSYS_IC_CMD_TX_TIMEOUT_DUMP) (VOID);
 typedef INT32(*CONSYS_IC_CMD_RX_TIMEOUT_DUMP) (VOID);
+typedef INT32(*CONSYS_IC_CMD_PRE_RX_TIMEOUT_DUMP) (VOID);
 typedef INT32(*CONSYS_IC_COREDUMP_TIMEOUT_DUMP) (VOID);
 typedef INT32(*CONSYS_IC_ASSERT_TIMEOUT_DUMP) (VOID);
 typedef INT32(*CONSYS_IC_IPI_TIMEOUT_DUMP) (VOID);
@@ -423,6 +424,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 
 	CONSYS_IC_CMD_TX_TIMEOUT_DUMP consys_ic_cmd_tx_timeout_dump;
 	CONSYS_IC_CMD_RX_TIMEOUT_DUMP consys_ic_cmd_rx_timeout_dump;
+	CONSYS_IC_CMD_PRE_RX_TIMEOUT_DUMP consys_ic_cmd_pre_rx_timeout_dump;
 	CONSYS_IC_COREDUMP_TIMEOUT_DUMP consys_ic_coredump_timeout_dump;
 	CONSYS_IC_ASSERT_TIMEOUT_DUMP consys_ic_assert_timeout_dump;
 	CONSYS_IC_BEFORE_CHIP_RESET_DUMP consys_ic_before_chip_reset_dump;
@@ -549,6 +551,7 @@ UINT64 mtk_wcn_consys_get_options(VOID);
 INT32 execute_dump_action(const char *trg_str, const char *dump_prefix, struct consys_dump_item *dump_ary, int ary_sz);
 INT32 mtk_wcn_consys_cmd_tx_timeout_dump(VOID);
 INT32 mtk_wcn_consys_cmd_rx_timeout_dump(VOID);
+INT32 mtk_wcn_consys_cmd_pre_rx_timeout_dump(VOID);
 INT32 mtk_wcn_consys_coredump_timeout_dump(VOID);
 INT32 mtk_wcn_consys_assert_timeout_dump(VOID);
 INT32 mtk_wnc_consys_before_chip_reset_dump(VOID);

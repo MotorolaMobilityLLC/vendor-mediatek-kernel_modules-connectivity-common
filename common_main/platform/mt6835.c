@@ -154,6 +154,7 @@ static VOID consys_set_vcn33_1_voltage(UINT32 voltage);
 static INT32 dump_conn_mcu_pc_log_wrapper(VOID);
 static INT32 consys_cmd_tx_timeout_dump(VOID);
 static INT32 consys_cmd_rx_timeout_dump(VOID);
+static INT32 consys_cmd_pre_rx_timeout_dump(VOID);
 static INT32 consys_coredump_timeout_dump(VOID);
 static INT32 consys_assert_timeout_dump(VOID);
 static INT32 consys_before_chip_reset_dump(VOID);
@@ -299,6 +300,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops_mt6835 = {
 	/* debug dump */
 	.consys_ic_cmd_tx_timeout_dump = consys_cmd_tx_timeout_dump,
 	.consys_ic_cmd_rx_timeout_dump = consys_cmd_rx_timeout_dump,
+	.consys_ic_cmd_pre_rx_timeout_dump = consys_cmd_pre_rx_timeout_dump,
 	.consys_ic_coredump_timeout_dump = consys_coredump_timeout_dump,
 	.consys_ic_assert_timeout_dump = consys_assert_timeout_dump,
 	.consys_ic_before_chip_reset_dump = consys_before_chip_reset_dump,
@@ -3054,6 +3056,13 @@ INT32 consys_cmd_rx_timeout_dump(VOID)
 	dump_peri_bus_log();
 	dump_all_clk_freq();
 	return consys_common_dump("rx_timeout");
+}
+
+INT32 consys_cmd_pre_rx_timeout_dump(VOID)
+{
+	dump_peri_bus_log();
+	dump_all_clk_freq();
+	return 0;
 }
 
 INT32 consys_coredump_timeout_dump(VOID)

@@ -3471,7 +3471,26 @@ INT32 wmt_lib_cmd_rx_timeout_dump(VOID)
 	wmt_lib_power_lock_release();
 
 	return ret;
+}
 
+INT32 wmt_lib_cmd_pre_rx_timeout_dump(VOID)
+{
+	int ret;
+
+	ret = wmt_lib_power_lock_aquire();
+	if (ret != 0) {
+		WMT_ERR_FUNC("aquire power lock fail ret=[%d]", ret);
+		return -1;
+	}
+	if (wmt_lib_get_drv_status(WMTDRV_TYPE_WMT) == DRV_STS_POWER_OFF) {
+		wmt_lib_power_lock_release();
+		return 0;
+	}
+	WMT_INFO_FUNC("======================== ");
+	ret = mtk_wcn_consys_cmd_pre_rx_timeout_dump();
+	wmt_lib_power_lock_release();
+
+	return ret;
 }
 
 INT32 wmt_lib_coredump_timeout_dump(VOID)
