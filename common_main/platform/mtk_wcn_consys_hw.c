@@ -1385,6 +1385,13 @@ INT32 mtk_wcn_consys_cmd_rx_timeout_dump(VOID)
 	return 0;
 }
 
+INT32 mtk_wcn_consys_cmd_pre_rx_timeout_dump(VOID)
+{
+	if (wmt_consys_ic_ops->consys_ic_cmd_pre_rx_timeout_dump)
+		return wmt_consys_ic_ops->consys_ic_cmd_pre_rx_timeout_dump();
+	return 0;
+}
+
 INT32 mtk_wcn_consys_coredump_timeout_dump(VOID)
 {
 	if (wmt_consys_ic_ops->consys_ic_coredump_timeout_dump)
