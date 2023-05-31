@@ -186,6 +186,7 @@ static atomic_t g_late_pwr_on_for_blank = ATOMIC_INIT(0); /* PwrOnOff Late flag 
 
 /* Prevent race condition when wmt_dev_tm_temp_query is called concurrently */
 static OSAL_UNSLEEPABLE_LOCK g_temp_query_spinlock;
+static OSAL_UNSLEEPABLE_LOCK g_patch_num_spinlock;
 
 #ifdef CONFIG_EARLYSUSPEND
 static VOID wmt_dev_early_suspend(struct early_suspend *h)
@@ -1142,13 +1143,17 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			wmt_lib_set_stp_wmt_last_close(0);
 		break;
 	case WMT_IOCTL_SET_PATCH_NUM:
+		osal_lock_unsleepable_lock(&g_patch_num_spinlock);
 		if (arg == 0 || arg > MAX_PATCH_NUM || pAtchNum > 0) {
 			WMT_ERR_FUNC("patch num(%lu) == 0 or > %d or has set!\n", arg, MAX_PATCH_NUM);
 			iRet = -1;
+			osal_unlock_unsleepable_lock(&g_patch_num_spinlock);
 			break;
 		}
 
 		pAtchNum = arg;
+
+		osal_unlock_unsleepable_lock(&g_patch_num_spinlock);
 
 		if (pPatchInfo == NULL)
 			pPatchInfo = kcalloc(pAtchNum, sizeof(WMT_PATCH_INFO), GFP_ATOMIC);
@@ -1609,6 +1614,7 @@ static INT32 WMT_init(VOID)
 	init_waitqueue_head((wait_queue_head_t *) &gWmtInitWq);
 
 	osal_unsleepable_lock_init(&g_temp_query_spinlock);
+	osal_unsleepable_lock_init(&g_patch_num_spinlock);
 
 #if (MTK_WCN_REMOVE_KO)
 	/* called in do_common_drv_init() */
@@ -1757,6 +1763,7 @@ static VOID WMT_exit(VOID)
 		return;
 
 	osal_unsleepable_lock_deinit(&g_temp_query_spinlock);
+	osal_unsleepable_lock_deinit(&g_patch_num_spinlock);
 #ifdef CONFIG_EARLYSUSPEND
 	unregister_early_suspend(&wmt_early_suspend_handler);
 	WMT_INFO_FUNC("unregister_early_suspend finished\n");
