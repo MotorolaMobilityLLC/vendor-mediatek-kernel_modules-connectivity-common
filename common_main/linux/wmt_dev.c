@@ -1532,7 +1532,11 @@ static INT32 WMT_mmap(struct file *pFile, struct vm_area_struct *pVma)
 	unsigned long bufId = pVma->vm_pgoff;
 	P_CONSYS_EMI_ADDR_INFO emiInfo = mtk_wcn_consys_soc_get_emi_phy_add();
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0))
+	vm_flags_clear(pVma, VM_WRITE | VM_MAYWRITE);
+#else
 	pVma->vm_flags &= ~(VM_WRITE | VM_MAYWRITE);
+#endif
 	WMT_INFO_FUNC("WMT_mmap start:%lu end:%lu size: %lu buffer id=%lu\n",
 		pVma->vm_start, pVma->vm_end,
 		pVma->vm_end - pVma->vm_start, bufId);
