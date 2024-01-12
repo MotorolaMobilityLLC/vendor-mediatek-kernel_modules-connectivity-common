@@ -116,7 +116,7 @@ static INT32 consys_check_reg_readable(VOID);
 static INT32 consys_emi_coredump_remapping(UINT8 __iomem **addr, UINT32 enable);
 static INT32 consys_reset_emi_coredump(UINT8 __iomem *addr);
 static INT32 consys_is_connsys_reg(UINT32 addr);
-static VOID consys_resume_dump_info(VOID);
+static PUINT32 consys_resume_dump_info(VOID);
 static VOID consys_set_pdma_axi_rready_force_high(UINT32 enable);
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -217,6 +217,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 */
 INT32 rom_patch_dl_flag = 1;
 UINT32 gJtagCtrl;
+UINT32 g_connsys_lp_dump_info[2];
 
 #if CONSYS_ENALBE_SET_JTAG
 #define JTAG_ADDR1_BASE 0x10005000
@@ -1208,18 +1209,23 @@ static INT32 consys_is_connsys_reg(UINT32 addr)
 	return 0;
 }
 
-static VOID consys_resume_dump_info(VOID)
+static PUINT32 consys_resume_dump_info(VOID)
 {
 	if (conn_reg.mcu_cfg_on_base != 0 &&
 	    conn_reg.mcu_top_misc_on_base != 0 &&
 	    mtk_consys_check_reg_readable()) {
+		stp_dbg_clear_cpupcr_reg_info();
 		stp_dbg_poll_cpupcr(5, 0, 1);
-		CONSYS_REG_WRITE(conn_reg.mcu_cfg_on_base + 0x104, 0x1);
-		CONSYS_REG_WRITE(conn_reg.mcu_top_misc_on_base + 0x320, 0x80000001);
-		CONSYS_REG_WRITE(conn_reg.mcu_top_misc_on_base + 0x310, 0x3);
-		WMT_PLAT_PR_INFO("0x180c1340: 0x%x\n", CONSYS_REG_READ(conn_reg.mcu_top_misc_on_base + 0x340));
-		CONSYS_REG_WRITE(conn_reg.mcu_cfg_on_base + 0x104, 0x0);
+		CONSYS_REG_WRITE(CONN_CFG_ON_CONN_ON_HOST_MAILBOX_MCU_ADDR, 0x1);
+		CONSYS_REG_WRITE(CONN_CFG_ON_CONN_ON_MON_CTL_ADDR, 0x80000001);
+		CONSYS_REG_WRITE(CONN_CFG_ON_CONN_ON_DBGSEL_ADDR, 0x3);
+		g_connsys_lp_dump_info[0] = (UINT32)CONN_CFG_ON_CONN_ON_MON_FLAG_RECORD_MAPPING_AP_ADDR;
+		g_connsys_lp_dump_info[1] = CONSYS_REG_READ(CONN_CFG_ON_CONN_ON_MON_FLAG_RECORD_ADDR);
+		WMT_PLAT_PR_INFO("0x%08x: 0x%x\n", g_connsys_lp_dump_info[0], g_connsys_lp_dump_info[1]);
+		CONSYS_REG_WRITE(CONN_CFG_ON_CONN_ON_HOST_MAILBOX_MCU_ADDR, 0x0);
+		return &g_connsys_lp_dump_info[0];
 	}
+	return NULL;
 }
 
 static VOID consys_set_pdma_axi_rready_force_high(UINT32 enable)
