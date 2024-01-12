@@ -117,6 +117,7 @@ static INT32 consys_check_reg_readable(VOID);
 static PUINT32 consys_resume_dump_info(VOID);
 static VOID consys_clock_fail_dump(VOID);
 static VOID consys_set_pdma_axi_rready_force_high(UINT32 enable);
+static VOID consys_get_ant_sel_cr_addr(PUINT32 default_invert_cr, PUINT32 default_invert_bit);
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -203,6 +204,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_resume_dump_info = consys_resume_dump_info,
 	.consys_ic_clock_fail_dump = consys_clock_fail_dump,
 	.consys_ic_set_pdma_axi_rready_force_high = consys_set_pdma_axi_rready_force_high,
+	.consys_ic_get_ant_sel_cr_addr = consys_get_ant_sel_cr_addr,
 };
 
 /*******************************************************************************
@@ -1288,4 +1290,29 @@ static VOID consys_set_pdma_axi_rready_force_high(UINT32 enable)
 		 CONSYS_PDMA_AXI_RREADY_MASK) != 0)
 		CONSYS_CLR_BIT(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_PDMA_AXI_RREADY,
 			       CONSYS_PDMA_AXI_RREADY_MASK);
+}
+
+static VOID consys_get_ant_sel_cr_addr(PUINT32 default_invert_cr, PUINT32 default_invert_bit)
+{
+	if (default_invert_cr) {
+		default_invert_cr[0] = DEFAULT_COEX_WMT_ANTSEL_0_POLARITY_CR;
+		default_invert_cr[1] = DEFAULT_COEX_WMT_ANTSEL_1_POLARITY_CR;
+		default_invert_cr[2] = DEFAULT_COEX_WMT_ANTSEL_2_POLARITY_CR;
+		default_invert_cr[3] = DEFAULT_COEX_WMT_ANTSEL_3_POLARITY_CR;
+		default_invert_cr[4] = DEFAULT_COEX_WMT_ANTSEL_4_POLARITY_CR;
+		default_invert_cr[5] = DEFAULT_COEX_WMT_ANTSEL_5_POLARITY_CR;
+		default_invert_cr[6] = DEFAULT_COEX_WMT_ANTSEL_6_POLARITY_CR;
+		default_invert_cr[7] = DEFAULT_COEX_WMT_ANTSEL_7_POLARITY_CR;
+	}
+
+	if (default_invert_bit) {
+		default_invert_bit[0] = DEFAULT_COEX_WMT_ANTSEL_0_POLARITY_BIT;
+		default_invert_bit[1] = DEFAULT_COEX_WMT_ANTSEL_1_POLARITY_BIT;
+		default_invert_bit[2] = DEFAULT_COEX_WMT_ANTSEL_2_POLARITY_BIT;
+		default_invert_bit[3] = DEFAULT_COEX_WMT_ANTSEL_3_POLARITY_BIT;
+		default_invert_bit[4] = DEFAULT_COEX_WMT_ANTSEL_4_POLARITY_BIT;
+		default_invert_bit[5] = DEFAULT_COEX_WMT_ANTSEL_5_POLARITY_BIT;
+		default_invert_bit[6] = DEFAULT_COEX_WMT_ANTSEL_6_POLARITY_BIT;
+		default_invert_bit[7] = DEFAULT_COEX_WMT_ANTSEL_7_POLARITY_BIT;
+	}
 }
