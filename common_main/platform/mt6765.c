@@ -1124,18 +1124,7 @@ static INT32 consys_check_reg_readable(VOID)
 {
 	INT32 b_flag = 0;
 	INT32 c_flag = 0;
-	INT32 i = 0;
 	UINT32 value = 0;
-
-	/*check connsys bus hang*/
-	do {
-		value = CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base + CONSYS_BUSY_OFFSET);
-		if (value & CONSYS_BUSY_BIT)
-			b_flag = 1;
-		i++;
-	} while (i < 10000 && b_flag == 0);
-	if (!b_flag)
-		WMT_PLAT_ERR_FUNC("connsys busy check fail 0x18007110(0x%x)\n", value);
 
 	/*check connsys clock and sleep status*/
 	CONSYS_REG_WRITE(conn_reg.mcu_conn_hif_on_base, CONSYS_CLOCK_CHECK_VALUE);
