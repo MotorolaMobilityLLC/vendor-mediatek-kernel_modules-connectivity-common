@@ -129,6 +129,7 @@ static VOID consys_devapc_violation_cb(VOID);
 #ifdef WMT_DEVAPC_CALLBACK
 static VOID consyc_register_devapc_cb(VOID);
 #endif
+static INT32 consys_is_ant_swap_enable_by_hwid(INT32 pin_num);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -221,6 +222,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 #ifdef WMT_DEVAPC_CALLBACK
 	.consys_ic_register_devapc_cb = consyc_register_devapc_cb,
 #endif
+	.consys_ic_is_ant_swap_enable_by_hwid = consys_is_ant_swap_enable_by_hwid,
 };
 
 /*******************************************************************************
@@ -1390,3 +1392,9 @@ static VOID consyc_register_devapc_cb(VOID)
 	register_devapc_vio_callback(&devapc_handle);
 }
 #endif
+
+static INT32 consys_is_ant_swap_enable_by_hwid(INT32 pin_num)
+{
+	return !connectivity_export_gpio_get_tristate_input(pin_num);
+}
+
