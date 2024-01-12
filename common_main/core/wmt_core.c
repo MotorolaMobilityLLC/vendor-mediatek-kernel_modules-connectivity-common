@@ -1216,7 +1216,7 @@ static INT32 opfunc_pwr_on(P_WMT_OP pWmtOp)
 	if (iRet) {
 		WMT_ERR_FUNC("WMT-CORE: wmt_core_stp_init fail (%d)\n", iRet);
 		osal_assert(0);
-		if (mtk_wcn_stp_get_wmt_trg_assert() == 0) {
+		if (mtk_wcn_stp_assert_flow_get() == 0) {
 			iErrHandle = wmt_core_stp_deinit();
 			if (iErrHandle)
 				WMT_ERR_FUNC("wmt_core_stp_deinit() failed, Err=%d\n", iErrHandle);
