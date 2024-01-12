@@ -184,7 +184,7 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 		if (wmt_consys_ic_ops->consys_ic_emi_set_remapping_reg)
 			wmt_consys_ic_ops->consys_ic_emi_set_remapping_reg();
 #if 1
-		pEmibaseaddr = ioremap_nocache(gConEmiPhyBase + SZ_1M / 2, CONSYS_EMI_MEM_SIZE);
+		pEmibaseaddr = ioremap_nocache(gConEmiPhyBase + 0x68000, CONSYS_EMI_MEM_SIZE);
 #else
 		pEmibaseaddr = ioremap_nocache(CONSYS_EMI_AP_PHY_BASE, CONSYS_EMI_MEM_SIZE);
 #endif

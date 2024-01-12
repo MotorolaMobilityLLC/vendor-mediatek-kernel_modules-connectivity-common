@@ -1030,7 +1030,7 @@ static INT32 consys_dl_rom_patch(UINT32 ip_ver)
 {
 	if (rom_patch_dl_flag) {
 		if (mtk_wcn_soc_rom_patch_dwn(ip_ver) == 0)
-			rom_patch_dl_flag = 0;
+			rom_patch_dl_flag = 1;
 	}
 
 	return 0;
