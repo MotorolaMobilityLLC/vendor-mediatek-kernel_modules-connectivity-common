@@ -80,7 +80,6 @@
 #define COMPAT_WMT_IOCTL_ADIE_LPBK_TEST		_IOWR(WMT_IOC_MAGIC, 26, compat_uptr_t)
 #define COMPAT_WMT_IOCTL_DYNAMIC_DUMP_CTRL	_IOR(WMT_IOC_MAGIC, 30, compat_uptr_t)
 #define COMPAT_WMT_IOCTL_SET_ROM_PATCH_INFO	_IOW(WMT_IOC_MAGIC, 31, compat_uptr_t)
-#define COMPAT_WMT_IOCTL_FDB_CTRL		_IOW(WMT_IOC_MAGIC, 32, compat_uptr_t)
 #define COMPAT_WMT_IOCTL_GET_VENDOR_PATCH_VERSION	_IOR(WMT_IOC_MAGIC, 36, compat_uptr_t)
 #define COMPAT_WMT_IOCTL_SET_VENDOR_PATCH_VERSION	_IOW(WMT_IOC_MAGIC, 37, compat_uptr_t)
 #define COMPAT_WMT_IOCTL_SET_ACTIVE_PATCH_VERSION	_IOR(WMT_IOC_MAGIC, 40, compat_uptr_t)
@@ -108,7 +107,6 @@
 #define WMT_IOCTL_FW_DBGLOG_CTRL	_IOR(WMT_IOC_MAGIC, 29, int)
 #define WMT_IOCTL_DYNAMIC_DUMP_CTRL	_IOR(WMT_IOC_MAGIC, 30, char*)
 #define WMT_IOCTL_SET_ROM_PATCH_INFO	_IOW(WMT_IOC_MAGIC, 31, char*)
-#define WMT_IOCTL_FDB_CTRL		_IOW(WMT_IOC_MAGIC, 32, char*)
 #define WMT_IOCTL_GET_EMI_PHY_SIZE  _IOR(WMT_IOC_MAGIC, 33, unsigned int)
 #define WMT_IOCTL_FW_PATCH_UPDATE_RST	_IOR(WMT_IOC_MAGIC, 34, int)
 #define WMT_IOCTL_GET_VENDOR_PATCH_NUM		_IOW(WMT_IOC_MAGIC, 35, int)
@@ -1488,37 +1486,6 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			wmt_lib_set_rom_patch_info(&wmtRomPatchInfo, wmtRomPatchInfo.type);
 		} while (0);
 		break;
-	case WMT_IOCTL_FDB_CTRL:
-#if WMT_DBG_SUPPORT
-		do {
-			struct wmt_fdb_ctrl fdb_ctrl;
-
-			if (copy_from_user(&fdb_ctrl, (PVOID)arg, sizeof(struct wmt_fdb_ctrl))) {
-				WMT_ERR_FUNC("copy_from_user failed at %d\n", __LINE__);
-				iRet = -EFAULT;
-				break;
-			}
-
-			if (fdb_ctrl.base_index < MCU_BASE_INDEX ||
-			    fdb_ctrl.base_index > MCU_CIRQ_BASE_INDEX) {
-				WMT_ERR_FUNC("base index abnormal(%d)\n", fdb_ctrl.base_index);
-				iRet = -EFAULT;
-				break;
-			}
-			iRet = wmt_lib_fdb_ctrl(&fdb_ctrl);
-			if (iRet) {
-				WMT_ERR_FUNC("wmt_lib_fdb_ctrl fail(%d)\n", iRet);
-				iRet = -EFAULT;
-				break;
-			}
-
-			if (copy_to_user((PVOID)arg, &fdb_ctrl, sizeof(struct wmt_fdb_ctrl))) {
-				iRet = -EFAULT;
-				break;
-			}
-		} while (0);
-#endif
-		break;
 	case WMT_IOCTL_GET_EMI_PHY_SIZE:
 		do {
 			WMT_INFO_FUNC("gConEmiSize %p\n", gConEmiSize);
@@ -1668,9 +1635,6 @@ LONG WMT_compat_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			break;
 		case COMPAT_WMT_IOCTL_SET_ROM_PATCH_INFO:
 			ret = WMT_unlocked_ioctl(filp, WMT_IOCTL_SET_ROM_PATCH_INFO, (ULONG)compat_ptr(arg));
-			break;
-		case COMPAT_WMT_IOCTL_FDB_CTRL:
-			ret = WMT_unlocked_ioctl(filp, WMT_IOCTL_FDB_CTRL, (ULONG)compat_ptr(arg));
 			break;
 		default: {
 			ret = WMT_unlocked_ioctl(filp, cmd, arg);
