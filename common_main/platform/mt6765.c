@@ -213,6 +213,15 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_calibration_backup_restore = consys_calibration_backup_restore_support,
 };
 
+static const struct connlog_emi_config connsys_fw_log_parameter = {
+	.emi_offset = 0x36500,
+	.emi_size_total = (192*1024),/* 192KB */
+	.emi_size_mcu = (16*1024),
+	.emi_size_wifi = (64*1024),
+	.emi_size_bt = (64*1024),
+	.emi_size_gps = (32*1024),
+};
+
 /*******************************************************************************
 *                           P R I V A T E   D A T A
 ********************************************************************************
@@ -1136,7 +1145,9 @@ static INT32 consys_dedicated_log_path_init(struct platform_device *pdev)
 	UINT32 irq_num;
 	UINT32 irq_flag;
 	INT32 iret = -1;
+	struct connlog_irq_config irq_config;
 
+	memset(&irq_config, 0, sizeof(struct connlog_irq_config));
 	node = pdev->dev.of_node;
 	if (node) {
 		irq_num = irq_of_parse_and_map(node, 2);
@@ -1148,7 +1159,12 @@ static INT32 consys_dedicated_log_path_init(struct platform_device *pdev)
 		return iret;
 	}
 
-	connsys_dedicated_log_path_apsoc_init(gConEmiPhyBase, irq_num, irq_flag);
+	irq_config.irq_num = irq_num;
+	irq_config.irq_flag = irq_flag;
+	irq_config.irq_callback = NULL;
+
+	connsys_dedicated_log_path_apsoc_init(
+		gConEmiPhyBase, &connsys_fw_log_parameter, &irq_config);
 #ifdef CONFIG_MTK_CONNSYS_DEDICATED_LOG_PATH
 	fw_log_wmt_init();
 #endif
