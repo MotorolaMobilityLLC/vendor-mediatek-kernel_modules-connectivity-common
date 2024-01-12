@@ -240,6 +240,7 @@ typedef struct _DEV_WMT_ {
 	/* future. Just return the above 3 info to querist */
 	ENUM_WMTHWVER_TYPE_T eWmtHwVer;
 
+	UINT32 ext_ldo_flag;
 	P_WMT_PATCH_INFO pWmtPatchInfo;
 	struct wmt_rom_patch_info *pWmtRomPatchInfo[WMTDRV_TYPE_ANT];
 	/* MET thread information */
@@ -343,6 +344,8 @@ INT32 wmt_lib_met_ctrl(INT32 met_ctrl, INT32 log_ctrl);
 INT32 wmt_lib_fdb_ctrl(struct wmt_fdb_ctrl *fdb_ctrl);
 INT32 wmt_lib_gps_mcu_ctrl(PUINT8 p_tx_data_buf, UINT32 tx_data_len, PUINT8 p_rx_data_buf,
 			   UINT32 rx_data_buf_len, PUINT32 p_rx_data_len);
+VOID wmt_lib_set_ext_ldo(UINT32 flag);
+UINT32 wmt_lib_get_ext_ldo(VOID);
 
 extern INT32 DISABLE_PSM_MONITOR(VOID);
 extern VOID ENABLE_PSM_MONITOR(VOID);
