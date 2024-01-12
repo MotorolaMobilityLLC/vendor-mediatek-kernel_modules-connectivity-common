@@ -733,3 +733,11 @@ INT32 mtk_wcn_consys_reg_ctrl(UINT32 is_write, enum CONSYS_BASE_ADDRESS_INDEX in
 
 	return 0;
 }
+
+INT32 mtk_consys_check_reg_readable(VOID)
+{
+	if (wmt_consys_ic_ops->consys_ic_read_irq_info_from_dts)
+		return wmt_consys_ic_ops->consys_ic_check_reg_readable();
+	else
+		return 1;
+}
