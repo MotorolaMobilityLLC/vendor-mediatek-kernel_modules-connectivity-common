@@ -235,7 +235,7 @@ $(MODULE_NAME)-objs += common_main/linux/stp_btif.o
 endif
 
 $(MODULE_NAME)-objs += debug_utility/ring.o
-$(MODULE_NAME)-objs += debug_utility/ring_cache.o
+$(MODULE_NAME)-objs += debug_utility/ring_emi.o
 $(MODULE_NAME)-objs += debug_utility/connsys_debug_utility.o
 ###############################################################################
 # test
