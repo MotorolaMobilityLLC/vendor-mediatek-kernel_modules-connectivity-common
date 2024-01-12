@@ -596,6 +596,7 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 		CONSYS_REG_WRITE(conn_reg.spm_base + CONSYS_SPM_DDR_EN_OFFSET, CONSYS_SPM_DDR_EN_VALUE);
 #endif /* CONSYS_PWR_ON_OFF_API_AVAILABLE */
 	} else {
+		CONSYS_SET_BIT(conn_reg.mcu_base + CONSYS_HIF_PDMA_AXI_RREADY, CONSYS_PDMA_AXI_RREADY_MASK);
 #if CONSYS_PWR_ON_OFF_API_AVAILABLE
 		clk_disable_unprepare(clk_scp_conn_main);
 		WMT_PLAT_PR_DBG("clk_disable_unprepare(clk_scp_conn_main) calling\n");
@@ -1022,6 +1023,9 @@ static INT32 consys_read_reg_from_dts(struct platform_device *pdev)
 		conn_reg.mcu_conn_hif_on_base = (SIZE_T) of_iomap(node, MCU_CONN_HIF_ON_BASE_INDEX);
 		WMT_PLAT_PR_DBG("Get mcu_conn_hif_on register base(0x%zx)\n",
 				conn_reg.mcu_conn_hif_on_base);
+		conn_reg.mcu_top_misc_on_base = (SIZE_T) of_iomap(node, MCU_TOP_MISC_ON_BASE_INDEX);
+		WMT_PLAT_DBG_FUNC("Get mcu_top_misc_on_base register base(0x%zx)\n",
+				conn_reg.mcu_top_misc_on_base);
 	} else {
 		WMT_PLAT_PR_ERR("[%s] can't find CONSYS compatible node\n", __func__);
 		return iRet;
@@ -1238,6 +1242,15 @@ static VOID consys_ic_clock_fail_dump(VOID)
 
 	WMT_PLAT_PR_ERR("CONN_MCU_DEBUG_STATUS=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_DEBUG_STATUS));
+
+	WMT_PLAT_ERR_FUNC("CONN_ON_HOST_CSR_MISC=0x%08x\n",
+		CONSYS_REG_READ(conn_reg.mcu_top_misc_on_base + CONN_ON_HOST_CSR_MISC));
+
+	WMT_PLAT_ERR_FUNC("CONN_ON_IRQ_CTL=0x%08x\n",
+		CONSYS_REG_READ(conn_reg.mcu_top_misc_on_base + CONN_ON_IRQ_CTL));
+
+	WMT_PLAT_ERR_FUNC("CONN_ON_IRQ_STATUS=0x%08x\n",
+		CONSYS_REG_READ(conn_reg.mcu_top_misc_on_base + CONN_ON_IRQ_STATUS));
 
 	BUG_ON(1);
 }
