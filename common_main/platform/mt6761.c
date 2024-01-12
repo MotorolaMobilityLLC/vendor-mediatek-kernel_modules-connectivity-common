@@ -985,6 +985,15 @@ static UINT32 consys_emi_set_remapping_reg(VOID)
 	WMT_PLAT_PR_INFO("CONSYS_EMI_MAPPING dump in restore cb(0x%08x)\n",
 			CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_PERI_MAPPING_OFFSET));
 
+	mtk_wcn_emi_addr_info.emi_ram_bt_buildtime_offset =
+			CONSYS_EMI_RAM_BT_BUILDTIME_OFFSET;
+	mtk_wcn_emi_addr_info.emi_ram_wifi_buildtime_offset =
+			CONSYS_EMI_RAM_WIFI_BUILDTIME_OFFSET;
+	mtk_wcn_emi_addr_info.emi_ram_mcu_buildtime_offset =
+			CONSYS_EMI_RAM_MCU_BUILDTIME_OFFSET;
+	mtk_wcn_emi_addr_info.emi_patch_mcu_buildtime_offset =
+			CONSYS_EMI_PATCH_MCU_BUILDTIME_OFFSET;
+
 	return 0;
 }
 
