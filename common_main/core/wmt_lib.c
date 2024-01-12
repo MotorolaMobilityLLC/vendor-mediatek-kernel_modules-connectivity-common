@@ -1401,6 +1401,7 @@ MTK_WCN_BOOL wmt_lib_put_act_op(P_OSAL_OP pOp)
 		bRet = wmt_lib_put_op(&pWmtDev->rActiveOpQ, pOp);
 		if (bRet == MTK_WCN_BOOL_FALSE) {
 			WMT_WARN_FUNC("put to active queue fail\n");
+			atomic_dec(&pOp->ref_count);
 			break;
 		}
 
