@@ -18,7 +18,6 @@
 #include "mtk_wcn_consys_hw.h"
 #include "wmt_step.h"
 
-#define STP_DBG_PAGED_DUMP_BUFFER_SIZE (32*1024*sizeof(char))
 #define STP_DBG_PAGED_TRACE_SIZE (2048*sizeof(char))
 #define SUB_PKT_SIZE 1024
 #define SUB_PKT_HEADER 5
@@ -121,11 +120,6 @@ static _osal_inline_ INT32 stp_dbg_soc_put_emi_dump_to_nl(PUINT8 data_buf, INT32
 	return ret;
 }
 
-static _osal_inline_ INT32 stp_dbg_soc_core_dump_check_end(PUINT8 buf, INT32 len)
-{
-	return strnstr(buf, "coredump end", len) != NULL;
-}
-
 static _osal_inline_ UINT64 stp_dbg_soc_elapsed_time(UINT64 ts, ULONG nsec)
 {
 	UINT64 current_ts = 0;
@@ -199,7 +193,7 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 			STP_DBG_INFO_FUNC("waiting chip put done, chip_state: %d\n", chip_state);
 
 			if (elapsed_time > EMI_SYNC_TIMEOUT) {
-#ifndef CONFIG_MT_ENG_BUILD
+#ifndef CONFIG_MTK_ENG_BUILD
 				STP_DBG_ERR_FUNC("Wait Timeout: %llu > %d\n", elapsed_time, EMI_SYNC_TIMEOUT);
 				/* Since customer's user/userdebug load get coredump via netlink(dump_sink==2). */
 				/* For UX, if get coredump timeout, skip it and do chip reset ASAP. */
@@ -236,7 +230,6 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 
 		/*move dump info according to dump_addr & dump_len */
 		osal_memcpy_fromio(&g_paged_dump_buffer[0], dump_vir_addr, dump_len);
-		/*stp_dbg_soc_emi_dump_buffer(&g_paged_dump_buffer[0], dump_len);*/
 
 		if (dump_len <= 32 * 1024) {
 			pr_err("coredump mode: %d!\n", dump_sink);
@@ -295,7 +288,7 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 			}
 			STP_DBG_INFO_FUNC("waiting chip put end, chip_state: %d\n", chip_state);
 			if (elapsed_time > EMI_SYNC_TIMEOUT) {
-#ifndef CONFIG_MT_ENG_BUILD
+#ifndef CONFIG_MTK_ENG_BUILD
 				STP_DBG_ERR_FUNC("Wait Timeout: %llu > %d\n", elapsed_time, EMI_SYNC_TIMEOUT);
 				/* Since customer's user/userdebug load get coredump via netlink(dump_sink==2). */
 				/* For UX, if wait sync state timeout, skip it and do chip reset ASAP. */
