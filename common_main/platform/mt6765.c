@@ -111,6 +111,7 @@ static INT32 consys_dl_rom_patch(UINT32 ip_ver);
 static VOID consys_set_dl_rom_patch_flag(INT32 flag);
 static INT32 consys_dedicated_log_path_init(struct platform_device *pdev);
 static VOID consys_dedicated_log_path_deinit(VOID);
+static INT32 consys_check_reg_readable(VOID);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -191,6 +192,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_set_dl_rom_patch_flag = consys_set_dl_rom_patch_flag,
 	.consys_ic_dedicated_log_path_init = consys_dedicated_log_path_init,
 	.consys_ic_dedicated_log_path_deinit = consys_dedicated_log_path_deinit,
+	.consys_ic_check_reg_readable = consys_check_reg_readable,
 };
 
 /*******************************************************************************
@@ -1112,4 +1114,38 @@ static VOID consys_dedicated_log_path_deinit(VOID)
 	fw_log_wmt_deinit();
 #endif
 	connsys_dedicated_log_path_apsoc_deinit();
+}
+
+static INT32 consys_check_reg_readable(VOID)
+{
+	INT32 b_flag = 0;
+	INT32 c_flag = 0;
+	INT32 i = 0;
+	UINT32 value = 0;
+
+	/*check connsys bus hang*/
+	do {
+		value = CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base + CONSYS_BUSY_OFFSET);
+		if (value & CONSYS_BUSY_BIT)
+			b_flag = 1;
+		i++;
+	} while (i < 10000 && b_flag == 0);
+	if (!b_flag)
+		WMT_PLAT_ERR_FUNC("connsys busy check fail 0x18007110(0x%x)\n", value);
+
+	/*check connsys clock and sleep status*/
+	CONSYS_REG_WRITE(conn_reg.mcu_conn_hif_on_base, CONSYS_CLOCK_CHECK_VALUE);
+	msleep(20);
+	value = CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base);
+	if ((value & CONSYS_HCLK_CHECK_BIT) &&
+	    (value & CONSYS_OSCCLK_CHECK_BIT) &&
+	    ((value & CONSYS_SLEEP_CHECK_BIT) == 0))
+		c_flag = 1;
+	if (!c_flag)
+		WMT_PLAT_ERR_FUNC("connsys clock check fail 0x18007000(0x%x)\n", value);
+
+	if (b_flag && c_flag)
+		return 1;
+	else
+		return 0;
 }
