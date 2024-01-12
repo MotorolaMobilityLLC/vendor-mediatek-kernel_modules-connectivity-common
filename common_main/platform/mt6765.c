@@ -150,7 +150,7 @@ CONSYS_EMI_ADDR_INFO mtk_wcn_emi_addr_info = {
 	.full_dump_off = CONSYS_EMI_FULL_DUMP_OFFSET,
 	.emi_remap_offset = CONSYS_EMI_MAPPING_OFFSET,
 	.p_ecso = &mtk_wcn_emi_state_off,
-	.pda_dl_patch_flag = 0,
+	.pda_dl_patch_flag = 1,
 	.emi_met_size = 0x50000,
 	.emi_met_data_offset = CONSYS_EMI_MET_DATA_OFFSET,
 };
@@ -467,14 +467,11 @@ static VOID consys_hw_reset_bit_set(MTK_WCN_BOOL enable)
 			msleep(20);
 			cnt++;
 		}
-
 	}
 }
 
 static VOID consys_hw_spm_clk_gating_enable(VOID)
 {
-	/*turn on SPM clock gating enable PWRON_CONFG_EN 0x10006000 32'h0b160001 */
-	CONSYS_REG_WRITE((conn_reg.spm_base + CONSYS_PWRON_CONFG_EN_OFFSET), CONSYS_PWRON_CONFG_EN_VALUE);
 }
 
 static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
@@ -493,6 +490,11 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 			WMT_PLAT_ERR_FUNC("clk_prepare_enable(clk_scp_conn_main) fail(%d)\n", iRet);
 		WMT_PLAT_DBG_FUNC("clk_prepare_enable(clk_scp_conn_main) ok\n");
 #else
+		/* turn on SPM clock gating enable PWRON_CONFG_EN 0x10006000 32'h0b160001 */
+		CONSYS_REG_WRITE((conn_reg.spm_base + CONSYS_PWRON_CONFG_EN_OFFSET),
+				 (CONSYS_REG_READ(conn_reg.spm_base + CONSYS_PWRON_CONFG_EN_OFFSET) &
+				 0x0000FFFF) | CONSYS_PWRON_CONFG_EN_VALUE);
+
 		/*write assert "conn_top_on" primary part power on, set "connsys_on_domain_pwr_on"=1 */
 		CONSYS_REG_WRITE(conn_reg.spm_base + CONSYS_TOP1_PWR_CTRL_OFFSET,
 				 CONSYS_REG_READ(conn_reg.spm_base + CONSYS_TOP1_PWR_CTRL_OFFSET) |
@@ -647,6 +649,8 @@ static INT32 polling_consys_chipid(VOID)
 {
 	UINT32 retry = 10;
 	UINT32 consys_ver_id = 0;
+	UINT8 *consys_reg_base = NULL;
+	UINT32 value = 0;
 
 	/*12.poll CONNSYS CHIP ID until chipid is returned  0x18070008 */
 	while (retry-- > 0) {
@@ -665,6 +669,20 @@ static INT32 polling_consys_chipid(VOID)
 	WMT_PLAT_INFO_FUNC("consys HW version id(0x%x)\n", consys_ver_id & 0xFFFF);
 	consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_FW_ID_OFFSET);
 	WMT_PLAT_INFO_FUNC("consys FW version id(0x%x)\n", consys_ver_id & 0xFFFF);
+	if (mtk_wcn_soc_co_clock_get()) {
+		consys_reg_base = ioremap_nocache(CONSYS_COCLOCK_STABLE_TIME_BASE, 0x100);
+		if (consys_reg_base) {
+			value = CONSYS_REG_READ(consys_reg_base);
+			value = (value & CONSYS_COCLOCK_STABLE_TIME_MASK) | CONSYS_COCLOCK_STABLE_TIME;
+			CONSYS_REG_WRITE(consys_reg_base, value);
+			value = CONSYS_REG_READ(consys_reg_base + CONSYS_COCLOCK_ACK_ENABLE_OFFSET);
+			value = value & (~CONSYS_COCLOCK_ACK_ENABLE_BIT);
+			CONSYS_REG_WRITE(consys_reg_base + CONSYS_COCLOCK_ACK_ENABLE_OFFSET, value);
+			iounmap(consys_reg_base);
+		} else
+			WMT_PLAT_ERR_FUNC("connsys co_clock stable time base(0x%x) ioremap fail!\n",
+					  CONSYS_COCLOCK_STABLE_TIME_BASE);
+	}
 
 	return 0;
 }

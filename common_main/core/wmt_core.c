@@ -418,7 +418,6 @@ INT32 wmt_core_func_ctrl_cmd(ENUM_WMTDRV_TYPE_T type, MTK_WCN_BOOL fgEn)
 	/* WMT Header + WMT SDU */
 	u4WmtCmdPduLen = WMT_HDR_LEN + rWmtPktCmd.u2SduLen;	/* (6) */
 	u4WmtEventPduLen = WMT_HDR_LEN + WMT_STS_LEN;	/* (5) */
-	WMT_ERR_FUNC("yanjun.he debug\n");
 
 	do {
 		fgFail = MTK_WCN_BOOL_TRUE;
