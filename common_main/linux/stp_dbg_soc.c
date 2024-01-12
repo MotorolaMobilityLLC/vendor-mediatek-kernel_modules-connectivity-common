@@ -21,7 +21,6 @@
 
 #define STP_DBG_PAGED_TRACE_SIZE (2048*sizeof(char))
 #define SUB_PKT_SIZE 1024
-#define SUB_PKT_HEADER 5
 #define EMI_SYNC_TIMEOUT 100 /* FW guarantee that MCU copy data time is ~20ms. We set 100ms for safety */
 #define IS_VISIBLE_CHAR(c) ((c) >= 32 && (c) <= 126)
 #define DUMP_LOG_BYTES_PER_LINE (128)
@@ -103,7 +102,7 @@ static _osal_inline_ VOID stp_dbg_soc_emi_dump_buffer(UINT8 *buffer, UINT32 len)
 
 static _osal_inline_ INT32 stp_dbg_soc_put_emi_dump_to_nl(PUINT8 data_buf, INT32 dump_len)
 {
-	static UINT8  tmp[SUB_PKT_SIZE + SUB_PKT_HEADER];
+	static UINT8  tmp[SUB_PKT_SIZE + NL_PKT_HEADER_LEN];
 	INT32 remain = dump_len, index = 0;
 	INT32 ret = 0;
 	INT32 len;
@@ -196,15 +195,23 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 		dump_num = CORE_DUMP_NUM;
 		STP_DBG_ERR_FUNC("can not get consys dump num and default num is %d\n", CORE_DUMP_NUM);
 	}
+
 	stp_dbg_dump_num(dump_num);
-
-	if (dump_sink == 1 || dump_sink == 2)
-		stp_dbg_start_coredump_timer();
-
+	stp_dbg_start_coredump_timer();
 	wmt_plat_set_host_dump_state(STP_HOST_DUMP_NOT_START);
 	page_counter = 0;
 	if (mtk_wcn_stp_get_wmt_trg_assert() == 0)
 		WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_FIRMWARE_TRIGGER_ASSERT);
+
+	while (1) {
+		/* assert flag 2 means mcu is ready to start coredump */
+		if (wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_assert_flag) == 2) {
+			STP_DBG_INFO_FUNC("coredump handshake start\n");
+			break;
+		} else if (stp_dbg_get_coredump_timer_state() == CORE_DUMP_TIMEOUT)
+			goto paged_dump_end;
+		osal_sleep_ms(1);
+	}
 
 	do {
 		dump_phy_addr = 0;

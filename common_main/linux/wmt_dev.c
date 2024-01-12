@@ -1039,26 +1039,29 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		break;
 	case 10:
 		if (mtk_wcn_stp_coredump_start_get()) {
-			WMT_INFO_FUNC("Trigger kernel api dump.\n");
-
 			wmt_lib_host_awake_get();
-			if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_COMBO ||
-				mtk_wcn_stp_coredump_flag_get() == 2) {
-				pBuffer = kmalloc(NAME_MAX + 1, GFP_KERNEL);
-				if (!pBuffer) {
-					WMT_ERR_FUNC("pBuffer kmalloc memory fail\n");
-					return 0;
-				}
+			if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC)
+				WMT_INFO_FUNC("stp dump start.\n");
+			else {
+				WMT_INFO_FUNC("Trigger kernel api dump.\n");
+				if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_COMBO ||
+					mtk_wcn_stp_coredump_flag_get() == 2) {
+					pBuffer = kmalloc(NAME_MAX + 1, GFP_KERNEL);
+					if (!pBuffer) {
+						WMT_ERR_FUNC("pBuffer kmalloc memory fail\n");
+						return 0;
+					}
 
-				osal_strcpy(pBuffer, "MT662x f/w coredump start-");
-				if (copy_from_user(pBuffer + osal_strlen(pBuffer), (PVOID)arg,
-							NAME_MAX - osal_strlen(pBuffer))) {
-					/* osal_strcpy(pBuffer, "MT662x f/w assert core dump start"); */
-					WMT_ERR_FUNC("copy assert string failed\n");
+					osal_strcpy(pBuffer, "MT662x f/w coredump start-");
+					if (copy_from_user(pBuffer + osal_strlen(pBuffer), (PVOID)arg,
+								NAME_MAX - osal_strlen(pBuffer))) {
+						/* osal_strcpy(pBuffer, "MT662x f/w assert core dump start"); */
+						WMT_ERR_FUNC("copy assert string failed\n");
+					}
+					pBuffer[NAME_MAX] = '\0';
+					osal_dbg_assert_aee(pBuffer, "%s", pBuffer);
+					kfree(pBuffer);
 				}
-				pBuffer[NAME_MAX] = '\0';
-				osal_dbg_assert_aee(pBuffer, "%s", pBuffer);
-				kfree(pBuffer);
 			}
 		}
 		break;
@@ -1352,7 +1355,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		break;
 	case WMT_IOCTL_GET_EMI_PHY_SIZE:
 		do {
-			WMT_ERR_FUNC("gConEmiSize %p\n", gConEmiSize);
+			WMT_INFO_FUNC("gConEmiSize %p\n", gConEmiSize);
 			return (UINT32)gConEmiSize;
 		} while (0);
 		break;
