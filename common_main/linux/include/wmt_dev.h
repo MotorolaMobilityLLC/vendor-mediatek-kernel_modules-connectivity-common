@@ -34,6 +34,7 @@ INT32 wmt_lpbk_handler(UINT32 on_off_flag, UINT32 retry);
 VOID wmt_dev_blank_handler(VOID);
 UINT32 wmt_dev_get_blank_state(VOID);
 INT32 wmt_dev_apo_ctrl(UINT32 enable);
+VOID wmt_dev_set_temp_threshold(INT32 val);
 extern LONG wmt_dev_tm_temp_query(VOID);
 
 typedef INT32(*WMT_DEV_DBG_FUNC) (INT32 par1, INT32 par2, INT32 par3);
