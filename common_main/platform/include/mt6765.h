@@ -157,7 +157,7 @@
 #define CONSYS_EMI_PAGED_TRACE_OFFSET	(0x400)
 #define CONSYS_EMI_PAGED_DUMP_OFFSET	(0x8400)
 #define CONSYS_EMI_FULL_DUMP_OFFSET	(0x10400)
-#define CONSYS_EMI_MET_DATA_OFFSET	(0x0)
+#define CONSYS_EMI_MET_DATA_OFFSET	(0x2e500)
 
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
