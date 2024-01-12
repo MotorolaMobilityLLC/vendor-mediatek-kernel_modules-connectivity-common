@@ -57,6 +57,7 @@ typedef enum _ENUM_WMTRSTRET_TYPE_T {
 	WMTRSTRET_SUCCESS = 0x0,
 	WMTRSTRET_FAIL = 0x1,
 	WMTRSTRET_ONGOING = 0x2,
+	WMTRSTRET_RETRY = 0x3,
 	WMTRSTRET_MAX
 } ENUM_WMTRSTRET_TYPE_T, *P_ENUM_WMTRSTRET_TYPE_T;
 
@@ -404,6 +405,7 @@ extern VOID ENABLE_PSM_MONITOR(VOID);
 extern INT32 wmt_lib_notify_stp_sleep(VOID);
 extern VOID wmt_lib_psm_lock_release(VOID);
 extern INT32 wmt_lib_psm_lock_aquire(VOID);
+extern INT32 wmt_lib_psm_lock_trylock(VOID);
 extern VOID wmt_lib_idc_lock_release(VOID);
 extern INT32 wmt_lib_idc_lock_aquire(VOID);
 extern VOID wmt_lib_wlan_lock_release(VOID);
