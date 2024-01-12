@@ -33,24 +33,24 @@ else
 endif
 ccflags-y += -D MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
 
-ccflags-y += -I$(KERNEL_DIR)/drivers/misc/mediatek/include
-ccflags-y += -I$(KERNEL_DIR)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
-ccflags-y += -I$(KERNEL_DIR)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/mach
-ccflags-y += -I$(KERNEL_DIR)/drivers/misc/mediatek/include/mt-plat
-ccflags-y += -I$(KERNEL_DIR)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
-ccflags-y += -I$(KERNEL_DIR)/drivers/misc/mediatek/base/power/include
-ccflags-y += -I$(KERNEL_DIR)/drivers/misc/mediatek/base/power/include/clkbuf_v1
-ccflags-y += -I$(KERNEL_DIR)/drivers/misc/mediatek/base/power/include/clkbuf_v1/$(MTK_PLATFORM)
-ccflags-y += -I$(KERNEL_DIR)/drivers/misc/mediatek/btif/common/inc
-ccflags-y += -I$(KERNEL_DIR)/drivers/misc/mediatek/eccci
-ccflags-y += -I$(KERNEL_DIR)/drivers/misc/mediatek/eccci/$(MTK_PLATFORM)
-ccflags-y += -I$(KERNEL_DIR)/drivers/misc/mediatek/eemcs
-ccflags-y += -I$(KERNEL_DIR)/drivers/misc/mediatek/conn_md/include
-ccflags-y += -I$(KERNEL_DIR)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include/mach
-ccflags-y += -I$(KERNEL_DIR)/drivers/misc/mediatek/emi/submodule
-ccflags-y += -I$(KERNEL_DIR)/drivers/misc/mediatek/emi/$(MTK_PLATFORM)
-ccflags-y += -I$(KERNEL_DIR)/drivers/mmc/core
-ccflags-y += -I$(KERNEL_DIR)/drivers/misc/mediatek/connectivity/common
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/mach
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/clkbuf_v1
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/clkbuf_v1/$(MTK_PLATFORM)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/btif/common/inc
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/$(MTK_PLATFORM)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/eemcs
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/conn_md/include
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include/mach
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/emi/submodule
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/emi/$(MTK_PLATFORM)
+ccflags-y += -I$(srctree)/drivers/mmc/core
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/connectivity/common
 ###############################################################################
 
 
