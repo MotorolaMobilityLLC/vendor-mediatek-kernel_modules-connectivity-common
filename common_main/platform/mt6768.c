@@ -130,6 +130,7 @@ static VOID consys_devapc_violation_cb(VOID);
 static VOID consyc_register_devapc_cb(VOID);
 #endif
 static INT32 consys_is_ant_swap_enable_by_hwid(INT32 pin_num);
+static UINT64 consys_get_options(VOID);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -223,6 +224,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_register_devapc_cb = consyc_register_devapc_cb,
 #endif
 	.consys_ic_is_ant_swap_enable_by_hwid = consys_is_ant_swap_enable_by_hwid,
+	.consys_ic_get_options = consys_get_options,
 };
 
 static const struct connlog_emi_config connsys_fw_log_parameter = {
@@ -1438,5 +1440,20 @@ static VOID consyc_register_devapc_cb(VOID)
 static INT32 consys_is_ant_swap_enable_by_hwid(INT32 pin_num)
 {
 	return !connectivity_export_gpio_get_tristate_input(pin_num);
+}
+
+static UINT64 consys_get_options(VOID)
+{
+	UINT64 options = OPT_QUERY_ADIE |
+			OPT_WIFI_LTE_COEX |
+			OPT_BT_TSSI_FROM_WIFI_CONFIG_NEW_OPID |
+			OPT_INIT_COEX_BEFORE_RF_CALIBRATION |
+			OPT_COEX_CONFIG_ADJUST |
+			OPT_COEX_CONFIG_ADJUST_NEW_FLAG |
+			OPT_WIFI_LTE_COEX_TABLE_3 |
+			OPT_COEX_EXT_ELNA_GAIN_P1_SUPPORT |
+			OPT_NORMAL_PATCH_DWN_3 |
+			OPT_PATCH_CHECKSUM;
+	return options;
 }
 
