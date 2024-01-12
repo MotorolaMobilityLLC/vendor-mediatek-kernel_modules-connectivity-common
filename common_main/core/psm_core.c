@@ -106,7 +106,7 @@ ENUM_STP_TX_IF_TYPE __weak wmt_plat_get_comm_if_type(VOID)
 	return STP_MAX_IF_TX;
 }
 
-MTK_WCN_BOOL mtk_wcn_stp_psm_dbg_level(UINT32 dbglevel)
+MTK_WCN_BOOL mtk_wcn_stp_psm_dbg_level(INT32 dbglevel)
 {
 	if (dbglevel >= 0 && dbglevel <= 4) {
 		gPsmDbgLevel = dbglevel;
