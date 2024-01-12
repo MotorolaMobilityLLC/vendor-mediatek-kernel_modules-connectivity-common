@@ -1249,6 +1249,10 @@ static INT32 met_thread(void *pvData)
 	WMT_INFO_FUNC("met thread starts\n");
 
 	emi_info = mtk_wcn_consys_soc_get_emi_phy_add();
+	if (!emi_info) {
+		WMT_ERR_FUNC("get EMI info failed.\n");
+		return -1;
+	}
 
 	emi_met_size = emi_info->emi_met_size;
 	if (!emi_met_size) {
@@ -2830,6 +2834,10 @@ INT32 wmt_lib_met_ctrl(INT32 met_ctrl, INT32 log_ctrl)
 	P_CONSYS_EMI_ADDR_INFO emi_info;
 
 	emi_info = mtk_wcn_consys_soc_get_emi_phy_add();
+	if (emi_info == NULL) {
+		WMT_ERR_FUNC("get EMI info failed\n");
+		return -1;
+	}
 
 	if (!emi_info->emi_met_size) {
 		WMT_ERR_FUNC("met debug function is not support\n");

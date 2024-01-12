@@ -118,6 +118,7 @@ static INT32 consys_reset_emi_coredump(UINT8 __iomem *addr);
 static INT32 consys_is_connsys_reg(UINT32 addr);
 static PUINT32 consys_resume_dump_info(VOID);
 static VOID consys_set_pdma_axi_rready_force_high(UINT32 enable);
+static VOID consys_infra_reg_dump(VOID);
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -204,6 +205,7 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_is_connsys_reg = consys_is_connsys_reg,
 	.consys_ic_resume_dump_info = consys_resume_dump_info,
 	.consys_ic_set_pdma_axi_rready_force_high = consys_set_pdma_axi_rready_force_high,
+	.consys_ic_infra_reg_dump = consys_infra_reg_dump,
 };
 
 /*******************************************************************************
@@ -577,11 +579,11 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 				 CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_AHBAXI_PROT_EN_OFFSET) &
 				 ~CONSYS_PROT_MASK);
 		value = ~CONSYS_PROT_MASK &
-			CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_AHBAXI_PROT_STA_OFFSET);
+			CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_AHBAXI_PROT_STA1_OFFSET);
 		i = 0;
 		while (value == 0 || i > 10) {
 			value = ~CONSYS_PROT_MASK &
-				CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_AHBAXI_PROT_STA_OFFSET);
+				CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_AHBAXI_PROT_STA1_OFFSET);
 			i++;
 		}
 		/*Disable AXI TX bus sleep protect (CONN2AP AXI Tx Bus protect) (disable sleep
@@ -613,11 +615,11 @@ static INT32 consys_hw_power_ctrl(MTK_WCN_BOOL enable)
 				 CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_AHBAXI_PROT_EN_OFFSET) &
 				 CONSYS_PROT_MASK);
 		value = CONSYS_PROT_MASK &
-			CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_AHBAXI_PROT_STA_OFFSET);
+			CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_AHBAXI_PROT_STA1_OFFSET);
 		i = 0;
 		while (value == CONSYS_PROT_MASK || i > 10) {
 			value = CONSYS_PROT_MASK &
-				CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_AHBAXI_PROT_STA_OFFSET);
+				CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_AHBAXI_PROT_STA1_OFFSET);
 			i++;
 		}
 		CONSYS_REG_WRITE(conn_reg.topckgen_base + CONSYS_AXI_TX_PROT_EN_OFFSET,
@@ -1041,6 +1043,7 @@ static INT32 consys_read_reg_from_dts(struct platform_device *pdev)
 		conn_reg.mcu_cirq_base = (SIZE_T) of_iomap(node, MCU_CIRQ_BASE_INDEX);
 		conn_reg.mcu_top_misc_on_base = (SIZE_T) of_iomap(node, MCU_TOP_MISC_ON_BASE_INDEX);
 		conn_reg.mcu_conn_hif_pdma_base = (SIZE_T) of_iomap(node, MCU_CONN_HIF_PDMA_BASE_INDEX);
+		conn_reg.infracfg_reg_base = (SIZE_T) of_iomap(node, INFRACFG_REG_BASE_INDEX);
 
 		WMT_PLAT_PR_DBG("Get base mcu(0x%zx), rgu(0x%zx), topckgen(0x%zx), spm(0x%zx)\n",
 				conn_reg.mcu_base, conn_reg.ap_rgu_base,
@@ -1052,6 +1055,8 @@ static INT32 consys_read_reg_from_dts(struct platform_device *pdev)
 				conn_reg.mcu_top_misc_on_base);
 		WMT_PLAT_PR_DBG("Get hif_pdma(0x%zx)\n",
 				conn_reg.mcu_conn_hif_pdma_base);
+		WMT_PLAT_PR_DBG("Get infracfg_reg(0x%zx)\n",
+				conn_reg.infracfg_reg_base);
 	} else {
 		WMT_PLAT_PR_ERR("[%s] can't find CONSYS compatible node\n", __func__);
 		return iRet;
@@ -1237,4 +1242,30 @@ static VOID consys_set_pdma_axi_rready_force_high(UINT32 enable)
 		 CONSYS_PDMA_AXI_RREADY_MASK) != 0)
 		CONSYS_CLR_BIT(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_PDMA_AXI_RREADY,
 			       CONSYS_PDMA_AXI_RREADY_MASK);
+}
+
+static VOID consys_infra_reg_dump(VOID)
+{
+	UINT32 infra_topaxi_si3_sta =
+		CONSYS_REG_READ(conn_reg.infracfg_reg_base + INFRAGCFG_REG_TOPAXI_SI3_STA_OFFSET);
+	UINT32 infra_topaxi_mi_sta =
+		CONSYS_REG_READ(conn_reg.infracfg_reg_base + INFRAGCFG_REG_TOPAXI_MI_STA_OFFSET);
+	UINT32 infra_topaxi_prot_sta0 =
+		CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_AHBAXI_PROT_STA0_OFFSET);
+	UINT32 infra_topaxi_prot_sta1 =
+		CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_AHBAXI_PROT_STA1_OFFSET);
+
+
+	WMT_PLAT_PR_INFO("INFRA_TOPAXI_SI3_STA(0x%zx): 0x%x\n",
+		conn_reg.infracfg_reg_base + INFRAGCFG_REG_TOPAXI_SI3_STA_OFFSET,
+		infra_topaxi_si3_sta);
+	WMT_PLAT_PR_INFO("INFRA_TOPAXI_MI_STA(0x%zx): 0x%x\n",
+		conn_reg.infracfg_reg_base + INFRAGCFG_REG_TOPAXI_MI_STA_OFFSET,
+		infra_topaxi_mi_sta);
+	WMT_PLAT_PR_INFO("INFRA_TOPAXI_PROTECTEN_STA0(0x%zx): 0x%x\n",
+		conn_reg.topckgen_base + CONSYS_AHBAXI_PROT_STA0_OFFSET,
+		infra_topaxi_prot_sta0);
+	WMT_PLAT_PR_INFO("INFRA_TOPAXI_PROTECTEN_STA1(0x%zx): 0x%x\n",
+		conn_reg.topckgen_base + CONSYS_AHBAXI_PROT_STA1_OFFSET,
+		infra_topaxi_prot_sta1);
 }
