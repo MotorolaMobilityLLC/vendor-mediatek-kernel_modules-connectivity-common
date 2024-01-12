@@ -75,6 +75,7 @@ UINT32 gps_lna_pin_num = 0xffffffff;
 
 #ifdef CONFIG_OF
 const struct of_device_id apwmt_of_ids[] = {
+	{.compatible = "mediatek,mt3967-consys",},
 	{.compatible = "mediatek,mt6570-consys",},
 	{.compatible = "mediatek,mt6580-consys",},
 	{.compatible = "mediatek,mt6735-consys",},
