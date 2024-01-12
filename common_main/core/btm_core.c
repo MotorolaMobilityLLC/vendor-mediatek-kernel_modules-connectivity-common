@@ -385,7 +385,7 @@ static INT32 _stp_btm_proc(PVOID pvData)
 			STP_BTM_WARN_FUNC("get_lxop activeQ fail\n");
 			continue;
 		}
-		STP_BTM_INFO_FUNC("pOp(%p):%u(%d)\n", pOp, pOp->op.opId, atomic_read(&pOp->ref_count));
+		osal_op_history_save(&stp_btm->op_history, pOp);
 
 		id = osal_op_get_id(pOp);
 
@@ -583,6 +583,7 @@ MTKSTP_BTM_T *stp_btm_init(VOID)
 	}
 
 	stp_btm_init_trigger_assert_timer(stp_btm);
+	osal_op_history_init(&stp_btm->op_history, 16);
 
 	/*Generate PSM thread, to servie STP-CORE for packet retrying and core dump receiving */
 	stp_btm->BTMd.pThreadData = (PVOID) stp_btm;
@@ -742,4 +743,9 @@ INT32 stp_btm_start_trigger_assert_timer(MTKSTP_BTM_T *stp_btm)
 INT32 stp_btm_stop_trigger_assert_timer(MTKSTP_BTM_T *stp_btm)
 {
 	return osal_timer_stop(&stp_btm->trigger_assert_timer);
+}
+
+VOID stp_btm_print_op_history(VOID)
+{
+	osal_op_history_print(&stp_btm->op_history, "_stp_btm_proc");
 }

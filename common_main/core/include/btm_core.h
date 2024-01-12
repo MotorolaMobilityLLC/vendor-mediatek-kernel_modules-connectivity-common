@@ -93,6 +93,7 @@ typedef struct mtk_stp_btm {
 
 	OSAL_TIMER trigger_assert_timer;
 	UINT32 timeout;
+	struct osal_op_history op_history;
 } MTKSTP_BTM_T;
 
 
@@ -140,6 +141,9 @@ P_OSAL_OP stp_btm_get_current_op(MTKSTP_BTM_T *stp_btm);
 
 MTKSTP_BTM_T *stp_btm_init(VOID);
 extern unsigned int chip_reset_only;
+
+VOID stp_btm_print_op_history(VOID);
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
