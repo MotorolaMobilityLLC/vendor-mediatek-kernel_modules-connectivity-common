@@ -1392,6 +1392,7 @@ ssize_t wmt_dbg_write(struct file *filp, const char __user *buffer, size_t count
 	PINT8 pToken = NULL;
 	PINT8 pDelimiter = " \t";
 	LONG res;
+	static INT8 dbgEnabled;
 
 	WMT_INFO_FUNC("write parameter len = %d\n\r", (INT32) len);
 	if (len >= osal_sizeof(buf)) {
@@ -1438,13 +1439,22 @@ ssize_t wmt_dbg_write(struct file *filp, const char __user *buffer, size_t count
 			z = 0xffffffff;
 	}
 
-#if (!WMT_DBG_SUPPORT)
-	/* only allow command 0x15 for setting coredump mode in userload */
-	if (0x15 != x)
-		return len;
-#endif
-
 	WMT_INFO_FUNC("x(0x%08x), y(0x%08x), z(0x%08x)\n\r", x, y, z);
+
+	/* For eng and userdebug load, have to enable wmt_dbg by writing 0xDB9DB9 to
+	 * "/proc/driver/wmt_dbg" to avoid some malicious use
+	 */
+#if (WMT_DBG_SUPPORT)
+	if (0xDB9DB9 == x) {
+		dbgEnabled = 1;
+		return len;
+	}
+#endif
+	/* For user load, only 0x15 is allowed to execute */
+	if (0 == dbgEnabled && 0x15 != x) {
+		WMT_INFO_FUNC("please enable WMT debug first\n\r");
+		return len;
+	}
 
 	if (osal_array_size(wmt_dev_dbg_func) > x && NULL != wmt_dev_dbg_func[x])
 		(*wmt_dev_dbg_func[x]) (x, y, z);
