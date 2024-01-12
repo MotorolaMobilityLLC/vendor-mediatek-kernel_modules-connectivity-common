@@ -76,9 +76,11 @@ struct CONSYS_BASE_ADDRESS {
 	SIZE_T ap_rgu_base;
 	SIZE_T topckgen_base;
 	SIZE_T spm_base;
-	SIZE_T da_xobuf_base;
+	SIZE_T mcu_conn_hif_on_base;
+	SIZE_T mcu_top_misc_off_base;
 	SIZE_T mcu_cfg_on_base;
 	SIZE_T mcu_cirq_base;
+	SIZE_T da_xobuf_base;
 };
 
 enum CONSYS_BASE_ADDRESS_INDEX {
@@ -86,6 +88,8 @@ enum CONSYS_BASE_ADDRESS_INDEX {
 	TOP_RGU_BASE_INDEX,
 	INFRACFG_AO_BASE_INDEX,
 	SPM_BASE_INDEX,
+	MCU_CONN_HIF_ON_BASE_INDEX,
+	MCU_TOP_MISC_OFF_BASE_INDEX,
 	MCU_CFG_ON_BASE_INDEX,
 	MCU_CIRQ_BASE_INDEX,
 };

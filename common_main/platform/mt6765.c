@@ -431,6 +431,8 @@ static VOID consys_set_if_pinmux(MTK_WCN_BOOL enable)
 
 static VOID consys_hw_reset_bit_set(MTK_WCN_BOOL enable)
 {
+	UINT32 consys_ver_id = 0;
+
 	if (enable) {
 		/*3.assert CONNSYS CPU SW reset  0x10007018 "[12]=1'b1  [31:24]=8'h88 (key)" */
 		CONSYS_REG_WRITE((conn_reg.ap_rgu_base + CONSYS_CPU_SW_RST_OFFSET),
@@ -441,6 +443,18 @@ static VOID consys_hw_reset_bit_set(MTK_WCN_BOOL enable)
 		CONSYS_REG_WRITE(conn_reg.ap_rgu_base + CONSYS_CPU_SW_RST_OFFSET,
 				(CONSYS_REG_READ(conn_reg.ap_rgu_base + CONSYS_CPU_SW_RST_OFFSET) &
 				 ~CONSYS_CPU_SW_RST_BIT) | CONSYS_CPU_SW_RST_CTRL_KEY);
+
+		consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_base + 0x600);
+		while (consys_ver_id != 0x1D1E) {
+			consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_base + 0x600);
+			WMT_PLAT_INFO_FUNC("0x18002600(0x%x)\n", consys_ver_id);
+			WMT_PLAT_INFO_FUNC("0x1800216c(0x%x)\n",
+					CONSYS_REG_READ(conn_reg.mcu_base + 0x16c));
+			WMT_PLAT_INFO_FUNC("0x18007104(0x%x)\n",
+					CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base + CONSYS_CPUPCR_OFFSET));
+			msleep(20);
+		}
+
 	}
 }
 
@@ -623,7 +637,7 @@ static INT32 polling_consys_chipid(VOID)
 
 	/*12.poll CONNSYS CHIP ID until chipid is returned  0x18070008 */
 	while (retry-- > 0) {
-		consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_IP_VER_OFFSET);
+		consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_top_misc_off_base + CONSYS_IP_VER_OFFSET);
 		if (consys_ver_id == 0x10020300) {
 			WMT_PLAT_INFO_FUNC("retry(%d)consys version id(0x%08x)\n", retry, consys_ver_id);
 			consys_dl_rom_patch(consys_ver_id);
@@ -632,7 +646,7 @@ static INT32 polling_consys_chipid(VOID)
 		WMT_PLAT_ERR_FUNC("Read CONSYS version id(0x%08x)", consys_ver_id);
 		msleep(20);
 	}
-	consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_CONF_ID_OFFSET);
+	consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_top_misc_off_base + CONSYS_CONF_ID_OFFSET);
 	WMT_PLAT_INFO_FUNC("consys configuration id(0x%x)\n", consys_ver_id & 0xF);
 	consys_ver_id = CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_HW_ID_OFFSET);
 	WMT_PLAT_INFO_FUNC("consys HW version id(0x%x)\n", consys_ver_id & 0xFFFF);
@@ -680,7 +694,6 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 		/*1.AP power on VCN_1V8 LDO (with PMIC_WRAP API) VCN_1V8  */
 		/*set vcn18 SW mode*/
 		KERNEL_upmu_set_reg_value(MT6357_LDO_VCN18_OP_EN, 0x1);
-
 		if (reg_VCN18) {
 			regulator_set_voltage(reg_VCN18, 1800000, 1800000);
 			if (regulator_enable(reg_VCN18))
@@ -689,9 +702,7 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 				WMT_PLAT_DBG_FUNC("enable VCN18 ok\n");
 		}
 
-		/*set vcn33 SW mode*/
 		KERNEL_upmu_set_reg_value(MT6357_LDO_VCN33_OP_EN, 0x1);
-
 		if (reg_VCN33_BT) {
 			regulator_set_voltage(reg_VCN33_BT, 3300000, 3300000);
 			if (regulator_enable(reg_VCN33_BT))
@@ -958,6 +969,12 @@ static INT32 consys_read_reg_from_dts(struct platform_device *pdev)
 		WMT_PLAT_DBG_FUNC("Get topckgen register base(0x%zx)\n", conn_reg.topckgen_base);
 		conn_reg.spm_base = (SIZE_T) of_iomap(node, SPM_BASE_INDEX);
 		WMT_PLAT_DBG_FUNC("Get spm register base(0x%zx)\n", conn_reg.spm_base);
+		conn_reg.mcu_top_misc_off_base = (SIZE_T) of_iomap(node, MCU_TOP_MISC_OFF_BASE_INDEX);
+		WMT_PLAT_DBG_FUNC("Get mcu_top_misc_off register base(0x%zx)\n",
+				conn_reg.mcu_top_misc_off_base);
+		conn_reg.mcu_conn_hif_on_base = (SIZE_T) of_iomap(node, MCU_CONN_HIF_ON_BASE_INDEX);
+		WMT_PLAT_DBG_FUNC("Get mcu_conn_hif_on register base(0x%zx)\n",
+				conn_reg.mcu_conn_hif_on_base);
 	} else {
 		WMT_PLAT_ERR_FUNC("[%s] can't find CONSYS compatible node\n", __func__);
 		return iRet;
@@ -983,7 +1000,11 @@ static VOID force_trigger_assert_debug_pin(VOID)
 
 static UINT32 consys_read_cpupcr(VOID)
 {
-	return CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_CPUPCR_OFFSET);
+	WMT_PLAT_INFO_FUNC("0x1800216c(0x%x)\n",
+			CONSYS_REG_READ(conn_reg.mcu_base + 0x16c));
+	WMT_PLAT_INFO_FUNC("0x18002600(0x%x)\n",
+			CONSYS_REG_READ(conn_reg.mcu_base + 0x600));
+	return CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base + CONSYS_CPUPCR_OFFSET);
 }
 
 static UINT32 consys_soc_chipid_get(VOID)
