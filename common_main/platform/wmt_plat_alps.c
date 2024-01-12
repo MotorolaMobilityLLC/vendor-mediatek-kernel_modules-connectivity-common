@@ -629,6 +629,12 @@ INT32 wmt_plat_eirq_ctrl(ENUM_PIN_ID id, ENUM_PIN_STATE state)
 					WMT_PLAT_PR_ERR("request_irq fail,irq_no(%d),iret(%d)\n",
 							  bgf_irq_num, iret);
 					return iret;
+				} else {
+					iret = enable_irq_wake(bgf_irq_num);
+					if (iret)
+						WMT_PLAT_PR_ERR("enable irq wake fail,irq_no(%d),iret(%d)\n",
+							bgf_irq_num, iret);
+					iret = 0;
 				}
 			} else {
 				struct device_node *node;
