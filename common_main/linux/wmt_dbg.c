@@ -110,6 +110,7 @@ static INT32 wmt_dbg_stp_sdio_reg_read(INT32 par1, INT32 address, INT32 value);
 static INT32 wmt_dbg_stp_sdio_reg_write(INT32 par1, INT32 address, INT32 value);
 static INT32 wmt_dbg_show_thread_debug_info(INT32 par1, INT32 address, INT32 value);
 static INT32 wmt_dbg_met_ctrl(INT32 par1, INT32 met_ctrl, INT32 log_ctrl);
+static INT32 wmt_dbg_set_fw_log_mode(INT32 par1, INT32 par2, INT32 par3);
 static INT32 wmt_dbg_emi_dump(INT32 par1, INT32 offset, INT32 size);
 static INT32 wmt_dbg_fw_log_ctrl(INT32 par1, INT32 onoff, INT32 level);
 static INT32 wmt_dbg_pre_pwr_on_ctrl(INT32 par1, INT32 enable, INT32 par3);
@@ -167,13 +168,14 @@ static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x24] = wmt_dbg_stp_sdio_reg_read,
 	[0x25] = wmt_dbg_stp_sdio_reg_write,
 	[0x26] = wmt_dbg_met_ctrl,
-	[0x30] = wmt_dbg_show_thread_debug_info,
 	[0x27] = wmt_dbg_fw_log_ctrl,
 	[0x28] = wmt_dbg_pre_pwr_on_ctrl,
 	[0x29] = wmt_dbg_thermal_query,
 	[0x2a] = wmt_dbg_thermal_ctrl,
 	[0x2b] = wmt_dbg_step_ctrl,
-	[0x99] = wmt_dbg_emi_dump,
+	[0x2c] = wmt_dbg_set_fw_log_mode,
+	[0x2d] = wmt_dbg_emi_dump,
+	[0x30] = wmt_dbg_show_thread_debug_info,
 #ifdef CONFIG_MTK_ENG_BUILD
 	[0xa0] = wmt_dbg_step_test,
 #endif
@@ -679,9 +681,15 @@ static INT32 wmt_dbg_ap_reg_write(INT32 par1, INT32 par2, INT32 par3)
 	return 0;
 }
 
+static INT32 wmt_dbg_set_fw_log_mode(INT32 par1, INT32 par2, INT32 par3)
+{
+	connsys_dedicated_log_set_log_mode(par2);
+	return 0;
+}
+
 static INT32 wmt_dbg_emi_dump(INT32 par1, INT32 offset, INT32 size)
 {
-	connlog_dump_emi(offset, size);
+	connsys_dedicated_log_dump_emi(offset, size);
 	return 0;
 }
 
