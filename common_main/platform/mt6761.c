@@ -776,12 +776,6 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 		/*need PMIC driver provide new API protocol */
 		/*1.AP power on VCN_1V8 LDO (with PMIC_WRAP API) VCN_1V8  */
 		/*set vcn18 SW mode*/
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
-		if (g_regmap)
-			regmap_write(g_regmap, MT6357_LDO_VCN18_OP_EN_SET, 1);
-#else
-		KERNEL_upmu_set_reg_value(MT6357_LDO_VCN18_OP_EN, 0x1);
-#endif
 		if (reg_VCN18) {
 			regulator_set_voltage(reg_VCN18, 1800000, 1800000);
 			if (regulator_enable(reg_VCN18))
@@ -789,12 +783,6 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 			else
 				WMT_PLAT_PR_DBG("enable VCN18 ok\n");
 		}
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
-		if (g_regmap)
-			regmap_write(g_regmap, MT6357_LDO_VCN33_OP_EN_SET, 1);
-#else
-		KERNEL_upmu_set_reg_value(MT6357_LDO_VCN33_OP_EN, 0x1);
-#endif
 		if (reg_VCN33_BT) {
 			regulator_set_voltage(reg_VCN33_BT, 3300000, 3300000);
 			if (regulator_enable(reg_VCN33_BT))
@@ -825,11 +813,11 @@ static VOID consys_vcn28_hw_mode_ctrl(UINT32 enable)
 		return;
 
 	if (enable) {
-		regmap_write(g_regmap, MT6357_LDO_VCN28_OP_EN_SET, 1);
-		regmap_write(g_regmap, MT6357_LDO_VCN28_OP_CFG_CLR, 1);
+		regmap_write(g_regmap, MT6357_LDO_VCN28_OP_EN_SET, 2);
+		regmap_write(g_regmap, MT6357_LDO_VCN28_OP_CFG_CLR, 2);
 	} else {
-		regmap_write(g_regmap, MT6357_LDO_VCN28_OP_EN_CLR, 1);
-		regmap_write(g_regmap, MT6357_LDO_VCN28_OP_CFG_CLR, 1);
+		regmap_write(g_regmap, MT6357_LDO_VCN28_OP_EN_CLR, 2);
+		regmap_write(g_regmap, MT6357_LDO_VCN28_OP_CFG_CLR, 2);
 	}
 #else
 	if (enable) {
