@@ -2281,105 +2281,30 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 			case 0:
 				STP_DBG_INFO_FUNC("BT trigger assert\n");
 				if (g_stp_dbg_cpupcr->host_assert_info.reason != 31)
-					g_stp_dbg_cpupcr->fwTaskId = 1; /*BT firmware trigger assert */
+					g_stp_dbg_cpupcr->fwTaskId = STP_DBG_TASK_BT; /*BT firmware trigger assert */
 				else {
 					/*BT stack trigger assert */
-					switch (stp_dbg_get_chip_id()) {
-					case 0x6632:
-					case 0x6797:
-					case 0x6759:
-					case 0x6758:
-					case 0x6775:
-					case 0x6771:
-					case 0x6765:
-						/* after gen2 fw task id*/
-						g_stp_dbg_cpupcr->fwTaskId = 11;
-						break;
-					default:
-						/* gen2 fw task id*/
-						g_stp_dbg_cpupcr->fwTaskId = 8;
-					}
+					g_stp_dbg_cpupcr->fwTaskId = STP_DBG_TASK_NATBT;
 				}
-
 				break;
 			case 1:
 				STP_DBG_INFO_FUNC("FM trigger assert\n");
-				switch (stp_dbg_get_chip_id()) {
-				case 0x6632:
-				case 0x6797:
-				case 0x6759:
-				case 0x6758:
-				case 0x6775:
-				case 0x6771:
-				case 0x6765:
-					/* after gen2 fw task id*/
-					g_stp_dbg_cpupcr->fwTaskId = 4;
-					break;
-				default:
-					/* gen2 fw task id*/
-					g_stp_dbg_cpupcr->fwTaskId = 4;
-				}
-
+				g_stp_dbg_cpupcr->fwTaskId = STP_DBG_TASK_FM;
 				break;
 			case 2:
 				STP_DBG_INFO_FUNC("GPS trigger assert\n");
-				switch (stp_dbg_get_chip_id()) {
-				case 0x6632:
-				case 0x6797:
-				case 0x6759:
-				case 0x6758:
-				case 0x6775:
-				case 0x6771:
-				case 0x6765:
-					/* after gen2 fw task id*/
-					g_stp_dbg_cpupcr->fwTaskId = 5;
-					break;
-				default:
-					/* gen2 fw task id*/
-					g_stp_dbg_cpupcr->fwTaskId = 6;
-				}
-
+				g_stp_dbg_cpupcr->fwTaskId = STP_DBG_TASK_GPS;
 				break;
 			case 3:
 				STP_DBG_INFO_FUNC("WIFI trigger assert\n");
-				switch (stp_dbg_get_chip_id()) {
-				case 0x6632:
-				case 0x6797:
-				case 0x6759:
-				case 0x6758:
-				case 0x6775:
-				case 0x6771:
-				case 0x6765:
-					/* after gen2 fw task id*/
-					g_stp_dbg_cpupcr->fwTaskId = 12;
-					break;
-				default:
-					/* gen2 fw task id*/
-					g_stp_dbg_cpupcr->fwTaskId = 9;
-				}
-
+				g_stp_dbg_cpupcr->fwTaskId = STP_DBG_TASK_DRVWIFI;
 				break;
 			case 4:
 				STP_DBG_INFO_FUNC("WMT trigger assert\n");
 				if (issue_type == STP_HOST_TRIGGER_ASSERT_TIMEOUT)
 					osal_memcpy(&g_stp_dbg_cpupcr->assert_info[0], issue_info, len);
 
-				switch (stp_dbg_get_chip_id()) {
-				case 0x6632:
-				case 0x6797:
-				case 0x6759:
-				case 0x6758:
-				case 0x6775:
-				case 0x6771:
-				case 0x6765:
-					/* after gen2 fw task id*/
-					g_stp_dbg_cpupcr->fwTaskId = 9;
-					break;
-				default:
-					/* gen2 fw task id*/
-					g_stp_dbg_cpupcr->fwTaskId = 6;
-				}
-
+				g_stp_dbg_cpupcr->fwTaskId = STP_DBG_TASK_DRVSTP;
 				break;
 			default:
 				break;
@@ -2392,42 +2317,28 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 	} else if (issue_type == STP_FW_NOACK_ISSUE) {
 		osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 		osal_memcpy(&g_stp_dbg_cpupcr->assert_info[0], issue_info, len);
-		switch (stp_dbg_get_chip_id()) {
-		case 0x6632:
-		case 0x6797:
-		case 0x6759:
-		case 0x6758:
-		case 0x6775:
-		case 0x6771:
-		case 0x6765:
-			/* after gen2 fw task id*/
-			g_stp_dbg_cpupcr->fwTaskId = 9;
-			break;
-		default:
-			/* gen2 fw task id*/
-			g_stp_dbg_cpupcr->fwTaskId = 6;
-		}
+		g_stp_dbg_cpupcr->fwTaskId = STP_DBG_TASK_DRVSTP;
 		g_stp_dbg_cpupcr->fwRrq = 0;
 		g_stp_dbg_cpupcr->fwIsr = 0;
 		osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 	} else if (issue_type == STP_DBG_PROC_TEST) {
 		osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 		osal_memcpy(&g_stp_dbg_cpupcr->assert_info[0], issue_info, len);
-		g_stp_dbg_cpupcr->fwTaskId = 0;
+		g_stp_dbg_cpupcr->fwTaskId = STP_DBG_TASK_WMT;
 		g_stp_dbg_cpupcr->fwRrq = 0;
 		g_stp_dbg_cpupcr->fwIsr = 0;
 		osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 	} else if (issue_type == STP_FW_WARM_RST_ISSUE) {
 		osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 		osal_memcpy(&g_stp_dbg_cpupcr->assert_info[0], issue_info, len);
-		g_stp_dbg_cpupcr->fwTaskId = 0;
+		g_stp_dbg_cpupcr->fwTaskId = STP_DBG_TASK_WMT;
 		g_stp_dbg_cpupcr->fwRrq = 0;
 		g_stp_dbg_cpupcr->fwIsr = 0;
 		osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 	} else if (issue_type == STP_FW_ABT) {
 		osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 		osal_memcpy(&g_stp_dbg_cpupcr->assert_info[0], issue_info, len);
-		g_stp_dbg_cpupcr->fwTaskId = 0;
+		g_stp_dbg_cpupcr->fwTaskId = STP_DBG_TASK_WMT;
 		g_stp_dbg_cpupcr->fwRrq = 0;
 		g_stp_dbg_cpupcr->fwIsr = 0;
 		osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
