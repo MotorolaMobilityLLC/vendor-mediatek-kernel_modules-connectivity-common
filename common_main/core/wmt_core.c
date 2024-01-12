@@ -264,7 +264,7 @@ static UINT8 WMT_UTC_SYNC_CMD[] = { 0x01, 0xF0, 0x09, 0x00, 0x02
 	, 0x00, 0x00, 0x00, 0x00 /*UTC time second unit*/
 	, 0x00, 0x00, 0x00, 0x00 /*UTC time microsecond unit*/
 };
-static UINT8 WMT_UTC_SYNC_EVT[] = { 0x02, 0xF0, 0x01, 0x00, 0x02
+static UINT8 WMT_UTC_SYNC_EVT[] = { 0x02, 0xF0, 0x02, 0x00, 0x02, 0x00
 };
 #endif
 
@@ -3169,12 +3169,12 @@ static INT32 opfunc_utc_time_sync(P_WMT_OP pWmtOp)
 	if (osal_memcmp(evtBuf, WMT_UTC_SYNC_EVT,
 		osal_sizeof(WMT_UTC_SYNC_EVT)) != 0) {
 		WMT_ERR_FUNC("WMT-CORE: compare WMT_UTC_SYNC_EVT error\n");
-		WMT_ERR_FUNC("WMT-CORE: rx(%d):[%02X,%02X,%02X,%02X,%02X]\n",
-			u4Res, evtBuf[0], evtBuf[1], evtBuf[2], evtBuf[3], evtBuf[4]);
-		WMT_ERR_FUNC("WMT-CORE: exp(%zu):[%02X,%02X,%02X,%02X,%02X]\n",
+		WMT_ERR_FUNC("WMT-CORE: rx(%d):[%02X,%02X,%02X,%02X,%02X,%02X]\n",
+			u4Res, evtBuf[0], evtBuf[1], evtBuf[2], evtBuf[3], evtBuf[4], evtBuf[5]);
+		WMT_ERR_FUNC("WMT-CORE: exp(%zu):[%02X,%02X,%02X,%02X,%02X,%02X]\n",
 			osal_sizeof(WMT_UTC_SYNC_EVT), WMT_UTC_SYNC_EVT[0],
 			WMT_UTC_SYNC_EVT[1], WMT_UTC_SYNC_EVT[2], WMT_UTC_SYNC_EVT[3],
-			WMT_UTC_SYNC_EVT[4]);
+			WMT_UTC_SYNC_EVT[4], WMT_UTC_SYNC_EVT[5]);
 	} else {
 		WMT_INFO_FUNC("Send WMT_UTC_SYNC_CMD command OK!\n");
 	}
