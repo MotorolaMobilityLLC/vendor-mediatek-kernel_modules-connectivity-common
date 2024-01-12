@@ -347,10 +347,14 @@ static VOID stp_uart_tty_receive(
 	const unsigned char *data,
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
 	PINT8 flags,
-#else
-	const char *flags,
-#endif
 	INT32 count)
+#elif (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
+	const char *flags,
+	INT32 count)
+#else
+	const unsigned char *flags,
+	size_t count)
+#endif
 {
 	UINT32 fifo_avail_len = LDISC_RX_FIFO_SIZE - kfifo_len(g_stp_uart_rx_fifo);
 	UINT32 how_much_put = 0;
@@ -366,7 +370,11 @@ static VOID stp_uart_tty_receive(
 /* write_lock(&g_stp_uart_rx_handling_lock); */
 	if (count > 2000) {
 		/*this is abnormal */
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
 		UART_PR_ERR("abnormal: buffer count = %d\n", count);
+#else
+		UART_PR_ERR("abnormal: buffer count = %lu\n", count);
+#endif
 	}
 	/*How much empty seat? */
 	if (fifo_avail_len > 0) {
@@ -503,16 +511,24 @@ static VOID stp_uart_tty_receive(
 	const unsigned char *data,
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
 	PINT8 flags,
-#else
-	const char *flags,
-#endif
 	INT32 count)
+#elif (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
+	const char *flags,
+	INT32 count)
+#else
+	const unsigned char *flags,
+	size_t count)
+#endif
 {
 	UINT32 written;
 
 	/* UART_LOUD_FUNC("URX:%d\n", count); */
 	if (unlikely(count > 2000))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
 		UART_PR_WARN("abnormal: buffer count = %d\n", count);
+#else
+		UART_PR_WARN("abnormal: buffer count = %lu\n", count);
+#endif
 
 	if (unlikely(!g_stp_uart_rx_fifo || !g_stp_uart_rx_work || !g_stp_uart_rx_wq)) {
 		UART_PR_ERR
@@ -541,10 +557,14 @@ static VOID stp_uart_tty_receive(
 	const unsigned char *data,
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
 	PINT8 flags,
-#else
-	const char *flags,
-#endif
 	INT32 count)
+#elif (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
+	const char *flags,
+	INT32 count)
+#else
+	const unsigned char *flags,
+	size_t count)
+#endif
 {
 
 #if 0
@@ -553,7 +573,11 @@ static VOID stp_uart_tty_receive(
 
 	if (count > 2000) {
 		/*this is abnormal */
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
 		UART_PR_ERR("stp_uart_tty_receive buffer count = %d\n", count);
+#else
+		UART_PR_ERR("stp_uart_tty_receive buffer count = %lu\n", count);
+#endif
 	}
 #if 0
 	{
