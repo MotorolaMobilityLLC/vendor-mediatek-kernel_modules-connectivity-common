@@ -104,7 +104,6 @@ static UINT8 gAntBuf[1024] = { 0 };
 static UINT32 g_open_wmt_lte_flag;
 #endif
 static UINT8 gFlashBuf[1024] = { 0 };
-static UINT8 msg_local_buffer[1300] = { 0 };
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
@@ -416,7 +415,6 @@ INT32 wmt_core_func_ctrl_cmd(ENUM_WMTDRV_TYPE_T type, MTK_WCN_BOOL fgEn)
 	/* WMT Header + WMT SDU */
 	u4WmtCmdPduLen = WMT_HDR_LEN + rWmtPktCmd.u2SduLen;	/* (6) */
 	u4WmtEventPduLen = WMT_HDR_LEN + WMT_STS_LEN;	/* (5) */
-	WMT_ERR_FUNC("yanjun.he debug\n");
 
 	do {
 		fgFail = MTK_WCN_BOOL_TRUE;
@@ -931,6 +929,7 @@ static INT32 wmt_core_hw_check(VOID)
 	UINT32 chipid;
 	P_WMT_IC_OPS p_ops;
 	INT32 iret;
+	UINT32 soc_chipid;
 
 	/* 1. get chip id */
 	chipid = 0;
@@ -941,8 +940,9 @@ static INT32 wmt_core_hw_check(VOID)
 		return -2;
 	}
 	if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC) {
-		if (wmt_lib_get_icinfo(WMTCHIN_IPVER))
-			chipid = wmt_plat_get_soc_chipid();
+		soc_chipid = wmt_plat_get_soc_chipid();
+		if (soc_chipid == 0x6765)
+			chipid = soc_chipid;
 	}
 	WMT_INFO_FUNC("get hwcode (chip id) (0x%x)\n", chipid);
 
@@ -3048,6 +3048,7 @@ static INT32 opfunc_idc_msg_handling(P_WMT_OP pWmtOp)
 	UINT8 host_lte_btwf_coex_cmd[] = { 0x01, 0x10, 0x00, 0x00, 0x00 };
 	UINT8 host_lte_btwf_coex_evt[] = { 0x02, 0x10, 0x01, 0x00, 0x00 };
 	UINT8 *pTxBuf = NULL;
+	UINT8 msg_local_buffer[1300] = { 0 };
 	UINT8 evtbuf[8] = { 0 };
 	INT32 iRet = -1;
 	UINT16 msg_len = 0;
