@@ -6,8 +6,8 @@
 #include "mtk_wcn_consys_hw.h"
 
 
-int g_mapped_reg_table_sz = 11;
-struct reg_map_addr g_mapped_reg_table[] = {
+int g_mapped_reg_table_sz_mt6765 = 11;
+struct reg_map_addr g_mapped_reg_table_mt6765[] = {
 	{ 0x18007000,	NULL,	0x140 },
 	{ 0x180C1100,	NULL,	0x538 },
 	{ 0x180B501C,	NULL,	0x20 },
@@ -21,7 +21,7 @@ struct reg_map_addr g_mapped_reg_table[] = {
 	{ 0x18003028,	NULL,	0x258 },
 };
 
-struct consys_dump_item g_conn_debug_dump[] = {
+static struct consys_dump_item g_conn_debug_dump[] = {
 	{ DUMP_ACT_READ,	0,	0x0,	0x0,	0x0},
 	{ DUMP_ACT_READ,	0,	0x4,	0x0,	0x0},
 	{ DUMP_ACT_READ,	0,	0x8,	0x0,	0x0},
@@ -48,13 +48,13 @@ struct consys_dump_item g_conn_debug_dump[] = {
 	{ DUMP_ACT_READ,	0,	0x13C,	0x0,	0x0},
 };
 
-INT32 dump_conn_debug_dump(const char *trg_str)
+INT32 dump_conn_debug_dump_mt6765(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_debug_dump",
 			g_conn_debug_dump, ARRAY_SIZE(g_conn_debug_dump));
 }
 
-struct consys_dump_item g_conn_mcu_debug_flag[] = {
+static struct consys_dump_item g_conn_mcu_debug_flag[] = {
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x4C,	0x7E},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x4525101,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
@@ -74,13 +74,13 @@ struct consys_dump_item g_conn_mcu_debug_flag[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_debug_flag(const char *trg_str)
+INT32 dump_conn_mcu_debug_flag_mt6765(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_debug_flag",
 			g_conn_mcu_debug_flag, ARRAY_SIZE(g_conn_mcu_debug_flag));
 }
 
-struct consys_dump_item g_conn_mcu_apb0_bus[] = {
+static struct consys_dump_item g_conn_mcu_apb0_bus[] = {
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x1565501,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x1585701,	0x0},
@@ -99,13 +99,13 @@ struct consys_dump_item g_conn_mcu_apb0_bus[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_apb0_bus(const char *trg_str)
+INT32 dump_conn_mcu_apb0_bus_mt6765(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_apb0_bus",
 			g_conn_mcu_apb0_bus, ARRAY_SIZE(g_conn_mcu_apb0_bus));
 }
 
-struct consys_dump_item g_conn_mcu_apb1_bus[] = {
+static struct consys_dump_item g_conn_mcu_apb1_bus[] = {
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x15A5901,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x15C5B01,	0x0},
@@ -124,13 +124,13 @@ struct consys_dump_item g_conn_mcu_apb1_bus[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_apb1_bus(const char *trg_str)
+INT32 dump_conn_mcu_apb1_bus_mt6765(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_apb1_bus",
 			g_conn_mcu_apb1_bus, ARRAY_SIZE(g_conn_mcu_apb1_bus));
 }
 
-struct consys_dump_item g_conn_bus_timeout[] = {
+static struct consys_dump_item g_conn_bus_timeout[] = {
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x25525101,	0x0},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 	{ DUMP_ACT_WRITE,	0,	0x40,	0x25545301,	0x0},
@@ -157,13 +157,13 @@ struct consys_dump_item g_conn_bus_timeout[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_bus_timeout(const char *trg_str)
+INT32 dump_conn_bus_timeout_mt6765(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_bus_timeout",
 			g_conn_bus_timeout, ARRAY_SIZE(g_conn_bus_timeout));
 }
 
-struct consys_dump_item g_conn_mcu_pc_log[] = {
+static struct consys_dump_item g_conn_mcu_pc_log[] = {
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x0,	0x7E},
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 	{ DUMP_ACT_WRITE,	0,	0x14,	0x2,	0x7E},
@@ -250,13 +250,13 @@ struct consys_dump_item g_conn_mcu_pc_log[] = {
 	{ DUMP_ACT_READ,	0,	0x104,	0x0,	0x0},
 };
 
-INT32 dump_conn_mcu_pc_log(const char *trg_str)
+INT32 dump_conn_mcu_pc_log_mt6765(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_mcu_pc_log",
 			g_conn_mcu_pc_log, ARRAY_SIZE(g_conn_mcu_pc_log));
 }
 
-struct consys_dump_item g_conn_cfg_on_debug_signal[] = {
+static struct consys_dump_item g_conn_cfg_on_debug_signal[] = {
 	{ DUMP_ACT_WRITE,	1,	0x220,	0x80000000,	0x80000000},
 	{ DUMP_ACT_WRITE,	1,	0x220,	0x1,	0x7},
 	{ DUMP_ACT_WRITE,	1,	0x228,	0x3020100,	0x0},
@@ -301,13 +301,13 @@ struct consys_dump_item g_conn_cfg_on_debug_signal[] = {
 	{ DUMP_ACT_READ,	1,	0x240,	0x0,	0x0},
 };
 
-INT32 dump_conn_cfg_on_debug_signal(const char *trg_str)
+INT32 dump_conn_cfg_on_debug_signal_mt6765(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_cfg_on_debug_signal",
 			g_conn_cfg_on_debug_signal, ARRAY_SIZE(g_conn_cfg_on_debug_signal));
 }
 
-struct consys_dump_item g_conn_cfg_on_register[] = {
+static struct consys_dump_item g_conn_cfg_on_register[] = {
 	{ DUMP_ACT_READ,	1,	0x0,	0x0,	0x0},
 	{ DUMP_ACT_READ,	1,	0x4,	0x0,	0x0},
 	{ DUMP_ACT_READ,	1,	0x8,	0x0,	0x0},
@@ -331,13 +331,13 @@ struct consys_dump_item g_conn_cfg_on_register[] = {
 	{ DUMP_ACT_READ,	1,	0x534,	0x0,	0x0},
 };
 
-INT32 dump_conn_cfg_on_register(const char *trg_str)
+INT32 dump_conn_cfg_on_register_mt6765(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_cfg_on_register",
 			g_conn_cfg_on_register, ARRAY_SIZE(g_conn_cfg_on_register));
 }
 
-struct consys_dump_item g_conn_cmdbt_debug_signal[] = {
+static struct consys_dump_item g_conn_cmdbt_debug_signal[] = {
 	{ DUMP_ACT_WRITE,	2,	0x1C,	0x2,	0x2},
 	{ DUMP_ACT_WRITE,	2,	0x0,	0x3020100,	0x0},
 	{ DUMP_ACT_WRITE,	2,	0x4,	0x7060504,	0x0},
@@ -393,46 +393,46 @@ struct consys_dump_item g_conn_cmdbt_debug_signal[] = {
 	{ DUMP_ACT_READ,	3,	0x1C,	0x0,	0x0},
 };
 
-INT32 dump_conn_cmdbt_debug_signal(const char *trg_str)
+INT32 dump_conn_cmdbt_debug_signal_mt6765(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_cmdbt_debug_signal",
 			g_conn_cmdbt_debug_signal, ARRAY_SIZE(g_conn_cmdbt_debug_signal));
 }
 
-struct consys_dump_item g_conn_emi_detect[] = {
+static struct consys_dump_item g_conn_emi_detect[] = {
 	{ DUMP_ACT_READ,	5,	0x0,	0x0,	0x0},
 	{ DUMP_ACT_READ,	5,	0x4,	0x0,	0x0},
 	{ DUMP_ACT_READ,	5,	0x8,	0x0,	0x0},
 };
 
-INT32 dump_conn_emi_detect(const char *trg_str)
+INT32 dump_conn_emi_detect_mt6765(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_emi_detect",
 			g_conn_emi_detect, ARRAY_SIZE(g_conn_emi_detect));
 }
 
-struct consys_dump_item g_conn_slp_protect_debug[] = {
+static struct consys_dump_item g_conn_slp_protect_debug[] = {
 	{ DUMP_ACT_READ,	1,	0x44,	0x0,	0x0},
 };
 
-INT32 dump_conn_slp_protect_debug(const char *trg_str)
+INT32 dump_conn_slp_protect_debug_mt6765(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_slp_protect_debug",
 			g_conn_slp_protect_debug, ARRAY_SIZE(g_conn_slp_protect_debug));
 }
 
-struct consys_dump_item g_conn_spm_r13[] = {
+static struct consys_dump_item g_conn_spm_r13[] = {
 	{ DUMP_ACT_READ,	6,	0x0,	0x0,	0x0},
 	{ DUMP_ACT_READ,	6,	0x4,	0x0,	0x0},
 };
 
-INT32 dump_conn_spm_r13(const char *trg_str)
+INT32 dump_conn_spm_r13_mt6765(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_spm_r13",
 			g_conn_spm_r13, ARRAY_SIZE(g_conn_spm_r13));
 }
 
-struct consys_dump_item g_conn_bus_timeout_debug[] = {
+static struct consys_dump_item g_conn_bus_timeout_debug[] = {
 	{ DUMP_ACT_READ,	7,	0x0,	0x0,	0x0},
 	{ DUMP_ACT_READ,	7,	0x200,	0x0,	0x0},
 	{ DUMP_ACT_READ,	6,	0x2F8,	0x0,	0x0},
@@ -451,13 +451,13 @@ struct consys_dump_item g_conn_bus_timeout_debug[] = {
 	{ DUMP_ACT_READ,	9,	0x38,	0x0,	0x0},
 };
 
-INT32 dump_conn_bus_timeout_debug(const char *trg_str)
+INT32 dump_conn_bus_timeout_debug_mt6765(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_bus_timeout_debug",
 			g_conn_bus_timeout_debug, ARRAY_SIZE(g_conn_bus_timeout_debug));
 }
 
-struct consys_dump_item g_conn_ILM_corrupt_issue_debug[] = {
+static struct consys_dump_item g_conn_ILM_corrupt_issue_debug[] = {
 	{ DUMP_ACT_READ,	10,	0x1D8,	0x0,	0x0},
 	{ DUMP_ACT_READ,	10,	0x1F8,	0x0,	0x0},
 	{ DUMP_ACT_READ,	10,	0x218,	0x0,	0x0},
@@ -482,7 +482,7 @@ struct consys_dump_item g_conn_ILM_corrupt_issue_debug[] = {
 	{ DUMP_ACT_READ,	0,	0x108,	0x0,	0x0},
 };
 
-INT32 dump_conn_ILM_corrupt_issue_debug(const char *trg_str)
+INT32 dump_conn_ILM_corrupt_issue_debug_mt6765(const char *trg_str)
 {
 	return execute_dump_action(trg_str, "conn_ILM_corrupt_issue_debug",
 			g_conn_ILM_corrupt_issue_debug, ARRAY_SIZE(g_conn_ILM_corrupt_issue_debug));
