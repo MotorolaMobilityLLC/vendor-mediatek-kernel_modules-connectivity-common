@@ -77,6 +77,17 @@ struct CONSYS_BASE_ADDRESS {
 	SIZE_T topckgen_base;
 	SIZE_T spm_base;
 	SIZE_T da_xobuf_base;
+	SIZE_T mcu_cfg_on_base;
+	SIZE_T mcu_cirq_base;
+};
+
+enum CONSYS_BASE_ADDRESS_INDEX {
+	MCU_BASE_INDEX = 0,
+	TOP_RGU_BASE_INDEX,
+	INFRACFG_AO_BASE_INDEX,
+	SPM_BASE_INDEX,
+	MCU_CFG_ON_BASE_INDEX,
+	MCU_CIRQ_BASE_INDEX,
 };
 
 typedef enum _ENUM_EMI_CTRL_STATE_OFFSET_ {
@@ -139,6 +150,7 @@ typedef UINT32(*CONSYS_IC_STORE_PDEV) (struct platform_device *pdev);
 typedef UINT32(*CONSYS_IC_STORE_RESET_CONTROL) (struct platform_device *pdev);
 typedef MTK_WCN_BOOL(*CONSYS_IC_NEED_GPS) (VOID);
 typedef VOID(*CONSYS_IC_SET_IF_PINMUX) (MTK_WCN_BOOL enable);
+typedef VOID(*CONSYS_IC_SET_DL_ROM_PATCH_FLAG) (INT32 flag);
 
 typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_CLOCK_BUFFER_CTRL consys_ic_clock_buffer_ctrl;
@@ -173,6 +185,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_STORE_RESET_CONTROL consys_ic_store_reset_control;
 	CONSYS_IC_NEED_GPS consys_ic_need_gps;
 	CONSYS_IC_SET_IF_PINMUX consys_ic_set_if_pinmux;
+	CONSYS_IC_SET_DL_ROM_PATCH_FLAG consys_ic_set_dl_rom_patch_flag;
 } WMT_CONSYS_IC_OPS, *P_WMT_CONSYS_IC_OPS;
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -218,6 +231,8 @@ P_CONSYS_EMI_ADDR_INFO mtk_wcn_consys_soc_get_emi_phy_add(VOID);
 UINT32 mtk_wcn_consys_read_cpupcr(VOID);
 VOID mtk_wcn_force_trigger_assert_debug_pin(VOID);
 INT32 mtk_wcn_consys_read_irq_info_from_dts(PINT32 irq_num, PUINT32 irq_flag);
+INT32 mtk_wcn_consys_reg_ctrl(UINT32 is_write, enum CONSYS_BASE_ADDRESS_INDEX index, UINT32 offset,
+		PUINT32 value);
 
 P_WMT_CONSYS_IC_OPS mtk_wcn_get_consys_ic_ops(VOID);
 INT32 mtk_wcn_consys_jtag_set_for_mcu(VOID);

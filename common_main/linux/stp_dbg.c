@@ -2228,6 +2228,7 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 					case 0x6758:
 					case 0x6775:
 					case 0x6771:
+					case 0x6765:
 						/* after gen2 fw task id*/
 						g_stp_dbg_cpupcr->fwTaskId = 11;
 						break;
@@ -2247,6 +2248,7 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 				case 0x6758:
 				case 0x6775:
 				case 0x6771:
+				case 0x6765:
 					/* after gen2 fw task id*/
 					g_stp_dbg_cpupcr->fwTaskId = 4;
 					break;
@@ -2265,6 +2267,7 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 				case 0x6758:
 				case 0x6775:
 				case 0x6771:
+				case 0x6765:
 					/* after gen2 fw task id*/
 					g_stp_dbg_cpupcr->fwTaskId = 5;
 					break;
@@ -2283,6 +2286,7 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 				case 0x6758:
 				case 0x6775:
 				case 0x6771:
+				case 0x6765:
 					/* after gen2 fw task id*/
 					g_stp_dbg_cpupcr->fwTaskId = 12;
 					break;
@@ -2304,6 +2308,7 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 				case 0x6758:
 				case 0x6775:
 				case 0x6771:
+				case 0x6765:
 					/* after gen2 fw task id*/
 					g_stp_dbg_cpupcr->fwTaskId = 9;
 					break;
@@ -2331,6 +2336,7 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 		case 0x6758:
 		case 0x6775:
 		case 0x6771:
+		case 0x6765:
 			/* after gen2 fw task id*/
 			g_stp_dbg_cpupcr->fwTaskId = 9;
 			break;

@@ -106,6 +106,8 @@ static INT32 wmt_ctrl_gps_lna_set(P_WMT_CTRL_DATA pData);
 
 static INT32 wmt_ctrl_get_patch_name(P_WMT_CTRL_DATA pWmtCtrlData);
 
+static INT32 wmt_ctrl_get_rom_patch_info(P_WMT_CTRL_DATA pWmtCtrlData);
+
 /* TODO: [FixMe][GeorgeKuo]: remove unused function */
 /*static INT32  wmt_ctrl_hwver_get(P_WMT_CTRL_DATA);*/
 
@@ -156,6 +158,7 @@ static const WMT_CTRL_FUNC wmt_ctrl_func[] = {
 	[WMT_CTRL_GET_TDM_REQ_ANTSEL] = wmt_ctrl_get_tdm_req_antsel,
 #endif
 	[WMT_CTRL_EVT_PARSER] = wmt_ctrl_evt_parser,
+	[WMT_CTRL_GET_ROM_PATCH_INFO] = wmt_ctrl_get_rom_patch_info,
 	[WMT_CTRL_MAX] = wmt_ctrl_others,
 };
 
@@ -561,6 +564,51 @@ INT32 wmt_ctrl_get_patch_info(P_WMT_CTRL_DATA pWmtCtrlData)
 		WMT_ERR_FUNC("NULL patchinfo pointer\n");
 
 	return 0;
+}
+
+INT32 wmt_ctrl_get_rom_patch_info(P_WMT_CTRL_DATA pWmtCtrlData)
+{
+	P_DEV_WMT pDev = &gDevWmt;	/* single instance */
+	UINT32 type = 0;
+	struct wmt_rom_patch_info *pPatchinfo = NULL;
+	PUINT8 pNbuf = NULL;
+	PUINT8 pAbuf = NULL;
+	INT32 ret = 0;
+	UINT8 cmdStr[NAME_MAX + 1] = { 0 };
+
+	type = pWmtCtrlData->au4CtrlData[0];
+	WMT_DBG_FUNC("rom patch type is %d\n", type);
+	pDev->ip_ver = pWmtCtrlData->au4CtrlData[3];
+	WMT_DBG_FUNC("ip version is %x\n", pDev->ip_ver);
+
+	if (!pDev->pWmtRomPatchInfo[WMTDRV_TYPE_WMT]) {
+		osal_snprintf(cmdStr, NAME_MAX, "srh_rom_patch");
+		ret = wmt_ctrl_ul_cmd(pDev, cmdStr);
+		if (ret) {
+			WMT_WARN_FUNC("wmt_ctrl_ul_cmd fail(%d)\n", ret);
+			return -1;
+		}
+	}
+
+	if (type < WMTDRV_TYPE_ANT) {
+		pPatchinfo = pDev->pWmtRomPatchInfo[type];
+		pNbuf = (PUINT8) pWmtCtrlData->au4CtrlData[1];
+		pAbuf = (PUINT8) pWmtCtrlData->au4CtrlData[2];
+		if (pPatchinfo) {
+			osal_memcpy(pNbuf, pPatchinfo->patchName, osal_sizeof(pPatchinfo->patchName));
+			osal_memcpy(pAbuf, pPatchinfo->addRess, osal_sizeof(pPatchinfo->addRess));
+			WMT_DBG_FUNC("get 4 address bytes is 0x%2x,0x%2x,0x%2x,0x%2x",
+					pAbuf[0], pAbuf[1], pAbuf[2], pAbuf[3]);
+		} else {
+			WMT_ERR_FUNC("NULL patchinfo pointer\n");
+			ret = 1;
+		}
+	} else {
+		WMT_ERR_FUNC("rom patch type %d is error!\n", type);
+		ret = -1;
+	}
+
+	return ret;
 }
 
 INT32 wmt_ctrl_soc_paldo_ctrl(P_WMT_CTRL_DATA pWmtCtrlData)

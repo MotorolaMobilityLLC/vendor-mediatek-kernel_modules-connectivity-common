@@ -406,6 +406,16 @@ typedef struct _WMT_PATCH {
 	UINT32 u4PatchVer;
 } WMT_PATCH, *P_WMT_PATCH;
 
+struct wmt_rom_patch {
+	UINT8 ucDateTime[16];
+	UINT8 ucPLat[4];
+	UINT16 u2HwVer;
+	UINT16 u2SwVer;
+	UINT32 u4PatchAddr;
+	UINT32 u4PatchType;
+	UINT32 u4CRC[4];
+};
+
 
 /*******************************************************************************
 *                            P U B L I C   D A T A

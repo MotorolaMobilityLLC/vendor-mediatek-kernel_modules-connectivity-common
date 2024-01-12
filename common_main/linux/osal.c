@@ -291,13 +291,16 @@ PVOID osal_memset(PVOID buf, INT32 i, UINT32 len)
 PVOID osal_memcpy(PVOID dst, const PVOID src, UINT32 len)
 {
 	return memcpy(dst, src, len);
-
 }
 
 VOID osal_memcpy_fromio(PVOID dst, const PVOID src, UINT32 len)
 {
 	return memcpy_fromio(dst, src, len);
+}
 
+VOID osal_memcpy_toio(PVOID dst, const PVOID src, UINT32 len)
+{
+	return memcpy_toio(dst, src, len);
 }
 
 INT32 osal_memcmp(const PVOID buf1, const PVOID buf2, UINT32 len)

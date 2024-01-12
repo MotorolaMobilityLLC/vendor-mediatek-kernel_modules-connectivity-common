@@ -97,6 +97,8 @@
 #define WMT_IOCTL_WMT_STP_ASSERT_CTRL	_IOW(WMT_IOC_MAGIC, 27, int)
 #define WMT_IOCTL_FW_DBGLOG_CTRL	_IOR(WMT_IOC_MAGIC, 29, int)
 #define WMT_IOCTL_DYNAMIC_DUMP_CTRL	_IOR(WMT_IOC_MAGIC, 30, char*)
+#define WMT_IOCTL_SET_ROM_PATCH_INFO	_IOW(WMT_IOC_MAGIC, 31, char*)
+#define WMT_IOCTL_FDB_CTRL		_IOW(WMT_IOC_MAGIC, 32, char*)
 
 #define MTK_WMT_VERSION  "Consys WMT Driver - v1.0"
 #define MTK_WMT_DATE     "2013/01/20"
@@ -128,6 +130,7 @@ UINT32 always_pwr_on_flag = 1;
 UINT32 always_pwr_on_flag;
 #endif
 P_WMT_PATCH_INFO pPatchInfo;
+struct wmt_rom_patch_info *pRomPatchInfo[WMTDRV_TYPE_ANT];
 UINT32 pAtchNum;
 UINT32 currentLpbkStatus;
 
@@ -449,6 +452,16 @@ VOID wmt_dev_patch_info_free(VOID)
 {
 	kfree(pPatchInfo);
 	pPatchInfo = NULL;
+}
+
+VOID wmt_dev_rom_patch_info_free(VOID)
+{
+	UINT32 i;
+
+	for (i = 0; i < WMTDRV_TYPE_ANT; i++) {
+		kfree(pRomPatchInfo[i]);
+		pRomPatchInfo[i] = NULL;
+	}
 }
 
 MTK_WCN_BOOL wmt_dev_is_file_exist(PUINT8 pFileName)
@@ -1040,6 +1053,8 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			return wmt_lib_get_icinfo(WMTCHIN_HWVER);
 		else if (arg == 2)
 			return wmt_lib_get_icinfo(WMTCHIN_FWVER);
+		else if (arg == 3)
+			return wmt_lib_get_icinfo(WMTCHIN_IPVER);
 		break;
 	case WMT_IOCTL_WMT_CFG_NAME:
 		{
@@ -1239,6 +1254,67 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			}
 			wmt_plat_set_dynamic_dumpmem(int_buf);
 			kfree(pBuf);
+		} while (0);
+		break;
+	case WMT_IOCTL_SET_ROM_PATCH_INFO:
+		do {
+			struct wmt_rom_patch_info wMtRomPatchInfo;
+			UINT32 type;
+
+			if (copy_from_user(&wMtRomPatchInfo, (PVOID)arg, sizeof(struct wmt_rom_patch_info))) {
+				WMT_ERR_FUNC("copy_from_user failed at %d\n", __LINE__);
+				iRet = -EFAULT;
+				break;
+			}
+
+			if (wMtRomPatchInfo.type >= WMTDRV_TYPE_ANT) {
+				WMT_ERR_FUNC("rom patch type(%d) >= %d!\n",
+						wMtRomPatchInfo.type, WMTDRV_TYPE_WMT);
+				iRet = -EFAULT;
+				break;
+			}
+			type = wMtRomPatchInfo.type;
+
+			if (!pRomPatchInfo[type]) {
+				pRomPatchInfo[type] = kcalloc(1, sizeof(struct wmt_rom_patch_info), GFP_ATOMIC);
+				if (!pRomPatchInfo[type]) {
+					WMT_ERR_FUNC("allocate memory fail!\n");
+					iRet = -EFAULT;
+					break;
+				}
+			}
+
+			osal_memcpy(pRomPatchInfo[type], &wMtRomPatchInfo, sizeof(struct wmt_rom_patch_info));
+			WMT_DBG_FUNC("rom patch type %d,name %s,address info 0x%02x,0x%02x,0x%02x,0x%02x\n",
+					pRomPatchInfo[type]->type, pRomPatchInfo[type]->patchName,
+					pRomPatchInfo[type]->addRess[0],
+					pRomPatchInfo[type]->addRess[1],
+					pRomPatchInfo[type]->addRess[2],
+					pRomPatchInfo[type]->addRess[3]);
+			wmt_lib_set_rom_patch_info(pRomPatchInfo[type]);
+		} while (0);
+		break;
+	case WMT_IOCTL_FDB_CTRL:
+		do {
+			struct wmt_fdb_ctrl fdb_ctrl;
+
+			if (copy_from_user(&fdb_ctrl, (PVOID)arg, sizeof(struct wmt_fdb_ctrl))) {
+				WMT_ERR_FUNC("copy_from_user failed at %d\n", __LINE__);
+				iRet = -EFAULT;
+				break;
+			}
+
+			iRet = wmt_lib_fdb_ctrl(&fdb_ctrl);
+			if (iRet) {
+				WMT_ERR_FUNC("wmt_lib_fdb_ctrl fail(%d)\n", iRet);
+				iRet = -EFAULT;
+				break;
+			}
+
+			if (copy_to_user((PVOID)arg, &fdb_ctrl, sizeof(struct wmt_fdb_ctrl))) {
+				iRet = -EFAULT;
+				break;
+			}
 		} while (0);
 		break;
 	default:
@@ -1488,6 +1564,9 @@ static VOID WMT_exit(VOID)
 	wmt_dev_patch_info_free();
 	mtk_wcn_stp_uart_drv_exit();
 	mtk_wcn_stp_sdio_drv_exit();
+
+	wmt_dev_rom_patch_info_free();
+
 	wmt_dev_bgw_desense_deinit();
 
 	wmt_lib_register_thermal_ctrl_cb(NULL);

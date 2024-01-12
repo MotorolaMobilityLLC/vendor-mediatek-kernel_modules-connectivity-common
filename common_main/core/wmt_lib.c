@@ -90,6 +90,9 @@ static PF_WMT_SDIO_DEEP_SLEEP sdio_deep_sleep_flag_set;
 static UINT8 g_cpupcr_buf[WMT_STP_CPUPCR_BUF_SIZE] = { 0 };
 static UINT32 g_quick_sleep_ctrl = 1;
 
+#define CONSYS_MET_CTRL_REG 0x81021400
+#define CONSYS_MET_WAIT	(1000*10) /* ms */
+
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -116,6 +119,7 @@ static MTK_WCN_BOOL wmt_lib_put_op(P_OSAL_OP_Q pOpQ, P_OSAL_OP pLxOp);
 static P_OSAL_OP wmt_lib_get_op(P_OSAL_OP_Q pOpQ);
 
 static INT32 wmtd_thread(PVOID pvData);
+static INT32 met_thread(PVOID pvData);
 
 static INT32 wmt_lib_pin_ctrl(WMT_IC_PIN_ID id, WMT_IC_PIN_STATE stat, UINT32 flag);
 static MTK_WCN_BOOL wmt_lib_hw_state_show(VOID);
@@ -1014,6 +1018,96 @@ static INT32 wmtd_thread(void *pvData)
 	return 0;
 };
 
+static INT32 met_thread(void *pvData)
+{
+	P_DEV_WMT p_wmtdev = (P_DEV_WMT) pvData;
+	INT32 log_ctrl;
+	UINT32 read_ptr;
+	UINT32 write_ptr;
+	UINT32 emi_met_size;
+	UINT32 emi_met_offset;
+	P_CONSYS_EMI_ADDR_INFO emi_info;
+
+	if (p_wmtdev == NULL) {
+		WMT_ERR_FUNC("pWmtDev(NULL)\n");
+		return -1;
+	}
+
+	WMT_INFO_FUNC("met thread starts\n");
+
+	emi_info = mtk_wcn_consys_soc_get_emi_phy_add();
+
+	emi_met_size = emi_info->emi_met_size;
+	if (!emi_met_size) {
+		WMT_ERR_FUNC("get met emi size fail\n");
+		return -1;
+	}
+
+	emi_met_offset = emi_info->emi_met_data_offset;
+	if (!emi_met_offset) {
+		WMT_ERR_FUNC("get met emi offset fail\n");
+		return -1;
+	}
+
+	log_ctrl = p_wmtdev->met_log_ctrl;
+	if (log_ctrl)
+		osal_ftrace_print_ctrl(1);
+
+	for (;;) {
+		if (osal_thread_should_stop(&p_wmtdev->met_thread)) {
+			WMT_INFO_FUNC("met thread should stop now...\n");
+			break;
+		}
+
+		read_ptr = wmt_plat_get_dump_info(emi_met_offset);
+		write_ptr = wmt_plat_get_dump_info(emi_met_offset + 0x4);
+
+		if (read_ptr == write_ptr)
+			WMT_INFO_FUNC("read_ptr(0x%x) == write_ptr(0x%x) no met data need dump!!!\n",
+					read_ptr, write_ptr);
+		else {
+			if (read_ptr > write_ptr) {
+				for (; read_ptr < emi_met_size; read_ptr += 0x10) {
+					if (log_ctrl == 0)
+						WMT_INFO_FUNC("MCU MET data:0x%x,0x%x,0x%x,0x%x\n",
+						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr),
+						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0x4),
+						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0x8),
+						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0xc));
+					else
+						osal_ftrace_print("MCU MET data:0x%x,0x%x,0x%x,0x%x\n",
+						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr),
+						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0x4),
+						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0x8),
+						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0xc));
+				}
+				read_ptr = 0;
+			}
+
+			for (; read_ptr < write_ptr; read_ptr += 0x10) {
+				if (log_ctrl == 0)
+					WMT_INFO_FUNC("MCU MET data:0x%x,0x%x,0x%x,0x%x\n",
+						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr),
+						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0x4),
+						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0x8),
+						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0xc));
+				else
+					osal_ftrace_print("MCU MET data:0x%x,0x%x,0x%x,0x%x\n",
+						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr),
+						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0x4),
+						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0x8),
+						wmt_plat_get_dump_info(emi_met_offset + 0x8 + read_ptr + 0xc));
+			}
+			wmt_plat_write_emi_l(emi_met_offset, read_ptr);
+		}
+
+		osal_usleep_range(CONSYS_MET_WAIT, CONSYS_MET_WAIT);
+	}
+
+	WMT_INFO_FUNC("met thread exits succeed\n");
+
+	return 0;
+};
 
 static MTK_WCN_BOOL wmt_lib_put_op(P_OSAL_OP_Q pOpQ, P_OSAL_OP pOp)
 {
@@ -1274,6 +1368,8 @@ UINT32 wmt_lib_get_icinfo(ENUM_WMT_CHIPINFO_TYPE_T index)
 		return gDevWmt.eWmtHwVer;
 	else if (index == WMTCHIN_FWVER)
 		return gDevWmt.fw_ver;
+	else if (index == WMTCHIN_IPVER)
+		return gDevWmt.ip_ver;
 
 	return 0;
 
@@ -1948,6 +2044,14 @@ VOID wmt_lib_set_patch_info(P_WMT_PATCH_INFO pPatchinfo)
 		pWmtDev->pWmtPatchInfo = pPatchinfo;
 }
 
+VOID wmt_lib_set_rom_patch_info(struct wmt_rom_patch_info *pPatchinfo)
+{
+	P_DEV_WMT pWmtDev = &gDevWmt;
+
+	if (pPatchinfo)
+		pWmtDev->pWmtRomPatchInfo[pPatchinfo->type] = pPatchinfo;
+}
+
 INT32 wmt_lib_set_current_op(P_DEV_WMT pWmtDev, P_OSAL_OP pOp)
 {
 	if (pWmtDev) {
@@ -2179,4 +2283,63 @@ VOID wmt_lib_dump_wmtd_backtrace(VOID)
 UINT32 wmt_lib_get_gps_lna_pin_num(VOID)
 {
 	return mtk_consys_get_gps_lna_pin_num();
+}
+
+INT32 wmt_lib_met_ctrl(INT32 met_ctrl, INT32 log_ctrl)
+{
+	P_DEV_WMT p_devwmt;
+	P_OSAL_THREAD p_thread;
+	INT32 ret;
+	P_CONSYS_EMI_ADDR_INFO emi_info;
+
+	emi_info = mtk_wcn_consys_soc_get_emi_phy_add();
+
+	if (!emi_info->emi_met_size) {
+		WMT_ERR_FUNC("met debug function is not support\n");
+		return -1;
+	}
+
+	ret = wmt_lib_reg_rw(1, CONSYS_MET_CTRL_REG, &met_ctrl, 0xffffffff);
+	if (ret) {
+		WMT_ERR_FUNC("send MET ctrl command fail(%d)\n", ret);
+		return -1;
+	}
+
+	p_devwmt = &gDevWmt;
+	p_thread = &gDevWmt.met_thread;
+	if (met_ctrl & 0x1) {
+		/*met enable*/
+		/* Create mtk_wmt_met thread */
+		osal_strncpy(p_thread->threadName, "mtk_wmt_met", sizeof(p_thread->threadName));
+		p_devwmt->met_log_ctrl = log_ctrl;
+		p_thread->pThreadData = (PVOID) p_devwmt;
+		p_thread->pThreadFunc = (PVOID) met_thread;
+		ret = osal_thread_create(p_thread);
+		if (ret) {
+			WMT_ERR_FUNC("osal_thread_create(0x%p) fail(%d)\n", p_thread, ret);
+			return -1;
+		}
+		/* start running mtk_wmt_met */
+		ret = osal_thread_run(p_thread);
+		if (ret) {
+			WMT_ERR_FUNC("osal_thread_run(0x%p) fail(%d)\n", p_thread, ret);
+			return -1;
+		}
+	} else {
+		/*met disable*/
+		/* stop running mtk_wmt_met */
+		ret = osal_thread_stop(p_thread);
+		if (ret) {
+			WMT_ERR_FUNC("osal_thread_stop(0x%p) fail(%d)\n", p_thread, ret);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+INT32 wmt_lib_fdb_ctrl(struct wmt_fdb_ctrl *fdb_ctrl)
+{
+	return mtk_wcn_consys_reg_ctrl(fdb_ctrl->is_write, fdb_ctrl->base_index, fdb_ctrl->offset,
+			&(fdb_ctrl->value));
 }
