@@ -1281,17 +1281,14 @@ static INT32 opfunc_func_on(P_WMT_OP pWmtOp)
 
 			/* special handling for Wi-Fi */
 			if (drvType == WMTDRV_TYPE_WIFI) {
-				if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC) {
-					P_OSAL_OP pOp = wmt_lib_get_current_op(&gDevWmt);
+				P_OSAL_OP pOp = wmt_lib_get_current_op(&gDevWmt);
 
-					pOp->op.opId = WMT_OPID_WLAN_PROBE;
-					if (wmt_lib_put_worker_op(pOp) == MTK_WCN_BOOL_FALSE) {
-						WMT_WARN_FUNC("put to activeWorker queue fail\n");
-						return -4;
-					}
-					return 0;
+				pOp->op.opId = WMT_OPID_WLAN_PROBE;
+				if (wmt_lib_put_worker_op(pOp) == MTK_WCN_BOOL_FALSE) {
+					WMT_WARN_FUNC("put to activeWorker queue fail\n");
+					return -4;
 				}
-				return opfunc_wlan_probe(pWmtOp);
+				return 0;
 			}
 
 			iRet = (*(gpWmtFuncOps[drvType]->func_on)) (gMtkWmtCtx.p_ic_ops, wmt_conf_get_cfg());
@@ -1354,17 +1351,14 @@ static INT32 opfunc_func_off(P_WMT_OP pWmtOp)
 		if (gpWmtFuncOps[drvType] && gpWmtFuncOps[drvType]->func_off) {
 			/* special handling for Wi-Fi */
 			if (drvType == WMTDRV_TYPE_WIFI) {
-				if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC) {
-					P_OSAL_OP pOp = wmt_lib_get_current_op(&gDevWmt);
+				P_OSAL_OP pOp = wmt_lib_get_current_op(&gDevWmt);
 
-					pOp->op.opId = WMT_OPID_WLAN_REMOVE;
-					if (wmt_lib_put_worker_op(pOp) == MTK_WCN_BOOL_FALSE) {
-						WMT_WARN_FUNC("put to activeWorker queue fail\n");
-						return -4;
-					}
-					return 0;
+				pOp->op.opId = WMT_OPID_WLAN_REMOVE;
+				if (wmt_lib_put_worker_op(pOp) == MTK_WCN_BOOL_FALSE) {
+					WMT_WARN_FUNC("put to activeWorker queue fail\n");
+					return -4;
 				}
-				return opfunc_wlan_remove(pWmtOp);
+				return 0;
 			}
 			iRet = (*(gpWmtFuncOps[drvType]->func_off)) (gMtkWmtCtx.p_ic_ops, wmt_conf_get_cfg());
 		} else {
