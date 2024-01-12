@@ -69,6 +69,8 @@ typedef enum _ENUM_WMTRSTRET_TYPE_T {
 *230 (others)
 */
 #define WMT_LIB_RX_TIMEOUT 2000	/*800-->cover v1.2phone BT function on time (~830ms) */
+/* Since GPS timeout is 6 seconds */
+#define WMT_LIB_RX_EXTEND_TIMEOUT 4000
 /*
 *open wifi during wifi power on procedure
 *(because wlan is insert to system after mtk_hif_sdio module,
