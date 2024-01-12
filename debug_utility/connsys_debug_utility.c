@@ -229,6 +229,20 @@ static void connlog_ring_emi_to_cache(int conn_type)
 		return;
 	}
 
+	/* Check ring buffer memory. Dump EMI data if it's corruption. */
+	if (EMI_READ32(ring->read) > emi_offset_table[conn_type].emi_size ||
+		EMI_READ32(ring->write) > emi_offset_table[conn_type].emi_size) {
+		pr_err("%s read/write pointer out-of-bounds.\n", type_to_title[conn_type]);
+		/* 64 byte ring buffer setting & 32 byte mcu read/write pointer */
+		connlog_dump_emi(0x0, 0x60);
+		/* 32 byte wifi read/write pointer */
+		connlog_dump_emi(CONNLOG_EMI_WIFI_BASE_OFFESET, 0x20);
+		/* 32 byte bt read/write pointer */
+		connlog_dump_emi(CONNLOG_EMI_BT_BASE_OFFESET, 0x20);
+		/* 32 byte gps read/write pointer */
+		connlog_dump_emi(CONNLOG_EMI_GPS_BASE_OFFESET, 0x20);
+	}
+
 	RING_READ_ALL_FOR_EACH(ring_seg, ring) {
 		struct ring_cache_segment ring_cache_seg;
 		unsigned int emi_buf_size = ring_seg.sz;
@@ -357,6 +371,26 @@ static void connlog_ring_print(int conn_type)
 	}
 	buf_size = ring_seg.remain;
 	memset(gLog_data, 0, CONNLOG_EMI_BT_SIZE);
+
+	/* for debugging, must be removed before SQC { */
+	if (conn_type == CONNLOG_TYPE_MCU) {
+		pr_err("It's impossible that MCU ring buffer has data.\n");
+		connlog_dump_emi(0x0, 0x200);
+	}
+	/* for debugging, must be removed before SQC } */
+	/* Check ring buffer memory. Dump EMI data if it's corruption. */
+	if (EMI_READ32(ring->read) > emi_offset_table[conn_type].emi_size ||
+		EMI_READ32(ring->write) > emi_offset_table[conn_type].emi_size) {
+		pr_err("%s read/write pointer out-of-bounds.\n", type_to_title[conn_type]);
+		/* 64 byte ring buffer setting & 32 byte mcu read/write pointer */
+		connlog_dump_emi(0x0, 0x60);
+		/* 32 byte wifi read/write pointer */
+		connlog_dump_emi(CONNLOG_EMI_WIFI_BASE_OFFESET, 0x20);
+		/* 32 byte bt read/write pointer */
+		connlog_dump_emi(CONNLOG_EMI_BT_BASE_OFFESET, 0x20);
+		/* 32 byte gps read/write pointer */
+		connlog_dump_emi(CONNLOG_EMI_GPS_BASE_OFFESET, 0x20);
+	}
 
 	RING_READ_ALL_FOR_EACH(ring_seg, ring) {
 		memcpy_fromio(gLog_data + written, ring_seg.ring_pt, ring_seg.sz);
