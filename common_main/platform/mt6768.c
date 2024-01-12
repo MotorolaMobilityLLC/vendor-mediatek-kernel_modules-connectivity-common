@@ -745,15 +745,6 @@ static INT32 polling_consys_chipid(VOID)
 					  CONSYS_COCLOCK_STABLE_TIME_BASE);
 	}
 
-	/* rollback hw_control issue cr */
-	consys_reg_base = ioremap_nocache(0x18001600, 0x100);
-	if (consys_reg_base) {
-		value = CONSYS_REG_READ(consys_reg_base);
-		value = (value & 0xfbffffff) | 0x4000000;
-		CONSYS_REG_WRITE(consys_reg_base, value);
-		iounmap(consys_reg_base);
-	}
-
 	/* EMI control CR setting(hw mode) */
 	CONSYS_CLR_BIT(conn_reg.mcu_base + CONSYS_SW_IRQ_OFFSET, CONSYS_EMI_CTRL_VALUE);
 	return 0;
