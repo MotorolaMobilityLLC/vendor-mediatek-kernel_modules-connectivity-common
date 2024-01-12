@@ -22,6 +22,7 @@
 */
 #include "osal_typedef.h"
 #include "wmt_dbg.h"
+#include "wmt_dev.h"
 #include "wmt_core.h"
 #include "wmt_lib.h"
 #include "wmt_conf.h"
@@ -107,6 +108,7 @@ static INT32 wmt_dbg_show_thread_debug_info(INT32 par1, INT32 address, INT32 val
 static INT32 wmt_dbg_met_ctrl(INT32 par1, INT32 met_ctrl, INT32 log_ctrl);
 static INT32 wmt_dbg_emi_dump(INT32 par1, INT32 offset, INT32 size);
 static INT32 wmt_dbg_fw_log_ctrl(INT32 par1, INT32 onoff, INT32 level);
+static INT32 wmt_dbg_pre_pwr_on_ctrl(INT32 par1, INT32 enable, INT32 par3);
 
 static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x0] = wmt_dbg_psm_ctrl,
@@ -156,6 +158,7 @@ static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x26] = wmt_dbg_met_ctrl,
 	[0x30] = wmt_dbg_show_thread_debug_info,
 	[0x27] = wmt_dbg_fw_log_ctrl,
+	[0x28] = wmt_dbg_pre_pwr_on_ctrl,
 	[0x99] = wmt_dbg_emi_dump,
 };
 
@@ -797,6 +800,24 @@ static INT32 wmt_dbg_fw_log_ctrl(INT32 par1, INT32 onoff, INT32 level)
 	WMT_INFO_FUNC("Configuring firmware log: type:%d, on/off:%d, level:%d\n",
 			type, (unsigned char)onoff, (unsigned char)level);
 	wmt_lib_fw_log_ctrl(type, (unsigned char)onoff, (unsigned char)level);
+
+	return 0;
+}
+
+INT32 wmt_dbg_pre_pwr_on_ctrl(INT32 par1, INT32 enable, INT32 par3)
+{
+
+	WMT_INFO_FUNC("%s pre power on function\n", enable ? "enable" : "disable");
+
+	if (enable) {
+		/* Turn LPBK off and set always power on flag to 1 */
+		mtk_wcn_wmt_func_off(WMTDRV_TYPE_LPBK);
+		wmt_dev_apo_ctrl(1);
+	} else {
+		/* Just set always power on flag to 0 */
+		wmt_dev_apo_ctrl(0);
+	}
+
 	return 0;
 }
 
