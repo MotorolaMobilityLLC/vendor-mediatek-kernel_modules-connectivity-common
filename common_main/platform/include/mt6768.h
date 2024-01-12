@@ -113,6 +113,11 @@
 #define CONSYS_TX_PROT_MASK		(0x1<<18)	/* bit 18 */
 #define CONSYS_PDMA_AXI_RREADY_MASK	(0x1 << 1)	/* bit 1 */
 
+/* toppose_restore_done rollback CR */
+#define CONSYS_TOPPOSE_RESTORE_OFFSET	0x600
+#define CONSYS_TOPPOSE_RESTORE_MASK	0xFF7FFFFF	/* bit 23 */
+#define CONSYS_TOPPOSE_RESTORE_VALUE	(0x1 << 23)
+
 /*SPM clock gating control register */
 #define CONSYS_PWRON_CONFG_EN_VALUE	(0x0b160001)
 #define CONSYS_PWRON_CONFG_DIS_VALUE	(0x0b160000)

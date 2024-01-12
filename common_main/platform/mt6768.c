@@ -767,6 +767,12 @@ static INT32 polling_consys_chipid(VOID)
 
 	/* EMI control CR setting(hw mode) */
 	CONSYS_CLR_BIT(conn_reg.mcu_base + CONSYS_SW_IRQ_OFFSET, CONSYS_EMI_CTRL_VALUE);
+
+	/* toppose_restore_done rollabck */
+	CONSYS_REG_WRITE(conn_reg.mcu_top_misc_on_base + CONSYS_TOPPOSE_RESTORE_OFFSET,
+			(CONSYS_REG_READ(conn_reg.mcu_top_misc_on_base + CONSYS_TOPPOSE_RESTORE_OFFSET) &
+				CONSYS_TOPPOSE_RESTORE_MASK) | CONSYS_TOPPOSE_RESTORE_VALUE);
+
 	return 0;
 }
 
