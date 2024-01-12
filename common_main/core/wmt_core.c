@@ -1108,9 +1108,6 @@ static INT32 opfunc_pwr_on(P_WMT_OP pWmtOp)
 		osal_assert(0);
 		return -1;
 	}
-	/* TODO: [FixMe][GeorgeKuo]: clarify the following is reqiured or not! */
-	if (pWmtOp->u4InfoBit & WMT_OP_HIF_BIT)
-		opfunc_hif_conf(pWmtOp);
 
 pwr_on_rty:
 	/* power on control */
