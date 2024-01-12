@@ -106,9 +106,9 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 
 		/*whole chip reset */
 	case STP_OPID_BTM_RST:
-		WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_BEFORE_CHIP_RESET);
 		STP_BTM_INFO_FUNC("whole chip reset start!\n");
 		STP_BTM_INFO_FUNC("....+\n");
+		WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_BEFORE_CHIP_RESET);
 		if (stp_btm->wmt_notify) {
 			stp_btm->wmt_notify(BTM_RST_OP);
 			ret = 0;

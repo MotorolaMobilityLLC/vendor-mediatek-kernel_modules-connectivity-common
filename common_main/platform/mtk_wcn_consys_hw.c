@@ -472,8 +472,8 @@ INT32 mtk_wcn_consys_hw_pwr_on(UINT32 co_clock_type)
 {
 	INT32 iRet = 0;
 
-	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_START);
 	WMT_PLAT_INFO_FUNC("CONSYS-HW-PWR-ON, start\n");
+	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_POWER_ON_START);
 	if (!gConEmiPhyBase) {
 		WMT_PLAT_ERR_FUNC("EMI base address is invalid, CONNSYS can not be powered on!");
 		WMT_PLAT_ERR_FUNC("To avoid the occurrence of KE!\n");
@@ -491,8 +491,8 @@ INT32 mtk_wcn_consys_hw_pwr_off(UINT32 co_clock_type)
 {
 	INT32 iRet = 0;
 
-	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_BEFORE_POWER_OFF);
 	WMT_PLAT_INFO_FUNC("CONSYS-HW-PWR-OFF, start\n");
+	WMT_STEP_DO_ACTIONS_FUNC(STEP_TRIGGER_POINT_BEFORE_POWER_OFF);
 
 	iRet += mtk_wcn_consys_hw_reg_ctrl(0, co_clock_type);
 	iRet += mtk_wcn_consys_hw_gpio_ctrl(0);
