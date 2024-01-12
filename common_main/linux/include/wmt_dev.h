@@ -36,6 +36,7 @@ VOID wmt_dev_blank_handler(VOID);
 UINT32 wmt_dev_get_blank_state(VOID);
 INT32 wmt_dev_apo_ctrl(UINT32 enable);
 VOID wmt_dev_set_temp_threshold(INT32 val);
+UINT8 wmt_dev_is_close(VOID);
 extern LONG wmt_dev_tm_temp_query(VOID);
 
 INT32 mtk_wcn_common_drv_init(VOID);
