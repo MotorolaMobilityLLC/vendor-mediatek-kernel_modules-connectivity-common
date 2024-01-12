@@ -2824,7 +2824,7 @@ static INT32 stp_sdio_remove(const MTK_WCN_HIF_SDIO_CLTCTX clt_ctx)
 	osal_signal_deinit(&g_stp_sdio_host_info.isr_check_complete);
 	STPSDIO_PR_DBG("destroy STP-SDIO tx_rx_thread\n");
 #else
-	flush_scheduled_work();
+	/* flush_scheduled_work(); */
 	STPSDIO_PR_INFO("flush scheduled work end\n");
 #endif
 
@@ -3579,7 +3579,7 @@ static VOID stp_sdio_exit(VOID)
 	mtk_wcn_hif_sdio_client_unreg(&g_stp_sdio_cltinfo);
 
 	/* 4 <1.2> stop Tx tasklet/Rx work queue of the host */
-	flush_scheduled_work();
+	/* flush_scheduled_work(); */
 	STPSDIO_PR_DBG("flush scheduled work end\n");
 
 	/* 4 <1.3> return ownership to firmware of the host */
