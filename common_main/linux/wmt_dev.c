@@ -132,7 +132,6 @@ UINT32 always_pwr_on_flag = 1;
 UINT32 always_pwr_on_flag;
 #endif
 P_WMT_PATCH_INFO pPatchInfo;
-struct wmt_rom_patch_info *pRomPatchInfo[WMTDRV_TYPE_ANT];
 UINT32 pAtchNum;
 UINT32 currentLpbkStatus;
 
@@ -492,16 +491,6 @@ VOID wmt_dev_patch_info_free(VOID)
 {
 	kfree(pPatchInfo);
 	pPatchInfo = NULL;
-}
-
-VOID wmt_dev_rom_patch_info_free(VOID)
-{
-	UINT32 i;
-
-	for (i = 0; i < WMTDRV_TYPE_ANT; i++) {
-		kfree(pRomPatchInfo[i]);
-		pRomPatchInfo[i] = NULL;
-	}
 }
 
 MTK_WCN_BOOL wmt_dev_is_file_exist(PUINT8 pFileName)
@@ -1313,40 +1302,28 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		break;
 	case WMT_IOCTL_SET_ROM_PATCH_INFO:
 		do {
-			struct wmt_rom_patch_info wMtRomPatchInfo;
-			UINT32 type;
+			struct wmt_rom_patch_info wmtRomPatchInfo;
 
-			if (copy_from_user(&wMtRomPatchInfo, (PVOID)arg, sizeof(struct wmt_rom_patch_info))) {
+			if (copy_from_user(&wmtRomPatchInfo, (PVOID)arg, sizeof(struct wmt_rom_patch_info))) {
 				WMT_ERR_FUNC("copy_from_user failed at %d\n", __LINE__);
 				iRet = -EFAULT;
 				break;
 			}
 
-			if (wMtRomPatchInfo.type >= WMTDRV_TYPE_ANT) {
+			if (wmtRomPatchInfo.type >= WMTDRV_TYPE_ANT) {
 				WMT_ERR_FUNC("rom patch type(%d) >= %d!\n",
-						wMtRomPatchInfo.type, WMTDRV_TYPE_WMT);
+						wmtRomPatchInfo.type, WMTDRV_TYPE_WMT);
 				iRet = -EFAULT;
 				break;
 			}
-			type = wMtRomPatchInfo.type;
 
-			if (!pRomPatchInfo[type]) {
-				pRomPatchInfo[type] = kcalloc(1, sizeof(struct wmt_rom_patch_info), GFP_ATOMIC);
-				if (!pRomPatchInfo[type]) {
-					WMT_ERR_FUNC("allocate memory fail!\n");
-					iRet = -EFAULT;
-					break;
-				}
-			}
-
-			osal_memcpy(pRomPatchInfo[type], &wMtRomPatchInfo, sizeof(struct wmt_rom_patch_info));
 			WMT_DBG_FUNC("rom patch type %d,name %s,address info 0x%02x,0x%02x,0x%02x,0x%02x\n",
-					pRomPatchInfo[type]->type, pRomPatchInfo[type]->patchName,
-					pRomPatchInfo[type]->addRess[0],
-					pRomPatchInfo[type]->addRess[1],
-					pRomPatchInfo[type]->addRess[2],
-					pRomPatchInfo[type]->addRess[3]);
-			wmt_lib_set_rom_patch_info(pRomPatchInfo[type]);
+					wmtRomPatchInfo.type, wmtRomPatchInfo.patchName,
+					wmtRomPatchInfo.addRess[0],
+					wmtRomPatchInfo.addRess[1],
+					wmtRomPatchInfo.addRess[2],
+					wmtRomPatchInfo.addRess[3]);
+			wmt_lib_set_rom_patch_info(&wmtRomPatchInfo, wmtRomPatchInfo.type);
 		} while (0);
 		break;
 	case WMT_IOCTL_FDB_CTRL:
@@ -1645,8 +1622,6 @@ static VOID WMT_exit(VOID)
 	wmt_dev_patch_info_free();
 	mtk_wcn_stp_uart_drv_exit();
 	mtk_wcn_stp_sdio_drv_exit();
-
-	wmt_dev_rom_patch_info_free();
 
 	wmt_dev_bgw_desense_deinit();
 
