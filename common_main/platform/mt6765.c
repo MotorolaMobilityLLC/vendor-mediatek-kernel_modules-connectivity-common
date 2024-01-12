@@ -51,13 +51,25 @@
 #include "wmt_plat.h"
 #include "stp_dbg.h"
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#include <mtk-clkbuf-bridge.h>
+#else
+#include <mtk_clkbuf_ctl.h>
+#endif
+
 #ifdef CONFIG_MTK_EMI
 #include <mt_emi_api.h>
 #endif
 
 #if CONSYS_PMIC_CTRL_ENABLE
-#include <upmu_common.h>
 #include <linux/regulator/consumer.h>
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#include <linux/regulator/consumer.h>
+#include <linux/mfd/mt6357/registers.h>
+#include <linux/regmap.h>
+#else
+#include <upmu_common.h>
+#endif
 #endif
 
 #ifdef CONFIG_MTK_HIBERNATION
@@ -66,7 +78,6 @@
 
 #include <linux/of_reserved_mem.h>
 
-#include <mtk_clkbuf_ctl.h>
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -136,10 +147,10 @@ struct clk *clk_scp_conn_main;	/*ctrl conn_power_on/off */
 
 /* PMIC part */
 #if CONSYS_PMIC_CTRL_ENABLE
-struct regulator *reg_VCN18;
-struct regulator *reg_VCN28;
-struct regulator *reg_VCN33_BT;
-struct regulator *reg_VCN33_WIFI;
+static struct regulator *reg_VCN18;
+static struct regulator *reg_VCN28;
+static struct regulator *reg_VCN33_BT;
+static struct regulator *reg_VCN33_WIFI;
 #endif
 
 EMI_CTRL_STATE_OFFSET mtk_wcn_emi_state_off = {
@@ -785,7 +796,6 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 		/*need PMIC driver provide new API protocol */
 		/*1.AP power on VCN_1V8 LDO (with PMIC_WRAP API) VCN_1V8  */
 		/*set vcn18 SW mode*/
-		KERNEL_upmu_set_reg_value(MT6357_LDO_VCN18_OP_EN, 0x1);
 		if (reg_VCN18) {
 			regulator_set_voltage(reg_VCN18, 1800000, 1800000);
 			if (regulator_enable(reg_VCN18))
@@ -795,7 +805,6 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 		}
 
 		if (!(wmt_lib_get_ext_ldo())) {
-			KERNEL_upmu_set_reg_value(MT6357_LDO_VCN33_OP_EN, 0x1);
 			if (reg_VCN33_BT) {
 				regulator_set_voltage(reg_VCN33_BT, 3300000, 3300000);
 				if (regulator_enable(reg_VCN33_BT))
@@ -824,6 +833,18 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 static VOID consys_vcn28_hw_mode_ctrl(UINT32 enable)
 {
 #if CONSYS_PMIC_CTRL_ENABLE
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+	if (!g_regmap)
+		return;
+
+	if (enable) {
+		regmap_write(g_regmap, MT6357_LDO_VCN28_OP_EN_SET, 2);
+		regmap_write(g_regmap, MT6357_LDO_VCN28_OP_CFG_CLR, 2);
+	} else {
+		regmap_write(g_regmap, MT6357_LDO_VCN28_OP_EN_CLR, 2);
+		regmap_write(g_regmap, MT6357_LDO_VCN28_OP_CFG_CLR, 2);
+	}
+#else
 	if (enable) {
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN28_HW0_OP_EN, 1);
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN28_HW0_OP_CFG, 0);
@@ -831,6 +852,7 @@ static VOID consys_vcn28_hw_mode_ctrl(UINT32 enable)
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN28_HW0_OP_EN, 0);
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN28_HW0_OP_CFG, 0);
 	}
+#endif
 #endif
 }
 
