@@ -315,7 +315,14 @@ paged_dump_end:
 		STP_DBG_INFO_FUNC("++ counter(%d) packet_num(%d) page_counter(%d) g_paged_dump_len(%d)++\n",
 			counter, packet_num, page_counter, g_paged_dump_len);
 		if (wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_chip_paded_dump_end)) {
-			STP_DBG_INFO_FUNC("paged dump end\n");
+			if (stp_dbg_get_coredump_timer_state() == CORE_DUMP_DOING) {
+				STP_DBG_INFO_FUNC("paged dump end by emi flag\n");
+				if (dump_sink == 1)
+					stp_dbg_aee_send(FAKECOREDUMPEND, osal_sizeof(FAKECOREDUMPEND), 0);
+				else if (dump_sink == 2)
+					stp_dbg_nl_send_data(FAKECOREDUMPEND, osal_sizeof(FAKECOREDUMPEND));
+			} else
+				STP_DBG_INFO_FUNC("paged dump end\n");
 			ret = 0;
 			break;
 		} else if (abort || stp_dbg_get_coredump_timer_state() == CORE_DUMP_TIMEOUT) {
