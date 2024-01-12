@@ -1866,6 +1866,7 @@ static INT32 WMT_init(VOID)
 	osal_sleepable_lock_init(&g_aee_read_lock);
 	osal_sleepable_lock_init(&g_dump_info_read_lock);
 	wmt_lib_register_thermal_ctrl_cb(wmt_dev_tm_temp_query);
+	wmt_lib_register_trigger_assert_cb(wmt_lib_trigger_assert);
 
 	if (chip_type == WMT_CHIP_TYPE_SOC)
 		wmt_dev_bgw_desense_init();
