@@ -39,6 +39,7 @@
 #include <linux/delay.h>
 #include <linux/memblock.h>
 #include <linux/platform_device.h>
+#include "connsys_debug_utility.h"
 #include "osal_typedef.h"
 #include "mt6765.h"
 #include "mtk_wcn_consys_hw.h"
@@ -105,6 +106,8 @@ static P_CONSYS_EMI_ADDR_INFO consys_soc_get_emi_phy_add(VOID);
 static VOID consys_set_if_pinmux(MTK_WCN_BOOL enable);
 static INT32 consys_dl_rom_patch(UINT32 ip_ver);
 static VOID consys_set_dl_rom_patch_flag(INT32 flag);
+static INT32 consys_dedicated_log_path_init(struct platform_device *pdev);
+static VOID consys_dedicated_log_path_deinit(VOID);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -181,6 +184,8 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_soc_get_emi_phy_add = consys_soc_get_emi_phy_add,
 	.consys_ic_set_if_pinmux = consys_set_if_pinmux,
 	.consys_ic_set_dl_rom_patch_flag = consys_set_dl_rom_patch_flag,
+	.consys_ic_dedicated_log_path_init = consys_dedicated_log_path_init,
+	.consys_ic_dedicated_log_path_deinit = consys_dedicated_log_path_deinit,
 };
 
 /*******************************************************************************
@@ -1039,4 +1044,39 @@ static INT32 consys_dl_rom_patch(UINT32 ip_ver)
 static VOID consys_set_dl_rom_patch_flag(INT32 flag)
 {
 	rom_patch_dl_flag = flag;
+}
+
+static INT32 consys_dedicated_log_path_init(struct platform_device *pdev)
+{
+	struct device_node *node;
+	UINT32 irq_info[3] = { 0, 0, 0 };
+	UINT32 irq_num;
+	UINT32 irq_flag;
+	INT32 iret = -1;
+
+	node = pdev->dev.of_node;
+	if (node) {
+		irq_num = irq_of_parse_and_map(node, 2);
+		/* get the interrupt line behaviour */
+		if (of_property_read_u32_array(node, "interrupts", irq_info, ARRAY_SIZE(irq_info))) {
+			WMT_PLAT_ERR_FUNC("get conn2ap_sw_irq flags from DTS fail!!\n");
+			return iret;
+		}
+		irq_flag = irq_info[2];
+		WMT_PLAT_INFO_FUNC("get conn2ap_sw_irq id(%d) and irq trigger flag(%d) from DT\n", irq_num,
+				   irq_flag);
+	} else {
+		WMT_PLAT_ERR_FUNC("[%s] can't find CONSYS compatible node\n", __func__);
+		return iret;
+	}
+
+	connsys_dedicated_log_path_apsoc_init(gConEmiPhyBase, (void *)conn_reg.mcu_base +
+		CONSYS_SW_IRQ_OFFSET, irq_num, irq_flag);
+
+	return 0;
+}
+
+static VOID consys_dedicated_log_path_deinit(VOID)
+{
+	connsys_dedicated_log_path_apsoc_deinit();
 }
