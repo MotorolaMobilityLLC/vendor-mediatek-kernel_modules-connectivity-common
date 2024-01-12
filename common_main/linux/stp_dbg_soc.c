@@ -412,10 +412,6 @@ INT32 stp_dbg_soc_core_dump(INT32 dump_sink)
 	if (ret)
 		STP_DBG_ERR_FUNC("stp_dbg_soc_paged_trace fail: %d!\n", ret);
 
-	ret = wmt_plat_reset_emi();
-	if (ret)
-		STP_DBG_ERR_FUNC("wmt_plat_reset_emi fail: %d!\n", ret);
-
 	return ret;
 }
 

@@ -112,6 +112,8 @@ static VOID consys_set_dl_rom_patch_flag(INT32 flag);
 static INT32 consys_dedicated_log_path_init(struct platform_device *pdev);
 static VOID consys_dedicated_log_path_deinit(VOID);
 static INT32 consys_check_reg_readable(VOID);
+static INT32 consys_emi_coredump_remapping(UINT8 __iomem **addr, UINT32 enable);
+static INT32 consys_reset_emi_coredump(UINT8 __iomem *addr);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -193,6 +195,8 @@ WMT_CONSYS_IC_OPS consys_ic_ops = {
 	.consys_ic_dedicated_log_path_init = consys_dedicated_log_path_init,
 	.consys_ic_dedicated_log_path_deinit = consys_dedicated_log_path_deinit,
 	.consys_ic_check_reg_readable = consys_check_reg_readable,
+	.consys_ic_emi_coredump_remapping = consys_emi_coredump_remapping,
+	.consys_ic_reset_emi_coredump = consys_reset_emi_coredump,
 };
 
 /*******************************************************************************
@@ -1148,4 +1152,39 @@ static INT32 consys_check_reg_readable(VOID)
 		return 1;
 	else
 		return 0;
+}
+
+static INT32 consys_emi_coredump_remapping(UINT8 __iomem **addr, UINT32 enable)
+{
+	if (enable) {
+		*addr = ioremap_nocache(gConEmiPhyBase + CONSYS_EMI_COREDUMP_OFFSET, CONSYS_EMI_MEM_SIZE);
+		if (*addr) {
+			WMT_PLAT_INFO_FUNC("COREDUMP EMI mapping OK virtual(0x%p) physical(0x%x)\n",
+					   *addr, (UINT32) gConEmiPhyBase + CONSYS_EMI_COREDUMP_OFFSET);
+			memset_io(*addr, 0, CONSYS_EMI_MEM_SIZE);
+		} else {
+			WMT_PLAT_ERR_FUNC("EMI mapping fail\n");
+			return -1;
+		}
+	} else {
+		if (*addr) {
+			iounmap(*addr);
+			*addr = NULL;
+		}
+	}
+	return 0;
+}
+
+static INT32 consys_reset_emi_coredump(UINT8 __iomem *addr)
+{
+	if (!addr) {
+		WMT_PLAT_ERR_FUNC("get virtual address fail\n");
+		return -1;
+	}
+	WMT_PLAT_INFO_FUNC("Reset EMI(0xF0068000 ~ 0xF0068400) and (0xF0070400 ~ 0xF0078400)\n");
+	/* reset 0xF0068000 ~ 0xF0068400 (1K) */
+	memset_io(addr, 0, 0x400);
+	/* reset 0xF0070400 ~ 0xF0078400 (32K)  */
+	memset_io(addr + CONSYS_EMI_PAGED_DUMP_OFFSET, 0, 0x8000);
+	return 0;
 }
