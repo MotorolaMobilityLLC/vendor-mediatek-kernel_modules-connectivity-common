@@ -941,23 +941,27 @@ static INT32 consys_emi_mpu_set_region_protection(VOID)
 static UINT32 consys_emi_set_remapping_reg(VOID)
 {
 	UINT32 addrPhy = 0;
+	UINT32 value = 0;
 
 	mtk_wcn_emi_addr_info.emi_ap_phy_addr = gConEmiPhyBase;
 	mtk_wcn_emi_addr_info.emi_size = gConEmiSize;
 
 	/*consys to ap emi remapping register:10001380, cal remapping address */
 	addrPhy = (gConEmiPhyBase >> 24) & 0xFFF;
+	value = CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_MAPPING_OFFSET);
+	WMT_PLAT_INFO_FUNC("before CONSYS_EMI_MAPPING read:0x%zx, value:0x%x\n",
+			conn_reg.topckgen_base + CONSYS_EMI_MAPPING_OFFSET, value);
 
-	CONSYS_REG_WRITE(conn_reg.topckgen_base + CONSYS_EMI_MAPPING_OFFSET,
-			CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_MAPPING_OFFSET) | addrPhy);
-
+	value = value & 0xFFFFF000;
+	CONSYS_REG_WRITE(conn_reg.topckgen_base + CONSYS_EMI_MAPPING_OFFSET, value | addrPhy);
 	WMT_PLAT_INFO_FUNC("CONSYS_EMI_MAPPING dump in restore cb(0x%08x)\n",
 			CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_MAPPING_OFFSET));
 
 	/*Perisys Configuration Registers remapping*/
 	addrPhy = ((0x10003000 >> 24) & 0xFFF) << 16;
-	CONSYS_REG_WRITE(conn_reg.topckgen_base + CONSYS_EMI_PERI_MAPPING_OFFSET,
-			CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_PERI_MAPPING_OFFSET) | addrPhy);
+	value = CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_PERI_MAPPING_OFFSET);
+	value = value & 0xF000FFFF;
+	CONSYS_REG_WRITE(conn_reg.topckgen_base + CONSYS_EMI_PERI_MAPPING_OFFSET, value | addrPhy);
 
 	WMT_PLAT_INFO_FUNC("CONSYS_EMI_MAPPING dump in restore cb(0x%08x)\n",
 			CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_PERI_MAPPING_OFFSET));
