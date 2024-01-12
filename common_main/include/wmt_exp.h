@@ -417,6 +417,9 @@ extern INT8 mtk_wcn_wmt_co_clock_flag_get(VOID);
 extern INT32 mtk_wcn_wmt_wifi_fem_cfg_report(PVOID pvInfoBuf);
 extern VOID mtk_wcn_wmt_dump_wmtd_backtrace(VOID);
 extern UINT32 mtk_wmt_get_gps_lna_pin_num(VOID);
+
+extern INT32 mtk_wmt_gps_mcu_ctrl(PUINT8 p_tx_data_buf, UINT32 tx_data_len, PUINT8 p_rx_data_buf,
+				  UINT32 rx_data_buf_len, PUINT32 p_rx_data_len);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
