@@ -1679,12 +1679,11 @@ INT32 stp_dbg_dump_num(LONG dmp_num)
 
 static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO_PARSER_TYPE type)
 {
-#define TEMPBUF_LEN		64
 	PINT8 pStr = NULL;
 	PINT8 pDtr = NULL;
 	PINT8 pTemp = NULL;
 	PINT8 pTemp2 = NULL;
-	INT8 tempBuf[TEMPBUF_LEN] = { 0 };
+	INT8 tempBuf[STP_ASSERT_TYPE_SIZE] = { 0 };
 	UINT32 len = 0;
 	LONG res;
 	INT32 ret;
@@ -1775,7 +1774,7 @@ static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO
 		}
 
 		len = pTemp - pDtr;
-		len = (len >= TEMPBUF_LEN) ? TEMPBUF_LEN - 1 : len;
+		len = (len >= STP_ASSERT_TYPE_SIZE) ? STP_ASSERT_TYPE_SIZE - 1 : len;
 		osal_memcpy(&tempBuf[0], pDtr, len);
 		tempBuf[len] = '\0';
 		ret = osal_strtol(tempBuf, 16, &res);
@@ -1806,7 +1805,7 @@ static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO
 		}
 
 		len = pTemp - pDtr;
-		len = (len >= TEMPBUF_LEN) ? TEMPBUF_LEN - 1 : len;
+		len = (len >= STP_ASSERT_TYPE_SIZE) ? STP_ASSERT_TYPE_SIZE - 1 : len;
 		osal_memcpy(&tempBuf[0], pDtr, len);
 		tempBuf[len] = '\0';
 		ret = osal_strtol(tempBuf, 16, &res);
@@ -1835,7 +1834,7 @@ static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO
 		}
 
 		len = pTemp - pDtr;
-		len = (len >= TEMPBUF_LEN) ? TEMPBUF_LEN - 1 : len;
+		len = (len >= STP_ASSERT_TYPE_SIZE) ? STP_ASSERT_TYPE_SIZE - 1 : len;
 		osal_memcpy(&tempBuf[0], pDtr, len);
 		tempBuf[len] = '\0';
 		ret = osal_strtol(tempBuf, 16, &res);
@@ -1864,7 +1863,7 @@ static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO
 		}
 
 		len = pTemp - pDtr;
-		len = (len >= TEMPBUF_LEN) ? TEMPBUF_LEN - 1 : len;
+		len = (len >= STP_ASSERT_TYPE_SIZE) ? STP_ASSERT_TYPE_SIZE - 1 : len;
 		osal_memcpy(&tempBuf[0], pDtr, len);
 		tempBuf[len] = '\0';
 
@@ -1885,7 +1884,7 @@ static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO
 				return -5;
 			}
 			len = pTemp - pDtr;
-			len = (len >= TEMPBUF_LEN) ? TEMPBUF_LEN - 1 : len;
+			len = (len >= STP_ASSERT_TYPE_SIZE) ? STP_ASSERT_TYPE_SIZE - 1 : len;
 			osal_memcpy(&tempBuf[0], pDtr, len);
 			tempBuf[len] = '\0';
 			ret = osal_strtol(tempBuf, 16, &res);
