@@ -80,7 +80,7 @@
 #define CONSYS_BUS_CONTROL              0x00000110
 #define CONSYS_DEBUG_SELECT             0x00000400
 #define CONSYS_DEBUG_STATUS             0x0000040c
-#define CONSYS_EMI_CTRL_VALUE           (1 << 0 | 1 << 15 | 1 << 21)
+#define CONSYS_EMI_CTRL_VALUE           (1 << 21)
 /*CONN_HIF_TOP*/
 #define CONSYS_HIF_TOP_MISC             0x00000104
 #define CONSYS_HIF_DBG_IDX              0x0000012C
