@@ -809,6 +809,21 @@ static VOID consys_afe_reg_setting(VOID)
 					CONSYS_REG_READ(consys_afe_reg_base + 4*i));
 		}
 		iounmap(consys_afe_reg_base);
+
+		/* set CONNSYS CPU memory MBIST speed to 26MHz */
+		if (conn_reg.mcu_base) {
+			CONSYS_REG_WRITE(conn_reg.mcu_base + CONSYS_MCU_CFG_ACR_MBIST_OFFSET,
+				(CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_MCU_CFG_ACR_MBIST_OFFSET) &
+				CONSYS_MCU_CFG_ACR_MBIST_MASK) | CONSYS_MCU_CFG_ACR_MBIST_VAL);
+			WMT_PLAT_PR_INFO("set CONNSYS CPU memory MBIST speed to 26MHz\n");
+		}
+		/* disable BT_DIGCK_DIV_EN */
+		if (conn_reg.mcu_top_misc_on_base) {
+			CONSYS_REG_WRITE(conn_reg.mcu_top_misc_on_base + 0x108,
+				(CONSYS_REG_READ(conn_reg.mcu_top_misc_on_base + 0x108) &
+				0xfffeffff));
+			WMT_PLAT_PR_INFO("disable BT_DIGCK_DIV_EN\n");
+		}
 	} else
 		WMT_PLAT_PR_ERR("AFE base(0x%x) ioremap fail!\n", CONSYS_AFE_REG_BASE);
 #endif
