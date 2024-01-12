@@ -1645,7 +1645,11 @@ static INT32 WMT_init(VOID)
 	WMT_INFO_FUNC("driver(major %d) installed\n", gWmtMajor);
 
 #if WMT_CREATE_NODE_DYNAMIC
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0))
+	wmt_class = class_create("stpwmt");
+#else
 	wmt_class = class_create(THIS_MODULE, "stpwmt");
+#endif
 	if (IS_ERR(wmt_class))
 		goto error;
 	wmt_dev = device_create(wmt_class, NULL, devID, NULL, "stpwmt");

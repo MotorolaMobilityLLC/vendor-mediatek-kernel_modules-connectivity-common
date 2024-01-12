@@ -136,7 +136,11 @@ int fw_log_wmt_init(void)
 		goto error;
 	}
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0))
+	fw_log_wmt_class = class_create(DRIVER_NAME);
+#else
 	fw_log_wmt_class = class_create(THIS_MODULE, DRIVER_NAME);
+#endif
 	if (IS_ERR(fw_log_wmt_class)) {
 		pr_err("class_create fail\n");
 		goto error;

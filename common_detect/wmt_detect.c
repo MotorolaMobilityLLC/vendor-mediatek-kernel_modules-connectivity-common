@@ -330,7 +330,11 @@ static int wmt_detect_driver_init(void)
 		goto err1;
 	}
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0))
+	pDetectClass = class_create(WMT_DETECT_DEVICE_NAME);
+#else
 	pDetectClass = class_create(THIS_MODULE, WMT_DETECT_DEVICE_NAME);
+#endif
 	if (IS_ERR(pDetectClass)) {
 		WMT_DETECT_PR_ERR("class create fail, error code(%ld)\n", PTR_ERR(pDetectClass));
 		goto err1;
