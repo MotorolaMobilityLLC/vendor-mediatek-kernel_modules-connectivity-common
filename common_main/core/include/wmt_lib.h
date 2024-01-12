@@ -494,9 +494,11 @@ extern INT32 wmt_lib_dump_cpupcr(UINT32 times, UINT32 sleep_ms);
 extern INT32 wmt_lib_dump_pc_log(VOID);
 extern INT32 wmt_lib_cmd_tx_timeout_dump(VOID);
 extern INT32 wmt_lib_cmd_rx_timeout_dump(VOID);
+extern INT32 wmt_lib_cmd_pre_rx_timeout_dump(VOID);
 extern INT32 wmt_lib_coredump_timeout_dump(VOID);
 extern INT32 wmt_lib_assert_timeout_dump(VOID);
 extern INT32 wmt_lib_before_chip_reset_dump(VOID);
+extern INT32 wmt_lib_get_firmware_version(char *buffer, UINT32 buffer_len);
 
 /*******************************************************************************
 *                              F U N C T I O N S

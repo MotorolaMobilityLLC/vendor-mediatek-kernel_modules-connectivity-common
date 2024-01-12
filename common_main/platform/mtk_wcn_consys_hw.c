@@ -54,6 +54,7 @@
 #define ALLOCATE_CONNSYS_EMI_FROM_KO 1
 #endif
 
+#include <linux/suspend.h>
 #include <linux/thermal.h>
 #include "connsys_debug_utility.h"
 
@@ -73,8 +74,8 @@
 */
 static INT32 mtk_wmt_probe(struct platform_device *pdev);
 static INT32 mtk_wmt_remove(struct platform_device *pdev);
-static INT32 mtk_wmt_suspend(struct device *dev);
-static INT32 mtk_wmt_resume(struct device *dev);
+static int mtk_wmt_suspend(void);
+static int mtk_wmt_resume(void);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -106,6 +107,8 @@ static OSAL_UNSLEEPABLE_LOCK g_sleep_counter_spinlock;
 
 static atomic_t g_probe_called = ATOMIC_INIT(0);
 
+static struct notifier_block connsys_pm_notifier;
+
 #ifdef CONFIG_OF
 
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6580 = {};
@@ -119,7 +122,9 @@ WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6779 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6768 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6785 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6781 = {};
+WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6789 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6833 = {};
+WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6835 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6853 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6855 = {};
 WMT_CONSYS_IC_OPS __weak consys_ic_ops_mt6873 = {};
@@ -137,7 +142,9 @@ const struct of_device_id apwmt_of_ids[] = {
 	{.compatible = "mediatek,mt6768-consys", .data = &consys_ic_ops_mt6768},
 	{.compatible = "mediatek,mt6785-consys", .data = &consys_ic_ops_mt6785},
 	{.compatible = "mediatek,mt6781-consys", .data = &consys_ic_ops_mt6781},
+	{.compatible = "mediatek,mt6789-consys", .data = &consys_ic_ops_mt6789},
 	{.compatible = "mediatek,mt6833-consys", .data = &consys_ic_ops_mt6833},
+	{.compatible = "mediatek,mt6835-consys", .data = &consys_ic_ops_mt6835},
 	{.compatible = "mediatek,mt6853-consys", .data = &consys_ic_ops_mt6853},
 	{.compatible = "mediatek,mt6855-consys", .data = &consys_ic_ops_mt6855},
 	{.compatible = "mediatek,mt6873-consys", .data = &consys_ic_ops_mt6873},
@@ -146,11 +153,6 @@ const struct of_device_id apwmt_of_ids[] = {
 };
 struct CONSYS_BASE_ADDRESS conn_reg;
 #endif
-
-static const struct dev_pm_ops wmt_drv_pm_ops = {
-	.suspend_noirq = mtk_wmt_suspend,
-	.resume_noirq = mtk_wmt_resume,
-};
 
 static struct platform_driver mtk_wmt_dev_drv = {
 	.probe = mtk_wmt_probe,
@@ -161,7 +163,6 @@ static struct platform_driver mtk_wmt_dev_drv = {
 #ifdef CONFIG_OF
 		   .of_match_table = apwmt_of_ids,
 #endif
-		   .pm = &wmt_drv_pm_ops,
 		   },
 };
 
@@ -343,9 +344,18 @@ static int wmt_thermal_get_temp_cb(struct thermal_zone_device *tz,
 static int wmt_thermal_get_temp_cb(void *data, int *temp)
 #endif
 {
+#define MAX_PRINT_TEMP     70000 /* Max temperature for print log */
+
+	int temp_tm = 0;
+
 	if (temp) {
-		*temp = wmt_lib_tm_temp_query() * 1000;
-		WMT_PLAT_PR_INFO("thermal = %d\n", *temp);
+		temp_tm = wmt_lib_tm_temp_query();
+		if (temp_tm != THERMAL_TEMP_INVALID)
+			temp_tm = temp_tm * 1000;
+		*temp = temp_tm;
+
+		if (temp_tm != THERMAL_TEMP_INVALID && temp_tm >= MAX_PRINT_TEMP)
+			WMT_PLAT_PR_INFO("thermal = %d\n", *temp);
 	}
 	return 0;
 }
@@ -425,6 +435,10 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 		return iRet;
 
 	if (gConEmiPhyBase) {
+		/* set emi mpu permission before access it */
+		if (wmt_consys_ic_ops->consys_ic_emi_mpu_set_region_protection)
+			wmt_consys_ic_ops->consys_ic_emi_mpu_set_region_protection();
+
 		pConnsysEmiStart = ioremap(gConEmiPhyBase, gConEmiSize);
 		WMT_PLAT_PR_INFO("Clearing Connsys EMI (virtual(0x%p) physical(0x%pa)) %llu bytes\n",
 				   pConnsysEmiStart, &gConEmiPhyBase, gConEmiSize);
@@ -432,8 +446,6 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 		iounmap(pConnsysEmiStart);
 		pConnsysEmiStart = NULL;
 
-		if (wmt_consys_ic_ops->consys_ic_emi_mpu_set_region_protection)
-			wmt_consys_ic_ops->consys_ic_emi_mpu_set_region_protection();
 		if (wmt_consys_ic_ops->consys_ic_emi_set_remapping_reg)
 			wmt_consys_ic_ops->consys_ic_emi_set_remapping_reg();
 		if (wmt_consys_ic_ops->consys_ic_emi_coredump_remapping)
@@ -525,9 +537,9 @@ static INT32 mtk_wmt_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static INT32 mtk_wmt_suspend(struct device *dev)
+static int mtk_wmt_suspend(void)
 {
-	WMT_PLAT_PR_INFO(" mtk_wmt_suspend !!");
+	WMT_PLAT_PR_DBG(" mtk_wmt_suspend !!");
 
 	mtk_wcn_consys_sleep_info_clear();
 	connsys_dedicated_log_set_ap_state(0);
@@ -580,13 +592,29 @@ static void plat_resume_handler(struct work_struct *work)
 	}
 }
 
-static INT32 mtk_wmt_resume(struct device *dev)
+static int mtk_wmt_resume(void)
 {
-	WMT_PLAT_PR_INFO(" mtk_wmt_resume !!");
+	WMT_PLAT_PR_DBG(" mtk_wmt_resume !!");
 	schedule_work(&plt_resume_worker);
 	connsys_dedicated_log_set_ap_state(1);
 
 	return 0;
+}
+
+static int connsys_pm_notifier_callback(struct notifier_block *nb,
+		unsigned long event, void *dummy)
+{
+	switch (event) {
+	case PM_SUSPEND_PREPARE:
+		mtk_wmt_suspend();
+		break;
+	case PM_POST_SUSPEND:
+		mtk_wmt_resume();
+		break;
+	default:
+		break;
+	}
+	return NOTIFY_DONE;
 }
 
 INT32 mtk_wcn_consys_sleep_info_read_all_ctrl(P_CONSYS_STATE state)
@@ -683,6 +711,9 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 
 	if (on) {
 		WMT_PLAT_PR_DBG("++\n");
+		if (wmt_consys_ic_ops->consys_ic_cr_remapping)
+			wmt_consys_ic_ops->consys_ic_cr_remapping(1);
+
 		if (wmt_consys_ic_ops->consys_ic_reset_emi_coredump)
 			wmt_consys_ic_ops->consys_ic_reset_emi_coredump(pEmibaseaddr);
 
@@ -754,6 +785,8 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 			wmt_consys_ic_ops->consys_ic_bus_timeout_config();
 		if (wmt_consys_ic_ops->consys_ic_set_mcu_mem_pdn_delay)
 			wmt_consys_ic_ops->consys_ic_set_mcu_mem_pdn_delay();
+		if (wmt_consys_ic_ops->consys_ic_bus_config_gps_access_tia)
+			wmt_consys_ic_ops->consys_ic_bus_config_gps_access_tia();
 		if (wmt_consys_ic_ops->consys_ic_hw_reset_bit_set)
 			wmt_consys_ic_ops->consys_ic_hw_reset_bit_set(DISABLE);
 
@@ -790,6 +823,9 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 
 		if (wmt_consys_ic_ops->consys_ic_hw_vcn18_ctrl)
 			wmt_consys_ic_ops->consys_ic_hw_vcn18_ctrl(DISABLE);
+
+		if (wmt_consys_ic_ops->consys_ic_cr_remapping)
+			wmt_consys_ic_ops->consys_ic_cr_remapping(0);
 	}
 	WMT_PLAT_PR_INFO("CONSYS-HW-REG-CTRL(0x%08x),finish\n", on);
 	return iRet;
@@ -874,6 +910,9 @@ INT32 mtk_wcn_consys_detect_adie_chipid(UINT32 co_clock_type)
 		if (chipid > 0) {
 			g_adie_chipid = chipid;
 			WMT_PLAT_PR_INFO("Set a-die chipid = %x\n", chipid);
+			/* update emi_ap_phy_addr according to a-die chip */
+			if (wmt_consys_ic_ops->consys_ic_emi_set_remapping_reg)
+				wmt_consys_ic_ops->consys_ic_emi_set_remapping_reg();
 		} else
 			WMT_PLAT_PR_INFO("Detect a-die chipid = %x failed!\n", chipid);
 		wmt_lib_set_adie_workable((chipid > 0) ? 1 : 0);
@@ -1048,7 +1087,7 @@ INT32 mtk_wcn_consys_hw_init(VOID)
 	if (iRet)
 		WMT_PLAT_PR_ERR("WMT platform driver registered failed(%d)\n", iRet);
 	else {
-		while (atomic_read(&g_probe_called) == 0 && retry < 100) {
+		while (atomic_read(&g_probe_called) == 0) {
 			osal_sleep_ms(50);
 			retry++;
 			WMT_PLAT_PR_INFO("g_probe_called = 0, retry = %d\n", retry);
@@ -1070,6 +1109,12 @@ INT32 mtk_wcn_consys_hw_init(VOID)
 #if WMT_DBG_SUPPORT
 	mtk_wcn_dump_util_init(mtk_wcn_consys_soc_chipid());
 #endif
+
+	connsys_pm_notifier.notifier_call = connsys_pm_notifier_callback;
+	iRet = register_pm_notifier(&connsys_pm_notifier);
+	if (iRet < 0)
+		pr_notice("[%s] register_pm_notifier fail %d\n", __func__, iRet);
+
 	return iRet;
 
 }
@@ -1090,6 +1135,7 @@ INT32 mtk_wcn_consys_hw_deinit(VOID)
 #endif
 
 	platform_driver_unregister(&mtk_wmt_dev_drv);
+	unregister_pm_notifier(&connsys_pm_notifier);
 
 	if (wmt_consys_ic_ops)
 		wmt_consys_ic_ops = NULL;
@@ -1373,6 +1419,13 @@ INT32 mtk_wcn_consys_cmd_rx_timeout_dump(VOID)
 	return 0;
 }
 
+INT32 mtk_wcn_consys_cmd_pre_rx_timeout_dump(VOID)
+{
+	if (wmt_consys_ic_ops->consys_ic_cmd_pre_rx_timeout_dump)
+		return wmt_consys_ic_ops->consys_ic_cmd_pre_rx_timeout_dump();
+	return 0;
+}
+
 INT32 mtk_wcn_consys_coredump_timeout_dump(VOID)
 {
 	if (wmt_consys_ic_ops->consys_ic_coredump_timeout_dump)
@@ -1421,6 +1474,33 @@ PVOID mtk_wcn_consys_clock_get_regmap(VOID)
 {
 	if (wmt_consys_ic_ops->consys_ic_clock_get_regmap)
 		return wmt_consys_ic_ops->consys_ic_clock_get_regmap();
+	return NULL;
+}
+
+UINT32 mtk_wcn_consys_wakeup_btif_irq_pull_low(VOID)
+{
+	if (wmt_consys_ic_ops->consys_ic_wakeup_btif_irq_pull_low)
+		return wmt_consys_ic_ops->consys_ic_wakeup_btif_irq_pull_low();
+	return 1;
+}
+
+INT32 mtk_wcn_consys_get_debug_reg_ary_size(VOID)
+{
+	if (wmt_consys_ic_ops == NULL)
+		wmt_consys_ic_ops = mtk_wcn_get_consys_ic_ops();
+
+	if (wmt_consys_ic_ops && wmt_consys_ic_ops->consys_ic_get_debug_reg_ary_size)
+		return *(wmt_consys_ic_ops->consys_ic_get_debug_reg_ary_size);
+	return 0;
+}
+
+P_REG_MAP_ADDR mtk_wcn_consys_get_debug_reg_ary(VOID)
+{
+	if (wmt_consys_ic_ops == NULL)
+		wmt_consys_ic_ops = mtk_wcn_get_consys_ic_ops();
+
+	if (wmt_consys_ic_ops && wmt_consys_ic_ops->consys_ic_get_debug_reg_ary)
+		return wmt_consys_ic_ops->consys_ic_get_debug_reg_ary;
 	return NULL;
 }
 

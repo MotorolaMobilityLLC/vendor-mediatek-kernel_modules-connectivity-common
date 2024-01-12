@@ -3675,6 +3675,17 @@ done:
 	return iRet;
 }
 
+INT32 mtk_wcn_soc_set_patch_info(UINT32 ip_ver, UINT32 fw_ver)
+{
+	P_DEV_WMT pDev = &gDevWmt;
+
+	pDev->ip_ver = ip_ver;
+	pDev->fw_ver = fw_ver;
+
+	WMT_INFO_FUNC("ip_ver [%x], fw_ver [%x]\n", pDev->ip_ver, pDev->fw_ver);
+
+	return 0;
+}
 
 VOID mtk_wcn_soc_restore_wifi_cal_result(VOID)
 {

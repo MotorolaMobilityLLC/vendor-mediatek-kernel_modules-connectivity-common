@@ -71,6 +71,8 @@ ccflags-y += -I$(DEVICE_MODULES_PATH)/drivers/misc/mediatek/eccci1
 ccflags-y += -I$(DEVICE_MODULES_PATH)/drivers/misc/mediatek/eccci1/$(MTK_PLATFORM)
 else
 ccflags-y += -I$(DEVICE_MODULES_PATH)/drivers/misc/mediatek/eccci
+ccflags-y += -I$(DEVICE_MODULES_PATH)/drivers/misc/mediatek/eccci/inc
+ccflags-y += -I$(DEVICE_MODULES_PATH)/drivers/misc/mediatek/eccci/port
 ccflags-y += -I$(DEVICE_MODULES_PATH)/drivers/misc/mediatek/eccci/$(MTK_PLATFORM)
 endif
 ccflags-y += -I$(DEVICE_MODULES_PATH)/drivers/misc/mediatek/eemcs

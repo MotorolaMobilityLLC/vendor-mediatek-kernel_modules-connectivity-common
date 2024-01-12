@@ -122,6 +122,7 @@ typedef struct _WMT_IC_INFO_S {
 */
 
 INT32 mtk_wcn_soc_rom_patch_dwn(UINT32 ip_ver, UINT32 fw_ver);
+INT32 mtk_wcn_soc_set_patch_info(UINT32 ip_ver, UINT32 fw_ver);
 VOID mtk_wcn_soc_restore_wifi_cal_result(VOID);
 
 #endif				/* _WMT_IC_H_ */
