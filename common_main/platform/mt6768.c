@@ -240,7 +240,7 @@ UINT32 g_connsys_lp_dump_info[2];
 
 #ifdef WMT_DEVAPC_CALLBACK
 static struct devapc_vio_callbacks devapc_handle = {
-	.id = SUBSYS_CONN,
+	.id = INFRA_SUBSYS_CONN,
 	.debug_dump = consys_devapc_violation_cb,
 };
 #endif
