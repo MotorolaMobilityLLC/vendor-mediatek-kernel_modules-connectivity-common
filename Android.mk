@@ -16,6 +16,10 @@ LOCAL_REQUIRED_MODULES :=
 
 include $(MTK_KERNEL_MODULE)
 
+WMT_OPTS := MTK_CONSYS_ADIE=$(MTK_CONSYS_ADIE)
+
+$(linked_module): OPTS += $(WMT_OPTS)
+
 else
         $(warning wmt_drv-MTK_COMBO_SUPPORT: [$(MTK_COMBO_SUPPORT)])
 endif
