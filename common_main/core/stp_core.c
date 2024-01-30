@@ -2592,6 +2592,11 @@ INT32 mtk_wcn_stp_send_data(const PUINT8 buffer, const UINT32 length, const UINT
 	/* osal_buffer_dump(buffer,"tx", length, 32); */
 	osal_ftrace_print("%s|S|T%d|L%d\n", __func__, type, length);
 
+	if (length == 0) {
+		STP_WARN_FUNC("length is 0\n");
+		return 0;
+	}
+
 	if (STP_WMT_LAST_CLOSE(stp_core_ctx) != 0) {
 		STP_ERR_FUNC("WMT lats close,should not have tx request!\n");
 		return length;
