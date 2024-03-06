@@ -371,9 +371,9 @@ static VOID stp_uart_tty_receive(
 	if (count > 2000) {
 		/*this is abnormal */
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
-		UART_PR_ERR("abnormal: buffer count = %d\n", count);
+		pr_info("abnormal: buffer count = %d\n", count);
 #else
-		UART_PR_ERR("abnormal: buffer count = %lu\n", count);
+		pr_info("abnormal: buffer count = %zu\n", count);
 #endif
 	}
 	/*How much empty seat? */
