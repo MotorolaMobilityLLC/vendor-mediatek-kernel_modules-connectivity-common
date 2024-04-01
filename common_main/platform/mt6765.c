@@ -68,9 +68,10 @@
 #if IS_ENABLED(CONFIG_MTK_EMI_LEGACY)
 #include "soc/mediatek/emi.h"
 #endif
-#endif
+#else
 #if IS_ENABLED(CONFIG_MTK_EMI)
 #include <mt_emi_api.h>
+#endif
 #endif
 
 #if CONSYS_PMIC_CTRL_ENABLE
