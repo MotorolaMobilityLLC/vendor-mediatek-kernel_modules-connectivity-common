@@ -294,7 +294,12 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 			break;
 		}
 
-		dump_vir_addr = wmt_plat_get_emi_virt_add(dump_phy_addr);
+		if (dump_phy_addr >= p_ecsi->emi_phy_addr) {
+			dump_vir_addr = wmt_plat_get_emi_virt_add(dump_phy_addr - p_ecsi->emi_phy_addr);
+		} else {
+			dump_vir_addr = wmt_plat_get_emi_virt_add(dump_phy_addr);
+		}
+
 		if (!dump_vir_addr) {
 			STP_DBG_PR_ERR("get paged dump phy address fail\n");
 			ret = -2;
@@ -472,7 +477,12 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_trace(VOID)
 		g_paged_trace_len = buffer_idx;
 		STP_DBG_PR_INFO("paged trace buffer addr(%08x),buffer_len(%d)\n", buffer_start,
 				buffer_idx);
-		dump_vir_addr = wmt_plat_get_emi_virt_add(buffer_start);
+		if (buffer_start >= p_ecsi->emi_phy_addr) {
+			dump_vir_addr = wmt_plat_get_emi_virt_add(buffer_start - p_ecsi->emi_phy_addr);
+		} else {
+			dump_vir_addr = wmt_plat_get_emi_virt_add(buffer_start);
+		}
+
 		if (!dump_vir_addr) {
 			STP_DBG_PR_ERR("get vir dump address fail\n");
 			ret = -2;
