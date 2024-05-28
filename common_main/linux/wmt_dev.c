@@ -1742,7 +1742,7 @@ static INT32 WMT_init(VOID)
 #else
 	wmt_fb_notifier.notifier_call = wmt_fb_notifier_callback;
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0))
-#if IS_ENABLED(CONFIG_DRM_MEDIATEK)
+#if IS_ENABLED(CONFIG_DEVICE_MODULES_DRM_MEDIATEK)
 	ret = mtk_disp_notifier_register("wmt_driver", &wmt_fb_notifier);
 #endif
 #else
@@ -1807,7 +1807,7 @@ static VOID WMT_exit(VOID)
 	WMT_INFO_FUNC("unregister_early_suspend finished\n");
 #else
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0))
-#if IS_ENABLED(CONFIG_DRM_MEDIATEK)
+#if IS_ENABLED(CONFIG_DEVICE_MODULES_DRM_MEDIATEK)
 	mtk_disp_notifier_unregister(&wmt_fb_notifier);
 #endif
 #else
