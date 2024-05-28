@@ -18,7 +18,6 @@
 #endif
 #define DFT_TAG "[WMT-CONSYS-HW]"
 
-#define CONSYS_ENABLE_EMI_MPU 1
 #define	REGION_CONN	27
 
 #define	DOMAIN_AP	0
@@ -55,9 +54,15 @@
 #include "stp_dbg.h"
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0))
-#include <soc/mediatek/emi.h>
+#if IS_ENABLED(CONFIG_MTK_EMI_LEGACY)
+#define CONSYS_ENABLE_EMI_MPU 1
+#include "soc/mediatek/emi.h"
+#endif
 #else
-#include <memory/mediatek/emi.h>
+#if IS_ENABLED(CONFIG_MTK_EMI)
+#define CONSYS_ENABLE_EMI_MPU 1
+#include <mt_emi_api.h>
+#endif
 #endif
 
 #if CONSYS_PMIC_CTRL_ENABLE
@@ -2084,7 +2089,7 @@ static INT32 consys_hw_vcn_ctrl_after_idle(VOID)
 
 static INT32 consys_emi_mpu_set_region_protection(VOID)
 {
-#if CONSYS_ENABLE_EMI_MPU
+#ifdef CONSYS_ENABLE_EMI_MPU
 	struct emimpu_region_t region;
 	unsigned long long start = gConEmiPhyBase;
 	unsigned long long end = gConEmiPhyBase + gConEmiSize - 1;
