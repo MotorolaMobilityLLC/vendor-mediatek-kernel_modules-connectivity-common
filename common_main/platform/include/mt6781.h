@@ -18,6 +18,12 @@
 #define	PRIMARY_ADIE	0x6631
 #define	SECONDARY_ADIE	0x6635
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0))
+#define COMMON_KERNEL_PMIC_SUPPORT	1
+#else
+#define COMMON_KERNEL_PMIC_SUPPORT	0
+#endif
+
 /* if clock of TCXO is controlled by GPIO, CLK_CTRL_TCXOENA_REQ should be 1. */
 #define CLK_CTRL_TCXOENA_REQ 0
 
@@ -147,6 +153,67 @@
 /**********************************************************************/
 /* Base: conn_mcu_cfg_on_base (0x180a_3000) */
 /**********************************************************************/
+
+/**********************************************************************/
+/* 6366 PMIC ID defined */
+/**********************************************************************/
+
+#define PMIC_RG_BUCK_VS2_VOSEL_SLEEP                0x170a
+#define PMIC_RG_BUCK_VS2_VOTER_EN_SET               0x1726
+#define PMIC_RG_BUCK_VS2_VOTER_EN_CLR               0x1728
+#define PMIC_RG_BUCK_VS2_VOTER_VOSEL                0x172a
+#define PMIC_RG_BUCK_VS2_VOSEL                      0x172e
+
+#define PMIC_RG_LDO_VCN18_EN_ADDR                   0x1c58
+#define PMIC_RG_LDO_VCN18_EN_MASK                   0x1
+#define PMIC_RG_LDO_VCN18_EN_SHIFT                  0
+
+#define PMIC_RG_LDO_VCN18_SW_OP_EN_ADDR             0x1c5a
+#define PMIC_RG_LDO_VCN18_SW_OP_EN_MASK             0x1
+#define PMIC_RG_LDO_VCN18_SW_OP_EN_SHIFT            0
+
+#define PMIC_RG_LDO_VCN18_LP_ADDR                   0x1c58
+#define PMIC_RG_LDO_VCN18_LP_MASK                   0x1
+#define PMIC_RG_LDO_VCN18_LP_SHIFT                  1
+
+#define PMIC_RG_LDO_VCN18_HW0_OP_EN_ADDR            0x1c5a
+#define PMIC_RG_LDO_VCN18_HW0_OP_EN_MASK            0x1
+#define PMIC_RG_LDO_VCN18_HW0_OP_EN_SHIFT           1
+
+#define PMIC_RG_LDO_VCN18_HW0_OP_CFG_ADDR           0x1c60
+#define PMIC_RG_LDO_VCN18_HW0_OP_CFG_MASK           0x1
+#define PMIC_RG_LDO_VCN18_HW0_OP_CFG_SHIFT          1
+
+#define PMIC_RG_LDO_VCN28_HW0_OP_EN_ADDR            0x1d8a
+#define PMIC_RG_LDO_VCN28_HW0_OP_EN_MASK            0x1
+#define PMIC_RG_LDO_VCN28_HW0_OP_EN_SHIFT           1
+
+#define PMIC_RG_LDO_VCN28_OP_EN_SET                 0x1d8c
+#define PMIC_RG_LDO_VCN28_OP_EN_CLR                 0x1d8e
+
+#define PMIC_RG_LDO_VCN28_HW0_OP_CFG_ADDR           0x1d90
+#define PMIC_RG_LDO_VCN28_HW0_OP_CFG_MASK           0x1
+#define PMIC_RG_LDO_VCN28_HW0_OP_CFG_SHIFT          1
+
+#define PMIC_RG_LDO_VCN33_EN_0_ADDR                 0x1d1c
+#define PMIC_RG_LDO_VCN33_EN_0_MASK                 0x1
+#define PMIC_RG_LDO_VCN33_EN_0_SHIFT                0
+
+#define PMIC_RG_LDO_VCN33_SW_OP_EN_ADDR             0x1d1e
+#define PMIC_RG_LDO_VCN33_SW_OP_EN_MASK             0x1
+#define PMIC_RG_LDO_VCN33_SW_OP_EN_SHIFT            0
+
+#define PMIC_RG_LDO_VCN33_LP_ADDR                   0x1d1c
+#define PMIC_RG_LDO_VCN33_LP_MASK                   0x1
+#define PMIC_RG_LDO_VCN33_LP_SHIFT                  1
+
+#define PMIC_RG_LDO_VCN33_HW0_OP_EN_ADDR            0x1d1e
+#define PMIC_RG_LDO_VCN33_HW0_OP_EN_MASK            0x1
+#define PMIC_RG_LDO_VCN33_HW0_OP_EN_SHIFT           1
+
+#define PMIC_RG_LDO_VCN33_HW0_OP_CFG_ADDR           0x1d24
+#define PMIC_RG_LDO_VCN33_HW0_OP_CFG_MASK           0x1
+#define PMIC_RG_LDO_VCN33_HW0_OP_CFG_SHIFT          1
 
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S

@@ -18,7 +18,6 @@
 #endif
 #define DFT_TAG "[WMT-CONSYS-HW]"
 
-#define CONSYS_ENABLE_EMI_MPU 1
 #define	REGION_CONN	27
 
 #define	DOMAIN_AP	0
@@ -47,12 +46,24 @@
 #include "wmt_plat.h"
 #include "stp_dbg.h"
 
-#include <memory/mediatek/emi.h>
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0))
+#if IS_ENABLED(CONFIG_MTK_EMI_LEGACY)
+#define CONSYS_ENABLE_EMI_MPU 1
+#include "soc/mediatek/emi.h"
+#endif
+#else
+#if IS_ENABLED(CONFIG_MTK_EMI)
+#define CONSYS_ENABLE_EMI_MPU 1
+#include <mt_emi_api.h>
+#endif
+#endif
 
 #if CONSYS_PMIC_CTRL_ENABLE
+#include <linux/regulator/consumer.h>
+#if !(COMMON_KERNEL_PMIC_SUPPORT)
 #include <mtk_pmic_api_buck.h>
 #include <upmu_common.h>
-#include <linux/regulator/consumer.h>
+#endif
 #endif
 
 #ifdef CONFIG_MTK_HIBERNATION
@@ -317,7 +328,7 @@ static atomic_t g_power_on = ATOMIC_INIT(0);
 */
 static INT32 rom_patch_dl_flag = 1;
 static UINT32 gJtagCtrl;
-UINT32 g_vcn33_1_voltage = 3300000;
+UINT32 g_vcn33_1_voltage_mt6781 = 3300000;
 
 #if CONSYS_PMIC_CTRL_ENABLE
 static UINT32 vs2_voter_vosel;
@@ -749,15 +760,24 @@ static INT32 consys_hw_vcn33_ctrl(MTK_WCN_BOOL enable)
 		WMT_PLAT_PR_INFO("Turn on reg_VCN33_1_BT in legacy mode\n");
 		/*Set VCN33_1_SW_EN as 1 and set votage as 3V3*/
 		if (reg_VCN33_BT) {
-			regulator_set_voltage(reg_VCN33_BT, g_vcn33_1_voltage, g_vcn33_1_voltage);
+			regulator_set_voltage(reg_VCN33_BT, g_vcn33_1_voltage_mt6781,
+					g_vcn33_1_voltage_mt6781);
 			if (regulator_enable(reg_VCN33_BT))
 				WMT_PLAT_PR_INFO("WMT do WIFI PMIC on fail!\n");
 		}
+#if (COMMON_KERNEL_PMIC_SUPPORT)
+		if (g_regmap) {
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_EN_0_ADDR, 1);/* b0=1, b1= 0 */
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_SW_OP_EN_ADDR, 3); /* b0=1, b1=1 */
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_HW0_OP_CFG_ADDR, 2); /* bit1=1 */
+		}
+#else
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_EN_0, 1);
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_SW_OP_EN, 1);
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_LP, 0);
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_EN, 1);
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_CFG, 1);
+#endif
 	} else {
 		if (reg_VCN33_BT)
 			if (regulator_disable(reg_VCN33_BT))
@@ -794,6 +814,37 @@ static INT32 consys_hw_vcn13_ctrl(MTK_WCN_BOOL enable)
 				CONSYS_VCN13_DIR_BIT);
 
 	if (enable) {
+#if (COMMON_KERNEL_PMIC_SUPPORT)
+		if (g_regmap) {
+			/* backup vs2 vosel value */
+			if (vs2_voter_vosel == 0) {
+				regmap_read(g_regmap, PMIC_RG_BUCK_VS2_VOTER_VOSEL,
+						&vs2_voter_vosel);
+				WMT_PLAT_PR_INFO("Backup default value of vs2_voter_vosel = 0x%x\n",
+						vs2_voter_vosel);
+			}
+			if (vs2_vosel == 0) {
+				regmap_read(g_regmap, PMIC_RG_BUCK_VS2_VOSEL, &vs2_vosel);
+				WMT_PLAT_PR_INFO("Backup default value of vs2_vosel = 0x%x\n",
+						vs2_vosel);
+			}
+			if (vs2_vosel_sleep == 0) {
+				regmap_read(g_regmap, PMIC_RG_BUCK_VS2_VOSEL_SLEEP,
+						&vs2_vosel_sleep);
+				WMT_PLAT_PR_INFO("Backup default value of vs2_vosel_sleep = 0x%x\n",
+						vs2_vosel_sleep);
+			}
+
+			/* Set VS2 base to 1.375V */
+			regmap_write(g_regmap, PMIC_RG_BUCK_VS2_VOTER_VOSEL, 0x46);
+			/* Set VS2 to 1.4625V */
+			regmap_write(g_regmap, PMIC_RG_BUCK_VS2_VOSEL, 0x4D);
+			/* request VS2 to 1.4625V by VS2 VOTER (use bit 4) */
+			regmap_write(g_regmap, PMIC_RG_BUCK_VS2_VOTER_EN_SET, 0x10);
+			/* Set VS2 sleep to 1.375V */
+			regmap_write(g_regmap, PMIC_RG_BUCK_VS2_VOSEL_SLEEP, 0x46);
+		}
+#else
 		/* backup vs2 vosel value */
 		if (vs2_voter_vosel == 0) {
 			vs2_voter_vosel = KERNEL_pmic_get_register_value(PMIC_RG_BUCK_VS2_VOTER_VOSEL);
@@ -816,6 +867,7 @@ static INT32 consys_hw_vcn13_ctrl(MTK_WCN_BOOL enable)
 		KERNEL_pmic_set_register_value(PMIC_RG_BUCK_VS2_VOTER_EN_SET, 0x10);
 		/* Set VS2 sleep to 1.375V */
 		KERNEL_pmic_set_register_value(PMIC_RG_BUCK_VS2_VOSEL_SLEEP, 0x46);
+#endif
 
 		CONSYS_SET_BIT(consys_vcn13_reg_base + CONSYS_VCN13_DOUT_OFFSET,
 				CONSYS_VCN13_DOUT_BIT);
@@ -823,6 +875,29 @@ static INT32 consys_hw_vcn13_ctrl(MTK_WCN_BOOL enable)
 		CONSYS_CLR_BIT(consys_vcn13_reg_base + CONSYS_VCN13_DOUT_OFFSET,
 				CONSYS_VCN13_DOUT_BIT);
 
+#if (COMMON_KERNEL_PMIC_SUPPORT)
+		if (g_regmap) {
+			/* clear vote, then VS2 can restore to VS2_VOTER_VOSEL */
+			regmap_write(g_regmap, PMIC_RG_BUCK_VS2_VOTER_EN_CLR, 0x10);
+			/* Set VS2 to VS2_VOTER_VOSEL */
+			if (vs2_vosel > 0) {
+				regmap_write(g_regmap, PMIC_RG_BUCK_VS2_VOSEL, vs2_vosel);
+				WMT_PLAT_PR_INFO("Set vs2_vosel = 0x%x\n", vs2_vosel);
+			}
+			/* Set VS2 sleep to vs2_vosel_sleep */
+			if (vs2_vosel_sleep > 0) {
+				regmap_write(g_regmap, PMIC_RG_BUCK_VS2_VOSEL_SLEEP,
+						vs2_vosel_sleep);
+				WMT_PLAT_PR_INFO("Set vs2_vosel_sleep = 0x%x\n", vs2_vosel_sleep);
+			}
+			/* Set VS2 base to backup voltage */
+			if (vs2_voter_vosel > 0) {
+				regmap_write(g_regmap, PMIC_RG_BUCK_VS2_VOTER_VOSEL,
+						vs2_voter_vosel);
+				WMT_PLAT_PR_INFO("Set vs2_voter_vosel = 0x%x\n", vs2_voter_vosel);
+			}
+		}
+#else
 		/* clear vote, then VS2 can restore to VS2_VOTER_VOSEL */
 		KERNEL_pmic_set_register_value(PMIC_RG_BUCK_VS2_VOTER_EN_CLR, 0x10);
 		/* Set VS2 to VS2_VOTER_VOSEL */
@@ -840,6 +915,7 @@ static INT32 consys_hw_vcn13_ctrl(MTK_WCN_BOOL enable)
 			KERNEL_pmic_set_register_value(PMIC_RG_BUCK_VS2_VOTER_VOSEL, vs2_voter_vosel);
 			WMT_PLAT_PR_INFO("Set vs2_voter_vosel = 0x%x\n", vs2_voter_vosel);
 		}
+#endif
 	}
 
 	iounmap(consys_vcn13_reg_base);
@@ -852,6 +928,15 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 	if (enable) {
 #if CONSYS_PMIC_CTRL_ENABLE
 		WMT_PLAT_PR_INFO("Turn on VCN18 in legacy mode\n");
+#if (COMMON_KERNEL_PMIC_SUPPORT)
+		if (g_regmap) {
+			/* SW_OP_EN =1, SW_EN = 1, SW_LP =0 */
+			/* HW_OP_EN = 1, HW_OP_CFG = 1 */
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN18_EN_ADDR,  1); /* b0=1, b1=0 */
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN18_SW_OP_EN_ADDR, 3); /* b0=1, b1=1 */
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN18_HW0_OP_CFG_ADDR, 2); /* bit1=1 */
+		}
+#else
 		/* SW_OP_EN =1, SW_EN = 1, SW_LP =0 */
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN18_EN, 1);
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN18_SW_OP_EN, 1);
@@ -859,7 +944,7 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 		/* HW_OP_EN = 1, HW_OP_CFG = 1 */
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN18_HW0_OP_EN, 1);
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN18_HW0_OP_CFG, 1);
-
+#endif
 		/*Set VCN18_SW_EN as 1 and set votage as 1V8*/
 		if (reg_VCN18) {
 			regulator_set_voltage(reg_VCN18, 1800000, 1800000);
@@ -902,6 +987,22 @@ static VOID consys_vcn28_hw_mode_ctrl(UINT32 enable)
 		return;
 
 #if CONSYS_PMIC_CTRL_ENABLE
+#if (COMMON_KERNEL_PMIC_SUPPORT)
+	if (!g_regmap)
+		return;
+
+	if (enable) {
+		if (g_regmap) {
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN28_OP_EN_SET, 1);
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN28_HW0_OP_CFG_ADDR, 0);
+		}
+	} else {
+		if (g_regmap) {
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN28_OP_EN_CLR,  1);
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN28_HW0_OP_CFG_ADDR, 0);
+		}
+	}
+#else
 	if (enable) {
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN28_HW0_OP_EN, 1);
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN28_HW0_OP_CFG, 0);
@@ -909,6 +1010,7 @@ static VOID consys_vcn28_hw_mode_ctrl(UINT32 enable)
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN28_HW0_OP_EN, 0);
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN28_HW0_OP_CFG, 0);
 	}
+#endif
 #endif
 }
 
@@ -921,12 +1023,24 @@ static INT32 consys_hw_vcn28_ctrl(UINT32 enable)
 
 	if (enable) {
 		WMT_PLAT_PR_INFO("Turn on reg_VCN28 in legacy mode\n");
+#if (COMMON_KERNEL_PMIC_SUPPORT)
+		if (g_regmap) {
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN28_HW0_OP_EN_ADDR, 3); /* b0=1,b1=1 */
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN28_HW0_OP_CFG_ADDR, 0);
+		}
+#endif
 		if (reg_VCN28) {
 			regulator_set_voltage(reg_VCN28, 2800000, 2800000);
 			if (regulator_enable(reg_VCN28))
 				WMT_PLAT_PR_INFO("WMT do VCN28 PMIC on fail!\n");
 		}
 	} else {
+#if (COMMON_KERNEL_PMIC_SUPPORT)
+		if (g_regmap) {
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN28_HW0_OP_EN_ADDR, 0); /* b0=0,b1=0 */
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN28_HW0_OP_CFG_ADDR, 0);
+		}
+#endif
 		if (reg_VCN28)
 			regulator_disable(reg_VCN28);
 		WMT_PLAT_PR_INFO("turn off vcn28\n");
@@ -946,17 +1060,28 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 
 		/*Set VCN33_BT enable and set votage as 3V3*/
 		if (reg_VCN33_BT) {
-			regulator_set_voltage(reg_VCN33_BT, g_vcn33_1_voltage, g_vcn33_1_voltage);
+			regulator_set_voltage(reg_VCN33_BT, g_vcn33_1_voltage_mt6781,
+					g_vcn33_1_voltage_mt6781);
 			if (regulator_enable(reg_VCN33_BT))
 				WMT_PLAT_PR_INFO("WMT do BT PMIC on fail!\n");
 		}
+#if (COMMON_KERNEL_PMIC_SUPPORT)
+		if (g_regmap)
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_HW0_OP_CFG_ADDR, 0); /* bit1=0 */
+#else
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_EN, 1);
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_CFG, 0);
+#endif
 		WMT_PLAT_PR_DBG("WMT do BT PMIC on\n");
 	} else {
 		/*do BT PMIC off */
+#if (COMMON_KERNEL_PMIC_SUPPORT)
+		if (g_regmap)
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_HW0_OP_CFG_ADDR, 0); /* bit1=0 */
+#else
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_EN, 0);
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_CFG, 0);
+#endif
 		if (reg_VCN33_BT)
 			regulator_disable(reg_VCN33_BT);
 		WMT_PLAT_PR_DBG("WMT do BT PMIC off\n");
@@ -980,13 +1105,23 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 			if (regulator_enable(reg_VCN33_WIFI))
 				WMT_PLAT_PR_INFO("WMT do WIFI PMIC on fail!\n");
 		}
+#if (COMMON_KERNEL_PMIC_SUPPORT)
+		if (g_regmap)
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_HW0_OP_CFG_ADDR, 0); /* bit1=0 */
+#else
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_EN, 1);
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_CFG, 0);
+#endif
 		WMT_PLAT_PR_DBG("WMT do WIFI PMIC on\n");
 	} else {
 		/*do WIFI PMIC off */
+#if (COMMON_KERNEL_PMIC_SUPPORT)
+		if (g_regmap)
+			regmap_write(g_regmap, PMIC_RG_LDO_VCN33_HW0_OP_CFG_ADDR, 0); /* bit1=0 */
+#else
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_EN, 0);
 		KERNEL_pmic_set_register_value(PMIC_RG_LDO_VCN33_HW0_OP_CFG, 0);
+#endif
 		if (reg_VCN33_WIFI)
 			regulator_disable(reg_VCN33_WIFI);
 		WMT_PLAT_PR_DBG("WMT do WIFI PMIC off\n");
@@ -1002,7 +1137,7 @@ static INT32 consys_hw_vcn_ctrl_after_idle(VOID)
 
 static INT32 consys_emi_mpu_set_region_protection(VOID)
 {
-#if CONSYS_ENABLE_EMI_MPU
+#ifdef CONSYS_ENABLE_EMI_MPU
 	struct emimpu_region_t region;
 	unsigned long long start = gConEmiPhyBase;
 	unsigned long long end = gConEmiPhyBase + gConEmiSize - 1;
@@ -2071,8 +2206,8 @@ INT32 consys_before_chip_reset_dump(VOID)
 
 static VOID consys_set_vcn33_1_voltage(UINT32 voltage)
 {
-	if (voltage == 0 || voltage == g_vcn33_1_voltage)
+	if (voltage == 0 || voltage == g_vcn33_1_voltage_mt6781)
 		return;
 
-	g_vcn33_1_voltage = voltage;
+	g_vcn33_1_voltage_mt6781 = voltage;
 }
