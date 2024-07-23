@@ -1637,10 +1637,11 @@ static VOID consys_ic_clock_fail_dump(VOID)
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_DEBUG_STATUS));
 
 	addr = ioremap(0x10001B20, 0x100);
+	if (addr) {
 	/* 0x1020E804 */
-	temp += sprintf(temp, "0x10001B20=0x%08x\n", CONSYS_REG_READ(addr));
-	iounmap(addr);
-
+		temp += sprintf(temp, "0x10001B20=0x%08x\n", CONSYS_REG_READ(addr));
+		iounmap(addr);
+	}
 	WMT_PLAT_PR_ERR("%s length = %d", buffer, osal_strlen(buffer));
 	osal_free(buffer);
 }
