@@ -895,7 +895,11 @@ INT32 mtk_wcn_get_reset_info(PUINT8 pBuff, INT32 buffLen)
 		WMT_INFO_FUNC("buf is NULL\n");
 		return -1;
 	}
-	snprintf(pBuff, buffLen, "%s", buf);
+
+	if (snprintf(pBuff, buffLen, "%s", buf) < 0) {
+		WMT_INFO_FUNC("snprintf is failed\n");
+		return -1;
+	}
 
 	return 0;
 }
