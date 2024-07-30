@@ -29,7 +29,7 @@
 /* if clock of TCXO is controlled by GPIO, CLK_CTRL_TCXOENA_REQ should be 1. */
 #define CLK_CTRL_TCXOENA_REQ 0
 
-#define ENABLE_CCIF_CLK 0
+#define ENABLE_CCIF_CLK 1
 
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
