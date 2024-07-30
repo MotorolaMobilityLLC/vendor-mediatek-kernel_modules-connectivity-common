@@ -506,7 +506,8 @@ INT32 stp_dbg_soc_core_dump(INT32 dump_sink)
 {
 	INT32 ret = 0;
 
-	if (dump_sink == 0 || chip_reset_only == 1) {
+	if (stp_dbg_read_memdump_mode() == STP_DBG_MEMDUMP_NO_LOG || dump_sink == 0 ||
+		chip_reset_only == 1) {
 		if (chip_reset_only) {
 			STP_DBG_PR_INFO("Chip reset only\n");
 			chip_reset_only = 0;

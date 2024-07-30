@@ -2260,6 +2260,10 @@ static INT32 stp_parser_data_in_full_mode(UINT32 length, UINT8 *p_data)
 
 			if (mtk_wcn_stp_get_wmt_trg_assert() == 1)
 				stp_btm_stop_trigger_assert_timer(STP_BTM_CORE(stp_core_ctx));
+			else
+				/* clear debug info if triggered by fw */
+				stp_dbg_clear_cpupcr_reg_info();
+
 			if (STP_IS_READY(stp_core_ctx))
 				mtk_wcn_stp_dbg_dump_package();
 

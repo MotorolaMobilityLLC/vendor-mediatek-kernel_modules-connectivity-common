@@ -119,7 +119,8 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 	case STP_OPID_BTM_RST:
 		STP_BTM_PR_INFO("whole chip reset start!\n");
 		if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC &&
-		    mtk_wcn_stp_coredump_flag_get() != 0 && chip_reset_only == 0) {
+		    mtk_wcn_stp_coredump_flag_get() != 0 && chip_reset_only == 0 &&
+		    stp_dbg_read_memdump_mode() != STP_DBG_MEMDUMP_NO_LOG) {
 #ifdef CONFIG_MTK_CONNSYS_DEDICATED_LOG_PATH
 			connsys_dedicated_log_flush_emi();
 #endif

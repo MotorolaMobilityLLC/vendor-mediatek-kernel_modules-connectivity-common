@@ -444,6 +444,7 @@ extern INT32 wmt_lib_merge_if_flag_get(UINT32 enable);
 
 extern PUINT8 wmt_lib_get_cpupcr_xml_format(PUINT32 len);
 extern PUINT8 wmt_lib_get_cpupcr_reg_info(PUINT32 len, PUINT32 consys_reg);
+extern INT32 wmt_lib_get_host_assert_info(PUINT32 type, PUINT32 reason, PUINT32 en);
 extern UINT32 wmt_lib_set_host_assert_info(UINT32 type, UINT32 reason, UINT32 en);
 extern INT8 wmt_lib_co_clock_get(VOID);
 extern UINT32 wmt_lib_soc_set_wifiver(UINT32 wifiver);

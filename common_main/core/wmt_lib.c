@@ -2738,6 +2738,11 @@ INT32 wmt_lib_register_trigger_assert_cb(trigger_assert_cb trigger_assert)
 	return 0;
 }
 
+INT32 wmt_lib_get_host_assert_info(PUINT32 type, PUINT32 reason, PUINT32 en)
+{
+	return stp_dbg_get_host_assert_info(type, reason, en);
+}
+
 UINT32 wmt_lib_set_host_assert_info(UINT32 type, UINT32 reason, UINT32 en)
 {
 	return stp_dbg_set_host_assert_info(type, reason, en);

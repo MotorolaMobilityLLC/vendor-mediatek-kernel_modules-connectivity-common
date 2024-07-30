@@ -1090,8 +1090,14 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 	case 10:
 		if (mtk_wcn_stp_coredump_start_get()) {
 			wmt_lib_host_awake_get();
-			if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC)
-				WMT_INFO_FUNC("stp dump start.\n");
+			if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC) {
+				char buf[60];
+
+				if (copy_from_user(buf, (PVOID)arg, 60) == 0) {
+					buf[59] = '\0';
+					WMT_INFO_FUNC("coredump path: %s\n", buf);
+				}
+			}
 			else {
 				WMT_INFO_FUNC("Trigger kernel api dump.\n");
 				if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_COMBO ||
@@ -1118,7 +1124,12 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 	case 11:
 		if (mtk_wcn_stp_coredump_start_get()) {
 			if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC) {
-				WMT_INFO_FUNC("Dump connsys EMI done.\n");
+				char buf[60];
+
+				if (copy_from_user(buf, (PVOID)arg, 60) == 0) {
+					buf[59] = '\0';
+					WMT_INFO_FUNC("emi_dump path: %s\n", buf);
+				}
 				mtk_stp_notify_emi_dump_end();
 			}
 			wmt_lib_host_awake_put();
@@ -1164,7 +1175,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			break;
 		}
 
-		pAtchNum = arg;
+		pAtchNum = (UINT32)arg;
 
 		osal_unlock_unsleepable_lock(&g_patch_num_spinlock);
 

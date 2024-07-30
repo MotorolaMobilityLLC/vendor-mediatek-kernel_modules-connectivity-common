@@ -1218,7 +1218,7 @@ static INT32 opfunc_pwr_on(P_WMT_OP pWmtOp)
 	iRet = wmt_core_stp_init();
 	if (iRet) {
 		WMT_ERR_FUNC("WMT-CORE: wmt_core_stp_init fail (%d)\n", iRet);
-		wmt_lib_trigger_assert(WMTDRV_TYPE_WMT, 46);
+		wmt_lib_trigger_assert(WMTDRV_TYPE_WMT, 47);
 		return iRet;
 	}
 
@@ -3412,8 +3412,12 @@ static INT32 opfunc_wlan_probe(P_WMT_OP pWmtOp)
 	ULONG ctrlPa1;
 	ULONG ctrlPa2;
 	INT32 iRet;
-	UINT32 drvType = pWmtOp->au4OpData[0];
+	UINT32 drvType = (UINT32)pWmtOp->au4OpData[0];
 
+	if (drvType >= WMTDRV_TYPE_MAX) {
+		WMT_INFO_FUNC("drvType(%d) is invalid.\n", drvType);
+		return -1;
+	}
 
 	iRet = wmt_lib_wlan_lock_aquire();
 	atomic_set(&g_wifi_on_off_ready, 0);

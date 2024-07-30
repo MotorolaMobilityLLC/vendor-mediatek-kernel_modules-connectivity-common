@@ -880,3 +880,29 @@ VOID mtk_wcn_wmt_mpu_lock_release(VOID)
 }
 EXPORT_SYMBOL(mtk_wcn_wmt_mpu_lock_release);
 
+INT32 mtk_wcn_get_reset_info(PUINT8 pBuff, INT32 buffLen)
+{
+	INT32 len = 0;
+	PUINT8 buf;
+
+	if (!pBuff) {
+		WMT_INFO_FUNC("pBuff is NULL\n");
+		return -1;
+	}
+
+	buf = wmt_lib_get_cpupcr_xml_format(&len);
+	if (!buf) {
+		WMT_INFO_FUNC("buf is NULL\n");
+		return -1;
+	}
+	snprintf(pBuff, buffLen, "%s", buf);
+
+	return 0;
+}
+EXPORT_SYMBOL(mtk_wcn_get_reset_info);
+
+INT32 mtk_wcn_get_host_assert_info(PUINT32 type, PUINT32 reason, PUINT32 en)
+{
+	return wmt_lib_get_host_assert_info(type, reason, en);
+}
+EXPORT_SYMBOL(mtk_wcn_get_host_assert_info);
