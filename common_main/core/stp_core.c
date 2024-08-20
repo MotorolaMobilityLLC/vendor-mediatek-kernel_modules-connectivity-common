@@ -30,6 +30,7 @@
 
 #define STP_DEL_SIZE   2	/* STP delimiter length */
 #define STP_MAX_TX_TIMEOUT_LOOP 3
+#define STP_MAX_PKT_LEN 2000
 
 INT32 gStpDbgLvl = STP_LOG_INFO;
 unsigned int chip_reset_only;
@@ -2600,9 +2601,9 @@ INT32 mtk_wcn_stp_send_data(const PUINT8 buffer, const UINT32 length, const UINT
 	/* osal_buffer_dump(buffer,"tx", length, 32); */
 	osal_ftrace_print("%s|S|T%d|L%d\n", __func__, type, length);
 
-	if (length == 0) {
-		STP_WARN_FUNC("length is 0\n");
-		return 0;
+	if (length == 0 || length > STP_MAX_PKT_LEN - MTKSTP_HEADER_SIZE) {
+		STP_WARN_FUNC("failed due to length is %d\n", length);
+		return -1;
 	}
 
 	if (STP_WMT_LAST_CLOSE(stp_core_ctx) != 0) {
