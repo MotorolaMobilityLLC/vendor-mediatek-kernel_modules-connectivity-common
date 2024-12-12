@@ -73,7 +73,7 @@
 ********************************************************************************
 */
 static INT32 mtk_wmt_probe(struct platform_device *pdev);
-static INT32 mtk_wmt_remove(struct platform_device *pdev);
+static void mtk_wmt_remove(struct platform_device *pdev);
 static int mtk_wmt_suspend(void);
 static int mtk_wmt_resume(void);
 
@@ -513,7 +513,7 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static INT32 mtk_wmt_remove(struct platform_device *pdev)
+static void mtk_wmt_remove(struct platform_device *pdev)
 {
 	if (wmt_consys_ic_ops->consys_ic_need_store_pdev) {
 		if (wmt_consys_ic_ops->consys_ic_need_store_pdev() == MTK_WCN_BOOL_TRUE)
@@ -534,7 +534,6 @@ static INT32 mtk_wmt_remove(struct platform_device *pdev)
 	osal_sleepable_lock_deinit(&g_adie_chipid_lock);
 
 	atomic_set(&g_probe_called, 0);
-	return 0;
 }
 
 static int mtk_wmt_suspend(void)
