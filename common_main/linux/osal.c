@@ -1389,7 +1389,7 @@ INT32 osal_sleepable_lock_deinit(P_OSAL_SLEEPABLE_LOCK pSL)
 
 INT32 osal_sleep_ms(UINT32 ms)
 {
-	msleep_interruptible(ms);
+	msleep(ms);
 	return 0;
 }
 
