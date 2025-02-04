@@ -26,7 +26,9 @@
 #endif
 #define DFT_TAG         "[WMT-CORE]"
 
-
+#if IS_ENABLED(CONFIG_MTK_COMBO_CHIP_CONSYS_6771)
+#undef CONFIG_MTK_CONNSYS_DEDICATED_LOG_PATH
+#endif
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
