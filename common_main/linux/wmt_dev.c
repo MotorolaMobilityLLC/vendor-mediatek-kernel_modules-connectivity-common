@@ -190,6 +190,8 @@ static atomic_t g_late_pwr_on_for_blank = ATOMIC_INIT(0); /* PwrOnOff Late flag 
 /* Prevent race condition when wmt_dev_tm_temp_query is called concurrently */
 static OSAL_UNSLEEPABLE_LOCK g_temp_query_spinlock;
 static OSAL_UNSLEEPABLE_LOCK g_patch_num_spinlock;
+static OSAL_UNSLEEPABLE_LOCK g_coredump_spinlock;
+static atomic_t g_coredump_wake = ATOMIC_INIT(0);
 
 #ifdef CONFIG_EARLYSUSPEND
 static VOID wmt_dev_early_suspend(struct early_suspend *h)
@@ -1089,7 +1091,17 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		break;
 	case 10:
 		if (mtk_wcn_stp_coredump_start_get()) {
-			wmt_lib_host_awake_get();
+			int get_host_wake = 0;
+
+			osal_lock_unsleepable_lock(&g_coredump_spinlock);
+			if (atomic_read(&g_coredump_wake) == 0) {
+				atomic_set(&g_coredump_wake, 1);
+				get_host_wake = 1;
+			}
+			osal_unlock_unsleepable_lock(&g_coredump_spinlock);
+			if (get_host_wake == 1)
+				wmt_lib_host_awake_get();
+
 			if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC) {
 				char buf[60];
 
@@ -1123,6 +1135,8 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		break;
 	case 11:
 		if (mtk_wcn_stp_coredump_start_get()) {
+			int put_host_wake = 0;
+
 			if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC) {
 				char buf[60];
 
@@ -1132,7 +1146,15 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 				}
 				mtk_stp_notify_emi_dump_end();
 			}
-			wmt_lib_host_awake_put();
+
+			osal_lock_unsleepable_lock(&g_coredump_spinlock);
+			if (atomic_read(&g_coredump_wake) == 1) {
+				atomic_set(&g_coredump_wake, 0);
+				put_host_wake = 1;
+			}
+			osal_unlock_unsleepable_lock(&g_coredump_spinlock);
+			if (put_host_wake == 1)
+				wmt_lib_host_awake_put();
 		}
 		break;
 	case WMT_IOCTL_GET_CHIP_INFO:
@@ -1658,6 +1680,7 @@ static INT32 WMT_init(VOID)
 
 	osal_unsleepable_lock_init(&g_temp_query_spinlock);
 	osal_unsleepable_lock_init(&g_patch_num_spinlock);
+	osal_unsleepable_lock_init(&g_coredump_spinlock);
 
 #if (MTK_WCN_REMOVE_KO)
 	/* called in do_common_drv_init() */
@@ -1813,6 +1836,7 @@ static VOID WMT_exit(VOID)
 
 	osal_unsleepable_lock_deinit(&g_temp_query_spinlock);
 	osal_unsleepable_lock_deinit(&g_patch_num_spinlock);
+	osal_unsleepable_lock_deinit(&g_coredump_spinlock);
 #ifdef CONFIG_EARLYSUSPEND
 	unregister_early_suspend(&wmt_early_suspend_handler);
 	WMT_INFO_FUNC("unregister_early_suspend finished\n");
