@@ -161,55 +161,55 @@ define_mgk_ddk_ko(
     conditional_srcs = {
         "CONFIG_MTK_COMBO_CHIP_CONSYS_6580": {
             True: wmt_mt6580_srcs,
-        },
+        } if glob(["common_main/platform/mt6580.c"]) else {},
         "CONFIG_MTK_COMBO_CHIP_CONSYS_6739": {
             True: wmt_mt6739_srcs,
-        },
+        } if glob(["common_main/platform/mt6739.c"]) else {},
         "CONFIG_MTK_COMBO_CHIP_CONSYS_6761": {
             True: wmt_mt6761_srcs,
-        },
+        } if glob(["common_main/platform/mt6761.c"]) else {},
         "CONFIG_MTK_COMBO_CHIP_CONSYS_6765": {
             True: wmt_mt6765_srcs,
-        },
+        } if glob(["common_main/platform/mt6765.c"]) else {},
         "CONFIG_MTK_COMBO_CHIP_CONSYS_6768": {
             True: wmt_mt6768_srcs,
-        },
+        } if glob(["common_main/platform/mt6768.c"]) else {},
         "CONFIG_MTK_COMBO_CHIP_CONSYS_6771": {
             True: wmt_mt6771_srcs,
-        },
+        } if glob(["common_main/platform/mt6771.c"]) else {},
         "CONFIG_MTK_COMBO_CHIP_CONSYS_6779": {
             True: wmt_mt6779_srcs,
-        },
+        } if glob(["common_main/platform/mt6779.c"]) else {},
         "CONFIG_MTK_COMBO_CHIP_CONSYS_6781": {
             True: wmt_mt6781_srcs,
-        },
+        } if glob(["common_main/platform/mt6781.c"]) else {},
         "CONFIG_MTK_COMBO_CHIP_CONSYS_6785": {
             True: wmt_mt6785_srcs,
-        },
+        } if glob(["common_main/platform/mt6785.c"]) else {},
         "CONFIG_MTK_COMBO_CHIP_CONSYS_6789": {
             True: wmt_mt6789_srcs,
-        },
+        } if glob(["common_main/platform/mt6789.c"]) else {},
         "CONFIG_MTK_COMBO_CHIP_CONSYS_6833": {
             True: wmt_mt6833_srcs,
-        },
+        } if glob(["common_main/platform/mt6833.c"]) else {},
         "CONFIG_MTK_COMBO_CHIP_CONSYS_6835": {
             True: wmt_mt6835_srcs,
-        },
+        } if glob(["common_main/platform/mt6835.c"]) else {},
         "CONFIG_MTK_COMBO_CHIP_CONSYS_6855": {
             True: wmt_mt6855_srcs,
-        },
+        } if glob(["common_main/platform/mt6855.c"]) else {},
         "CONFIG_MTK_COMBO_CHIP_CONSYS_6873": {
             True: wmt_mt6873_srcs,
-        },
+        } if glob(["common_main/platform/mt6873.c"]) else {},
         "CONFIG_MTK_COMBO_CHIP_CONSYS_8163": {
             True: wmt_mt8163_srcs,
-        },
+        } if glob(["common_main/platform/mt8163.c"]) else {},
         "CONFIG_MTK_COMBO_CHIP_CONSYS_8167": {
             True: wmt_mt8167_srcs,
-        },
+        } if glob(["common_main/platform/mt8167.c"]) else {},
         "CONFIG_MTK_COMBO_CHIP_CONSYS_8168": {
             True: wmt_mt8168_srcs,
-        },
+        } if glob(["common_main/platform/mt8168.c"]) else {},
     },
     includes = [
         "common_detect",
