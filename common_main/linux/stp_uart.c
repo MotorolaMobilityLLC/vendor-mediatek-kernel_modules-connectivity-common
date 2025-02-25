@@ -377,6 +377,7 @@ static VOID stp_uart_tty_receive(
 	if (fifo_avail_len > 0) {
 		/* UART_PR_INFO ("fifo left(%d), count(%d)\n", fifo_avail_len, count); */
 		how_much_put = kfifo_in(g_stp_uart_rx_fifo, (PUINT8) data, count);
+		pr_debug("how_much_put = %d\n", how_much_put);
 
 		/*schedule it! */
 		tasklet_schedule(&g_stp_uart_rx_fifo_tasklet);

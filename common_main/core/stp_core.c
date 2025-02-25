@@ -749,8 +749,6 @@ VOID stp_do_tx_timeout(VOID)
 		/*And not to retry again */
 		if (stp_core_ctx.sequence.retry_times > MTKSTP_RETRY_LIMIT) {
 			do {
-				int reason = 42;
-
 				if (tx_pending_state > 0 || (tx_pending_state == 0 && rx_pending_state > 0)) {
 					if (stp_core_ctx.sequence.tx_timeout_loop < STP_MAX_TX_TIMEOUT_LOOP) {
 						stp_core_ctx.sequence.retry_times = 0;
@@ -760,10 +758,6 @@ VOID stp_do_tx_timeout(VOID)
 					}
 
 					STP_ERR_FUNC("there are still some data in tx/rx buffer.\n");
-					/* Reason number 45 means that stp data path still has data,
-					 * possibly a driver problem
-					 */
-					reason = 45;
 				}
 
 				wmt_lib_cmd_tx_timeout_dump();
@@ -1774,7 +1768,6 @@ static INT32 stp_parser_data_in_mand_mode(UINT32 length, UINT8 *p_data)
 	UINT8 padding_len = 0;
 	INT32 remain_length = 0;
 	INT32 i = 0;
-	INT32 i_ret = 0;
 
 	i = length;
 	while (i > 0) {
@@ -1930,7 +1923,6 @@ static INT32 stp_parser_data_in_mand_mode(UINT32 length, UINT8 *p_data)
 			break;
 
 		case MTKSTP_FW_MSG:
-			i_ret = -2;
 			if (stp_core_ctx.parser.length == 0) {
 				STP_INFO_FUNC("FW Assert len = 0, ignore this pkg\n");
 				/*discard CRC */

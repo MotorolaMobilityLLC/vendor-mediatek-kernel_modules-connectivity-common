@@ -451,7 +451,6 @@ INT32 wmt_ctrl_ul_cmd(P_DEV_WMT pWmtDev, const PUINT8 pCmdStr)
 {
 	INT32 waitRet = -1;
 	P_OSAL_SIGNAL pCmdSignal;
-	P_OSAL_EVENT pCmdReq;
 
 	if (osal_test_and_set_bit(WMT_STAT_CMD, &pWmtDev->state)) {
 		WMT_WARN_FUNC("cmd buf is occupied by (%s)\n", pWmtDev->cCmd);
@@ -472,8 +471,6 @@ INT32 wmt_ctrl_ul_cmd(P_DEV_WMT pWmtDev, const PUINT8 pCmdStr)
 	pCmdSignal->timeoutValue = 6000;
 	osal_strncpy(pWmtDev->cCmd, pCmdStr, NAME_MAX);
 	pWmtDev->cCmd[NAME_MAX] = '\0';
-
-	pCmdReq = &pWmtDev->cmdReq;
 
 	osal_trigger_event(&pWmtDev->cmdReq);
 	WMT_DBG_FUNC("str(%s) request ok\n", pCmdStr);

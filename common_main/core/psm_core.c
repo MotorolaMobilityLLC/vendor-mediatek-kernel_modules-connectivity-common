@@ -458,7 +458,6 @@ INT32 _stp_psm_put_act_op(MTKSTP_PSM_T *stp_psm, P_OSAL_OP pOp)
 	INT32 bRet = 0;		/* MTK_WCN_BOOL_FALSE; */
 	INT32 wait_ret = -1;
 	P_OSAL_SIGNAL pSignal = NULL;
-	INT32 ret = 0;
 
 	do {
 		if (!stp_psm || !pOp) {
@@ -486,7 +485,7 @@ INT32 _stp_psm_put_act_op(MTKSTP_PSM_T *stp_psm, P_OSAL_OP pOp)
 		}
 		_stp_psm_opid_dbg_dmp_in(g_stp_psm_opid_dbg, pOp->op.opId, __LINE__);
 		/* wake up wmtd */
-		ret = osal_trigger_event(&stp_psm->STPd_event);
+		bRet = osal_trigger_event(&stp_psm->STPd_event);
 
 		if (pSignal->timeoutValue == 0) {
 			bRet = 1;	/* MTK_WCN_BOOL_TRUE; */

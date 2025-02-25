@@ -643,7 +643,6 @@ static INT32 mt6632_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	UINT8 evtBuf[256];
 	ULONG ctrlPa1;
 	ULONG ctrlPa2;
-	UINT32 hw_ver;
 	UINT32 patch_num = 0;
 	UINT32 patch_index = 0;
 	WMT_CTRL_DATA ctrlData;
@@ -661,8 +660,6 @@ static INT32 mt6632_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 			     gp_mt6632_info, pWmtHifConf);
 		return -1;
 	}
-
-	hw_ver = gp_mt6632_info->u4HwVer;
 
 	/* 4 <3.1> start init for sdio */
 

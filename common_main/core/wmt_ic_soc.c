@@ -1187,7 +1187,6 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	INT32 retry = 3;
 	unsigned long ctrlPa1;
 	unsigned long ctrlPa2;
-	UINT32 hw_ver;
 	WMT_CTRL_DATA ctrlData;
 	UINT32 chipid = 0;
 #ifdef CFG_WMT_READ_EFUSE_VCN33
@@ -1216,8 +1215,6 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		WMT_ERR_FUNC("null pointers: gp_soc_info(0x%p), pWmtHifConf(0x%p)\n", gp_soc_info, pWmtHifConf);
 		return -WMT_ERRCODE_NULL_FUNC_POINTER;
 	}
-
-	hw_ver = gp_soc_info->u4HwVer;
 
 	/* 4 <3.2> start init for BTIF */
 	if (pWmtHifConf->hifType == WMT_HIF_BTIF) {
@@ -4077,6 +4074,9 @@ static INT32 mtk_wcn_soc_calibration(void)
 	ctrlPa1 = WIFI_PALDO;
 	ctrlPa2 = PALDO_OFF;
 	iRet = wmt_core_ctrl(WMT_CTRL_SOC_PALDO_CTRL, &ctrlPa1, &ctrlPa2);
+
+	if (iRet)
+		WMT_INFO_FUNC("mtk_wcn_soc_do_calibration iRet:(%d)\n", iRet);
 
 	if (iCalRet) {
 		/* pwrap_read(0x0210,&ctrlPa1); */

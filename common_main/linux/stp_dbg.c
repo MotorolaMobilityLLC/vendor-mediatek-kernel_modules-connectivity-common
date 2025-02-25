@@ -1600,19 +1600,12 @@ VOID stp_dbg_nl_deinit(VOID)
 
 static INT32 stp_dbg_nl_bind(struct sk_buff *skb, struct genl_info *info)
 {
-	struct nlattr *na = NULL;
-	PINT8 mydata;
 	INT32 i;
 
 	if (info == NULL)
 		goto out;
 
 	STP_DBG_PR_INFO("%s():->\n", __func__);
-
-	na = info->attrs[STP_DBG_ATTR_MSG];
-
-	if (na)
-		mydata = (PINT8) nla_data(na);
 
 	if (osal_lock_sleepable_lock(&g_dbg_nl_lock))
 		return -1;

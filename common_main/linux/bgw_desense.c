@@ -88,11 +88,9 @@ static void nl_data_handler(struct sk_buff *__skb)
 	struct sk_buff *skb = NULL;
 	struct nlmsghdr *nlh = NULL;
 	int i;
-	int len;
 	char str[128];
 
 	MSG("we got netlink message\n");
-	len = NLMSG_SPACE(MAX_NL_MSG_LEN);
 	skb = skb_get(__skb);
 	if (skb == NULL) {
 		ERR("skb_get return NULL");

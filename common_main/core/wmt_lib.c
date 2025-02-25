@@ -759,7 +759,6 @@ static MTK_WCN_BOOL wmt_lib_ps_action(MTKSTP_PSM_ACTION_T action)
 {
 	P_OSAL_OP lxop;
 	MTK_WCN_BOOL bRet;
-	UINT32 u4Wait;
 	P_OSAL_SIGNAL pSignal;
 
 	lxop = wmt_lib_get_free_op();
@@ -773,7 +772,6 @@ static MTK_WCN_BOOL wmt_lib_ps_action(MTKSTP_PSM_ACTION_T action)
 	lxop->op.opId = WMT_OPID_PWR_SV;
 	lxop->op.au4OpData[0] = action;
 	lxop->op.au4OpData[1] = (SIZE_T) mtk_wcn_stp_psm_notify_stp;
-	u4Wait = 0;
 	bRet = wmt_lib_put_act_op(lxop);
 	return bRet;
 }
@@ -1426,7 +1424,6 @@ static VOID wmt_lib_wmtd_worker_thread_timeout_handler(timer_handler_arg arg)
 static VOID wmt_lib_wmtd_worker_thread_work_handler(struct work_struct *work)
 {
 	PUINT8 pbuf = NULL;
-	INT32 len = 0;
 	P_OSAL_OP pOp;
 
 	pOp = wmt_lib_get_worker_op(&gDevWmt);
@@ -1434,15 +1431,12 @@ static VOID wmt_lib_wmtd_worker_thread_work_handler(struct work_struct *work)
 		switch (pOp->op.opId) {
 		case WMT_OPID_WLAN_PROBE:
 			pbuf = "DrvWMT turn on wifi fail, just collect SYS_FTRACE to DB";
-			len = osal_strlen(pbuf);
 		break;
 		case WMT_OPID_WLAN_REMOVE:
 			pbuf = "DrvWMT turn off wifi fail, just collect SYS_FTRACE to DB";
-			len = osal_strlen(pbuf);
 		break;
 		default:
 			pbuf = "DrvWMT unknown op fail, just collect SYS_FTRACE to DB";
-			len = osal_strlen(pbuf);
 		break;
 		}
 		wmt_lib_trigger_assert_keyword(WMTDRV_TYPE_WIFI, 0, pbuf);

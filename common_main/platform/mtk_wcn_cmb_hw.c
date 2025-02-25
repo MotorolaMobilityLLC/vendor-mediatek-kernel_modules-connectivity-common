@@ -276,7 +276,7 @@ INT32 mtk_wcn_cmb_hw_rst(VOID)
 	if (0x6630 == chip_id || 0x6632 == chip_id)
 		iRet += wmt_plat_gpio_ctrl(PIN_UART_RX, PIN_STA_IN_NP);
 
-	WMT_INFO_FUNC("CMB-HW, hw_rst finish, eirq should be enabled after this step\n");
+	WMT_INFO_FUNC("CMB-HW, hw_rst finish, eirq should be enabled. iRet=(%d)\n", iRet);
 	return 0;
 }
 

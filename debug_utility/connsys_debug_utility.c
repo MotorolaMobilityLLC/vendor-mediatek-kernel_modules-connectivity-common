@@ -253,8 +253,6 @@ static void connlog_ring_emi_to_cache(int conn_type)
 	struct ring_emi_segment ring_emi_seg;
 	struct ring_emi *ring_emi;
 	struct ring *ring_cache;
-	int total_size = 0;
-	int count = 0;
 	unsigned int cache_max_size = 0;
 	static DEFINE_RATELIMIT_STATE(_rs, 10 * HZ, 1);
 	static DEFINE_RATELIMIT_STATE(_rs2, HZ, 1);
@@ -294,8 +292,6 @@ static void connlog_ring_emi_to_cache(int conn_type)
 
 	RING_EMI_READ_ALL_FOR_EACH(ring_emi_seg, ring_emi) {
 		struct ring_segment ring_cache_seg;
-		unsigned int emi_buf_size = ring_emi_seg.sz;
-		unsigned int written = 0;
 
 #ifdef DEBUG_RING
 		ring_emi_dump(__func__, ring_emi);
@@ -312,12 +308,7 @@ static void connlog_ring_emi_to_cache(int conn_type)
 					ring_cache_seg.sz);
 			memcpy_fromio(ring_cache_seg.ring_pt, ring_emi_seg.ring_emi_pt + ring_cache_seg.data_pos,
 				ring_cache_seg.sz);
-			emi_buf_size -= ring_cache_seg.sz;
-			written += ring_cache_seg.sz;
 		}
-
-		total_size += ring_emi_seg.sz;
-		count++;
 	}
 }
 
@@ -416,7 +407,6 @@ static void connlog_fw_log_parser(int conn_type, const char *buf, ssize_t sz)
 static void connlog_ring_print(int conn_type)
 {
 	unsigned int written = 0;
-	unsigned int buf_size;
 	struct ring_emi_segment ring_emi_seg;
 	struct ring_emi *ring_emi;
 
@@ -428,7 +418,6 @@ static void connlog_ring_print(int conn_type)
 		pr_err("type(%s) no data, possibly taken by concurrent reader.\n", type_to_title[conn_type]);
 		return;
 	}
-	buf_size = ring_emi_seg.remain;
 	memset(gDev.log_data, 0, CONNLOG_LOG_BUFFER_SIZE);
 
 	/* Check ring_emi buffer memory. Dump EMI data if it's corruption. */
@@ -444,7 +433,6 @@ static void connlog_ring_print(int conn_type)
 	RING_EMI_READ_ALL_FOR_EACH(ring_emi_seg, ring_emi) {
 		memcpy_fromio(gDev.log_data + written, ring_emi_seg.ring_emi_pt, ring_emi_seg.sz);
 		/* connlog_dump_buf("fw_log", gDev.log_data + written, ring_emi_seg.sz); */
-		buf_size -= ring_emi_seg.sz;
 		written += ring_emi_seg.sz;
 	}
 	if (conn_type != CONNLOG_TYPE_BT)
@@ -1175,7 +1163,6 @@ EXPORT_SYMBOL(connsys_log_register_event_cb);
 ssize_t connsys_log_read(int conn_type, char *buf, size_t count)
 {
 	unsigned int written = 0;
-	unsigned int cache_buf_size;
 	struct ring_segment ring_seg;
 	struct ring *ring;
 	unsigned int size = 0;
@@ -1193,11 +1180,9 @@ ssize_t connsys_log_read(int conn_type, char *buf, size_t count)
 		pr_err("type(%d) no data, possibly taken by concurrent reader.\n", conn_type);
 		goto done;
 	}
-	cache_buf_size = ring_seg.remain;
 
 	RING_READ_FOR_EACH(size, ring_seg, ring) {
 		memcpy(buf + written, ring_seg.ring_pt, ring_seg.sz);
-		cache_buf_size -= ring_seg.sz;
 		written += ring_seg.sz;
 	}
 done:
@@ -1222,7 +1207,6 @@ ssize_t connsys_log_read_to_user(int conn_type, char __user *buf, size_t count)
 	int retval;
 	unsigned int written = 0;
 	static DEFINE_RATELIMIT_STATE(_rs, 10 * HZ, 1);
-	unsigned int cache_buf_size;
 	struct ring_segment ring_seg;
 	struct ring *ring;
 	unsigned int size = 0;
@@ -1242,7 +1226,6 @@ ssize_t connsys_log_read_to_user(int conn_type, char __user *buf, size_t count)
 		pr_err("type(%d) no data, possibly taken by concurrent reader.\n", conn_type);
 		goto done;
 	}
-	cache_buf_size = ring_seg.remain;
 
 	RING_READ_FOR_EACH(size, ring_seg, ring) {
 		retval = copy_to_user(buf + written, ring_seg.ring_pt, ring_seg.sz);
@@ -1251,7 +1234,6 @@ ssize_t connsys_log_read_to_user(int conn_type, char __user *buf, size_t count)
 				pr_err("copy to user buffer failed, ret:%d\n", retval);
 			goto done;
 		}
-		cache_buf_size -= ring_seg.sz;
 		written += ring_seg.sz;
 	}
 done:
