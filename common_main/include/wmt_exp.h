@@ -71,12 +71,6 @@ do { \
 		osal_warn_print(DFT_TAG "<%s> <%d>\n", __func__, __LINE__); \
 } while (0)
 
-#if IS_ENABLED(CONFIG_CONN_WMT_DEBUG)
-#define WMT_DBG_SUPPORT 1
-#else
-#define WMT_DBG_SUPPORT 0
-#endif
-
 #endif
 
 /*******************************************************************************
