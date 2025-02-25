@@ -103,6 +103,11 @@ wmt_mt8168_srcs=[
     "common_main/platform/mt8168.c",
 ]
 
+ddk_headers(
+    name = "wmt_drv_headers",
+    hdrs = glob(["**/*.h"])
+)
+
 define_mgk_ddk_ko(
     name = "wmt_drv",
     srcs = [
