@@ -1546,53 +1546,82 @@ static INT32 consys_check_reg_readable(VOID)
 
 static VOID consys_ic_clock_fail_dump(VOID)
 {
-	char *temp;
 	char buffer[1024] = {""};
+	int len = 0;
+	int ret = 0;
 
 	if (conn_reg.mcu_base == 0 ||
 			conn_reg.mcu_conn_hif_pdma_base == 0 ||
 			conn_reg.mcu_conn_hif_on_base == 0)
 		return;
 
-	temp = buffer;
-	temp += sprintf(temp, "CONN_HIF_TOP_MISC=0x%08x CONN_HIF_BUSY_STATUS=0x%08x\n",
+	ret = snprintf(buffer, sizeof(buffer), "CONN_HIF_TOP_MISC=0x%08x CONN_HIF_BUSY_STATUS=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_TOP_MISC),
 		CONSYS_REG_READ(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_BUSY_STATUS));
+	if (ret > 0)
+		len += ret;
 
 	CONSYS_REG_WRITE(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_DBG_IDX, 0x3333);
-	temp += sprintf(temp, "Write CONSYS_HIF_DBG_IDX to 0x3333\n");
+	ret = snprintf(buffer + len, sizeof(buffer) - len, "Write CONSYS_HIF_DBG_IDX to 0x3333\n");
+	if (ret > 0)
+		len += ret;
 
-	temp += sprintf(temp, "CONSYS_HIF_DBG_PROBE=0x%08x CONN_HIF_TOP_MISC=0x%08x\n",
+	ret = snprintf(buffer + len, sizeof(buffer) - len, "CONSYS_HIF_DBG_PROBE=0x%08x CONN_HIF_TOP_MISC=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_DBG_PROBE),
 		CONSYS_REG_READ(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_TOP_MISC));
+	if (ret > 0)
+		len += ret;
 
-	temp += sprintf(temp, "CONN_HIF_BUSY_STATUS=0x%08x CONN_HIF_PDMA_BUSY_STATUS=0x%08x\n",
+	ret = snprintf(buffer + len, sizeof(buffer) - len,
+		"CONN_HIF_BUSY_STATUS=0x%08x CONN_HIF_PDMA_BUSY_STATUS=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_BUSY_STATUS),
 		CONSYS_REG_READ(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_PDMA_BUSY_STATUS));
+	if (ret > 0)
+		len += ret;
 
 	CONSYS_REG_WRITE(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_DBG_IDX, 0x2222);
-	temp += sprintf(temp, "Write CONSYS_HIF_DBG_IDX to 0x2222\n");
+	ret = snprintf(buffer + len, sizeof(buffer) - len, "Write CONSYS_HIF_DBG_IDX to 0x2222\n");
+	if (ret > 0)
+		len += ret;
 
-	temp += sprintf(temp, "CONSYS_HIF_DBG_PROBE=0x%08x\n",
+	ret = snprintf(buffer + len, sizeof(buffer) - len, "CONSYS_HIF_DBG_PROBE=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_DBG_PROBE));
+	if (ret > 0)
+		len += ret;
 
 	CONSYS_REG_WRITE(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_DBG_IDX, 0x3333);
-	temp += sprintf(temp, "Write CONSYS_HIF_DBG_IDX to 0x3333\n");
+	ret = snprintf(buffer + len, sizeof(buffer) - len, "Write CONSYS_HIF_DBG_IDX to 0x3333\n");
+	if (ret > 0)
+		len += ret;
 
-	temp += sprintf(temp, "CONSYS_HIF_DBG_PROBE=0x%08x\n",
+	ret = snprintf(buffer + len, sizeof(buffer) - len, "CONSYS_HIF_DBG_PROBE=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_DBG_PROBE));
+	if (ret > 0)
+		len += ret;
 
 	CONSYS_REG_WRITE(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_DBG_IDX, 0x4444);
-	temp += sprintf(temp, "Write CONSYS_HIF_DBG_IDX to 0x4444\n");
+	ret = snprintf(buffer + len, sizeof(buffer) - len, "Write CONSYS_HIF_DBG_IDX to 0x4444\n");
+	if (ret > 0)
+		len += ret;
 
-	temp += sprintf(temp, "CONSYS_HIF_DBG_PROBE=0x%08x CONN_MCU_EMI_CONTROL=0x%08x\n",
+	ret = snprintf(buffer + len, sizeof(buffer) - len, "CONSYS_HIF_DBG_PROBE=0x%08x CONN_MCU_EMI_CONTROL=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_DBG_PROBE),
 		CONSYS_REG_READ(conn_reg.mcu_base + CONN_MCU_EMI_CONTROL));
-	temp += sprintf(temp, "EMI_CONTROL_DBG_PROBE=0x%08x\n",
+	if (ret > 0)
+		len += ret;
+
+	ret = snprintf(buffer + len, sizeof(buffer) - len, "EMI_CONTROL_DBG_PROBE=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_base + EMI_CONTROL_DBG_PROBE));
-	temp += sprintf(temp, "CONN_MCU_CLOCK_CONTROL=0x%08x CONN_MCU_BUS_CONTROL=0x%08x\n",
+	if (ret > 0)
+		len += ret;
+
+	ret = snprintf(buffer + len, sizeof(buffer) - len,
+		"CONN_MCU_CLOCK_CONTROL=0x%08x CONN_MCU_BUS_CONTROL=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_CLOCK_CONTROL),
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_BUS_CONTROL));
+	if (ret > 0)
+		len += ret;
+
 	WMT_PLAT_PR_INFO("%s length = %d", buffer, osal_strlen(buffer));
 }
 

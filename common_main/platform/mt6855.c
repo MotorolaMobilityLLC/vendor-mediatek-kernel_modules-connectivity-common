@@ -2015,67 +2015,105 @@ static VOID consys_ic_clock_fail_dump(VOID)
 #if 0
 	UINT8 *addr;
 #endif
-	char *temp;
 	char buffer[1024] = {""};
+	int len = 0;
+	int ret = 0;
 
 	if (conn_reg.mcu_base == 0 ||
 			conn_reg.mcu_conn_hif_pdma_base == 0 ||
 			conn_reg.mcu_conn_hif_on_base == 0)
 		return;
 
-	temp = buffer;
-	temp += sprintf(temp, "CONN_HIF_TOP_MISC=0x%08x CONN_HIF_BUSY_STATUS=0x%08x\n",
+	ret = snprintf(buffer, sizeof(buffer), "CONN_HIF_TOP_MISC=0x%08x CONN_HIF_BUSY_STATUS=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_TOP_MISC),
 		CONSYS_REG_READ(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_BUSY_STATUS));
+	if (ret > 0)
+		len += ret;
 
 	CONSYS_REG_WRITE(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_DBG_IDX, 0x3333);
-	temp += sprintf(temp, "Write CONSYS_HIF_DBG_IDX to 0x3333\n");
+	ret = snprintf(buffer + len, sizeof(buffer) - len, "Write CONSYS_HIF_DBG_IDX to 0x3333\n");
+	if (ret > 0)
+		len += ret;
 
-	temp += sprintf(temp, "CONSYS_HIF_DBG_PROBE=0x%08x CONN_HIF_TOP_MISC=0x%08x\n",
+	ret = snprintf(buffer + len, sizeof(buffer) - len, "CONSYS_HIF_DBG_PROBE=0x%08x CONN_HIF_TOP_MISC=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_DBG_PROBE),
 		CONSYS_REG_READ(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_TOP_MISC));
+	if (ret > 0)
+		len += ret;
 
-	temp += sprintf(temp, "CONN_HIF_BUSY_STATUS=0x%08x CONN_HIF_PDMA_BUSY_STATUS=0x%08x\n",
+	ret = snprintf(buffer + len, sizeof(buffer) - len,
+		"CONN_HIF_BUSY_STATUS=0x%08x CONN_HIF_PDMA_BUSY_STATUS=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_BUSY_STATUS),
 		CONSYS_REG_READ(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_PDMA_BUSY_STATUS));
+	if (ret > 0)
+		len += ret;
 
 	CONSYS_REG_WRITE(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_DBG_IDX, 0x2222);
-	temp += sprintf(temp, "Write CONSYS_HIF_DBG_IDX to 0x2222\n");
+	ret = snprintf(buffer + len, sizeof(buffer) - len, "Write CONSYS_HIF_DBG_IDX to 0x2222\n");
+	if (ret > 0)
+		len += ret;
 
-	temp += sprintf(temp, "CONSYS_HIF_DBG_PROBE=0x%08x\n",
+	ret = snprintf(buffer + len, sizeof(buffer) - len, "CONSYS_HIF_DBG_PROBE=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_DBG_PROBE));
+	if (ret > 0)
+		len += ret;
 
 	CONSYS_REG_WRITE(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_DBG_IDX, 0x3333);
-	temp += sprintf(temp, "Write CONSYS_HIF_DBG_IDX to 0x3333\n");
+	ret = snprintf(buffer + len, sizeof(buffer) - len, "Write CONSYS_HIF_DBG_IDX to 0x3333\n");
+	if (ret > 0)
+		len += ret;
 
-	temp += sprintf(temp, "CONSYS_HIF_DBG_PROBE=0x%08x\n",
+	ret = snprintf(buffer + len, sizeof(buffer) - len, "CONSYS_HIF_DBG_PROBE=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_DBG_PROBE));
+	if (ret > 0)
+		len += ret;
 
 	CONSYS_REG_WRITE(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_DBG_IDX, 0x4444);
-	temp += sprintf(temp, "Write CONSYS_HIF_DBG_IDX to 0x4444\n");
+	ret = snprintf(buffer + len, sizeof(buffer) - len, "Write CONSYS_HIF_DBG_IDX to 0x4444\n");
+	if (ret > 0)
+		len += ret;
 
-	temp += sprintf(temp, "CONSYS_HIF_DBG_PROBE=0x%08x CONN_MCU_EMI_CONTROL=0x%08x\n",
+	ret = snprintf(buffer + len, sizeof(buffer) - len, "CONSYS_HIF_DBG_PROBE=0x%08x CONN_MCU_EMI_CONTROL=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_conn_hif_pdma_base + CONSYS_HIF_DBG_PROBE),
 		CONSYS_REG_READ(conn_reg.mcu_base + CONN_MCU_EMI_CONTROL));
-	temp += sprintf(temp, "EMI_CONTROL_DBG_PROBE=0x%08x\n",
+	if (ret > 0)
+		len += ret;
+
+	ret = snprintf(buffer + len, sizeof(buffer) - len, "EMI_CONTROL_DBG_PROBE=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_base + EMI_CONTROL_DBG_PROBE));
-	temp += sprintf(temp, "CONN_MCU_CLOCK_CONTROL=0x%08x CONN_MCU_BUS_CONTROL=0x%08x\n",
+	if (ret > 0)
+		len += ret;
+
+	ret = snprintf(buffer + len, sizeof(buffer) - len,
+		"CONN_MCU_CLOCK_CONTROL=0x%08x CONN_MCU_BUS_CONTROL=0x%08x\n",
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_CLOCK_CONTROL),
 		CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_BUS_CONTROL));
+	if (ret > 0)
+		len += ret;
+
 #if 0
-	temp = buffer;
 	addr = ioremap(0x180bc000, 0x100);
 	if (addr) {
 		/* conn2ap axi master sleep prot info */
-		temp += sprintf(temp, "0x180bc010=0x%08x\n", CONSYS_REG_READ(addr + 0x10));
+		ret = snprintf(buffer + len, sizeof(buffer) - len, "0x180bc010=0x%08x\n", CONSYS_REG_READ(addr + 0x10));
+		if (ret > 0)
+			len += ret;
 		/* conn_mcu2ap axi master sleep prot info */
-		temp += sprintf(temp, "0x180bc014=0x%08x\n", CONSYS_REG_READ(addr + 0x14));
+		ret = snprintf(buffer + len, sizeof(buffer) - len, "0x180bc014=0x%08x\n", CONSYS_REG_READ(addr + 0x14));
+		if (ret > 0)
+			len += ret;
 		/* conn2ap axi gals bus info */
-		temp += sprintf(temp, "0x180bc018=0x%08x\n", CONSYS_REG_READ(addr + 0x18));
+		ret = snprintf(buffer + len, sizeof(buffer) - len, "0x180bc018=0x%08x\n", CONSYS_REG_READ(addr + 0x18));
+		if (ret > 0)
+			len += ret;
 		/* conn2ap mux4to1 debug info */
-		temp += sprintf(temp, "0x180bc01c=0x%08x\n", CONSYS_REG_READ(addr + 0x1c));
+		ret = snprintf(buffer + len, sizeof(buffer) - len, "0x180bc01c=0x%08x\n", CONSYS_REG_READ(addr + 0x1c));
+		if (ret > 0)
+			len += ret;
 		/* conn_hif_off bus busy info */
-		temp += sprintf(temp, "0x180bc020=0x%08x\n", CONSYS_REG_READ(addr + 0x20));
+		ret = snprintf(buffer + len, sizeof(buffer) - len, "0x180bc020=0x%08x\n", CONSYS_REG_READ(addr + 0x20));
+		if (ret > 0)
+			len += ret;
 		iounmap(addr);
 	} else {
 		WMT_PLAT_PR_INFO("0x180bc000 ioremap fail!\n");
@@ -2084,19 +2122,26 @@ static VOID consys_ic_clock_fail_dump(VOID)
 	addr = ioremap(0x10001B20, 0x100);
 	if (addr) {
 		/* 0x10001B20 */
-		temp += sprintf(temp, "0x10001B20=0x%08x\n", CONSYS_REG_READ(addr));
+		ret = snprintf(buffer + len, sizeof(buffer) - len, "0x10001B20=0x%08x\n", CONSYS_REG_READ(addr));
+		if (ret > 0)
+			len += ret;
 		iounmap(addr);
 	} else {
 		WMT_PLAT_PR_INFO("0x10001B20 ioremap fail!\n");
 	}
 
 	/* conn_hif_on misc info */
-	temp += sprintf(temp, "0x1800713c=0x%08x\n", CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base + 0x13c));
+	ret = snprintf(buffer + len, sizeof(buffer) - len,
+		"0x1800713c=0x%08x\n", CONSYS_REG_READ(conn_reg.mcu_conn_hif_on_base + 0x13c));
+	if (ret > 0)
+		len += ret;
 
 	addr = ioremap(0x180c1144, 0x100);
 	if (addr) {
 		/* conn_on_host debug flag */
-		temp += sprintf(temp, "0x180c1144=0x%08x\n", CONSYS_REG_READ(addr));
+		ret = snprintf(buffer + len, sizeof(buffer) - len, "0x180c1144=0x%08x\n", CONSYS_REG_READ(addr));
+		if (ret > 0)
+			len += ret;
 		iounmap(addr);
 	} else {
 		WMT_PLAT_PR_INFO("0x180c1144 ioremap fail!\n");
@@ -2105,7 +2150,9 @@ static VOID consys_ic_clock_fail_dump(VOID)
 	addr = ioremap(0x1020E804, 0x100);
 	if (addr) {
 		/* 0x1020E804 */
-		temp += sprintf(temp, "0x1020E804=0x%08x\n", CONSYS_REG_READ(addr));
+		ret = snprintf(buffer + len, sizeof(buffer) - len, "0x1020E804=0x%08x\n", CONSYS_REG_READ(addr));
+		if (ret > 0)
+			len += ret;
 		iounmap(addr);
 	} else {
 		WMT_PLAT_PR_INFO("0x1020E804 ioremap fail!\n");
