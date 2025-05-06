@@ -64,8 +64,12 @@ static void wmt_alarm_dmp_info_handler(struct work_struct *work)
 	}
 }
 
+#if (KERNEL_VERSION(6, 13, 0) > LINUX_VERSION_CODE)
 static enum alarmtimer_restart alarm_timer_handler(struct alarm *alarm,
 	ktime_t now)
+#else
+static void alarm_timer_handler(struct alarm *alarm, ktime_t now)
+#endif
 {
 	ktime_t kt;
 
@@ -77,7 +81,9 @@ static enum alarmtimer_restart alarm_timer_handler(struct alarm *alarm,
 
 	spin_unlock_irqrestore(&g_wmt_alarm.alarm_lock, g_wmt_alarm.flags);
 
+#if (KERNEL_VERSION(6, 13, 0) > LINUX_VERSION_CODE)
 	return ALARMTIMER_NORESTART;
+#endif
 }
 
 static int _wmt_alarm_start_timer_nolock(unsigned int sec)
