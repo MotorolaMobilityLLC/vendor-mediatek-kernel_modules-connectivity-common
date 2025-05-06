@@ -801,7 +801,9 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 			wmt_consys_ic_ops->consys_ic_hw_vcn_ctrl_after_idle();
 		msleep(20);
 
+		connsys_log_eint_enable();
 	} else {
+		connsys_log_eint_disable();
 		if (wmt_consys_ic_ops->consys_ic_ahb_clock_ctrl)
 			wmt_consys_ic_ops->consys_ic_ahb_clock_ctrl(DISABLE);
 		if (wmt_consys_ic_ops->consys_ic_hw_power_ctrl)

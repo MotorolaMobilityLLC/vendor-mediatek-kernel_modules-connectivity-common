@@ -86,5 +86,7 @@ int connsys_log_alarm_enable(unsigned int sec);
 int connsys_log_alarm_disable(void);
 int connsys_log_blank_state_changed(int blank_state);
 int connsys_dedicated_log_set_ap_state(int state);
+int connsys_log_eint_enable(void);
+void connsys_log_eint_disable(void);
 
 #endif /*_CONNSYS_DEBUG_UTILITY_H_*/

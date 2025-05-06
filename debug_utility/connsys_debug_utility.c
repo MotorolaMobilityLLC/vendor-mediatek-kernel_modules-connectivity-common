@@ -65,6 +65,7 @@ struct connlog_dev {
 	void __iomem *virAddrEmiLogBase;
 	struct connlog_emi_config emi_config;
 	int conn2ApIrqId;
+	int conn2ApIrqFlag;
 	bool eirqOn;
 	spinlock_t irq_lock;
 	unsigned long flags;
@@ -790,21 +791,41 @@ static int connlog_eirq_init(const struct connlog_irq_config *irq_config)
 		return -1;
 	}
 
+	gDev.conn2ApIrqFlag = irq_config->irq_flag;
 	gDev.irq_callback = irq_config->irq_callback;
 
 	pr_info("EINT CONN_LOG_IRQ(%d, %d)\n", irq_config->irq_num, irq_config->irq_flag);
+	iret = connsys_log_eint_enable();
 
-	iret = request_irq(gDev.conn2ApIrqId, connlog_eirq_isr, irq_config->irq_flag, "CONN_LOG_IRQ", NULL);
+	return iret;
+}
+
+int connsys_log_eint_enable(void)
+{
+	int iret = 0;
+
+	if (gDev.conn2ApIrqId == 0) {
+		pr_notice("%s gDev.conn2ApIrqId is 0\n", __func__);
+		return -1;
+	}
+
+	iret = request_irq(gDev.conn2ApIrqId, connlog_eirq_isr, gDev.conn2ApIrqFlag, "CONN_LOG_IRQ", NULL);
 	if (iret) {
-		pr_err("EINT IRQ(%d) NOT AVAILABLE!!\n", gDev.conn2ApIrqId);
+		pr_notice("EINT IRQ(%d) NOT AVAILABLE!! ret = %d\n", gDev.conn2ApIrqId, iret);
 	} else {
 		iret = enable_irq_wake(gDev.conn2ApIrqId);
 		if (iret)
-			pr_err("enable irq wake fail,irq_no(%d),iret(%d)\n", gDev.conn2ApIrqId, iret);
+			pr_notice("enable irq wake fail,irq_no(%d),iret(%d)\n", gDev.conn2ApIrqId, iret);
 		iret = 0;
 	}
-
+	pr_info("%s num = %u, ret = %d", __func__, gDev.conn2ApIrqId, iret);
 	return iret;
+}
+
+void connsys_log_eint_disable(void)
+{
+	free_irq(gDev.conn2ApIrqId, NULL);
+	pr_info("%s", __func__);
 }
 
 /*****************************************************************************
@@ -819,7 +840,7 @@ static int connlog_eirq_init(const struct connlog_irq_config *irq_config)
 *****************************************************************************/
 static void connlog_eirq_deinit(void)
 {
-	free_irq(gDev.conn2ApIrqId, NULL);
+	connsys_log_eint_disable();
 }
 
 /*****************************************************************************
